@@ -17,6 +17,9 @@
 		],
 		"main": [
 			"ru.deelter.vrcamera.Vrcamera"
+		],
+		"modmenu": [
+			"ru.deelter.vrcamera.client.gui.ModMenuIntegration"
 		]
 	},
 	"mixins": [
@@ -31,5 +34,9 @@
 		"fabric-api": "*",
 		"minecraft": "${minecraft_version}",
 		"vivecraft": ">=1.3.13"
+	},
+	"suggests": {
+		"cloth-config": "*",
+		"modmenu": "*"
 	}
 }

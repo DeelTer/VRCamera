@@ -55,6 +55,11 @@ dependencies {
 
     // Vivecraft, the mod this addon extends
     implementation "maven.modrinth:vivecraft:${project.vivecraft_version}"
+
+    // optional, for the settings screen
+    implementation "maven.modrinth:cloth-config:${project.cloth_config_version}"
+    // optional, to open the settings screen from the mod list. Not needed at runtime in the dev environment
+    compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {

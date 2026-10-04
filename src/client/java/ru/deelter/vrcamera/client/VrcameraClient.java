@@ -18,6 +18,7 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.vivecraft.api.client.VRClientAPI;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.gui.ConfigScreen;
 
 import java.util.List;
 
@@ -103,6 +104,10 @@ public class VrcameraClient implements ClientModInitializer {
 			}));
 			widgets.add(button(row, Component.translatable("vrcamera.gui.debug"),
 				button -> controller.toggleDebug()));
+			if (ConfigScreen.isAvailable()) {
+				widgets.add(button(row, Component.translatable("vrcamera.gui.settings"),
+					button -> mc.gui.setScreen(ConfigScreen.create(screen))));
+			}
 		});
 	}
 
