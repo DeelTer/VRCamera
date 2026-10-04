@@ -124,5 +124,9 @@
 	"vrcamera.shot.death": "Death",
 	"vrcamera.shot.death.tooltip": "Circles the dead player. Only shown when dying.",
 	"vrcamera.shot.fall": "Fall",
-	"vrcamera.shot.fall.tooltip": "From above. Only shown on long falls."
+	"vrcamera.shot.fall.tooltip": "From above. Only shown on long falls.",
+	"key.vrcamera.summon": "Bring camera to me",
+	"vrcamera.gui.summon": "Bring camera to me",
+	"vrcamera.message.summon": "VR Camera: in front of you, grab it and place it",
+	"vrcamera.message.error": "VR Camera: internal error, camera turned off (see log)"
 }

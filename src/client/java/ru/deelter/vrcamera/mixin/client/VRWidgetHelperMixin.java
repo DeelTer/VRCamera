@@ -28,7 +28,7 @@ public class VRWidgetHelperMixin {
 
 		// only for the eyes of the player, it should not show up in the recording
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		if (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT) {
+		if (dh.vrPlayer != null && (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT)) {
 			VRData data = dh.vrPlayer.vrdata_world_render;
 			controller.drawMarker(data.getEye(RenderPass.CAMERA).getPosition(), data.worldScale);
 		}

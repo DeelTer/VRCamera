@@ -124,5 +124,9 @@
 	"vrcamera.shot.death": "Смерть",
 	"vrcamera.shot.death.tooltip": "Облёт погибшего игрока. Только при смерти.",
 	"vrcamera.shot.fall": "Падение",
-	"vrcamera.shot.fall.tooltip": "Сверху. Только при долгом падении."
+	"vrcamera.shot.fall.tooltip": "Сверху. Только при долгом падении.",
+	"key.vrcamera.summon": "Камеру ко мне",
+	"vrcamera.gui.summon": "Камеру ко мне",
+	"vrcamera.message.summon": "VR-камера: перед вами, возьмите и поставьте",
+	"vrcamera.message.error": "VR-камера: внутренняя ошибка, камера выключена (см. лог)"
 }

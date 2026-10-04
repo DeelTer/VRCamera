@@ -6,11 +6,14 @@ import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.vivecraft.api.client.Tracker;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
+import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
@@ -44,8 +47,11 @@ public final class CameraController implements Tracker {
 	}
 
 	private static final int MARKER_COLOR = 0xFFFF2020;
+	// seconds a summoned camera waits to be picked up
+	private static final double PARK_SECONDS = 20.0;
+	// a gap between frames this long means VR was paused, not a slow frame
+	private static final double RESUME_GAP = 0.5;
 
-	private final Minecraft mc = Minecraft.getInstance();
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig();
 
@@ -61,6 +67,8 @@ public final class CameraController implements Tracker {
 	private boolean shownByUs;
 
 	private boolean wasGrabbed;
+	// seconds the camera still waits in front of the player, to be picked up by hand
+	private double parkedTime;
 	private long lastNanos;
 
 	private CameraController() {}
@@ -119,7 +127,8 @@ public final class CameraController implements Tracker {
 	 */
 	public List<String> debugLines() {
 		List<String> lines = new ArrayList<>();
-		lines.add("VRCamera " + this.mode + (this.engaged || this.mode == Mode.OFF ? "" : " (waiting)"));
+		lines.add("VRCamera " + this.mode + (this.engaged || this.mode == Mode.OFF ? "" : " (waiting for VR)") +
+			(this.parkedTime > 0 ? String.format(Locale.ROOT, " (parked %.0fs)", this.parkedTime) : ""));
 		if (this.mode == Mode.OFF) {
 			return lines;
 		}
@@ -224,7 +233,53 @@ public final class CameraController implements Tracker {
 	}
 
 	public void cycleMode() {
+		if (this.mode != Mode.OFF && !isVRRunning()) {
+			// VR went away while the camera was on, the only way from here is off
+			setMode(Mode.OFF);
+			return;
+		}
 		setMode(Mode.values()[(this.mode.ordinal() + 1) % Mode.values().length]);
+	}
+
+	/**
+	 * Called every client tick, also when VR is not running. Vivecraft can switch VR off at any time, when the
+	 * headset is taken off or VR gets disabled, and then stops calling the tracker without notice.
+	 */
+	public void tick() {
+		if (this.engaged && (!isVRRunning() || Minecraft.getInstance().player == null)) {
+			// don't leave the camera settings changed while nothing is filmed, the mode stays for when VR is back
+			release();
+			this.subject.reset();
+			this.rig.reset();
+			this.wasGrabbed = false;
+			this.parkedTime = 0;
+		}
+	}
+
+	/**
+	 * Puts the camera in front of the face of the player and leaves it there, to be grabbed and placed by hand.
+	 * A camera that follows the player can not be reached otherwise, it backs away when walking up to it.
+	 */
+	public void summon() {
+		if (this.mode == Mode.OFF || !isVRRunning()) {
+			return;
+		}
+		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		VRData vr = dh.vrPlayer.vrdata_world_render;
+		Vec3 head = vr.hmd.getPosition();
+		Vector3f look = vr.hmd.getDirection();
+		Vec3 forward = new Vec3(look.x, 0, look.z);
+		forward = forward.length() < 1.0E-3 ? CamMath.forward(vr.hmd.getYawRad()) : forward.normalize();
+
+		// within reach, a bit below the eyes
+		Vec3 pos = head.add(forward.scale(0.45 * vr.worldScale)).add(0, -0.15 * vr.worldScale, 0);
+		Quaternionf rotation = new Quaternionf();
+		CamMath.lookRotation(head.subtract(pos), rotation);
+		dh.cameraTracker.setPosition(pos);
+		dh.cameraTracker.setRotation(rotation);
+
+		this.parkedTime = PARK_SECONDS;
+		notify(Component.translatable("vrcamera.message.summon"));
 	}
 
 	public void setMode(Mode mode) {
@@ -252,6 +307,7 @@ public final class CameraController implements Tracker {
 		this.rig.reset();
 		this.subject.reset();
 		this.wasGrabbed = false;
+		this.parkedTime = 0;
 		if (mode == Mode.OFF) {
 			release();
 		}
@@ -273,8 +329,8 @@ public final class CameraController implements Tracker {
 	}
 
 	private void notify(Component message) {
-		if (this.mc.player != null) {
-			this.mc.player.sendOverlayMessage(message);
+		if (Minecraft.getInstance().player != null) {
+			Minecraft.getInstance().player.sendOverlayMessage(message);
 		}
 	}
 
@@ -314,7 +370,7 @@ public final class CameraController implements Tracker {
 
 	@Override
 	public boolean isActive(LocalPlayer player) {
-		return this.mode != Mode.OFF && player != null && this.mc.gameMode != null && isVRRunning();
+		return this.mode != Mode.OFF && player != null && Minecraft.getInstance().gameMode != null && isVRRunning();
 	}
 
 	@Override
@@ -323,10 +379,23 @@ public final class CameraController implements Tracker {
 		this.subject.reset();
 		this.rig.reset();
 		this.wasGrabbed = false;
+		this.parkedTime = 0;
 	}
 
 	@Override
 	public void activeProcess(LocalPlayer player) {
+		try {
+			process(player);
+		} catch (RuntimeException e) {
+			// this runs right before the frame is rendered for the headset, a crash here would throw the player out
+			// of VR. Turn the camera off instead
+			Vrcamera.LOGGER.error("VRCamera: camera update failed, turning the camera off", e);
+			setMode(Mode.OFF);
+			notify(Component.translatable("vrcamera.message.error"));
+		}
+	}
+
+	private void process(LocalPlayer player) {
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		CameraTracker camera = dh.cameraTracker;
 		if (dh.vrSettings.seated) {
@@ -350,22 +419,33 @@ public final class CameraController implements Tracker {
 		double realDt = Math.max(0.0, (now - this.lastNanos) / 1.0E9);
 		double dt = Math.min(realDt, 0.1);
 		this.lastNanos = now;
-		if (this.mc.isPaused()) {
+		if (Minecraft.getInstance().isPaused()) {
 			dt = 0;
+		}
+		if (realDt > RESUME_GAP) {
+			// VR was paused, the player can be anywhere by now
+			this.subject.reset();
+			this.rig.reset();
 		}
 
 		VRData vr = dh.vrPlayer.vrdata_world_render;
-		this.subject.update(player, vr, this.mc.getDeltaTracker().getGameTimeDeltaPartialTick(true), dt, realDt,
-			this.config);
+		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		this.subject.update(player, vr, partialTick, dt, realDt, this.config);
 
 		if (camera.isMoving()) {
 			// the player holds the camera in their hand
 			this.wasGrabbed = true;
+			this.parkedTime = 0;
 			return;
 		}
 		if (this.wasGrabbed) {
 			this.wasGrabbed = false;
 			placedByHand(camera.getPosition());
+		}
+		if (this.parkedTime > 0) {
+			// waiting to be picked up, runs out if nobody does
+			this.parkedTime -= dt;
+			return;
 		}
 
 		Shot shot;
@@ -404,7 +484,8 @@ public final class CameraController implements Tracker {
 		ShotConfig preset = this.config.preset();
 		preset.azimuth = Math.toDegrees(CamMath.wrap(CamMath.azimuthOf(offset) - this.subject.facing));
 		preset.elevation = Math.toDegrees(CamMath.elevationOf(offset));
-		preset.distance = offset.length() / this.subject.unit;
+		// not inside the player
+		preset.distance = Math.max(0.3, offset.length() / this.subject.unit);
 		this.config.save();
 
 		Shot shot = customShot();

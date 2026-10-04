@@ -123,7 +123,8 @@ public final class Rig {
 		// take it slow right after a blend started, so the swing is a visible move and not a jerk
 		double lag = config.positionLag * (1.0 + 2.5 * (1.0 - CamMath.smoothstep(this.sinceTransition / BLEND_TIME)));
 
-		// smooth the player position, to not pass on every head bob, and add the lag back that causes
+		// smooth the player position, to not pass on every head bob. The smoothing lags behind a moving player,
+		// adding the way they move in that time makes up for it
 		Vec3 center = this.anchor.update(subject.center, ANCHOR_LAG, dt).add(subject.velocity.scale(ANCHOR_LAG));
 
 		Vec3 wanted;
@@ -144,8 +145,8 @@ public final class Rig {
 			Vec3 current = subject.center.lerp(wanted, this.arm);
 			// a tree or post passing through the view is over in a moment, jumping in front of it would look worse.
 			// only when the camera itself is in the open, it never stays inside a block
-			if (this.softArmed && this.softTime < config.softOcclusionTime && WorldProbe.spotFree(subject, current, config) &&
-				WorldProbe.thin(subject, subject.center, current))
+			if (this.softArmed && this.softTime < config.softOcclusionTime &&
+				WorldProbe.spotFree(subject, current, config) && WorldProbe.thin(subject, subject.center, current))
 			{
 				this.softTime += dt;
 			} else {

@@ -3,6 +3,7 @@ package ru.deelter.vrcamera.client.director;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -385,8 +386,10 @@ public final class Director {
 
 		this.combatTimer -= dt;
 		this.mineTimer -= dt;
-		if (player.swinging && mc.hitResult instanceof EntityHitResult hit && hit.getEntity().isAlive()) {
-			// the player attacks something
+		if (player.swinging && mc.hitResult instanceof EntityHitResult hit &&
+			hit.getEntity() instanceof LivingEntity && hit.getEntity().isAlive())
+		{
+			// the player attacks something, hitting a boat or an item frame is no fight
 			this.combatTimer = 5.0;
 			subject.target = hit.getEntity();
 		} else if (player.hurtTime > 0) {

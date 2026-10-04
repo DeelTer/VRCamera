@@ -33,6 +33,7 @@ public class VrcameraClient implements ClientModInitializer {
 	private final KeyMapping keyPreset = new KeyMapping("key.vrcamera.preset", GLFW.GLFW_KEY_F7, CATEGORY);
 	private final KeyMapping keyNewPreset = new KeyMapping("key.vrcamera.preset.new", GLFW.GLFW_KEY_UNKNOWN,
 		CATEGORY);
+	private final KeyMapping keySummon = new KeyMapping("key.vrcamera.summon", GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
 	private final KeyMapping keyDebug = new KeyMapping("key.vrcamera.debug", GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
 
 	@Override
@@ -42,12 +43,13 @@ public class VrcameraClient implements ClientModInitializer {
 		VRClientAPI.instance().addClientRegistrationHandler(event -> event.registerTrackers(controller));
 
 		for (KeyMapping key : List.of(this.keyMode, this.keyNext, this.keyHold, this.keyPreset, this.keyNewPreset,
-			this.keyDebug))
+			this.keySummon, this.keyDebug))
 		{
 			KeyMappingHelper.registerKeyMapping(key);
 		}
 
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+			controller.tick();
 			while (this.keyMode.consumeClick()) {
 				controller.cycleMode();
 			}
@@ -63,6 +65,9 @@ public class VrcameraClient implements ClientModInitializer {
 			while (this.keyNewPreset.consumeClick()) {
 				controller.newPreset();
 			}
+			while (this.keySummon.consumeClick()) {
+				controller.summon();
+			}
 			while (this.keyDebug.consumeClick()) {
 				controller.toggleDebug();
 			}
@@ -76,7 +81,10 @@ public class VrcameraClient implements ClientModInitializer {
 
 		// buttons in the pause menu, to be reachable from inside VR without a binding
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
-			if (!(screen instanceof PauseScreen) || !CameraController.isVRRunning()) {
+			// also without VR while the camera is still on, to be able to turn it off after VR went away
+			if (!(screen instanceof PauseScreen) ||
+				!(CameraController.isVRRunning() || controller.mode() != CameraController.Mode.OFF))
+			{
 				return;
 			}
 			List<AbstractWidget> widgets = Screens.getWidgets(screen);
@@ -88,6 +96,12 @@ public class VrcameraClient implements ClientModInitializer {
 			}));
 			widgets.add(button(row, Component.translatable("vrcamera.gui.next"), button -> controller.nextShot()));
 			widgets.add(button(row, Component.translatable("vrcamera.gui.hold"), button -> controller.toggleHold()));
+
+			widgets.add(button(row, Component.translatable("vrcamera.gui.summon"), button -> {
+				controller.summon();
+				// back into the game, to grab it
+				mc.gui.setScreen(null);
+			}));
 
 			Button preset = button(row, presetLabel(controller), button -> {
 				controller.nextPreset();
@@ -117,7 +131,7 @@ public class VrcameraClient implements ClientModInitializer {
 	 * @param row counter of the buttons created so far
 	 */
 	private static Button button(int[] row, Component label, Button.OnPress onPress) {
-		return Button.builder(label, onPress).bounds(4, 4 + 22 * row[0]++, 130, 20).build();
+		return Button.builder(label, onPress).bounds(4, 4 + 21 * row[0]++, 120, 20).build();
 	}
 
 	private static Component modeLabel(CameraController controller) {
