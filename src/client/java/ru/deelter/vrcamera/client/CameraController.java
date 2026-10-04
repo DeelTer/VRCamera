@@ -185,6 +185,20 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
+	 * @param index number of the hand placed shot, starting at 0
+	 * @return false if there is no such shot, or the camera is off
+	 */
+	public boolean selectPreset(int index) {
+		if (this.mode == Mode.OFF || index < 0 || index >= this.config.presets.size()) {
+			return false;
+		}
+		this.config.activePreset = index;
+		this.config.save();
+		showPreset();
+		return true;
+	}
+
+	/**
 	 * adds a hand placed shot, as a copy of the active one, to then be placed somewhere else
 	 */
 	public void newPreset() {
@@ -319,6 +333,33 @@ public final class CameraController implements Tracker {
 			this.director.next();
 			notify(Component.translatable("vrcamera.message.next"));
 		}
+	}
+
+	/**
+	 * Shows a shot of the given type, turns the director on for it if needed.
+	 *
+	 * @return false if the camera can't be turned on
+	 */
+	public boolean showShot(ShotType type) {
+		if (this.mode != Mode.DIRECTOR) {
+			setMode(Mode.DIRECTOR);
+			if (this.mode != Mode.DIRECTOR) {
+				return false;
+			}
+		}
+		this.director.force(type);
+		notify(Component.translatable("vrcamera.message.shot", type.name().toLowerCase(Locale.ROOT)));
+		return true;
+	}
+
+	/**
+	 * reads the config file again, without turning the camera off
+	 */
+	public void reloadConfig() {
+		this.config = CameraConfig.load();
+		this.director = new Director(this.config);
+		this.followShot = null;
+		this.rig.reset();
 	}
 
 	public void toggleHold() {

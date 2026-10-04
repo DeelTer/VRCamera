@@ -34,6 +34,8 @@ public final class Shot {
 	private double maxRange;
 	// seconds the player stood still during this shot
 	private double stillTime;
+	// if a duel ever had an opponent, one that was asked for without any is not over right away
+	private boolean hadTarget;
 
 	public Shot(ShotType type, ShotConfig config, int side) {
 		this.type = type;
@@ -145,6 +147,7 @@ public final class Shot {
 			}
 			case DUEL -> {
 				if (subject.targetCenter != null) {
+					this.hadTarget = true;
 					// far enough back to have both in frame, aimed between them
 					this.distance += 0.35 * subject.targetCenter.distanceTo(subject.center);
 					this.lookTarget = subject.center.lerp(subject.targetCenter, 0.4);
@@ -164,7 +167,7 @@ public final class Shot {
 	public boolean finished(Subject subject) {
 		return switch (this.type) {
 			case FLYBY -> this.age > 1.5 && this.distance > this.maxRange;
-			case DUEL -> subject.targetCenter == null;
+			case DUEL -> this.hadTarget && subject.targetCenter == null;
 			default -> false;
 		};
 	}

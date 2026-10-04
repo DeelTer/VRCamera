@@ -48,6 +48,8 @@ public final class Director {
 	private ShotType lastType;
 	private boolean hold;
 	private boolean forceNext;
+	// the only shot type allowed on the next pick, asked for by the player
+	private ShotType forceType;
 	private double occludedTime;
 	private String lastReason = "";
 
@@ -107,6 +109,7 @@ public final class Director {
 		this.current = null;
 		this.hold = false;
 		this.forceNext = false;
+		this.forceType = null;
 		this.event = Event.NONE;
 	}
 
@@ -114,6 +117,14 @@ public final class Director {
 	 * replaces the current shot on the next update
 	 */
 	public void next() {
+		this.forceNext = true;
+	}
+
+	/**
+	 * replaces the current shot with one of the given type on the next update
+	 */
+	public void force(ShotType type) {
+		this.forceType = type;
 		this.forceNext = true;
 	}
 
@@ -182,7 +193,7 @@ public final class Director {
 			boolean finished = this.current.finished(subject);
 
 			if (this.forceNext) {
-				reason = "key";
+				reason = this.forceType != null ? "asked for " + this.forceType : "key";
 			} else if (eventOver) {
 				reason = "event over";
 			} else if (this.hold) {
@@ -273,11 +284,23 @@ public final class Director {
 				continue;
 			}
 			ShotConfig shotConfig = this.config.shot(type);
-			if (shotConfig == null || !shotConfig.enabled || (type == ShotType.DUEL && subject.targetCenter == null)) {
+			if (shotConfig == null) {
 				continue;
 			}
-			double weight = shotConfig.weight * type.weight(this.context) * (this.tight ? type.tightFactor : 1.0) *
-				(type == this.boost ? 4.0 : 1.0);
+			double weight;
+			if (this.forceType != null) {
+				// the player asked for this one, it doesn't have to fit the situation or be enabled
+				if (type != this.forceType) {
+					continue;
+				}
+				weight = 1.0;
+			} else {
+				if (!shotConfig.enabled || (type == ShotType.DUEL && subject.targetCenter == null)) {
+					continue;
+				}
+				weight = shotConfig.weight * type.weight(this.context) * (this.tight ? type.tightFactor : 1.0) *
+					(type == this.boost ? 4.0 : 1.0);
+			}
 			if (weight <= 0) {
 				continue;
 			}
@@ -286,7 +309,9 @@ public final class Director {
 				consider(new Shot(type, shotConfig, side), weight, distanceScale, subject, viewDir, headInFluid);
 			}
 		}
-		if (this.config.customInRotation) {
+		if (this.forceType == ShotType.CUSTOM) {
+			consider(new Shot(ShotType.CUSTOM, this.config.preset(), 1), 1.0, 1.0, subject, viewDir, headInFluid);
+		} else if (this.config.customInRotation && this.forceType == null) {
 			// hand placed shots only have the side they were placed on
 			for (ShotConfig preset : this.config.presets) {
 				if (preset.enabled && preset.weight > 0) {
@@ -297,6 +322,16 @@ public final class Director {
 		}
 
 		Shot next = this.best;
+		if (next == null && this.forceType != null) {
+			// asked for, so shown even where it has no room, the rig keeps it out of the walls
+			ShotType type = this.forceType;
+			ShotConfig forced = this.config.shot(type);
+			next = new Shot(type, forced != null ? forced : type.defaults(),
+				type == ShotType.CUSTOM || this.random.nextBoolean() ? 1 : -1);
+			next.distanceScale = distanceScale;
+			next.start(subject, this.config);
+			reason += ", no room";
+		}
 		if (next == null) {
 			// nothing fits, stay close behind the player, the rig keeps that out of the walls
 			ShotConfig fallback = this.config.shot(ShotType.SHOULDER);
@@ -323,6 +358,7 @@ public final class Director {
 		this.shotContext = this.context;
 		this.boost = null;
 		this.forceNext = false;
+		this.forceType = null;
 		this.occludedTime = -OCCLUSION_GRACE;
 		this.lastReason = reason;
 	}

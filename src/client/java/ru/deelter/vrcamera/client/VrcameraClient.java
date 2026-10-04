@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.client;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
@@ -36,6 +37,13 @@ public class VrcameraClient implements ClientModInitializer {
 	private final KeyMapping keySummon = new KeyMapping("key.vrcamera.summon", GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
 	private final KeyMapping keyDebug = new KeyMapping("key.vrcamera.debug", GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
 
+	// set by the settings command, which can't open a screen while the chat is still closing
+	private static boolean openSettings;
+
+	public static void openSettingsNextTick() {
+		openSettings = true;
+	}
+
 	@Override
 	public void onInitializeClient() {
 		CameraController controller = CameraController.INSTANCE;
@@ -48,8 +56,15 @@ public class VrcameraClient implements ClientModInitializer {
 			KeyMappingHelper.registerKeyMapping(key);
 		}
 
+		ClientCommandRegistrationCallback.EVENT.register(
+			(dispatcher, buildContext) -> VrcamCommand.register(dispatcher));
+
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			controller.tick();
+			if (openSettings) {
+				openSettings = false;
+				mc.gui.setScreen(ConfigScreen.create(mc.gui.screen()));
+			}
 			while (this.keyMode.consumeClick()) {
 				controller.cycleMode();
 			}

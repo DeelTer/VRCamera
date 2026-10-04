@@ -128,5 +128,9 @@
 	"key.vrcamera.summon": "Камеру ко мне",
 	"vrcamera.gui.summon": "Камеру ко мне",
 	"vrcamera.message.summon": "VR-камера: перед вами, возьмите и поставьте",
-	"vrcamera.message.error": "VR-камера: внутренняя ошибка, камера выключена (см. лог)"
+	"vrcamera.message.error": "VR-камера: внутренняя ошибка, камера выключена (см. лог)",
+	"vrcamera.message.shot": "VR-камера: план %s",
+	"vrcamera.command.reloaded": "VR-камера: конфиг перечитан",
+	"vrcamera.command.nocloth": "VR-камера: для экрана настроек нужен Cloth Config",
+	"vrcamera.command.nopreset": "VR-камера: нет такого ракурса, активный %s"
 }

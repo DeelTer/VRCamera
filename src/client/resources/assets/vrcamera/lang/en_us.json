@@ -128,5 +128,9 @@
 	"key.vrcamera.summon": "Bring camera to me",
 	"vrcamera.gui.summon": "Bring camera to me",
 	"vrcamera.message.summon": "VR Camera: in front of you, grab it and place it",
-	"vrcamera.message.error": "VR Camera: internal error, camera turned off (see log)"
+	"vrcamera.message.error": "VR Camera: internal error, camera turned off (see log)",
+	"vrcamera.message.shot": "VR Camera: shot %s",
+	"vrcamera.command.reloaded": "VR Camera: config reloaded",
+	"vrcamera.command.nocloth": "VR Camera: the settings screen needs Cloth Config",
+	"vrcamera.command.nopreset": "VR Camera: no such preset, active is %s"
 }
