@@ -20,11 +20,7 @@ import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.sync.Protocol;
 
-import java.util.ArrayDeque;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * The cameras of the other players around, as their servers pass them on: drawn where they are, with the name of
@@ -53,7 +49,8 @@ public final class RemoteCameras {
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
 	private static final String CAMERA_ICON = "";
 
-	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {}
+	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {
+	}
 
 	private static final class Camera {
 		String ownerName;
@@ -78,8 +75,7 @@ public final class RemoteCameras {
 		float length = (float) Math.sqrt(heard.qx() * heard.qx() + heard.qy() * heard.qy() +
 				heard.qz() * heard.qz() + heard.qw() * heard.qw());
 		if (!Double.isFinite(heard.x()) || !Double.isFinite(heard.y()) || !Double.isFinite(heard.z()) ||
-				!Float.isFinite(length) || length < 1.0E-3F)
-		{
+				!Float.isFinite(length) || length < 1.0E-3F) {
 			return;
 		}
 		Camera camera = this.cameras.get(heard.owner());

@@ -9,11 +9,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.CameraController;
-import ru.deelter.vrcamera.client.config.CameraConfig;
-import ru.deelter.vrcamera.client.config.Marker;
-import ru.deelter.vrcamera.client.config.PhotoGesture;
-import ru.deelter.vrcamera.client.config.ShotConfig;
-import ru.deelter.vrcamera.client.config.Transition;
+import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;

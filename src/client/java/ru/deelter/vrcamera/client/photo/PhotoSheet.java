@@ -59,15 +59,21 @@ public final class PhotoSheet {
 
 	private enum State {
 		PRINTING, HELD, FALLING, LYING, PINNED,
-		/** someone else's loose sheet: shown where their client says it is, not moved here */
+		/**
+		 * someone else's loose sheet: shown where their client says it is, not moved here
+		 */
 		GHOST
 	}
 
 	public final Identifier texture;
 	public final int textureSlot;
-	/** height by width of the picture */
+	/**
+	 * height by width of the picture
+	 */
 	public final float aspect;
-	/** name of its small picture in the cache of the world, null if that could not be written */
+	/**
+	 * name of its small picture in the cache of the world, null if that could not be written
+	 */
 	public final String file;
 
 	private State state = State.PRINTING;
@@ -94,9 +100,13 @@ public final class PhotoSheet {
 	private boolean removable = true;
 	// the block it is pinned to
 	private BlockPos support = BlockPos.ZERO;
-	/** the picture as it went over the network, kept to pin the sheet again without packing it once more */
+	/**
+	 * the picture as it went over the network, kept to pin the sheet again without packing it once more
+	 */
 	public byte[] packed;
-	/** a picture from somewhere else, not a photo taken in the game. Others only see those if they ask to */
+	/**
+	 * a picture from somewhere else, not a photo taken in the game. Others only see those if they ask to
+	 */
 	public boolean custom;
 	/**
 	 * Stands in for a custom picture of another player that this one did not ask to see: black, without the
@@ -470,8 +480,7 @@ public final class PhotoSheet {
 			// Not in an unloaded chunk, there is nothing there for a moment and every sheet would come off
 			// With a server that knows the sheet, the server says when it falls: for everyone at once
 			if (this.remoteId == 0 && !this.awaitingServer && this.supportCheck <= 0 &&
-					level.isLoaded(BlockPos.containing(center())))
-			{
+					level.isLoaded(BlockPos.containing(center()))) {
 				this.supportCheck = SUPPORT_CHECK_TIME;
 				if (!supported(level)) {
 					this.state = State.FALLING;

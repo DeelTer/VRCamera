@@ -9,6 +9,7 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
@@ -29,7 +30,6 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
 import ru.deelter.vrcamera.Vrcamera;
-import net.minecraft.client.renderer.texture.AbstractTexture;
 import ru.deelter.vrcamera.client.CameraEffects;
 import ru.deelter.vrcamera.client.sync.PhotoCodec;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
@@ -39,13 +39,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -76,6 +70,7 @@ public final class PhotoAlbum {
 			BRIGHTER[i] = (int) Math.round(255.0 * Math.pow(i / 255.0, SHEET_GAMMA));
 		}
 	}
+
 	private static final double DRAW_DISTANCE = 64.0;
 	private static final double LABEL_DISTANCE = 5.0;
 	private static final float VEIL_GAP = 0.0015F;

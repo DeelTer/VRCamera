@@ -62,8 +62,7 @@ public final class CameraShutter implements HeldInteractModule {
 		CameraTracker camera = dh.cameraTracker;
 		// with another gesture the second hand takes the camera right away, the way Vivecraft does it
 		if (this.controller.config().photoGesture != PhotoGesture.OTHER_HAND || !this.controller.isEngaged() ||
-				!camera.isMoving() || camera.isQuickMode() || camera.getMovingController() == hand.ordinal())
-		{
+				!camera.isMoving() || camera.isQuickMode() || camera.getMovingController() == hand.ordinal()) {
 			return false;
 		}
 		// Hand to hand, both from the same tick. The camera itself is placed per frame, and is a step ahead of

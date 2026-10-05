@@ -2,15 +2,10 @@ package ru.deelter.vrcamera.client.sync;
 
 import ru.deelter.vrcamera.sync.Protocol;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,7 +24,8 @@ public final class PhotoCodec {
 	private static final int SENT_WIDTH = 256;
 	private static final float[] QUALITIES = {0.72F, 0.6F, 0.48F, 0.36F, 0.25F};
 
-	public record Picture(int width, int height, int[] argb) {}
+	public record Picture(int width, int height, int[] argb) {
+	}
 
 	private PhotoCodec() {
 	}

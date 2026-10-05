@@ -2,13 +2,7 @@ package ru.deelter.vrcamera.sync.plugin;
 
 import ru.deelter.vrcamera.sync.Protocol;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * The sheets that are not pinned: in someone's hand, falling, lying around. They are here so the players around
@@ -85,8 +79,7 @@ public final class LooseSheets {
 	public Sheet remove(long id) {
 		Sheet sheet = this.byId.remove(id);
 		if (sheet != null &&
-				this.imageUses.computeIfPresent(sheet.imageHash, (hash, uses) -> uses > 1 ? uses - 1 : null) == null)
-		{
+				this.imageUses.computeIfPresent(sheet.imageHash, (hash, uses) -> uses > 1 ? uses - 1 : null) == null) {
 			this.images.remove(sheet.imageHash);
 		}
 		return sheet;

@@ -5,8 +5,7 @@ import ru.deelter.vrcamera.client.sync.PhotoCodec;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -44,7 +43,8 @@ public final class CustomPictures {
 	 * @param original the file as it was downloaded, to keep
 	 * @param format   what kind of file that is, for its name
 	 */
-	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {}
+	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {
+	}
 
 	private CustomPictures() {
 	}
@@ -74,8 +74,7 @@ public final class CustomPictures {
 				int width = reader.getWidth(0);
 				int height = reader.getHeight(0);
 				if (width < 1 || height < 1 || width > MAX_SIDE || height > MAX_SIDE ||
-						(long) width * height > MAX_PIXELS)
-				{
+						(long) width * height > MAX_PIXELS) {
 					throw new IOException("picture of " + width + "x" + height + " is too large");
 				}
 				String format = reader.getFormatName().toLowerCase(Locale.ROOT);

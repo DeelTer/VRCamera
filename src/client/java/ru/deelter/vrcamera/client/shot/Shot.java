@@ -179,8 +179,7 @@ public final class Shot {
 				this.elevation *= CamMath.lerp(0.5, 1.0, progress);
 				this.distance *= CamMath.lerp(0.6, 1.0, progress);
 			}
-			case FRONT ->
-					this.distance *= CamMath.lerp(1.0, 0.72, CamMath.smoothstep(this.stillTime / 8.0));
+			case FRONT -> this.distance *= CamMath.lerp(1.0, 0.72, CamMath.smoothstep(this.stillTime / 8.0));
 			case DEATH -> {
 				this.distance *= CamMath.lerp(1.0, 1.6, CamMath.smoothstep(this.age / 8.0));
 				if (subject.targetCenter != null) {

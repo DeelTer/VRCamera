@@ -9,12 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.event.block.BlockBurnEvent;
-import org.bukkit.event.block.BlockExplodeEvent;
-import org.bukkit.event.block.BlockPistonExtendEvent;
-import org.bukkit.event.block.BlockPistonRetractEvent;
-import org.bukkit.event.block.LeavesDecayEvent;
+import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -23,11 +18,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import ru.deelter.vrcamera.sync.Protocol;
 
-import javax.imageio.IIOImage;
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReader;
-import javax.imageio.ImageWriteParam;
-import javax.imageio.ImageWriter;
+import javax.imageio.*;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
@@ -38,15 +29,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 
 /**
@@ -275,16 +258,14 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		double dz = camera.z() - at.getZ();
 		// A camera stays near its player. One far off is a lie, and could be put in front of anyone's face
 		if (!this.shareCameras || !Float.isFinite(length) || length < 1.0E-3F ||
-				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH))
-		{
+				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH)) {
 			return;
 		}
 		byte[] message = null;
 		for (UUID other : this.clients.keySet()) {
 			Player watcher = other.equals(player.getUniqueId()) ? null : Bukkit.getPlayer(other);
 			if (watcher == null || watcher.getWorld() != player.getWorld() ||
-					watcher.getLocation().distanceSquared(at) > this.cameraRange * this.cameraRange)
-			{
+					watcher.getLocation().distanceSquared(at) > this.cameraRange * this.cameraRange) {
 				continue;
 			}
 			if (message == null) {
@@ -595,7 +576,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	/**
 	 * a picture the server made itself, and its height by its width
 	 */
-	private record CleanPicture(byte[] jpeg, float aspect) {}
+	private record CleanPicture(byte[] jpeg, float aspect) {
+	}
 
 	/**
 	 * Every client near the sheet will get this picture and unpack it. So no client ever gets the bytes another
@@ -618,8 +600,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				int width = reader.getWidth(0);
 				int height = reader.getHeight(0);
 				if (!reader.getFormatName().toLowerCase().contains("jp") || width < 8 || height < 8 ||
-						width > Protocol.MAX_IMAGE_SIDE || height > Protocol.MAX_IMAGE_SIDE)
-				{
+						width > Protocol.MAX_IMAGE_SIDE || height > Protocol.MAX_IMAGE_SIDE) {
 					return null;
 				}
 				read = reader.read(0);
@@ -703,8 +684,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			return;
 		}
 		if (sheet.owner().equals(player.getUniqueId()) || this.anyoneTakesOff ||
-				player.hasPermission("vrcamera.remove.others"))
-		{
+				player.hasPermission("vrcamera.remove.others")) {
 			remove(sheet, Protocol.REMOVED_TAKEN);
 		}
 	}
@@ -756,8 +736,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				for (int z = chunkZ - chunks; z <= chunkZ + chunks; z++) {
 					for (StoredSheet sheet : this.store.inChunk(new StoredSheet.ChunkKey(world, x, z))) {
 						if (sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= send &&
-								client.known.add(sheet.id()))
-						{
+								client.known.add(sheet.id())) {
 							entered.add(new Protocol.Sheet(sheet.id(), sheet.owner(), sheet.ownerName(), sheet.x(),
 									sheet.y(), sheet.z(), sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw(),
 									sheet.aspect(), sheet.imageHash(),
@@ -773,8 +752,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 			for (LooseSheets.Sheet sheet : this.loose.all()) {
 				if (sheet.world.equals(world) && sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= send &&
-						client.knownLoose.add(sheet.id))
-				{
+						client.knownLoose.add(sheet.id)) {
 					send(player, Protocol.loose(sheet.toProtocol()));
 				}
 			}
@@ -783,8 +761,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				if (sheet == null) {
 					known.remove();
 				} else if (!sheet.owner.equals(player.getUniqueId()) && (!sheet.world.equals(world) ||
-						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget))
-				{
+						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget)) {
 					// its own are the client's to keep track of, wherever it walks
 					send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, sheet.id));
 					known.remove();
@@ -797,8 +774,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				if (sheet == null) {
 					known.remove();
 				} else if (!sheet.world().equals(world) ||
-						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget)
-				{
+						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget) {
 					left.add(sheet.id());
 					known.remove();
 				}

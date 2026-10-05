@@ -135,7 +135,8 @@ public final class PhotoStore {
 			return new ArrayList<>();
 		}
 		try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-			List<Pinned> pinned = GSON.fromJson(reader, new TypeToken<List<Pinned>>() {}.getType());
+			List<Pinned> pinned = GSON.fromJson(reader, new TypeToken<List<Pinned>>() {
+			}.getType());
 			if (pinned == null) {
 				return new ArrayList<>();
 			}
@@ -170,8 +171,7 @@ public final class PhotoStore {
 				String name = file.getFileName().toString();
 				// not what was printed since, this runs next to the game
 				if (name.endsWith(".png") && !keep.contains(name) &&
-						Files.getLastModifiedTime(file).compareTo(before) < 0)
-				{
+						Files.getLastModifiedTime(file).compareTo(before) < 0) {
 					Files.deleteIfExists(file);
 				}
 			}

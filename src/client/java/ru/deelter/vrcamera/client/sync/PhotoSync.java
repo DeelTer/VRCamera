@@ -18,15 +18,7 @@ import ru.deelter.vrcamera.sync.Protocol;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -193,8 +185,7 @@ public final class PhotoSync {
 				case Protocol.S_LOOSE -> {
 					Protocol.Loose loose = Protocol.readLoose(in);
 					if (loose.pose().isSane() && loose.aspect() >= MIN_ASPECT && loose.aspect() <= 1.0F / MIN_ASPECT &&
-							this.looseKnown.size() < MAX_LOOSE_KNOWN)
-					{
+							this.looseKnown.size() < MAX_LOOSE_KNOWN) {
 						this.looseKnown.put(loose.id(), new Protocol.Loose(loose.id(), loose.owner(), loose.ownerName(),
 								loose.pose().normalized(), loose.aspect(), loose.imageHash(), loose.custom()));
 					}
@@ -365,8 +356,7 @@ public final class PhotoSync {
 			// The server says which channels it listens on shortly after the join, not always before it. So the
 			// hello is tried a few more times. A server that got it already ignores the rest
 			if (this.hellos < HELLO_TRIES && this.ticks % HELLO_INTERVAL_TICKS == 0 &&
-					ClientPlayNetworking.canSend(SyncPayload.TYPE))
-			{
+					ClientPlayNetworking.canSend(SyncPayload.TYPE)) {
 				this.hellos++;
 				send(Protocol.clientHello());
 			}
@@ -442,8 +432,7 @@ public final class PhotoSync {
 					PhotoAlbum.INSTANCE.removeLoose(loose.id());
 				}
 			} else if (showOthers && distance < LOAD_DISTANCE * LOAD_DISTANCE &&
-					this.loaded.size() + this.ghosts.size() + this.waiting.size() < MAX_LOADED)
-			{
+					this.loaded.size() + this.ghosts.size() + this.waiting.size() < MAX_LOADED) {
 				if (loose.custom() && !showCustom) {
 					Protocol.Pose at = loose.pose();
 					PhotoSheet standIn = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
@@ -530,8 +519,7 @@ public final class PhotoSync {
 	private void show(long hash, PhotoCodec.Picture picture, byte[] image) {
 		for (Protocol.Loose loose : this.looseKnown.values()) {
 			if (loose.imageHash() == hash && !(loose.custom() && !this.shownCustom) &&
-					this.ghosts.add(loose.id()))
-			{
+					this.ghosts.add(loose.id())) {
 				Protocol.Pose at = loose.pose();
 				PhotoSheet ghost = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
 						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), pixels(picture), image);
@@ -544,8 +532,7 @@ public final class PhotoSync {
 			LocalPlayer player = Minecraft.getInstance().player;
 			boolean own = player != null && sheet.owner().equals(player.getUUID());
 			if (sheet.imageHash() != hash || this.loaded.contains(sheet.id()) ||
-					(sheet.custom() && !this.shownCustom && !own))
-			{
+					(sheet.custom() && !this.shownCustom && !own)) {
 				continue;
 			}
 			PhotoSheet shown = PhotoAlbum.INSTANCE.addRemote(sheet.id(), sheet.removable(),

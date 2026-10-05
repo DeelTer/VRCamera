@@ -27,7 +27,9 @@ public record StoredSheet(
 		return dx * dx + dy * dy + dz * dz;
 	}
 
-	public record ChunkKey(UUID world, int x, int z) {}
+	public record ChunkKey(UUID world, int x, int z) {
+	}
 
-	public record BlockKey(UUID world, int x, int y, int z) {}
+	public record BlockKey(UUID world, int x, int y, int z) {
+	}
 }

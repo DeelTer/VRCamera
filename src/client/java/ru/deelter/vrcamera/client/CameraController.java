@@ -16,8 +16,8 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.vivecraft.api.client.Tracker;
 import org.vivecraft.api.client.VRClientAPI;
-import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.api.client.data.RenderPass;
+import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
@@ -35,11 +35,10 @@ import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.Smooth;
 import ru.deelter.vrcamera.client.math.SmoothVec;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
-import ru.deelter.vrcamera.client.sync.PhotoSync;
-import ru.deelter.vrcamera.client.sync.RemoteCameras;
 import ru.deelter.vrcamera.client.rig.*;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
+import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.Locale;
 
@@ -210,8 +209,7 @@ public final class CameraController implements Tracker {
 	public HumanoidArm armToHide() {
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		if (!this.engaged || !this.config.hideHoldingArm || this.handPosition == null ||
-				dh.currentPass != RenderPass.CAMERA || !dh.cameraTracker.isMoving())
-		{
+				dh.currentPass != RenderPass.CAMERA || !dh.cameraTracker.isMoving()) {
 			return null;
 		}
 		CameraTracker camera = dh.cameraTracker;
@@ -483,8 +481,7 @@ public final class CameraController implements Tracker {
 	private void tickShutterButton() {
 		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
 		if (!this.engaged || this.config.photoGesture != PhotoGesture.SAME_HAND || !isVRRunning() ||
-				!camera.isMoving() || camera.isQuickMode())
-		{
+				!camera.isMoving() || camera.isQuickMode()) {
 			this.secondButton.reset();
 			this.shutterTicks = 0;
 			this.shutterTaken = false;

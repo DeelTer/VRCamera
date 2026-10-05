@@ -57,8 +57,7 @@ public class VRWidgetHelperMixin {
 		PhotoAlbum.INSTANCE.render(output, cameraState.pos, poseStack);
 		RemoteCameras.INSTANCE.render(output, cameraState.pos, poseStack);
 		if (ClientDataHolderVR.getInstance().currentPass == RenderPass.CAMERA &&
-				CameraController.INSTANCE.isEngaged())
-		{
+				CameraController.INSTANCE.isEngaged()) {
 			ci.cancel();
 		}
 	}
