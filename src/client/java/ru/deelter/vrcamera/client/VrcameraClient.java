@@ -30,7 +30,7 @@ import java.util.Map;
 
 public class VrcameraClient implements ClientModInitializer {
 	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
-		Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "main"));
+			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "main"));
 
 	// key codes are taken from the game, they are not the same in every Minecraft version
 	private static final int UNBOUND = InputConstants.UNKNOWN.getValue();
@@ -52,7 +52,7 @@ public class VrcameraClient implements ClientModInitializer {
 		key("debug", UNBOUND, this.controller::toggleDebug);
 
 		ClientCommandRegistrationCallback.EVENT.register(
-			(dispatcher, buildContext) -> VrcamCommand.register(dispatcher));
+				(dispatcher, buildContext) -> VrcamCommand.register(dispatcher));
 
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			this.controller.tick();
@@ -75,7 +75,7 @@ public class VrcameraClient implements ClientModInitializer {
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> this.controller.release());
 
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "debug"),
-			(graphics, deltaTracker) -> DebugOverlay.extract(graphics));
+				(graphics, deltaTracker) -> DebugOverlay.extract(graphics));
 
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
 			if (screen instanceof PauseScreen) {
@@ -105,8 +105,8 @@ public class VrcameraClient implements ClientModInitializer {
 			button.setMessage(modeLabel());
 		}).bounds(4, 4, 120, 20).build());
 		widgets.add(Button.builder(Component.translatable("vrcamera.gui.menu"),
-				button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
-			.bounds(4, 26, 120, 20).build());
+						button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
+				.bounds(4, 26, 120, 20).build());
 	}
 
 	private Component modeLabel() {

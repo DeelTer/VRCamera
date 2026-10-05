@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.client.rig;
 
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ClipContext;
@@ -32,12 +33,12 @@ public final class WorldProbe {
 		double free = length;
 		for (int i = 0; i < 8; i++) {
 			Vec3 offset = new Vec3(
-				((i & 1) * 2 - 1) * radius,
-				((i >> 1 & 1) * 2 - 1) * radius,
-				((i >> 2 & 1) * 2 - 1) * radius);
+					((i & 1) * 2 - 1) * radius,
+					((i >> 1 & 1) * 2 - 1) * radius,
+					((i >> 2 & 1) * 2 - 1) * radius);
 			Vec3 start = from.add(offset);
 			BlockHitResult hit = subject.player.level().clip(new ClipContext(start, to.add(offset),
-				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
+					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 			if (hit.getType() != HitResult.Type.MISS) {
 				free = Math.min(free, hit.getLocation().distanceTo(start));
 			}
@@ -61,7 +62,7 @@ public final class WorldProbe {
 	public static boolean blinding(Subject subject, Vec3 pos) {
 		BlockPos blockPos = BlockPos.containing(pos);
 		return subject.player.level().getFluidState(blockPos).getType().is(FluidTags.LAVA) ||
-			subject.player.level().getBlockState(blockPos).getBlock() == Blocks.POWDER_SNOW;
+				subject.player.level().getBlockState(blockPos).getBlock() == Blocks.POWDER_SNOW;
 	}
 
 	/**
@@ -70,7 +71,7 @@ public final class WorldProbe {
 	 */
 	public static double groundDistance(Subject subject, double max) {
 		BlockHitResult hit = subject.player.level().clip(new ClipContext(subject.feet,
-			subject.feet.add(0, -max, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, subject.player));
+				subject.feet.add(0, -max, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, subject.player));
 		return hit.getType() == HitResult.Type.MISS ? max : subject.feet.y - hit.getLocation().y;
 	}
 
@@ -84,8 +85,8 @@ public final class WorldProbe {
 	public static boolean spotFree(Subject subject, Vec3 pos, CameraConfig config) {
 		double radius = radius(subject, config);
 		return subject.player.level().noCollision(new AABB(
-			pos.x - radius, pos.y - radius, pos.z - radius,
-			pos.x + radius, pos.y + radius, pos.z + radius));
+				pos.x - radius, pos.y - radius, pos.z - radius,
+				pos.x + radius, pos.y + radius, pos.z + radius));
 	}
 
 	/**
@@ -93,19 +94,32 @@ public final class WorldProbe {
 	 */
 	public static boolean thin(Subject subject, Vec3 from, Vec3 to) {
 		BlockHitResult front = subject.player.level().clip(new ClipContext(from, to,
-			ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
+				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 		if (front.getType() == HitResult.Type.MISS) {
 			// only the edges of the camera touch something
 			return true;
 		}
 		BlockHitResult back = subject.player.level().clip(new ClipContext(to, from,
-			ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
+				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 		if (back.getType() == HitResult.Type.MISS) {
 			return false;
 		}
 		double thickness = from.distanceTo(to) - front.getLocation().distanceTo(from) -
-			back.getLocation().distanceTo(to);
+				back.getLocation().distanceTo(to);
 		return thickness <= 1.05;
+	}
+
+	/**
+	 * @return how far something small can get from {@code from} towards {@code to}, stops short of the first block
+	 */
+	public static Vec3 reach(LocalPlayer player, Vec3 from, Vec3 to) {
+		BlockHitResult hit = player.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, player));
+		if (hit.getType() == HitResult.Type.MISS) {
+			return to;
+		}
+		double free = Math.max(0.0, hit.getLocation().distanceTo(from) - 0.3);
+		return from.add(to.subtract(from).normalize().scale(free));
 	}
 
 	/**
@@ -113,7 +127,7 @@ public final class WorldProbe {
 	 */
 	public static boolean visible(Subject subject, Vec3 from, Vec3 to) {
 		return subject.player.level().clip(new ClipContext(from, to, ClipContext.Block.VISUAL,
-			ClipContext.Fluid.NONE, subject.player)).getType() == HitResult.Type.MISS;
+				ClipContext.Fluid.NONE, subject.player)).getType() == HitResult.Type.MISS;
 	}
 
 	public static boolean inFluid(Subject subject, Vec3 pos) {
@@ -131,9 +145,9 @@ public final class WorldProbe {
 			Vec3 dir = i == 8 ? new Vec3(0, 1, 0) : CamMath.orbit(i * Math.PI / 4.0, 0.15);
 			Vec3 end = subject.center.add(dir.scale(range));
 			BlockHitResult hit = subject.player.level().clip(new ClipContext(subject.center, end,
-				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
+					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 			sum += hit.getType() == HitResult.Type.MISS ? 1.0 :
-				hit.getLocation().distanceTo(subject.center) / range;
+					hit.getLocation().distanceTo(subject.center) / range;
 		}
 		return sum / 9.0;
 	}

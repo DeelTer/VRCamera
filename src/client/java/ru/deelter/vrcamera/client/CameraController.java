@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
@@ -10,18 +11,25 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.vivecraft.api.client.Tracker;
+import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
+import org.vivecraft.client_vr.gameplay.VRPlayer;
+import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
+import org.vivecraft.common.utils.MathUtils;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.Marker;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
+import ru.deelter.vrcamera.client.math.SmoothVec;
+import ru.deelter.vrcamera.client.rig.HandThrow;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
+import ru.deelter.vrcamera.client.rig.WorldProbe;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
@@ -34,11 +42,17 @@ public final class CameraController implements Tracker {
 	public static final CameraController INSTANCE = new CameraController();
 
 	public enum Mode {
-		/** the camera is left alone */
+		/**
+		 * the camera is left alone
+		 */
 		OFF,
-		/** shots are picked and switched automatically */
+		/**
+		 * shots are picked and switched automatically
+		 */
 		DIRECTOR,
-		/** the camera stays where it was placed by hand, relative to the player */
+		/**
+		 * the camera stays where it was placed by hand, relative to the player
+		 */
 		FOLLOW;
 
 		public Component label() {
@@ -47,6 +61,16 @@ public final class CameraController implements Tracker {
 	}
 
 	private static final int MARKER_COLOR = 0xFFFF2020;
+	// the arrow to the camera: how far in front of the face it floats, how far from the middle of the view, its size.
+	// In blocks, about meters for the player
+	private static final double INDICATOR_DISTANCE = 0.6;
+	private static final double INDICATOR_RING = 0.15;
+	private static final double INDICATOR_LENGTH = 0.06;
+	private static final float INDICATOR_WIDTH = 4.0F;
+	// no arrow while the camera is this close to the middle of the view
+	private static final double INDICATOR_HIDE_ANGLE = Math.toRadians(25);
+	// seconds a thrown camera of Vivecraft needs to get where it was thrown
+	private static final double GLIDE_TIME = 0.3;
 	// seconds a summoned camera waits to be picked up
 	private static final double PARK_SECONDS = 20.0;
 	// a gap between frames this long means VR was paused, not a slow frame
@@ -67,11 +91,18 @@ public final class CameraController implements Tracker {
 	private boolean shownByUs;
 
 	private boolean wasGrabbed;
+	private final HandThrow handThrow = new HandThrow();
+	// for throwing the camera of Vivecraft while this mod is off: where it is flying to, null when it is not flying
+	private Vec3 glideTarget;
+	private boolean plainHeld;
+	private final SmoothVec glide = new SmoothVec();
+	private long glideNanos;
 	// seconds the camera still waits in front of the player, to be picked up by hand
 	private double parkedTime;
 	private long lastNanos;
 
-	private CameraController() {}
+	private CameraController() {
+	}
 
 	public Mode mode() {
 		return this.mode;
@@ -93,24 +124,59 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
-	 * Shows where the camera is, called while Vivecraft collects what to render for one of the eyes.
-	 *
-	 * @param pos        camera position
-	 * @param worldScale Vivecraft world scale, to keep the size the same for the player
+	 * Draws what helps the player find the camera, called while Vivecraft collects what to render for one of the eyes.
 	 */
-	public void drawMarker(Vec3 pos, float worldScale) {
-		if (!this.engaged || this.config.marker != Marker.DOT) {
-			return;
-		}
+	public void drawHeadsetAids(VRData vr) {
+		Vec3 camera = vr.getEye(RenderPass.CAMERA).getPosition();
 		try {
-			Gizmos.point(pos, MARKER_COLOR, (float) this.config.markerSize);
-			if (this.config.markerLabel) {
-				Gizmos.billboardText(markerText(), pos.add(0, 0.07 * worldScale, 0),
-					TextGizmo.Style.forColorAndCentered(MARKER_COLOR).withScale(0.1F * worldScale));
+			if (this.config.marker == Marker.DOT) {
+				drawMarker(camera, vr.worldScale);
+			}
+			Shot shot = shot();
+			// in first person the camera is right in front of the face
+			if (this.config.indicator && (shot == null || shot.type != ShotType.POV)) {
+				drawIndicator(camera, vr);
 			}
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
 		}
+	}
+
+	private void drawMarker(Vec3 camera, float worldScale) {
+		Gizmos.point(camera, MARKER_COLOR, (float) this.config.markerSize);
+		if (this.config.markerLabel) {
+			Gizmos.billboardText(markerText(), camera.add(0, 0.07 * worldScale, 0),
+					TextGizmo.Style.forColorAndCentered(MARKER_COLOR).withScale(0.1F * worldScale));
+		}
+	}
+
+	/**
+	 * An arrow floating in front of the face, on a ring around where the player looks, pointing to the side the
+	 * camera is on. Not shown while the camera is in view anyway.
+	 */
+	private void drawIndicator(Vec3 camera, VRData vr) {
+		Vec3 head = vr.hmd.getPosition();
+		Vec3 forward = new Vec3(vr.hmd.getDirection());
+		Vec3 up = new Vec3(vr.hmd.getCustomVector(MathUtils.UP));
+		Vec3 right = forward.cross(up);
+
+		// where the camera is, as seen by the player
+		Vec3 toCamera = camera.subtract(head);
+		double x = toCamera.dot(right);
+		double y = toCamera.dot(up);
+		double z = toCamera.dot(forward);
+		double sideways = Math.sqrt(x * x + y * y);
+		if (Math.atan2(sideways, z) < INDICATOR_HIDE_ANGLE) {
+			return;
+		}
+		// straight behind has no side, call that right
+		Vec3 side = sideways < 1.0E-3 ? right : right.scale(x / sideways).add(up.scale(y / sideways));
+
+		float scale = vr.worldScale;
+		Vec3 ring = head.add(forward.scale(INDICATOR_DISTANCE * scale));
+		Vec3 base = ring.add(side.scale(INDICATOR_RING * scale));
+		Vec3 tip = ring.add(side.scale((INDICATOR_RING + INDICATOR_LENGTH) * scale));
+		Gizmos.arrow(base, tip, MARKER_COLOR, INDICATOR_WIDTH).setAlwaysOnTop();
 	}
 
 	private String markerText() {
@@ -317,6 +383,9 @@ public final class CameraController implements Tracker {
 		this.subject.reset();
 		this.wasGrabbed = false;
 		this.parkedTime = 0;
+		this.handThrow.clear();
+		this.glideTarget = null;
+		this.plainHeld = false;
 		if (mode == Mode.OFF) {
 			release();
 		}
@@ -369,7 +438,7 @@ public final class CameraController implements Tracker {
 	public void toggleHold() {
 		if (this.mode == Mode.DIRECTOR) {
 			notify(Component.translatable(
-				this.director.toggleHold() ? "vrcamera.message.hold" : "vrcamera.message.release"));
+					this.director.toggleHold() ? "vrcamera.message.hold" : "vrcamera.message.release"));
 		}
 	}
 
@@ -411,6 +480,67 @@ public final class CameraController implements Tracker {
 	@Override
 	public ProcessType processType() {
 		return ProcessType.PER_FRAME;
+	}
+
+	@Override
+	public void idleProcess(LocalPlayer player) {
+		if (this.mode == Mode.OFF && player != null && isVRRunning()) {
+			throwPlainCamera(player);
+		}
+	}
+
+	/**
+	 * Lets the camera of Vivecraft be thrown as well, while this mod does nothing else with it. It flies to where
+	 * it was thrown and stays there.
+	 */
+	private void throwPlainCamera(LocalPlayer player) {
+		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
+		long now = System.nanoTime();
+		double dt = Math.min((now - this.glideNanos) / 1.0E9, 0.1);
+		this.glideNanos = now;
+
+		if (!camera.isVisible() || camera.isQuickMode()) {
+			this.plainHeld = false;
+			this.glideTarget = null;
+			this.handThrow.clear();
+			return;
+		}
+		if (camera.isMoving()) {
+			this.plainHeld = true;
+			this.glideTarget = null;
+			this.handThrow.sample(camera.getPosition());
+			return;
+		}
+		if (this.plainHeld) {
+			this.plainHeld = false;
+			Vec3 motion = player.getDeltaMovement();
+			// per tick to per second. Without the vertical part, that is gravity even while standing
+			Vec3 thrown = this.handThrow.release(new Vec3(motion.x * 20.0, 0, motion.z * 20.0),
+					this.config.throwPower);
+			if (thrown.lengthSqr() > 0) {
+				Vec3 from = camera.getPosition();
+				this.glideTarget = WorldProbe.reach(player, from, from.add(thrown));
+				this.glide.reset(from);
+			}
+		}
+		if (this.glideTarget != null) {
+			Vec3 pos = this.glide.update(this.glideTarget, GLIDE_TIME, dt);
+			camera.setPosition(pos);
+			if (pos.distanceTo(this.glideTarget) < 0.02) {
+				this.glideTarget = null;
+			}
+		}
+	}
+
+	/**
+	 * @return where in the world the inventory or chest menu is that the player has open, null if there is none
+	 */
+	private static Vec3 openMenuPosition(VRData vr) {
+		if (GuiHandler.GUI_POS_ROOM == null ||
+				!(Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<?>)) {
+			return null;
+		}
+		return VRPlayer.roomToWorldPos(GuiHandler.GUI_POS_ROOM, vr);
 	}
 
 	@Override
@@ -476,11 +606,13 @@ public final class CameraController implements Tracker {
 		VRData vr = dh.vrPlayer.vrdata_world_render;
 		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		this.subject.update(player, vr, partialTick, dt, realDt, this.config);
+		this.subject.guiCenter = openMenuPosition(vr);
 
 		if (camera.isMoving()) {
 			// the player holds the camera in their hand
 			this.wasGrabbed = true;
 			this.parkedTime = 0;
+			this.handThrow.sample(camera.getPosition());
 			return;
 		}
 		if (this.wasGrabbed) {
@@ -522,10 +654,18 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
-	 * the player let go of the camera, keep it where they put it, relative to them
+	 * the player let go of the camera, keep it where they put it, or threw it to, relative to them
 	 */
 	private void placedByHand(Vec3 cameraPos) {
-		Vec3 offset = cameraPos.subtract(this.subject.center);
+		Vec3 landing = cameraPos;
+		Vec3 thrown = this.handThrow.release(this.subject.velocity, this.config.throwPower);
+		boolean wasThrown = thrown.lengthSqr() > 0;
+		if (wasThrown) {
+			Vec3 target = cameraPos.add(thrown);
+			landing = cameraPos.lerp(target, WorldProbe.armFraction(this.subject, cameraPos, target, this.config));
+		}
+
+		Vec3 offset = landing.subtract(this.subject.center);
 		ShotConfig preset = this.config.preset();
 		preset.azimuth = Math.toDegrees(CamMath.wrap(CamMath.azimuthOf(offset) - this.subject.facing));
 		preset.elevation = Math.toDegrees(CamMath.elevationOf(offset));
@@ -534,7 +674,12 @@ public final class CameraController implements Tracker {
 		this.config.save();
 
 		Shot shot = customShot();
+		// start where the hand let go
 		this.rig.adopt(cameraPos, shot, this.subject);
+		if (wasThrown) {
+			// and fly from there to where it was thrown
+			this.rig.blend();
+		}
 		if (this.mode == Mode.FOLLOW) {
 			this.followShot = shot;
 		} else {

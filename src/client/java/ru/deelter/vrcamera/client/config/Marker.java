@@ -8,7 +8,9 @@ import com.google.gson.annotations.SerializedName;
 public enum Marker {
 	@SerializedName("dot")
 	DOT,
-	/** the camera model of Vivecraft, with its screen */
+	/**
+	 * the camera model of Vivecraft, with its screen
+	 */
 	@SerializedName("model")
 	MODEL,
 	@SerializedName("none")

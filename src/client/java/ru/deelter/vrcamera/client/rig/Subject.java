@@ -15,25 +15,48 @@ public final class Subject {
 	public LocalPlayer player;
 	public Vec3 feet = Vec3.ZERO;
 	public Vec3 head = Vec3.ZERO;
-	/** direction the headset looks in */
+	/**
+	 * direction the headset looks in
+	 */
 	public Vec3 headDir = new Vec3(0, 0, 1);
-	/** point the camera aims at and orbits around */
+	/**
+	 * point the camera aims at and orbits around
+	 */
 	public Vec3 center = Vec3.ZERO;
-	/** middle between both hands */
+	/**
+	 * middle between both hands
+	 */
 	public Vec3 hands = Vec3.ZERO;
-	/** size of the player, 1 is a regular player. All camera distances are multiplied by this */
+	/**
+	 * size of the player, 1 is a regular player. All camera distances are multiplied by this
+	 */
 	public double unit = 1.0;
-	/** smoothed body yaw in radians */
+	/**
+	 * smoothed body yaw in radians
+	 */
 	public double facing;
-	/** smoothed velocity in blocks per second */
+	/**
+	 * smoothed velocity in blocks per second
+	 */
 	public Vec3 velocity = Vec3.ZERO;
 	public double speed;
-	/** the player moved further than they could have, cameras need to jump */
+	/**
+	 * the player moved further than they could have, cameras need to jump
+	 */
 	public boolean teleported;
 
-	/** what the player fights, if anything */
+	/**
+	 * middle of the inventory or chest menu the player has open, null without one
+	 */
+	public Vec3 guiCenter;
+
+	/**
+	 * what the player fights, if anything
+	 */
 	public Entity target;
-	/** middle of the {@link #target}, null without one */
+	/**
+	 * middle of the {@link #target}, null without one
+	 */
 	public Vec3 targetCenter;
 
 	private final SmoothVec velocitySmooth = new SmoothVec();
@@ -44,6 +67,7 @@ public final class Subject {
 		this.first = true;
 		this.target = null;
 		this.targetCenter = null;
+		this.guiCenter = null;
 	}
 
 	/**
@@ -51,8 +75,7 @@ public final class Subject {
 	 * @param realDt actual seconds since the last update
 	 */
 	public void update(
-		LocalPlayer player, VRData vr, float partialTick, double dt, double realDt, CameraConfig config)
-	{
+			LocalPlayer player, VRData vr, float partialTick, double dt, double realDt, CameraConfig config) {
 		this.player = player;
 		Vec3 newFeet = player.getPosition(partialTick);
 		// includes the scale attribute
@@ -90,7 +113,7 @@ public final class Subject {
 			this.target = null;
 		}
 		this.targetCenter = this.target == null ? null :
-			this.target.getPosition(partialTick).add(0, this.target.getBbHeight() * 0.5, 0);
+				this.target.getPosition(partialTick).add(0, this.target.getBbHeight() * 0.5, 0);
 		this.first = false;
 	}
 }

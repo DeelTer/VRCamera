@@ -134,6 +134,12 @@
 	"vrcamera.command.nocloth": "Câmera VR: a tela de configurações precisa do Cloth Config",
 	"vrcamera.command.nopreset": "Câmera VR: essa predefinição não existe, ativa: %s",
 	"vrcamera.gui.menu": "Câmera VR...",
-	"vrcamera.shot.bodycam": "Câmera corporal",
-	"vrcamera.shot.bodycam.tooltip": "No peito, olhando para a frente, com as mãos no quadro. Usada onde não há espaço para uma câmera em volta do jogador."
+	"vrcamera.shot.pov": "Primeira pessoa",
+	"vrcamera.shot.pov.tooltip": "Bem na frente do rosto, olhando para onde o jogador olha. Usada onde não há espaço para uma câmera em volta do jogador. A distância é o quanto à frente dos olhos; os ângulos não são usados.",
+	"vrcamera.shot.menu": "Menu",
+	"vrcamera.shot.menu.tooltip": "De perto, por cima do ombro, em direção a um inventário ou baú aberto. Só enquanto estiver aberto. O ângulo ao redor é medido a partir do menu.",
+	"vrcamera.option.indicator": "Seta para a câmera",
+	"vrcamera.option.indicator.tooltip": "Mostra no headset uma seta apontando para a câmera enquanto ela está fora de vista. Nunca aparece na gravação.",
+	"vrcamera.option.throwPower": "Força do arremesso",
+	"vrcamera.option.throwPower.tooltip": "A câmera pode ser pega e arremessada; um arremesso mais rápido vai mais longe. Isto define o quanto. 0 desativa o arremesso."
 }

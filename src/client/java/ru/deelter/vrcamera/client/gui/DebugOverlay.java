@@ -56,14 +56,14 @@ public final class DebugOverlay {
 		if (shot != null) {
 			// shots without an end have no duration worth showing
 			String time = shot.duration == Double.MAX_VALUE ? format("%.1fs", shot.age) :
-				format("%.1f/%.1fs", shot.age, shot.duration);
+					format("%.1f/%.1fs", shot.age, shot.duration);
 			lines.add("shot: " + shot.type + (shot.side < 0 ? " left " : " right ") + time +
-				(director.isHolding() ? " HOLD" : ""));
+					(director.isHolding() ? " HOLD" : ""));
 		}
 		if (mode == Mode.DIRECTOR) {
 			lines.add("why: " + director.lastReason());
 			lines.add("context: " + director.context() + (director.isTight() ? " tight" : "") +
-				(director.event() != Director.Event.NONE ? " event " + director.event() : ""));
+					(director.event() != Director.Event.NONE ? " event " + director.event() : ""));
 			lines.add(format("blocked: %.1fs", Math.max(0, director.occludedTime())));
 		} else {
 			lines.add("preset: " + controller.presetLabel());
@@ -72,7 +72,7 @@ public final class DebugOverlay {
 		Rig rig = controller.rig();
 		Subject subject = controller.subject();
 		lines.add(format("arm: %.0f%%%s  fov: %.0f", rig.arm() * 100.0, rig.lookingPast() ? " (looking past)" : "",
-			rig.fov()));
+				rig.fov()));
 		lines.add(format("speed: %.1f  scale: %.2f", subject.speed, subject.unit));
 		if (subject.target != null) {
 			lines.add("target: " + subject.target.getName().getString());

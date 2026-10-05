@@ -134,6 +134,12 @@
 	"vrcamera.command.nocloth": "VR-Kamera: für die Einstellungen wird Cloth Config benötigt",
 	"vrcamera.command.nopreset": "VR-Kamera: diese Einstellung gibt es nicht, aktiv ist %s",
 	"vrcamera.gui.menu": "VR-Kamera...",
-	"vrcamera.shot.bodycam": "Körperkamera",
-	"vrcamera.shot.bodycam.tooltip": "Auf der Brust, blickt nach vorn, die Hände im Bild. Wird benutzt, wo um den Spieler kein Platz für eine Kamera ist."
+	"vrcamera.shot.pov": "Ich-Perspektive",
+	"vrcamera.shot.pov.tooltip": "Direkt vor dem Gesicht, blickt dorthin, wohin der Spieler schaut. Wird benutzt, wo um den Spieler kein Platz für eine Kamera ist. Die Entfernung gibt an, wie weit vor den Augen; die Winkel werden nicht benutzt.",
+	"vrcamera.shot.menu": "Menü",
+	"vrcamera.shot.menu.tooltip": "Nah über die Schulter auf ein offenes Inventar oder eine Truhe. Nur solange eines offen ist. Der Winkel ringsum wird vom Menü aus gemessen.",
+	"vrcamera.option.indicator": "Pfeil zur Kamera",
+	"vrcamera.option.indicator.tooltip": "Zeigt im Headset einen Pfeil in Richtung der Kamera, solange sie nicht zu sehen ist. In der Aufnahme nie zu sehen.",
+	"vrcamera.option.throwPower": "Wurfstärke",
+	"vrcamera.option.throwPower.tooltip": "Die Kamera lässt sich greifen und werfen, ein schnellerer Wurf fliegt weiter. Das hier legt fest, wie weit. 0 schaltet das Werfen aus."
 }

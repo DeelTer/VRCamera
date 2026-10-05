@@ -134,6 +134,12 @@
 	"vrcamera.command.nocloth": "VR Camera: the settings screen needs Cloth Config",
 	"vrcamera.command.nopreset": "VR Camera: no such preset, active is %s",
 	"vrcamera.gui.menu": "VR Camera...",
-	"vrcamera.shot.bodycam": "Body camera",
-	"vrcamera.shot.bodycam.tooltip": "On the chest, looking ahead, with the hands in view. Used where there is no room for a camera around the player."
+	"vrcamera.shot.pov": "First person",
+	"vrcamera.shot.pov.tooltip": "Right in front of the face, looking where the player looks. Used where there is no room for a camera around the player. Distance is how far in front of the eyes, the angles are not used.",
+	"vrcamera.shot.menu": "Menu",
+	"vrcamera.shot.menu.tooltip": "Close over the shoulder onto an open inventory or chest. Only shown while one is open. The angle around is measured from the menu.",
+	"vrcamera.option.indicator": "Arrow to the camera",
+	"vrcamera.option.indicator.tooltip": "Shows an arrow in the headset that points to where the camera is, while it is out of sight. Never visible in the recording.",
+	"vrcamera.option.throwPower": "Throw strength",
+	"vrcamera.option.throwPower.tooltip": "The camera can be grabbed and thrown, a faster throw goes further. This sets how far. 0 turns throwing off."
 }

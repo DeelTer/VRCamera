@@ -134,6 +134,12 @@
 	"vrcamera.command.nocloth": "Caméra VR : l'écran des paramètres nécessite Cloth Config",
 	"vrcamera.command.nopreset": "Caméra VR : ce préréglage n'existe pas, actif : %s",
 	"vrcamera.gui.menu": "Caméra VR...",
-	"vrcamera.shot.bodycam": "Caméra-piéton",
-	"vrcamera.shot.bodycam.tooltip": "Sur la poitrine, regarde devant, les mains dans le cadre. Utilisée là où il n'y a pas de place pour une caméra autour du joueur."
+	"vrcamera.shot.pov": "Première personne",
+	"vrcamera.shot.pov.tooltip": "Juste devant le visage, regarde là où regarde le joueur. Utilisée là où il n'y a pas de place pour une caméra autour du joueur. La distance indique à quel point devant les yeux, les angles ne servent pas.",
+	"vrcamera.shot.menu": "Menu",
+	"vrcamera.shot.menu.tooltip": "De près, par-dessus l'épaule, vers un inventaire ou un coffre ouvert. Uniquement tant qu'il est ouvert. L'angle autour est mesuré à partir du menu.",
+	"vrcamera.option.indicator": "Flèche vers la caméra",
+	"vrcamera.option.indicator.tooltip": "Affiche dans le casque une flèche vers la caméra tant qu'elle est hors de vue. Jamais visible dans l'enregistrement.",
+	"vrcamera.option.throwPower": "Force de lancer",
+	"vrcamera.option.throwPower.tooltip": "La caméra peut être attrapée et lancée, un lancer plus rapide va plus loin. Ceci règle la distance. 0 désactive le lancer."
 }

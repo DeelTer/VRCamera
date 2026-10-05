@@ -133,9 +133,9 @@ public final class Rig {
 		} else {
 			// smoothing the orbit instead of the position makes the camera swing around the player, and not through them
 			wanted = shot.position(center, subject,
-				this.azimuth.update(shot.azimuth, lag, dt),
-				this.elevation.update(shot.elevation, lag, dt),
-				this.distance.update(shot.distance, lag, dt));
+					this.azimuth.update(shot.azimuth, lag, dt),
+					this.elevation.update(shot.elevation, lag, dt),
+					this.distance.update(shot.distance, lag, dt));
 		}
 
 		// pull the camera in front of anything between it and the player, that is instant, moving back out is slow.
@@ -146,8 +146,7 @@ public final class Rig {
 			// a tree or post passing through the view is over in a moment, jumping in front of it would look worse.
 			// only when the camera itself is in the open, it never stays inside a block
 			if (this.softArmed && this.softTime < config.softOcclusionTime &&
-				WorldProbe.spotFree(subject, current, config) && WorldProbe.thin(subject, subject.center, current))
-			{
+					WorldProbe.spotFree(subject, current, config) && WorldProbe.thin(subject, subject.center, current)) {
 				this.softTime += dt;
 			} else {
 				this.arm = free;
@@ -172,7 +171,7 @@ public final class Rig {
 			aim = aim.add(lead);
 		}
 		Vec3 target = this.look.update(aim, config.lookLag, dt)
-			.add(subject.velocity.scale(config.lookLag));
+				.add(subject.velocity.scale(config.lookLag));
 		CamMath.lookRotation(target.subtract(this.position), this.rotation);
 
 		this.fov.update(shot.fov, 0.5, dt);

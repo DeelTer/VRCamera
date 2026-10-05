@@ -54,7 +54,7 @@ public class CameraMenuScreen extends Screen {
 		add(Component.translatable("vrcamera.gui.debug"), button -> this.controller.toggleDebug());
 		if (ConfigScreen.isAvailable()) {
 			add(Component.translatable("vrcamera.gui.settings"),
-				button -> this.minecraft.gui.setScreen(ConfigScreen.create(this)));
+					button -> this.minecraft.gui.setScreen(ConfigScreen.create(this)));
 		}
 		add(Component.translatable("gui.done"), button -> onClose());
 	}
@@ -69,7 +69,7 @@ public class CameraMenuScreen extends Screen {
 		int x = this.width / 2 - BUTTON_WIDTH - GAP / 2 + column * (BUTTON_WIDTH + GAP);
 		int y = Math.max(8, this.height / 2 - 70) + row * (BUTTON_HEIGHT + GAP);
 		return addRenderableWidget(
-			Button.builder(label, onPress).bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
+				Button.builder(label, onPress).bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 	}
 
 	private void refresh() {

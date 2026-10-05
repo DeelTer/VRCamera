@@ -134,6 +134,12 @@
 	"vrcamera.command.nocloth": "Cámara VR: la pantalla de ajustes necesita Cloth Config",
 	"vrcamera.command.nopreset": "Cámara VR: no existe ese plano, activo: %s",
 	"vrcamera.gui.menu": "Cámara VR...",
-	"vrcamera.shot.bodycam": "Cámara corporal",
-	"vrcamera.shot.bodycam.tooltip": "En el pecho, mirando al frente, con las manos en el encuadre. Se usa donde no hay sitio para una cámara alrededor del jugador."
+	"vrcamera.shot.pov": "Primera persona",
+	"vrcamera.shot.pov.tooltip": "Justo delante de la cara, mirando hacia donde mira el jugador. Se usa donde no hay sitio para una cámara alrededor del jugador. La distancia indica cuánto por delante de los ojos; los ángulos no se usan.",
+	"vrcamera.shot.menu": "Menú",
+	"vrcamera.shot.menu.tooltip": "De cerca sobre el hombro hacia un inventario o cofre abierto. Solo mientras está abierto. El ángulo alrededor se mide desde el menú.",
+	"vrcamera.option.indicator": "Flecha hacia la cámara",
+	"vrcamera.option.indicator.tooltip": "Muestra en el visor una flecha hacia la cámara mientras no está a la vista. Nunca aparece en la grabación.",
+	"vrcamera.option.throwPower": "Fuerza de lanzamiento",
+	"vrcamera.option.throwPower.tooltip": "La cámara se puede agarrar y lanzar; un lanzamiento más rápido llega más lejos. Esto ajusta cuánto. 0 desactiva el lanzamiento."
 }

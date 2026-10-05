@@ -26,7 +26,7 @@ public final class VrcamCommand {
 		CameraController controller = CameraController.INSTANCE;
 
 		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
-			.executes(context -> status(context.getSource(), controller));
+				.executes(context -> status(context.getSource(), controller));
 
 		for (CameraController.Mode mode : CameraController.Mode.values()) {
 			root.then(ClientCommands.literal(name(mode)).executes(context -> {
@@ -85,27 +85,27 @@ public final class VrcamCommand {
 		root.then(shot);
 
 		root.then(ClientCommands.literal("preset")
-			.then(ClientCommands.literal("next").executes(context -> {
-				controller.nextPreset();
-				return DONE;
-			}))
-			.then(ClientCommands.literal("new").executes(context -> {
-				controller.newPreset();
-				return DONE;
-			}))
-			.then(ClientCommands.literal("delete").executes(context -> {
-				controller.deletePreset();
-				return DONE;
-			}))
-			.then(ClientCommands.argument("number", IntegerArgumentType.integer(1)).executes(context -> {
-				int number = IntegerArgumentType.getInteger(context, "number");
-				if (!controller.selectPreset(number - 1)) {
-					context.getSource().sendError(
-						Component.translatable("vrcamera.command.nopreset", controller.presetLabel()));
-					return 0;
-				}
-				return DONE;
-			})));
+				.then(ClientCommands.literal("next").executes(context -> {
+					controller.nextPreset();
+					return DONE;
+				}))
+				.then(ClientCommands.literal("new").executes(context -> {
+					controller.newPreset();
+					return DONE;
+				}))
+				.then(ClientCommands.literal("delete").executes(context -> {
+					controller.deletePreset();
+					return DONE;
+				}))
+				.then(ClientCommands.argument("number", IntegerArgumentType.integer(1)).executes(context -> {
+					int number = IntegerArgumentType.getInteger(context, "number");
+					if (!controller.selectPreset(number - 1)) {
+						context.getSource().sendError(
+								Component.translatable("vrcamera.command.nopreset", controller.presetLabel()));
+						return 0;
+					}
+					return DONE;
+				})));
 
 		dispatcher.register(root);
 	}

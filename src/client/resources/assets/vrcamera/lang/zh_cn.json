@@ -134,6 +134,12 @@
 	"vrcamera.command.nocloth": "VR 摄像机：设置界面需要 Cloth Config",
 	"vrcamera.command.nopreset": "VR 摄像机：没有这个机位，当前为 %s",
 	"vrcamera.gui.menu": "VR 摄像机...",
-	"vrcamera.shot.bodycam": "胸前摄像机",
-	"vrcamera.shot.bodycam.tooltip": "位于胸前，向前拍摄，双手入镜。用于玩家周围没有空间放置摄像机的地方。"
+	"vrcamera.shot.pov": "第一人称",
+	"vrcamera.shot.pov.tooltip": "位于脸部正前方，朝玩家注视的方向拍摄。用于玩家周围没有空间放置摄像机的地方。距离表示在眼睛前方多远，角度不使用。",
+	"vrcamera.shot.menu": "菜单",
+	"vrcamera.shot.menu.tooltip": "越过肩膀近距离拍摄打开的物品栏或箱子。仅在其打开时出现。环绕角度以菜单方向为基准。",
+	"vrcamera.option.indicator": "摄像机方向箭头",
+	"vrcamera.option.indicator.tooltip": "摄像机不在视野内时，在头显中显示指向它的箭头。不会出现在录像中。",
+	"vrcamera.option.throwPower": "投掷力度",
+	"vrcamera.option.throwPower.tooltip": "可以抓住摄像机并投掷，挥得越快飞得越远。此项设置飞多远。0 为关闭投掷。"
 }

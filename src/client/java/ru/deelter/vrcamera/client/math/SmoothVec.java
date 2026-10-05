@@ -19,6 +19,6 @@ public class SmoothVec {
 
 	public Vec3 update(Vec3 target, double time, double dt) {
 		return new Vec3(this.x.update(target.x, time, dt), this.y.update(target.y, time, dt),
-			this.z.update(target.z, time, dt));
+				this.z.update(target.z, time, dt));
 	}
 }
