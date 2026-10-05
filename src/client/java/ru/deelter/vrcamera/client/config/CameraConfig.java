@@ -91,6 +91,11 @@ public class CameraConfig {
 	 */
 	public boolean showOthersPhotos = true;
 	/**
+	 * Show the pictures other players loaded from the internet instead of taking them in the game. Off, a black
+	 * sheet stands in for them and the picture is not fetched
+	 */
+	public boolean showCustomPhotos = false;
+	/**
 	 * let the players around see where the camera is, on servers that share that
 	 */
 	public boolean shareCamera = true;

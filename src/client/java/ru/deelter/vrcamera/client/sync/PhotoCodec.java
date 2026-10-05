@@ -45,7 +45,13 @@ public final class PhotoCodec {
 		// first with less quality, and if that is not enough with fewer pixels
 		for (int attempt = 0; attempt < 4; attempt++) {
 			int height = Math.max(1, Math.round(width * picture.height / (float) picture.width));
-			BufferedImage scaled = scale(source, width, Math.min(height, Protocol.MAX_IMAGE_SIDE));
+			int scaledWidth = width;
+			if (height > Protocol.MAX_IMAGE_SIDE) {
+				// a tall picture: its height is what has to fit, narrower and not squashed
+				scaledWidth = Math.max(1, Math.round(width * Protocol.MAX_IMAGE_SIDE / (float) height));
+				height = Protocol.MAX_IMAGE_SIDE;
+			}
+			BufferedImage scaled = scale(source, scaledWidth, height);
 			for (float quality : QUALITIES) {
 				byte[] packed = jpeg(scaled, quality);
 				if (packed.length <= maxBytes) {

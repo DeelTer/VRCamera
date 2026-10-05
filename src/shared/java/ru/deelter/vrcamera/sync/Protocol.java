@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 public final class Protocol {
 	public static final String CHANNEL = "vrcamera:sync";
-	public static final int VERSION = 1;
+	public static final int VERSION = 2;
 
 	// A message to the server can't be larger than 32767 bytes, picture included. And a channel that is shared
 	// with every other mod should not be filled with pictures
@@ -68,10 +68,12 @@ public final class Protocol {
 	 * a sheet as the server tells clients about it
 	 *
 	 * @param removable if the player it is sent to may take it off
+	 * @param custom    if its owner said it is not a photo taken in the game but a picture from somewhere else.
+	 *                  Clients do not show those unless their player asked for it
 	 */
 	public record Sheet(
 			long id, UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
-			float qw, float aspect, long imageHash, boolean removable) {}
+			float qw, float aspect, long imageHash, boolean removable, boolean custom) {}
 
 	/**
 	 * a sheet a player pinned
@@ -81,7 +83,7 @@ public final class Protocol {
 	 */
 	public record Pin(
 			long reference, int blockX, int blockY, int blockZ, double x, double y, double z, float qx, float qy,
-			float qz, float qw, float aspect, byte[] image) {}
+			float qz, float qw, float aspect, byte[] image, boolean custom) {}
 
 	public record PinResult(long reference, byte result, long id, long imageHash) {}
 
@@ -106,9 +108,10 @@ public final class Protocol {
 	 * A sheet that is not pinned: in a hand, falling or lying somewhere. The server only keeps those in memory
 	 * and for a while, they are told about so the others see them and can pick them up
 	 */
-	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash) {}
+	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash,
+	                    boolean custom) {}
 
-	public record NewLoose(long reference, Pose pose, byte[] image) {}
+	public record NewLoose(long reference, Pose pose, byte[] image, boolean custom) {}
 
 	/**
 	 * @param id 0 if the server did not take it
@@ -171,6 +174,7 @@ public final class Protocol {
 			out.writeFloat(pin.aspect);
 			out.writeShort(pin.image.length);
 			out.write(pin.image);
+			out.writeBoolean(pin.custom);
 		});
 	}
 
@@ -193,7 +197,7 @@ public final class Protocol {
 		}
 		byte[] image = new byte[length];
 		in.readFully(image);
-		return new Pin(reference, blockX, blockY, blockZ, x, y, z, qx, qy, qz, qw, aspect, image);
+		return new Pin(reference, blockX, blockY, blockZ, x, y, z, qx, qy, qz, qw, aspect, image, in.readBoolean());
 	}
 
 	public static byte[] unpin(long id) {
@@ -235,6 +239,7 @@ public final class Protocol {
 				out.writeFloat(sheet.aspect);
 				out.writeLong(sheet.imageHash);
 				out.writeBoolean(sheet.removable);
+				out.writeBoolean(sheet.custom);
 			}
 		});
 	}
@@ -248,7 +253,8 @@ public final class Protocol {
 		for (int i = 0; i < count; i++) {
 			sheets.add(new Sheet(in.readLong(), new UUID(in.readLong(), in.readLong()), in.readUTF(),
 					in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
-					in.readFloat(), in.readFloat(), in.readFloat(), in.readLong(), in.readBoolean()));
+					in.readFloat(), in.readFloat(), in.readFloat(), in.readLong(), in.readBoolean(),
+					in.readBoolean()));
 		}
 		return sheets;
 	}
@@ -363,11 +369,12 @@ public final class Protocol {
 			writePose(out, loose.pose);
 			out.writeShort(loose.image.length);
 			out.write(loose.image);
+			out.writeBoolean(loose.custom);
 		});
 	}
 
 	public static NewLoose readNewLoose(DataInputStream in) throws IOException {
-		return new NewLoose(in.readLong(), readPose(in), readImage(in));
+		return new NewLoose(in.readLong(), readPose(in), readImage(in), in.readBoolean());
 	}
 
 	/**
@@ -396,12 +403,13 @@ public final class Protocol {
 			writePose(out, loose.pose);
 			out.writeFloat(loose.aspect);
 			out.writeLong(loose.imageHash);
+			out.writeBoolean(loose.custom);
 		});
 	}
 
 	public static Loose readLoose(DataInputStream in) throws IOException {
 		return new Loose(in.readLong(), new UUID(in.readLong(), in.readLong()), in.readUTF(), readPose(in),
-				in.readFloat(), in.readLong());
+				in.readFloat(), in.readLong(), in.readBoolean());
 	}
 
 	public static byte[] looseResult(LooseResult result) {

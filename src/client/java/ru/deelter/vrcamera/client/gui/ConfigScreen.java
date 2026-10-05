@@ -79,6 +79,8 @@ public final class ConfigScreen {
 				value -> config.photoSheet = value));
 		general.addEntry(screen.toggle("showOthersPhotos", config.showOthersPhotos, defaults.showOthersPhotos,
 				value -> config.showOthersPhotos = value));
+		general.addEntry(screen.toggle("showCustomPhotos", config.showCustomPhotos, defaults.showCustomPhotos,
+				value -> config.showCustomPhotos = value));
 		general.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
 				value -> config.shareCamera = value));
 		general.addEntry(screen.selector("photoGesture", PhotoGesture.values(), config.photoGesture,

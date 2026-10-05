@@ -183,5 +183,13 @@
 	"vrcamera.message.pin.too_fast": "Câmera VR: devagar, fixe de novo daqui a pouco",
 	"vrcamera.message.pin.refused": "Câmera VR: o servidor não aceitou esta foto",
 	"vrcamera.option.shareCamera": "Mostrar minha câmera aos outros",
-	"vrcamera.option.shareCamera.tooltip": "Em servidores com o plugin VRCameraSync, jogadores com o mod a até 32 blocos veem sua câmera onde ela está, com seu nome em cima. Desligado: ninguém a vê. As fotos fixadas são compartilhadas de qualquer forma."
+	"vrcamera.option.shareCamera.tooltip": "Em servidores com o plugin VRCameraSync, jogadores com o mod a até 32 blocos veem sua câmera onde ela está, com seu nome em cima. Desligado: ninguém a vê. As fotos fixadas são compartilhadas de qualquer forma.",
+	"vrcamera.option.showCustomPhotos": "Mostrar imagens da internet de outros",
+	"vrcamera.option.showCustomPhotos.tooltip": "Jogadores podem colocar imagens da internet em folhas com /vrcam load. Não são fotos do jogo e podem mostrar qualquer coisa. Desligado: uma folha preta fica no lugar e a imagem não é baixada. As suas sempre aparecem.",
+	"vrcamera.label.custom": "Imagem da internet, oculta",
+	"vrcamera.message.load.start": "Câmera VR: carregando a imagem...",
+	"vrcamera.message.load.busy": "Câmera VR: aguarde, uma imagem ainda está carregando",
+	"vrcamera.message.load.failed": "Câmera VR: não foi possível carregar a imagem: %s",
+	"vrcamera.message.load.done": "Câmera VR: imagem carregada, está na sua frente",
+	"vrcamera.message.pin.not_allowed": "Câmera VR: este servidor não permite isso"
 }

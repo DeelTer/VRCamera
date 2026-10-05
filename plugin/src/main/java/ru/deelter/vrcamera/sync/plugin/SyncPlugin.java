@@ -112,6 +112,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private boolean shareCameras;
 	private double cameraRange;
 	private int maxLoose;
+	private boolean allowCustom;
 	private long looseLifetime;
 
 	@Override
@@ -158,6 +159,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		this.shareCameras = getConfig().getBoolean("cameras.share", true);
 		this.cameraRange = Math.max(4.0, getConfig().getDouble("cameras.range", 32));
 		this.maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
+		this.allowCustom = getConfig().getBoolean("custom-pictures", true);
 		this.looseLifetime = Math.max(1, getConfig().getLong("limits.loose-minutes", 10)) * 60_000L;
 	}
 
@@ -297,7 +299,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		double dz = sheet.pose().z() - at.getZ();
 		// it comes out of the camera, which is somewhere around its player
 		boolean refused = this.maxLoose == 0 || client.sharingLoose || now - client.lastLoose < LOOSE_COOLDOWN ||
-				!player.hasPermission("vrcamera.pin") || !sheet.pose().isSane() ||
+				!player.hasPermission("vrcamera.pin") || (sheet.custom() && !mayCustom(player)) ||
+				!sheet.pose().isSane() ||
 				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH) ||
 				sheet.image().length < 4 || sheet.image().length > this.maxImageBytes;
 		if (refused) {
@@ -330,7 +333,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				}
 				long hash = hash(clean.jpeg);
 				LooseSheets.Sheet added = this.loose.add(world, owner, still.getName(), sheet.pose().normalized(),
-						clean.aspect, hash, clean.jpeg);
+						clean.aspect, hash, clean.jpeg, sheet.custom());
 				stillClient.knownLoose.add(added.id);
 				send(still, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), added.id, hash)));
 			});
@@ -405,6 +408,14 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				}
 			}
 		}
+	}
+
+	/**
+	 * @return if the player may put up pictures that are not photos taken in the game. Whether one is, is what
+	 * its client says: the server can't tell a screenshot from any other picture
+	 */
+	private boolean mayCustom(Player player) {
+		return this.allowCustom && player.hasPermission("vrcamera.custom");
 	}
 
 	private void wantImage(Client client, long hash) {
@@ -497,7 +508,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		// the shape of the sheet is the shape of the picture, not what the client says it is
 		StoredSheet sheet = new StoredSheet(this.store.newId(), world, owner, ownerName, pin.blockX(), pin.blockY(),
 				pin.blockZ(), pin.x(), pin.y(), pin.z(), pin.qx() / length, pin.qy() / length, pin.qz() / length,
-				pin.qw() / length, clean == null ? 1.0F : clean.aspect, imageHash);
+				pin.qw() / length, clean == null ? 1.0F : clean.aspect, imageHash, pin.custom());
 		if (result == Protocol.PIN_OK && this.store.inChunk(sheet.chunk()).size() >= this.maxPerChunk) {
 			result = Protocol.PIN_CHUNK_FULL;
 		}
@@ -523,7 +534,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * @return why the player can't pin this, {@link Protocol#PIN_OK} if they can
 	 */
 	private byte refusal(Player player, Client client, Protocol.Pin pin) {
-		if (!player.hasPermission("vrcamera.pin")) {
+		if (!player.hasPermission("vrcamera.pin") || (pin.custom() && !mayCustom(player))) {
 			return Protocol.PIN_NOT_ALLOWED;
 		}
 		if (client.pinning || System.currentTimeMillis() - client.lastPin < this.pinCooldown) {
@@ -737,7 +748,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 							entered.add(new Protocol.Sheet(sheet.id(), sheet.owner(), sheet.ownerName(), sheet.x(),
 									sheet.y(), sheet.z(), sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw(),
 									sheet.aspect(), sheet.imageHash(),
-									removesOthers || sheet.owner().equals(player.getUniqueId())));
+									removesOthers || sheet.owner().equals(player.getUniqueId()), sheet.custom()));
 						}
 					}
 				}
@@ -868,6 +879,10 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			UUID owner = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
 			sender.sendMessage("VRCameraSync: removed " + purge(sheet -> sheet.owner().equals(owner) ||
 					sheet.ownerName().equalsIgnoreCase(args[1])) + " photos of " + args[1]);
+			return true;
+		}
+		if (args.length == 1 && args[0].equalsIgnoreCase("purgecustom")) {
+			sender.sendMessage("VRCameraSync: removed " + purge(StoredSheet::custom) + " custom pictures");
 			return true;
 		}
 		if (args.length == 2 && args[0].equalsIgnoreCase("purgenear") && sender instanceof Player player) {

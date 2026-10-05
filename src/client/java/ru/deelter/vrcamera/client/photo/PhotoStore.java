@@ -52,6 +52,7 @@ public final class PhotoStore {
 		public double x, y, z;
 		public float qx, qy, qz, qw;
 		public float aspect;
+		public boolean custom;
 	}
 
 	private PhotoStore() {
@@ -77,6 +78,25 @@ public final class PhotoStore {
 			file = dir.resolve(name + "_" + i + ".png");
 		}
 		return file;
+	}
+
+	/**
+	 * keeps a picture that was loaded from the internet the way it came, next to the photos
+	 */
+	public static void saveCustom(byte[] original, String format) {
+		try {
+			Path dir = gameDir().resolve("screenshots").resolve("vrcamera").resolve("custom");
+			Files.createDirectories(dir);
+			String name = LocalDateTime.now().format(FILE_TIME);
+			// what kind of file it is comes from its content, not from the address, but still only letters
+			Path file = dir.resolve(name + "." + format.replaceAll("[^a-z0-9]", ""));
+			for (int i = 2; Files.exists(file); i++) {
+				file = dir.resolve(name + "_" + i + "." + format.replaceAll("[^a-z0-9]", ""));
+			}
+			Files.write(file, original);
+		} catch (IOException | RuntimeException e) {
+			Vrcamera.LOGGER.warn("VRCamera: can't keep the loaded picture", e);
+		}
 	}
 
 	/**

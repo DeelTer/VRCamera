@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
 @Mixin(LevelExtractor.class)
@@ -22,6 +23,7 @@ public class LevelExtractorMixin {
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		// names over the cameras of other players, for whoever looks: also without VR, also in the recording
 		RemoteCameras.INSTANCE.drawLabels();
+		PhotoAlbum.INSTANCE.drawLabels();
 		if (!CameraController.isVRRunning()) {
 			return;
 		}

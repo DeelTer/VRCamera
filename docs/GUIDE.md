@@ -41,6 +41,7 @@ You can also use `/vrcam`, which supports tab completion. The command runs on th
 | `/vrcam shot <name>` | shows a shot: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Turns the director on if needed |
 | `/vrcam summon` | brings the camera to you |
 | `/vrcam photo` | takes a photo |
+| `/vrcam load <address>` | puts a picture from the internet on a sheet |
 | `/vrcam preset next`, `new`, `delete` | own angles |
 | `/vrcam preset <number>` | picks an own angle, counted from 1 |
 | `/vrcam debug` | debug overlay |
@@ -250,6 +251,29 @@ Pinned sheets and their small pictures are kept per world in `vrcamera/sheets`. 
 deleted, its folder there is removed at the next game start. Folders of servers stay: a server that is gone cannot
 be told from one you are just not on. If a picture is missing from the folder, its sheet is dropped.
 
+### Pictures from the internet
+
+`/vrcam load <address>` puts a picture from the web on a sheet and drops it in front of you. From there it is a
+sheet like any other: pick it up, pin it.
+
+- PNG, JPEG or the first frame of a GIF, up to 8 MB, `http` and `https` only.
+- The picture is cut from its middle to the nearest shape a sheet can have: 16:9, square or 9:16.
+- The file as it was downloaded is kept in `screenshots/vrcamera/custom`.
+- Only your own game opens the address, and the site sees your IP address, like in a browser. Other players never
+  get the address, only the small picture the server made of it.
+
+On a server such a sheet is marked as custom. Other players see a black sheet labelled "Custom picture, hidden" in
+its place, and their game does not download the picture, unless they turned `showCustomPhotos` on. It is off by
+default: custom pictures are not photos of the game and can show anything.
+
+The mark is set by the client that loads the picture. It keeps honest players apart from the rest; it is not a
+guard against someone who changes their game to lie about it. The server can't tell a screenshot from any other
+picture.
+
+The server decides who may: the permission `vrcamera.custom`, which everyone has by default, and
+`custom-pictures` in the plugin's config, which turns it off for all. `/vrcamsync purgecustom` removes every
+pinned custom picture.
+
 ### Sharing photos on a server
 
 On a server that runs the **VRCameraSync** plugin (Paper), pinned sheets are shared: everyone with the mod sees
@@ -293,6 +317,7 @@ Server settings, `plugins/VRCameraSync/config.yml`:
 | `limits.image-bytes` | `20000` | largest picture a client may send |
 | `limits.pin-cooldown-ms` | `1500` | wait between two pins of a player |
 | `anyone-takes-off` | `false` | `true` lets everyone take off anyone's sheets |
+| `custom-pictures` | `true` | `false`: nobody may put up pictures from the internet |
 | `range.send`, `range.forget` | `32`, `48` | blocks in which clients are told about sheets, and after which they forget them |
 | `network.images-per-second` | `4` | pictures sent to one player per second |
 | `cameras.share`, `cameras.range` | `true`, `32` | show players' cameras to the others, and within how many blocks |
@@ -381,6 +406,7 @@ and by `/vrcam reload`.
 | `menuShotChat` | `true` | the `menu` shot for chat as well |
 | `photoSheet` | `true` | a taken photo comes out of the camera as a sheet; `false` only saves it |
 | `showOthersPhotos` | `true` | show the photos other players pinned, on servers that share them |
+| `showCustomPhotos` | `false` | show the pictures other players loaded from the internet |
 | `shareCamera` | `true` | let players around see your camera, on servers that share that |
 | `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
 | `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |

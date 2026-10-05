@@ -22,13 +22,16 @@ public final class LooseSheets {
 		public final UUID world;
 		public final float aspect;
 		public final long imageHash;
+		public final boolean custom;
 		public UUID owner;
 		public String ownerName;
 		public Protocol.Pose pose;
 		// when its owner last said something about it
 		public long touched = System.currentTimeMillis();
 
-		Sheet(long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash) {
+		Sheet(long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash,
+		      boolean custom) {
+			this.custom = custom;
 			this.id = id;
 			this.world = world;
 			this.owner = owner;
@@ -39,7 +42,8 @@ public final class LooseSheets {
 		}
 
 		public Protocol.Loose toProtocol() {
-			return new Protocol.Loose(this.id, this.owner, this.ownerName, this.pose, this.aspect, this.imageHash);
+			return new Protocol.Loose(this.id, this.owner, this.ownerName, this.pose, this.aspect, this.imageHash,
+					this.custom);
 		}
 
 		public double distanceSquared(double x, double y, double z) {
@@ -69,8 +73,9 @@ public final class LooseSheets {
 	}
 
 	public Sheet add(
-			UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash, byte[] image) {
-		Sheet sheet = new Sheet(this.nextId++, world, owner, ownerName, pose, aspect, imageHash);
+			UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash, byte[] image,
+			boolean custom) {
+		Sheet sheet = new Sheet(this.nextId++, world, owner, ownerName, pose, aspect, imageHash, custom);
 		this.byId.put(sheet.id, sheet);
 		this.images.putIfAbsent(imageHash, image);
 		this.imageUses.merge(imageHash, 1, Integer::sum);

@@ -96,6 +96,13 @@ public final class PhotoSheet {
 	private BlockPos support = BlockPos.ZERO;
 	/** the picture as it went over the network, kept to pin the sheet again without packing it once more */
 	public byte[] packed;
+	/** a picture from somewhere else, not a photo taken in the game. Others only see those if they ask to */
+	public boolean custom;
+	/**
+	 * Stands in for a custom picture of another player that this one did not ask to see: black, without the
+	 * picture, which was not even fetched
+	 */
+	public boolean placeholder;
 
 	private int hand = -1;
 	// where the hand has it, as the controller sees it
@@ -201,9 +208,10 @@ public final class PhotoSheet {
 	public boolean canGrab(int hand) {
 		if (isPinned()) {
 			// what someone else pinned is theirs, unless the server says otherwise
-			return this.removable && !this.awaitingServer;
+			return this.removable && !this.awaitingServer && !this.placeholder;
 		}
-		return isLoose() || isGhost() || (this.state == State.HELD && this.hand != hand);
+		// what stands in for a picture has no picture to take along
+		return !this.placeholder && (isLoose() || isGhost() || (this.state == State.HELD && this.hand != hand));
 	}
 
 	public int hand() {

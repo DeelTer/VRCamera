@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
@@ -9,6 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
@@ -54,6 +56,13 @@ public final class VrcamCommand {
 			controller.takePhoto();
 			return DONE;
 		}));
+		root.then(ClientCommands.literal("load")
+				.then(ClientCommands.argument("address", StringArgumentType.greedyString()).executes(context -> {
+					FabricClientCommandSource source = context.getSource();
+					PhotoAlbum.INSTANCE.loadCustom(StringArgumentType.getString(context, "address"),
+							source::sendFeedback);
+					return DONE;
+				})));
 		root.then(ClientCommands.literal("debug").executes(context -> {
 			controller.toggleDebug();
 			return DONE;

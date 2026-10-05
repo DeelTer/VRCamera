@@ -86,6 +86,7 @@ public final class PhotoSync {
 	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
 	private int hellos;
+	private boolean shownCustom;
 	private long nextReference = 1;
 	private int ticks;
 
@@ -188,7 +189,7 @@ public final class PhotoSync {
 							this.looseKnown.size() < MAX_LOOSE_KNOWN)
 					{
 						this.looseKnown.put(loose.id(), new Protocol.Loose(loose.id(), loose.owner(), loose.ownerName(),
-								loose.pose().normalized(), loose.aspect(), loose.imageHash()));
+								loose.pose().normalized(), loose.aspect(), loose.imageHash(), loose.custom()));
 					}
 				}
 				case Protocol.S_LOOSE_POSE -> {
@@ -198,7 +199,7 @@ public final class PhotoSync {
 					if (loose != null && pose.isSane()) {
 						Protocol.Pose at = pose.normalized();
 						this.looseKnown.put(id, new Protocol.Loose(id, loose.owner(), loose.ownerName(), at,
-								loose.aspect(), loose.imageHash()));
+								loose.aspect(), loose.imageHash(), loose.custom()));
 						PhotoAlbum.INSTANCE.moveGhost(id, new Vec3(at.x(), at.y(), at.z()),
 								new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()));
 					}
@@ -239,7 +240,7 @@ public final class PhotoSync {
 		// as a unit quaternion, anything else would also scale the sheet
 		this.known.put(sheet.id(), new Protocol.Sheet(sheet.id(), sheet.owner(), sheet.ownerName(), sheet.x(),
 				sheet.y(), sheet.z(), sheet.qx() / length, sheet.qy() / length, sheet.qz() / length,
-				sheet.qw() / length, sheet.aspect(), sheet.imageHash(), sheet.removable()));
+				sheet.qw() / length, sheet.aspect(), sheet.imageHash(), sheet.removable(), sheet.custom()));
 	}
 
 	private void looseGone(long id) {
@@ -287,7 +288,7 @@ public final class PhotoSync {
 				packed.remove();
 				long reference = this.nextReference++;
 				this.sharing.put(reference, sheet);
-				send(Protocol.newLoose(new Protocol.NewLoose(reference, pose(sheet), sheet.packed)));
+				send(Protocol.newLoose(new Protocol.NewLoose(reference, pose(sheet), sheet.packed, sheet.custom)));
 			}
 		}
 	}
@@ -390,6 +391,15 @@ public final class PhotoSync {
 		this.askedServer.retainAll(this.waiting.keySet());
 
 		boolean showOthers = CameraController.INSTANCE.config().showOthersPhotos;
+		boolean showCustom = CameraController.INSTANCE.config().showCustomPhotos;
+		if (showCustom != this.shownCustom) {
+			// the player changed their mind: everything is taken out and comes back the other way
+			this.shownCustom = showCustom;
+			new ArrayList<>(this.loaded).forEach(id -> PhotoAlbum.INSTANCE.removeRemote(id, false));
+			new ArrayList<>(this.ghosts).forEach(PhotoAlbum.INSTANCE::removeLoose);
+			this.loaded.clear();
+			this.ghosts.clear();
+		}
 		Vec3 eyes = player.getEyePosition();
 		List<Protocol.Sheet> wanted = new ArrayList<>();
 		for (Protocol.Sheet sheet : this.known.values()) {
@@ -401,7 +411,19 @@ public final class PhotoSync {
 					PhotoAlbum.INSTANCE.removeRemote(sheet.id(), false);
 				}
 			} else if (shown && distance < LOAD_DISTANCE * LOAD_DISTANCE) {
-				wanted.add(sheet);
+				if (sheet.custom() && !showCustom && !sheet.owner().equals(player.getUUID())) {
+					// not asked for: a black sheet in its place, the picture is not even fetched
+					PhotoSheet standIn = PhotoAlbum.INSTANCE.addRemote(sheet.id(), false,
+							new Vec3(sheet.x(), sheet.y(), sheet.z()),
+							new Quaternionf(sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw()), sheet.aspect(), black(),
+							null);
+					if (standIn != null) {
+						standIn.placeholder = true;
+						this.loaded.add(sheet.id());
+					}
+				} else {
+					wanted.add(sheet);
+				}
 			}
 		}
 		wanted.sort(Comparator.comparingDouble(sheet -> eyes.distanceToSqr(sheet.x(), sheet.y(), sheet.z())));
@@ -415,7 +437,17 @@ public final class PhotoSync {
 			} else if (showOthers && distance < LOAD_DISTANCE * LOAD_DISTANCE &&
 					this.loaded.size() + this.ghosts.size() + this.waiting.size() < MAX_LOADED)
 			{
-				fetch(loose.imageHash());
+				if (loose.custom() && !showCustom) {
+					Protocol.Pose at = loose.pose();
+					PhotoSheet standIn = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
+							new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), black(), null);
+					if (standIn != null) {
+						standIn.placeholder = true;
+						this.ghosts.add(loose.id());
+					}
+				} else {
+					fetch(loose.imageHash());
+				}
 			}
 		}
 		for (Protocol.Sheet sheet : wanted) {
@@ -490,19 +522,32 @@ public final class PhotoSync {
 	 */
 	private void show(long hash, PhotoCodec.Picture picture, byte[] image) {
 		for (Protocol.Loose loose : this.looseKnown.values()) {
-			if (loose.imageHash() == hash && this.ghosts.add(loose.id())) {
+			if (loose.imageHash() == hash && !(loose.custom() && !this.shownCustom) &&
+					this.ghosts.add(loose.id()))
+			{
 				Protocol.Pose at = loose.pose();
-				PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
+				PhotoSheet ghost = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
 						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), pixels(picture), image);
+				if (ghost != null) {
+					ghost.custom = loose.custom();
+				}
 			}
 		}
 		for (Protocol.Sheet sheet : this.known.values()) {
-			if (sheet.imageHash() != hash || this.loaded.contains(sheet.id())) {
+			LocalPlayer player = Minecraft.getInstance().player;
+			boolean own = player != null && sheet.owner().equals(player.getUUID());
+			if (sheet.imageHash() != hash || this.loaded.contains(sheet.id()) ||
+					(sheet.custom() && !this.shownCustom && !own))
+			{
 				continue;
 			}
-			PhotoAlbum.INSTANCE.addRemote(sheet.id(), sheet.removable(), new Vec3(sheet.x(), sheet.y(), sheet.z()),
+			PhotoSheet shown = PhotoAlbum.INSTANCE.addRemote(sheet.id(), sheet.removable(),
+					new Vec3(sheet.x(), sheet.y(), sheet.z()),
 					new Quaternionf(sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw()), sheet.aspect(),
 					pixels(picture), image);
+			if (shown != null) {
+				shown.custom = sheet.custom();
+			}
 			this.loaded.add(sheet.id());
 		}
 	}
@@ -511,6 +556,14 @@ public final class PhotoSync {
 	 * @return the picture as the game wants it. A new one every time: each sheet owns its own, also if two show
 	 * the same
 	 */
+	private static NativeImage black() {
+		NativeImage pixels = new NativeImage(2, 2, false);
+		for (int i = 0; i < 4; i++) {
+			pixels.setPixel(i % 2, i / 2, 0xFF000000);
+		}
+		return pixels;
+	}
+
 	private static NativeImage pixels(PhotoCodec.Picture picture) {
 		NativeImage pixels = new NativeImage(picture.width(), picture.height(), false);
 		for (int y = 0; y < picture.height(); y++) {
@@ -549,7 +602,7 @@ public final class PhotoSync {
 			send(Protocol.pin(new Protocol.Pin(reference, sheet.support().getX(), sheet.support().getY(),
 					sheet.support().getZ(), sheet.position().x, sheet.position().y, sheet.position().z,
 					sheet.rotation().x, sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect,
-					image)));
+					image, sheet.custom)));
 		}, Minecraft.getInstance());
 	}
 
@@ -564,6 +617,7 @@ public final class PhotoSync {
 				case Protocol.PIN_TOO_MANY -> "vrcamera.message.pin.too_many";
 				case Protocol.PIN_CHUNK_FULL -> "vrcamera.message.pin.chunk_full";
 				case Protocol.PIN_TOO_FAST -> "vrcamera.message.pin.too_fast";
+				case Protocol.PIN_NOT_ALLOWED -> "vrcamera.message.pin.not_allowed";
 				default -> "vrcamera.message.pin.refused";
 			});
 			return;
@@ -579,7 +633,7 @@ public final class PhotoSync {
 			this.known.put(result.id(), new Protocol.Sheet(result.id(), player.getUUID(), player.getName().getString(),
 					sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
 					sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect, result.imageHash(),
-					true));
+					true, sheet.custom));
 		}
 	}
 

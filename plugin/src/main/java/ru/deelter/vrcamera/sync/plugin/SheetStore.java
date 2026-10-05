@@ -26,7 +26,8 @@ import java.util.logging.Logger;
  * is stored once.
  */
 public final class SheetStore {
-	private static final int FILE_VERSION = 1;
+	// 2: sheets say if they are custom pictures
+	private static final int FILE_VERSION = 2;
 	// pictures kept in memory, the ones asked for last. About 10 KB each
 	private static final int CACHED_IMAGES = 256;
 
@@ -185,7 +186,7 @@ public final class SheetStore {
 		}
 		try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(this.listFile)))) {
 			int version = in.readInt();
-			if (version != FILE_VERSION) {
+			if (version < 1 || version > FILE_VERSION) {
 				throw new IOException("unknown file version " + version);
 			}
 			this.nextId = in.readLong();
@@ -195,7 +196,8 @@ public final class SheetStore {
 				StoredSheet sheet = new StoredSheet(in.readLong(), new UUID(in.readLong(), in.readLong()),
 						new UUID(in.readLong(), in.readLong()), in.readUTF(), in.readInt(), in.readInt(), in.readInt(),
 						in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
-						in.readFloat(), in.readFloat(), in.readFloat(), in.readLong());
+						in.readFloat(), in.readFloat(), in.readFloat(), in.readLong(),
+						version >= 2 && in.readBoolean());
 				// a photo without its picture is nothing to show
 				if (Files.isRegularFile(imageFile(sheet.imageHash()))) {
 					index(sheet);
@@ -255,6 +257,7 @@ public final class SheetStore {
 					out.writeFloat(sheet.qw());
 					out.writeFloat(sheet.aspect());
 					out.writeLong(sheet.imageHash());
+					out.writeBoolean(sheet.custom());
 				}
 			}
 			Files.move(temp, this.listFile, StandardCopyOption.REPLACE_EXISTING);

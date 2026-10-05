@@ -12,6 +12,9 @@ import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.gizmos.Gizmos;
+import net.minecraft.gizmos.TextGizmo;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
@@ -64,6 +67,7 @@ public final class PhotoAlbum {
 	// a sheet in the dark still shows its picture
 	private static final int MIN_LIGHT = 5;
 	private static final double DRAW_DISTANCE = 64.0;
+	private static final double LABEL_DISTANCE = 5.0;
 	private static final float VEIL_GAP = 0.0015F;
 	private static final long DEVELOP_TIMEOUT_NANOS = 3_000_000_000L;
 	// an explosion reaches sheets this many times its radius away, and throws the nearest ones this fast
@@ -79,6 +83,7 @@ public final class PhotoAlbum {
 	private boolean broken;
 	// a photo was taken and its picture has not arrived yet
 	private boolean developing;
+	private boolean loadingCustom;
 	private long developingSince;
 
 	private Level level;
@@ -188,6 +193,16 @@ public final class PhotoAlbum {
 			file = null;
 		}
 
+		makeRoom();
+		PhotoSheet sheet = add(small, height / (float) width, file);
+		PhotoSync.INSTANCE.shareLoose(sheet, pixels(sheet));
+		return sheet;
+	}
+
+	/**
+	 * one more loose sheet is coming, the oldest go if that is too many
+	 */
+	private void makeRoom() {
 		int maxLoose = VRState.VR_RUNNING ? MAX_LOOSE : MAX_LOOSE_WITHOUT_VR;
 		int loose = 0;
 		for (int i = this.sheets.size() - 1; i >= 0; i--) {
@@ -195,9 +210,6 @@ public final class PhotoAlbum {
 				remove(i, true);
 			}
 		}
-		PhotoSheet sheet = add(small, height / (float) width, file);
-		PhotoSync.INSTANCE.shareLoose(sheet, pixels(sheet));
-		return sheet;
 	}
 
 	private PhotoSheet add(NativeImage picture, float aspect, String file) {
@@ -301,9 +313,12 @@ public final class PhotoAlbum {
 			return;
 		}
 		this.elsewhere = elsewhere;
-		here.forEach((pinned, picture) -> add(picture, pinned.aspect, pinned.file).restore(
-				new Vec3(pinned.x, pinned.y, pinned.z),
-				new Quaternionf(pinned.qx, pinned.qy, pinned.qz, pinned.qw)));
+		here.forEach((pinned, picture) -> {
+			PhotoSheet sheet = add(picture, pinned.aspect, pinned.file);
+			sheet.restore(new Vec3(pinned.x, pinned.y, pinned.z),
+					new Quaternionf(pinned.qx, pinned.qy, pinned.qz, pinned.qw));
+			sheet.custom = pinned.custom;
+		});
 		this.loaded = true;
 		if (this.unsaved) {
 			save();
@@ -339,6 +354,7 @@ public final class PhotoAlbum {
 			entry.qz = sheet.rotation().z;
 			entry.qw = sheet.rotation().w;
 			entry.aspect = sheet.aspect;
+			entry.custom = sheet.custom;
 			pinned.add(entry);
 		}
 		Path cache = this.cache;
@@ -377,17 +393,18 @@ public final class PhotoAlbum {
 	 *
 	 * @param picture owned by the sheet from here on
 	 */
-	public void addRemote(
+	public PhotoSheet addRemote(
 			long id, boolean removable, Vec3 position, Quaternionfc rotation, float aspect, NativeImage picture,
 			byte[] packed) {
 		if (this.level == null) {
 			picture.close();
-			return;
+			return null;
 		}
 		PhotoSheet sheet = add(picture, aspect, null);
 		sheet.restore(position, rotation);
 		sheet.setRemote(id, removable);
 		sheet.packed = packed;
+		return sheet;
 	}
 
 	/**
@@ -560,15 +577,99 @@ public final class PhotoAlbum {
 	 *
 	 * @param picture owned by the sheet from here on
 	 */
-	public void addGhost(
+	public PhotoSheet addGhost(
 			long looseId, Vec3 position, Quaternionfc rotation, float aspect, NativeImage picture, byte[] packed) {
 		if (this.level == null) {
 			picture.close();
-			return;
+			return null;
 		}
 		PhotoSheet sheet = add(picture, aspect, null);
 		sheet.makeGhost(looseId, position, rotation);
 		sheet.packed = packed;
+		return sheet;
+	}
+
+	/**
+	 * Puts a picture from the internet on a sheet and drops it in front of the player. The address is opened
+	 * by this client alone.
+	 *
+	 * @param feedback told how it went, on the game thread
+	 */
+	public void loadCustom(String address, Consumer<Component> feedback) {
+		if (this.level == null || this.loadingCustom) {
+			feedback.accept(Component.translatable("vrcamera.message.load.busy"));
+			return;
+		}
+		this.loadingCustom = true;
+		feedback.accept(Component.translatable("vrcamera.message.load.start"));
+		Level level = this.level;
+		CompletableFuture.supplyAsync(() -> {
+			try {
+				CustomPictures.Loaded loaded = CustomPictures.load(address);
+				PhotoStore.saveCustom(loaded.original(), loaded.format());
+				return loaded.picture();
+			} catch (IOException e) {
+				throw new java.util.concurrent.CompletionException(e);
+			}
+		}).whenCompleteAsync((picture, error) -> {
+			this.loadingCustom = false;
+			LocalPlayer player = Minecraft.getInstance().player;
+			if (error != null || picture == null) {
+				Throwable cause = error != null && error.getCause() != null ? error.getCause() : error;
+				feedback.accept(Component.translatable("vrcamera.message.load.failed",
+						cause == null || cause.getMessage() == null ? "?" : cause.getMessage()));
+				return;
+			}
+			if (player == null || this.level != level) {
+				return;
+			}
+			NativeImage pixels = new NativeImage(picture.width(), picture.height(), false);
+			for (int y = 0; y < picture.height(); y++) {
+				for (int x = 0; x < picture.width(); x++) {
+					pixels.setPixel(x, y, picture.argb()[y * picture.width() + x] | 0xFF000000);
+				}
+			}
+			String file = "custom_" + System.currentTimeMillis() + ".png";
+			try {
+				PhotoStore.prepare(this.cache);
+				pixels.writeToFile(this.cache.resolve(file));
+			} catch (IOException e) {
+				Vrcamera.LOGGER.warn("VRCamera: could not cache the sheet {}", file, e);
+				file = null;
+			}
+			makeRoom();
+			PhotoSheet sheet = add(pixels, picture.height() / (float) picture.width(), file);
+			sheet.custom = true;
+			Vec3 look = player.getLookAngle();
+			Vec3 forward = new Vec3(look.x, 0, look.z);
+			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
+			sheet.toss(player.getEyePosition().add(forward.scale(0.7)),
+					new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z)), forward.scale(1.5));
+			PhotoSync.INSTANCE.shareLoose(sheet, picture);
+			feedback.accept(Component.translatable("vrcamera.message.load.done"));
+		}, Minecraft.getInstance());
+	}
+
+	/**
+	 * Says what the black sheets are: custom pictures of others that are not shown. Called while the game
+	 * collects gizmos for a pass
+	 */
+	public void drawLabels() {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null || this.sheets.isEmpty()) {
+			return;
+		}
+		try {
+			Vec3 eyes = player.getEyePosition();
+			for (PhotoSheet sheet : this.sheets) {
+				if (sheet.placeholder && sheet.center().distanceToSqr(eyes) < LABEL_DISTANCE * LABEL_DISTANCE) {
+					Gizmos.billboardText(Component.translatable("vrcamera.label.custom").getString(), sheet.center(),
+							TextGizmo.Style.forColorAndCentered(0xFFFFFFFF).withScale(0.03F));
+				}
+			}
+		} catch (IllegalStateException e) {
+			// no gizmo collection is running, nothing to draw into
+		}
 	}
 
 	public void moveGhost(long looseId, Vec3 position, Quaternionfc rotation) {

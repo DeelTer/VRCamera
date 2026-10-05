@@ -21,6 +21,11 @@ limits:
 # vrcamera.remove.others (operators by default). true: everyone
 anyone-takes-off: false
 
+# Pictures that are not photos taken in the game, loaded by players with /vrcam load <url>. They are marked,
+# and other players only see them if they turned that on in their mod. Needs the permission vrcamera.custom
+# as well, which everyone has unless you take it away. false: nobody may
+custom-pictures: true
+
 range:
   # blocks around a player in which photos are told to their client. Only a few bytes each, the picture itself
   # is asked for by the client when it comes closer
