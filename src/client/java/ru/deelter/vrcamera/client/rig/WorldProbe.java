@@ -61,7 +61,7 @@ public final class WorldProbe {
 	 */
 	public static boolean blinding(Subject subject, Vec3 pos) {
 		BlockPos blockPos = BlockPos.containing(pos);
-		return subject.player.level().getFluidState(blockPos).getType().is(FluidTags.LAVA) ||
+		return subject.player.level().getFluidState(blockPos).is(FluidTags.LAVA) ||
 				subject.player.level().getBlockState(blockPos).getBlock() == Blocks.POWDER_SNOW;
 	}
 
