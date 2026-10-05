@@ -67,12 +67,14 @@ public final class DroppedCamera {
 	 * @param speed how fast it hit, in blocks per second
 	 * @param block the block that was hit, null if it was an entity
 	 */
-	public record Impact(Vec3 position, Vec3 normal, double speed, BlockPos block) {}
+	public record Impact(Vec3 position, Vec3 normal, double speed, BlockPos block) {
+	}
 
 	/**
 	 * @param entity the entity that was hit, null for a block
 	 */
-	private record Hit(Vec3 location, Vec3 normal, Entity entity) {}
+	private record Hit(Vec3 location, Vec3 normal, Entity entity) {
+	}
 
 	private final Random random = new Random();
 
@@ -143,7 +145,7 @@ public final class DroppedCamera {
 	 */
 	public double fovOffset() {
 		return this.fovKick * Math.exp(-this.fovKickAge / FOV_KICK_TIME) *
-			Math.cos(this.fovKickAge * Math.PI * 2.0 * FOV_KICK_FREQUENCY);
+				Math.cos(this.fovKickAge * Math.PI * 2.0 * FOV_KICK_FREQUENCY);
 	}
 
 	/**
@@ -177,9 +179,9 @@ public final class DroppedCamera {
 		this.carrier = null;
 		this.kicker = null;
 		this.randomRest.rotationYXZ(
-			(float) (this.random.nextDouble() * Math.PI * 2.0),
-			(float) CamMath.lerp(-0.5, 0.3, this.random.nextDouble()),
-			(float) (CamMath.lerp(0.6, 1.4, this.random.nextDouble()) * (this.random.nextBoolean() ? 1 : -1)));
+				(float) (this.random.nextDouble() * Math.PI * 2.0),
+				(float) CamMath.lerp(-0.5, 0.3, this.random.nextDouble()),
+				(float) (CamMath.lerp(0.6, 1.4, this.random.nextDouble()) * (this.random.nextBoolean() ? 1 : -1)));
 		tumble(Math.max(1.0, velocity.length()));
 	}
 
@@ -262,7 +264,7 @@ public final class DroppedCamera {
 			startFalling();
 			tumble(speed * 1.5);
 			hit(new Impact(this.position, new Vec3(0, 1, 0), speed,
-				BlockPos.containing(this.position.add(0, -(RADIUS + 0.1), 0))));
+					BlockPos.containing(this.position.add(0, -(RADIUS + 0.1), 0))));
 			return;
 		}
 	}
@@ -278,7 +280,7 @@ public final class DroppedCamera {
 		boolean inFluid = WorldProbe.inFluid(subject, this.position);
 		double gravity = GRAVITY * (inFluid ? FLUID_GRAVITY : 1.0);
 		this.velocity = this.velocity.add(0, -gravity * dt, 0)
-			.scale(Math.exp(-(inFluid ? FLUID_DRAG : AIR_DRAG) * dt));
+				.scale(Math.exp(-(inFluid ? FLUID_DRAG : AIR_DRAG) * dt));
 
 		Vec3 step = this.velocity.scale(dt);
 		double distance = step.length();
@@ -307,7 +309,7 @@ public final class DroppedCamera {
 		this.velocity = along.scale(FRICTION).add(normal.scale(-into * BOUNCE));
 		if (-into > IMPACT_MIN_SPEED) {
 			hit(new Impact(hit.location, normal, -into,
-				hit.entity != null ? null : BlockPos.containing(hit.location.subtract(normal.scale(0.05)))));
+					hit.entity != null ? null : BlockPos.containing(hit.location.subtract(normal.scale(0.05)))));
 		}
 
 		double speed = this.velocity.length();
@@ -350,7 +352,7 @@ public final class DroppedCamera {
 		double nearestDistance = Double.MAX_VALUE;
 
 		BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
-			ClipContext.Fluid.NONE, subject.player));
+				ClipContext.Fluid.NONE, subject.player));
 		if (block.getType() != HitResult.Type.MISS) {
 			Direction face = block.getDirection();
 			nearest = new Hit(block.getLocation(), new Vec3(face.getStepX(), face.getStepY(), face.getStepZ()), null);
@@ -359,8 +361,7 @@ public final class DroppedCamera {
 
 		// not the player, the camera comes out of their hand
 		for (Entity entity : level.getEntities(subject.player, new AABB(from, to).inflate(0.5),
-			DroppedCamera::isSolid))
-		{
+				DroppedCamera::isSolid)) {
 			if (entity == this.kicker && this.kickIgnoreTime > 0) {
 				continue;
 			}
@@ -385,11 +386,11 @@ public final class DroppedCamera {
 		Vec3 normal = new Vec3(0, 1, 0);
 		double nearest = Math.abs(point.y - box.maxY);
 		double[] distances = {
-			Math.abs(point.y - box.minY), Math.abs(point.x - box.minX), Math.abs(point.x - box.maxX),
-			Math.abs(point.z - box.minZ), Math.abs(point.z - box.maxZ)
+				Math.abs(point.y - box.minY), Math.abs(point.x - box.minX), Math.abs(point.x - box.maxX),
+				Math.abs(point.z - box.minZ), Math.abs(point.z - box.maxZ)
 		};
 		Vec3[] normals = {
-			new Vec3(0, -1, 0), new Vec3(-1, 0, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, 0, 1)
+				new Vec3(0, -1, 0), new Vec3(-1, 0, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, 0, 1)
 		};
 		for (int i = 0; i < distances.length; i++) {
 			if (distances[i] < nearest) {
@@ -405,7 +406,7 @@ public final class DroppedCamera {
 	 */
 	private void tumble(double speed) {
 		this.spinAxis.set(this.random.nextFloat() - 0.5F, this.random.nextFloat() - 0.5F,
-			this.random.nextFloat() - 0.5F);
+				this.random.nextFloat() - 0.5F);
 		if (this.spinAxis.lengthSquared() < 1.0E-4F) {
 			this.spinAxis.set(1, 0, 0);
 		}
@@ -416,7 +417,7 @@ public final class DroppedCamera {
 	private boolean supported(Subject subject) {
 		Vec3 below = this.position.add(0, -(RADIUS + 0.15), 0);
 		return subject.player.level().clip(new ClipContext(this.position, below, ClipContext.Block.COLLIDER,
-			ClipContext.Fluid.NONE, subject.player)).getType() != HitResult.Type.MISS;
+				ClipContext.Fluid.NONE, subject.player)).getType() != HitResult.Type.MISS;
 	}
 
 	/**

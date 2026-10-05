@@ -91,7 +91,7 @@ public final class CameraPull implements HeldInteractModule {
 		}
 		Vec3 fromHead = camera.subtract(vr.hmd.getPosition());
 		return angle(fromHand, new Vec3(vr.getController(hand.ordinal()).getDirection())) < HAND_ANGLE * slack &&
-			angle(fromHead, new Vec3(vr.hmd.getDirection())) < HEAD_ANGLE * slack;
+				angle(fromHead, new Vec3(vr.hmd.getDirection())) < HEAD_ANGLE * slack;
 	}
 
 	private static double angle(Vec3 a, Vec3 b) {
@@ -118,7 +118,7 @@ public final class CameraPull implements HeldInteractModule {
 		double progress = ++this.heldTicks[index] / (this.controller.config().pullSeconds * 20.0);
 		// gets stronger and higher until the camera comes
 		VRClientAPI.instance().triggerHapticPulse(VRBodyPart.fromInteractionHand(hand), 0.05F,
-			(float) CamMath.lerp(120.0, 320.0, progress), (float) CamMath.lerp(0.15, 1.0, progress), 0.0F);
+				(float) CamMath.lerp(120.0, 320.0, progress), (float) CamMath.lerp(0.15, 1.0, progress), 0.0F);
 		if (progress >= 1.0) {
 			this.pulled[index] = true;
 			this.controller.startPull(hand);

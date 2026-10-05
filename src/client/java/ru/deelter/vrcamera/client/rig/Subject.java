@@ -13,7 +13,9 @@ import ru.deelter.vrcamera.client.math.SmoothVec;
  */
 public final class Subject {
 	public LocalPlayer player;
-	/** how far the current frame is between two game ticks, to get where entities are drawn */
+	/**
+	 * how far the current frame is between two game ticks, to get where entities are drawn
+	 */
 	public float partialTick;
 	public Vec3 feet = Vec3.ZERO;
 	public Vec3 head = Vec3.ZERO;

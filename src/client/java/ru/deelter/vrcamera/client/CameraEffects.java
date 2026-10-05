@@ -36,13 +36,13 @@ public final class CameraEffects {
 				particle = new BlockParticleOption(ParticleTypes.BLOCK, state);
 				Vec3 at = impact.position();
 				level.playLocalSound(at.x, at.y, at.z, state.getSoundType().getHitSound(), SoundSource.PLAYERS,
-					(float) CamMath.clamp(impact.speed() * 0.08, 0.15, 0.8), 1.2F, false);
+						(float) CamMath.clamp(impact.speed() * 0.08, 0.15, 0.8), 1.2F, false);
 			}
 		}
 		int count = (int) CamMath.clamp(2.0 + impact.speed() * 1.2, 3.0, 12.0);
 		for (int i = 0; i < count; i++) {
 			Vec3 direction = new Vec3(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5)
-				.normalize();
+					.normalize();
 			double ahead = direction.dot(lens);
 			if (ahead > 0) {
 				// mirror it to behind the lens
@@ -66,9 +66,9 @@ public final class CameraEffects {
 	 */
 	public static void pullTrail(Level level, Vec3 position) {
 		level.addParticle(ParticleTypes.ELECTRIC_SPARK,
-			position.x + (RANDOM.nextDouble() - 0.5) * 0.1,
-			position.y + (RANDOM.nextDouble() - 0.5) * 0.1,
-			position.z + (RANDOM.nextDouble() - 0.5) * 0.1, 0, 0, 0);
+				position.x + (RANDOM.nextDouble() - 0.5) * 0.1,
+				position.y + (RANDOM.nextDouble() - 0.5) * 0.1,
+				position.z + (RANDOM.nextDouble() - 0.5) * 0.1, 0, 0, 0);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public final class CameraEffects {
 		player.playSound(SoundEvents.ITEM_PICKUP, 0.8F, 1.3F);
 		for (int i = 0; i < 6; i++) {
 			player.level().addParticle(ParticleTypes.ELECTRIC_SPARK, position.x, position.y, position.z,
-				(RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6);
+					(RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6);
 		}
 	}
 }

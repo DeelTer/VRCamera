@@ -54,7 +54,7 @@ public final class HandStabilizer {
 		this.position = this.position.lerp(handPosition, follow(dt, lag / (1.0 + distance / SOFT_DISTANCE)));
 
 		double dot = this.rotation.x * handRotation.x() + this.rotation.y * handRotation.y() +
-			this.rotation.z * handRotation.z() + this.rotation.w * handRotation.w();
+				this.rotation.z * handRotation.z() + this.rotation.w * handRotation.w();
 		double angle = 2.0 * Math.acos(Math.min(1.0, Math.abs(dot)));
 		this.rotation.slerp(handRotation, (float) follow(dt, lag / (1.0 + angle / SOFT_ANGLE)));
 	}

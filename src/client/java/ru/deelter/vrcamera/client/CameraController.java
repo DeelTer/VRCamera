@@ -29,13 +29,7 @@ import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.SmoothVec;
-import ru.deelter.vrcamera.client.rig.DroppedCamera;
-import ru.deelter.vrcamera.client.rig.HandStabilizer;
-import ru.deelter.vrcamera.client.rig.HandThrow;
-import ru.deelter.vrcamera.client.rig.HandheldShake;
-import ru.deelter.vrcamera.client.rig.Rig;
-import ru.deelter.vrcamera.client.rig.Subject;
-import ru.deelter.vrcamera.client.rig.WorldProbe;
+import ru.deelter.vrcamera.client.rig.*;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
@@ -60,7 +54,9 @@ public final class CameraController implements Tracker {
 		 * the camera stays where it was placed by hand, relative to the player
 		 */
 		FOLLOW,
-		/** the camera is carried in the hand, and falls to the ground when let go of */
+		/**
+		 * the camera is carried in the hand, and falls to the ground when let go of
+		 */
 		PHYSICS;
 
 		public Component label() {
@@ -224,11 +220,11 @@ public final class CameraController implements Tracker {
 		Vec3 iconTop = anchor.add(up.scale(iconScale / 2.0));
 		Vec3 textTop = anchor.subtract(up.scale(0.2 * iconScale / 2.0));
 		Gizmos.billboardText(INDICATOR_ICON, iconTop,
-			TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
+				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
 		// in blocks, the world scale of Vivecraft changes the size of the player and not of the world
 		Gizmos.billboardText(Math.round(distance) + " M", textTop,
-				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale((float) (INDICATOR_TEXT_SCALE * size)))
-			.setAlwaysOnTop();
+						TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale((float) (INDICATOR_TEXT_SCALE * size)))
+				.setAlwaysOnTop();
 	}
 
 	private String markerText() {
@@ -487,7 +483,7 @@ public final class CameraController implements Tracker {
 		// These modes film the player from the front a lot, where a hand points at the camera without meaning it.
 		// So that can be turned off
 		return this.config.pullAllModes && this.rig.ready() &&
-			!ClientDataHolderVR.getInstance().cameraTracker.isMoving();
+				!ClientDataHolderVR.getInstance().cameraTracker.isMoving();
 	}
 
 	/**
@@ -670,8 +666,7 @@ public final class CameraController implements Tracker {
 		Screen screen = Minecraft.getInstance().gui.screen();
 		// chat is often only open for a moment, not everyone wants a cut for that
 		if (GuiHandler.GUI_POS_ROOM == null || screen == null ||
-			(screen instanceof ChatScreen && !this.config.menuShotChat))
-		{
+				(screen instanceof ChatScreen && !this.config.menuShotChat)) {
 			return null;
 		}
 		return VRPlayer.roomToWorldPos(GuiHandler.GUI_POS_ROOM, vr);
@@ -746,7 +741,7 @@ public final class CameraController implements Tracker {
 		if (this.mode == Mode.PHYSICS) {
 			watchDeath(player, camera);
 			dh.vrSettings.handCameraFov = (float) CamMath.clamp(this.previousFov + this.dropped.fovOffset(), 1.0,
-				179.0);
+					179.0);
 		}
 		if (this.pullHand != null) {
 			flyToHand(camera, vr, player, dt);
@@ -768,7 +763,7 @@ public final class CameraController implements Tracker {
 			camera.setRotation(new Quaternionf(this.stabilizer.rotation()));
 			if (this.mode == Mode.PHYSICS && this.config.physicsShake > 0) {
 				camera.getRotation().mul(this.shake.update(worldDt, this.subject.speed, player.hurtTime > 0,
-					this.config.physicsShake));
+						this.config.physicsShake));
 			}
 			return;
 		}
@@ -850,7 +845,7 @@ public final class CameraController implements Tracker {
 		}
 		// between the body and who did it
 		Vec3 killerCenter = this.killer.getPosition(this.subject.partialTick)
-			.add(0, this.killer.getBbHeight() * 0.5, 0);
+				.add(0, this.killer.getBbHeight() * 0.5, 0);
 		return this.subject.center.lerp(killerCenter, 0.5);
 	}
 
@@ -884,11 +879,11 @@ public final class CameraController implements Tracker {
 		// The hand takes the camera by its side, the right hand by the right one as the player sees it. In the
 		// middle of it the hand would be in front of the lens
 		boolean rightHand = (this.pullHand == InteractionHand.MAIN_HAND) !=
-			ClientDataHolderVR.getInstance().vrSettings.reverseHands;
+				ClientDataHolderVR.getInstance().vrSettings.reverseHands;
 		Vec3 toRight = new Vec3(-this.subject.headDir.z, 0, this.subject.headDir.x);
 		toRight = toRight.lengthSqr() < 1.0E-6 ? Vec3.ZERO : toRight.normalize();
 		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition()
-			.add(toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale));
+				.add(toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale));
 		Vec3 position = this.pullGlide.update(hand, PULL_TIME, dt);
 		Quaternionf atPlayer = new Quaternionf();
 		if (CamMath.lookRotation(this.subject.head.subtract(position), atPlayer)) {
