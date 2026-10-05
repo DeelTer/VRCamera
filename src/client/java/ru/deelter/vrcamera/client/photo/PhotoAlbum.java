@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -23,6 +24,7 @@ import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
+import org.vivecraft.client_vr.VRState;
 import ru.deelter.vrcamera.Vrcamera;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import ru.deelter.vrcamera.client.CameraEffects;
@@ -57,6 +59,8 @@ public final class PhotoAlbum {
 	private static final int SHEET_PIXELS = 384;
 	// sheets that lie around at once. Pinned ones are not counted, those are wanted
 	private static final int MAX_LOOSE = 12;
+	// A player without VR can't pick sheets up again, theirs only add up. So they get to have a few
+	private static final int MAX_LOOSE_WITHOUT_VR = 3;
 	// a sheet in the dark still shows its picture
 	private static final int MIN_LIGHT = 5;
 	private static final double DRAW_DISTANCE = 64.0;
@@ -125,7 +129,10 @@ public final class PhotoAlbum {
 		return true;
 	}
 
-	private void develop(NativeImage image, boolean printSheet) {
+	/**
+	 * @return the sheet the photo was printed on, null if there is none
+	 */
+	private PhotoSheet develop(NativeImage image, boolean printSheet) {
 		this.developing = false;
 		Path file;
 		try {
@@ -133,11 +140,12 @@ public final class PhotoAlbum {
 		} catch (IOException | RuntimeException e) {
 			Vrcamera.LOGGER.error("VRCamera: could not take the photo", e);
 			image.close();
-			return;
+			return null;
 		}
+		PhotoSheet sheet = null;
 		if (printSheet && this.level != null && this.level == Minecraft.getInstance().level) {
 			try {
-				print(image, file.getFileName().toString());
+				sheet = print(image, file.getFileName().toString());
 			} catch (RuntimeException e) {
 				// the photo itself is still worth saving
 				Vrcamera.LOGGER.error("VRCamera: could not print the photo", e);
@@ -151,9 +159,10 @@ public final class PhotoAlbum {
 				Vrcamera.LOGGER.error("VRCamera: could not save the photo {}", file, e);
 			}
 		});
+		return sheet;
 	}
 
-	private void print(NativeImage image, String name) {
+	private PhotoSheet print(NativeImage image, String name) {
 		int width = Math.min(SHEET_PIXELS, image.getWidth());
 		int height = Math.max(1, Math.round(width * image.getHeight() / (float) image.getWidth()));
 		NativeImage small = new NativeImage(width, height, false);
@@ -179,13 +188,16 @@ public final class PhotoAlbum {
 			file = null;
 		}
 
+		int maxLoose = VRState.VR_RUNNING ? MAX_LOOSE : MAX_LOOSE_WITHOUT_VR;
 		int loose = 0;
 		for (int i = this.sheets.size() - 1; i >= 0; i--) {
-			if (this.sheets.get(i).isLoose() && ++loose >= MAX_LOOSE) {
+			if (this.sheets.get(i).isLoose() && ++loose >= maxLoose) {
 				remove(i, true);
 			}
 		}
-		add(small, height / (float) width, file);
+		PhotoSheet sheet = add(small, height / (float) width, file);
+		PhotoSync.INSTANCE.shareLoose(sheet, pixels(sheet));
+		return sheet;
 	}
 
 	private PhotoSheet add(NativeImage picture, float aspect, String file) {
@@ -206,6 +218,10 @@ public final class PhotoAlbum {
 	 */
 	private void remove(int index, boolean forget) {
 		PhotoSheet sheet = this.sheets.remove(index);
+		if (sheet.looseId() != 0 && !sheet.isGhost()) {
+			// it was this player's, the others do not have to keep seeing it
+			PhotoSync.INSTANCE.dropLoose(sheet.looseId());
+		}
 		Minecraft.getInstance().getTextureManager().release(sheet.texture);
 		this.freeTextures.push(sheet.textureSlot);
 		if (forget && sheet.file != null && this.cache != null) {
@@ -418,11 +434,17 @@ public final class PhotoAlbum {
 
 	public void grab(PhotoSheet sheet, int hand, VRData vr) {
 		boolean wasPinned = sheet.isPinned();
+		boolean wasGhost = sheet.isGhost();
 		VRData.VRDevicePose pose = vr.getController(hand);
 		sheet.grab(hand, pose.getPosition(), pose.getMatrix().getNormalizedRotation(new Quaternionf()));
-		if (wasPinned && sheet.remoteId() != 0) {
+		if (wasGhost) {
+			// someone else's, this player's from here on. If someone was faster the server takes it back
+			PhotoSync.INSTANCE.takeLoose(sheet.looseId());
+		} else if (wasPinned && sheet.remoteId() != 0) {
 			PhotoSync.INSTANCE.unpin(sheet.remoteId());
 			sheet.setRemote(0, true);
+			// off the wall it is a loose sheet again, the others see it in the hand
+			PhotoSync.INSTANCE.shareLoose(sheet, sheet.packed == null ? pixels(sheet) : null);
 		} else if (wasPinned) {
 			save();
 		}
@@ -450,6 +472,10 @@ public final class PhotoAlbum {
 		if (sheet.isPinned()) {
 			CameraEffects.pinned(this.level, sheet.center());
 			if (PhotoSync.INSTANCE.isConnected()) {
+				if (sheet.looseId() != 0) {
+					PhotoSync.INSTANCE.dropLoose(sheet.looseId());
+					sheet.setLooseId(0);
+				}
 				PhotoSync.INSTANCE.pin(sheet, sheet.packed == null ? pixels(sheet) : null);
 			} else {
 				save();
@@ -490,7 +516,7 @@ public final class PhotoAlbum {
 			boolean burns = level.getFluidState(block).is(FluidTags.LAVA) ||
 					level.getBlockState(block).is(BlockTags.FIRE);
 			// what a server keeps is not burned on one client alone
-			if (burns && !sheet.isServerOwned()) {
+			if (burns && !sheet.isServerOwned() && !sheet.isGhost()) {
 				boolean burnedPinned = sheet.isPinned();
 				CameraEffects.burned(level, sheet.center());
 				remove(i, true);
@@ -527,6 +553,89 @@ public final class PhotoAlbum {
 		if (unpinned) {
 			save();
 		}
+	}
+
+	/**
+	 * a loose sheet of another player, shown where their client says it is
+	 *
+	 * @param picture owned by the sheet from here on
+	 */
+	public void addGhost(
+			long looseId, Vec3 position, Quaternionfc rotation, float aspect, NativeImage picture, byte[] packed) {
+		if (this.level == null) {
+			picture.close();
+			return;
+		}
+		PhotoSheet sheet = add(picture, aspect, null);
+		sheet.makeGhost(looseId, position, rotation);
+		sheet.packed = packed;
+	}
+
+	public void moveGhost(long looseId, Vec3 position, Quaternionfc rotation) {
+		for (PhotoSheet sheet : this.sheets) {
+			if (sheet.looseId() == looseId && sheet.isGhost()) {
+				sheet.ghostTo(position, rotation);
+			}
+		}
+	}
+
+	/**
+	 * The server says this loose sheet is gone, for this player: someone picked it up, its owner left, or it
+	 * was one too many. Whether it was a sheet of this player or one of someone else
+	 */
+	public void removeLoose(long looseId) {
+		for (int i = this.sheets.size() - 1; i >= 0; i--) {
+			PhotoSheet sheet = this.sheets.get(i);
+			if (sheet.looseId() == looseId && !sheet.isPinned()) {
+				// the server knows, it is not told again
+				sheet.setLooseId(0);
+				remove(i, true);
+			}
+		}
+	}
+
+	public boolean has(PhotoSheet sheet) {
+		return this.sheets.contains(sheet);
+	}
+
+	/**
+	 * @param visitor gets every sheet of this player the others see as a loose one
+	 */
+	public void forEachShared(Consumer<PhotoSheet> visitor) {
+		for (PhotoSheet sheet : this.sheets) {
+			if (sheet.looseId() != 0 && !sheet.isGhost() && !sheet.isPinned()) {
+				visitor.accept(sheet);
+			}
+		}
+	}
+
+	/**
+	 * A photo by a player who is not in VR and has no camera: what they see, as a sheet that drops in front of
+	 * them. They can't pick it up again, someone in VR can.
+	 *
+	 * @return false if the last one is still on its way
+	 */
+	public boolean takeWithoutCamera(LocalPlayer player, boolean printSheet) {
+		if (isPrinting()) {
+			return false;
+		}
+		Minecraft mc = Minecraft.getInstance();
+		this.developing = true;
+		this.developingSince = System.nanoTime();
+		Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget(), image -> mc.execute(() -> {
+			PhotoSheet sheet = develop(image, printSheet);
+			LocalPlayer now = mc.player;
+			if (sheet == null || now == null) {
+				return;
+			}
+			Vec3 look = now.getLookAngle();
+			Vec3 forward = new Vec3(look.x, 0, look.z);
+			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
+			// in front of the face, the picture towards the player
+			Quaternionf rotation = new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z));
+			sheet.toss(now.getEyePosition().add(forward.scale(0.7)), rotation, forward.scale(1.5));
+		}));
+		return true;
 	}
 
 	/**

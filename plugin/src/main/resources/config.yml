@@ -9,6 +9,11 @@ limits:
   total: 20000
   # largest picture a client may send, in bytes. Never more than 24000
   image-bytes: 20000
+  # Photos of one player that are not pinned: in a hand, falling, lying around. Only kept in memory, for the
+  # others to see and pick up. Over this the oldest go. 0 keeps them to the player who made them
+  loose-per-player: 8
+  # minutes after which a photo that lies around untouched is gone
+  loose-minutes: 10
   # milliseconds a player has to wait between two pins
   pin-cooldown-ms: 1500
 

@@ -32,6 +32,10 @@ public final class Protocol {
 	public static final byte C_UNPIN = 3;
 	public static final byte C_IMAGE = 4;
 	public static final byte C_CAMERA = 5;
+	public static final byte C_LOOSE_NEW = 6;
+	public static final byte C_LOOSE_POSE = 7;
+	public static final byte C_LOOSE_DROP = 8;
+	public static final byte C_LOOSE_TAKE = 9;
 
 	/** to the client */
 	public static final byte S_HELLO = 1;
@@ -42,6 +46,10 @@ public final class Protocol {
 	public static final byte S_FORGET = 6;
 	public static final byte S_RESET = 7;
 	public static final byte S_CAMERA = 8;
+	public static final byte S_LOOSE = 9;
+	public static final byte S_LOOSE_POSE = 10;
+	public static final byte S_LOOSE_GONE = 11;
+	public static final byte S_LOOSE_RESULT = 12;
 
 	/** why a sheet is gone: someone took it off, or what it was pinned to is gone and it falls */
 	public static final byte REMOVED_TAKEN = 0;
@@ -76,6 +84,36 @@ public final class Protocol {
 			float qz, float qw, float aspect, byte[] image) {}
 
 	public record PinResult(long reference, byte result, long id, long imageHash) {}
+
+	/** where something is and how it is turned */
+	public record Pose(double x, double y, double z, float qx, float qy, float qz, float qw) {
+		public boolean isSane() {
+			float length = qx * qx + qy * qy + qz * qz + qw * qw;
+			return Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z) && Float.isFinite(length) &&
+					length > 1.0E-6F;
+		}
+
+		/**
+		 * @return the same with a unit quaternion, anything else would also scale what is turned by it
+		 */
+		public Pose normalized() {
+			float length = (float) Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+			return new Pose(x, y, z, qx / length, qy / length, qz / length, qw / length);
+		}
+	}
+
+	/**
+	 * A sheet that is not pinned: in a hand, falling or lying somewhere. The server only keeps those in memory
+	 * and for a while, they are told about so the others see them and can pick them up
+	 */
+	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash) {}
+
+	public record NewLoose(long reference, Pose pose, byte[] image) {}
+
+	/**
+	 * @param id 0 if the server did not take it
+	 */
+	public record LooseResult(long reference, long id, long imageHash) {}
 
 	public record Limits(int version, int maxOwn, int maxPerChunk, int maxImageBytes) {}
 
@@ -308,6 +346,74 @@ public final class Protocol {
 		String name = fromServer ? in.readUTF() : "";
 		return new Camera(owner, name, in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(),
 				in.readFloat(), in.readFloat(), in.readFloat());
+	}
+
+	private static void writePose(DataOutputStream out, Pose pose) throws IOException {
+		writePose(out, pose.x, pose.y, pose.z, pose.qx, pose.qy, pose.qz, pose.qw);
+	}
+
+	public static Pose readPose(DataInputStream in) throws IOException {
+		return new Pose(in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
+				in.readFloat(), in.readFloat());
+	}
+
+	public static byte[] newLoose(NewLoose loose) {
+		return message(C_LOOSE_NEW, out -> {
+			out.writeLong(loose.reference);
+			writePose(out, loose.pose);
+			out.writeShort(loose.image.length);
+			out.write(loose.image);
+		});
+	}
+
+	public static NewLoose readNewLoose(DataInputStream in) throws IOException {
+		return new NewLoose(in.readLong(), readPose(in), readImage(in));
+	}
+
+	/**
+	 * @param type {@link #C_LOOSE_POSE} or {@link #S_LOOSE_POSE}, they look the same
+	 */
+	public static byte[] loosePose(byte type, long id, Pose pose) {
+		return message(type, out -> {
+			out.writeLong(id);
+			writePose(out, pose);
+		});
+	}
+
+	/**
+	 * @param type one of the messages that are nothing but the number of a loose sheet
+	 */
+	public static byte[] looseId(byte type, long id) {
+		return message(type, out -> out.writeLong(id));
+	}
+
+	public static byte[] loose(Loose loose) {
+		return message(S_LOOSE, out -> {
+			out.writeLong(loose.id);
+			out.writeLong(loose.owner.getMostSignificantBits());
+			out.writeLong(loose.owner.getLeastSignificantBits());
+			out.writeUTF(loose.ownerName);
+			writePose(out, loose.pose);
+			out.writeFloat(loose.aspect);
+			out.writeLong(loose.imageHash);
+		});
+	}
+
+	public static Loose readLoose(DataInputStream in) throws IOException {
+		return new Loose(in.readLong(), new UUID(in.readLong(), in.readLong()), in.readUTF(), readPose(in),
+				in.readFloat(), in.readLong());
+	}
+
+	public static byte[] looseResult(LooseResult result) {
+		return message(S_LOOSE_RESULT, out -> {
+			out.writeLong(result.reference);
+			out.writeLong(result.id);
+			out.writeLong(result.imageHash);
+		});
+	}
+
+	public static LooseResult readLooseResult(DataInputStream in) throws IOException {
+		return new LooseResult(in.readLong(), in.readLong(), in.readLong());
 	}
 
 	public static byte[] reset() {

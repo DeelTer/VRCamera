@@ -61,10 +61,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private static final int SAVE_INTERVAL_TICKS = 200;
 	// What a client may send: this many messages per second, and this many at once. An honest one sends a
 	// handful per minute, and ten per second while its camera is on
-	private static final double MESSAGES_PER_SECOND = 25.0;
+	private static final double MESSAGES_PER_SECOND = 40.0;
 	private static final double MESSAGES_BURST = 50.0;
 	// blocks a camera can be from the player it belongs to
 	private static final double CAMERA_LEASH = 48.0;
+	// blocks a sheet a player threw or dropped can be from them while they still move it
+	private static final double LOOSE_LEASH = 64.0;
+	private static final long LOOSE_COOLDOWN = 700;
 	// after this many messages over that, the client is not listened to for a while
 	private static final int DROPPED_BEFORE_IGNORED = 200;
 	private static final long IGNORED_MILLIS = 60_000;
@@ -78,6 +81,10 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private static final class Client {
 		// the photos this client was told about and not told to forget
 		final Set<Long> known = new HashSet<>();
+		// the same for the sheets that are not pinned, its own included
+		final Set<Long> knownLoose = new HashSet<>();
+		boolean sharingLoose;
+		long lastLoose;
 		final ArrayDeque<Long> wantedImages = new ArrayDeque<>();
 		long lastPin;
 		// one pin at a time is looked at, the rest of them wait in the client
@@ -90,6 +97,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	private SheetStore store;
+	private final LooseSheets loose = new LooseSheets();
 	private final Map<UUID, Client> clients = new HashMap<>();
 
 	private int maxPerPlayer;
@@ -103,6 +111,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private boolean anyoneTakesOff;
 	private boolean shareCameras;
 	private double cameraRange;
+	private int maxLoose;
+	private long looseLifetime;
 
 	@Override
 	public void onEnable() {
@@ -147,6 +157,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		this.anyoneTakesOff = getConfig().getBoolean("anyone-takes-off", false);
 		this.shareCameras = getConfig().getBoolean("cameras.share", true);
 		this.cameraRange = Math.max(4.0, getConfig().getDouble("cameras.range", 32));
+		this.maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
+		this.looseLifetime = Math.max(1, getConfig().getLong("limits.loose-minutes", 10)) * 60_000L;
 	}
 
 	private void saveIfChanged() {
@@ -183,6 +195,27 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				case Protocol.C_UNPIN -> {
 					if (client != null) {
 						unpin(player, in.readLong());
+					}
+				}
+				case Protocol.C_LOOSE_NEW -> {
+					if (client != null) {
+						newLoose(player, client, Protocol.readNewLoose(in));
+					}
+				}
+				case Protocol.C_LOOSE_POSE -> {
+					if (client != null) {
+						moveLoose(player, in.readLong(), Protocol.readPose(in));
+					}
+				}
+				case Protocol.C_LOOSE_DROP -> {
+					LooseSheets.Sheet dropped = client == null ? null : this.loose.get(in.readLong());
+					if (dropped != null && dropped.owner.equals(player.getUniqueId())) {
+						removeLoose(dropped, false);
+					}
+				}
+				case Protocol.C_LOOSE_TAKE -> {
+					if (client != null) {
+						takeLoose(player, client, in.readLong());
 					}
 				}
 				case Protocol.C_CAMERA -> {
@@ -252,6 +285,128 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 	}
 
+	/**
+	 * A player made a photo and its sheet is out in the world, not pinned to anything yet. Kept so the others see
+	 * it and can pick it up. The player can't be told no in a way that matters: refused, the sheet is only theirs
+	 */
+	private void newLoose(Player player, Client client, Protocol.NewLoose sheet) {
+		long now = System.currentTimeMillis();
+		Location at = player.getLocation();
+		double dx = sheet.pose().x() - at.getX();
+		double dy = sheet.pose().y() - at.getY();
+		double dz = sheet.pose().z() - at.getZ();
+		// it comes out of the camera, which is somewhere around its player
+		boolean refused = this.maxLoose == 0 || client.sharingLoose || now - client.lastLoose < LOOSE_COOLDOWN ||
+				!player.hasPermission("vrcamera.pin") || !sheet.pose().isSane() ||
+				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH) ||
+				sheet.image().length < 4 || sheet.image().length > this.maxImageBytes;
+		if (refused) {
+			send(player, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), 0, 0)));
+			return;
+		}
+		client.lastLoose = now;
+		client.sharingLoose = true;
+		UUID owner = player.getUniqueId();
+		UUID world = player.getWorld().getUID();
+		Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+			CleanPicture clean = clean(sheet.image(), this.maxImageBytes);
+			Bukkit.getScheduler().runTask(this, () -> {
+				Player still = Bukkit.getPlayer(owner);
+				Client stillClient = this.clients.get(owner);
+				if (stillClient != null) {
+					stillClient.sharingLoose = false;
+				}
+				if (still == null || stillClient == null) {
+					return;
+				}
+				if (clean == null || !still.getWorld().getUID().equals(world)) {
+					send(still, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), 0, 0)));
+					return;
+				}
+				// more than a player may have lying around: the oldest go, for everyone and for the player too
+				List<LooseSheets.Sheet> own = this.loose.of(owner);
+				for (int i = 0; i <= own.size() - this.maxLoose; i++) {
+					removeLoose(own.get(i), true);
+				}
+				long hash = hash(clean.jpeg);
+				LooseSheets.Sheet added = this.loose.add(world, owner, still.getName(), sheet.pose().normalized(),
+						clean.aspect, hash, clean.jpeg);
+				stillClient.knownLoose.add(added.id);
+				send(still, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), added.id, hash)));
+			});
+		});
+	}
+
+	private void moveLoose(Player player, long id, Protocol.Pose pose) {
+		LooseSheets.Sheet sheet = this.loose.get(id);
+		if (sheet == null || !sheet.owner.equals(player.getUniqueId()) || !pose.isSane()) {
+			return;
+		}
+		Location at = player.getLocation();
+		double dx = pose.x() - at.getX();
+		double dy = pose.y() - at.getY();
+		double dz = pose.z() - at.getZ();
+		if (!(dx * dx + dy * dy + dz * dz <= LOOSE_LEASH * LOOSE_LEASH)) {
+			return;
+		}
+		sheet.pose = pose.normalized();
+		sheet.touched = System.currentTimeMillis();
+		byte[] message = Protocol.loosePose(Protocol.S_LOOSE_POSE, id, sheet.pose);
+		for (Map.Entry<UUID, Client> entry : this.clients.entrySet()) {
+			if (!entry.getKey().equals(sheet.owner) && entry.getValue().knownLoose.contains(id)) {
+				Player watcher = Bukkit.getPlayer(entry.getKey());
+				if (watcher != null) {
+					send(watcher, message);
+				}
+			}
+		}
+	}
+
+	/**
+	 * A player picked up a sheet that was someone else's. It is theirs from here on. Who had it loses it: for
+	 * them it is one of the sheets of others now
+	 */
+	private void takeLoose(Player player, Client client, long id) {
+		LooseSheets.Sheet sheet = this.loose.get(id);
+		Location at = player.getLocation();
+		boolean allowed = sheet != null && !sheet.owner.equals(player.getUniqueId()) &&
+				sheet.world.equals(player.getWorld().getUID()) &&
+				sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= PIN_REACH * PIN_REACH;
+		if (!allowed) {
+			// Someone else was faster, or it is gone. The client took it already and has to let go of it again
+			client.knownLoose.remove(id);
+			send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, id));
+			return;
+		}
+		Player before = Bukkit.getPlayer(sheet.owner);
+		Client beforeClient = this.clients.get(sheet.owner);
+		if (before != null && beforeClient != null) {
+			// forgotten, so the next look at who is near what tells them about it again, as someone else's
+			beforeClient.knownLoose.remove(id);
+			send(before, Protocol.looseId(Protocol.S_LOOSE_GONE, id));
+		}
+		sheet.owner = player.getUniqueId();
+		sheet.ownerName = player.getName();
+		sheet.touched = System.currentTimeMillis();
+		client.knownLoose.add(id);
+	}
+
+	/**
+	 * @param alsoOwner if the one it belongs to is told as well. Not when they said so themselves
+	 */
+	private void removeLoose(LooseSheets.Sheet sheet, boolean alsoOwner) {
+		this.loose.remove(sheet.id);
+		byte[] message = Protocol.looseId(Protocol.S_LOOSE_GONE, sheet.id);
+		for (Map.Entry<UUID, Client> entry : this.clients.entrySet()) {
+			if (entry.getValue().knownLoose.remove(sheet.id) && (alsoOwner || !entry.getKey().equals(sheet.owner))) {
+				Player watcher = Bukkit.getPlayer(entry.getKey());
+				if (watcher != null) {
+					send(watcher, message);
+				}
+			}
+		}
+	}
+
 	private void wantImage(Client client, long hash) {
 		// only so many wait at once, a client can't make the server queue up without end
 		if (client.wantedImages.size() >= this.imageQueue || client.wantedImages.contains(hash)) {
@@ -265,6 +420,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				return;
 			}
 		}
+		for (long id : client.knownLoose) {
+			LooseSheets.Sheet sheet = this.loose.get(id);
+			if (sheet != null && sheet.imageHash == hash) {
+				client.wantedImages.add(hash);
+				return;
+			}
+		}
 	}
 
 	private void sendImages() {
@@ -274,7 +436,10 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			if (player == null) {
 				continue;
 			}
-			byte[] image = this.store.image(hash);
+			byte[] image = this.loose.image(hash);
+			if (image == null) {
+				image = this.store.image(hash);
+			}
 			if (image != null) {
 				send(player, Protocol.image(hash, image));
 			}
@@ -540,6 +705,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * tells every client about the photos that came into its range, and to forget the ones that are far away
 	 */
 	private void updateRanges() {
+		// nobody said anything about it for too long: its owner is gone in some way that was not noticed
+		long expired = System.currentTimeMillis() - this.looseLifetime;
+		for (LooseSheets.Sheet sheet : new ArrayList<>(this.loose.all())) {
+			if (sheet.touched < expired) {
+				removeLoose(sheet, true);
+			}
+		}
 		double send = this.sendRange * this.sendRange;
 		double forget = this.forgetRange * this.forgetRange;
 		int chunks = (int) Math.ceil(this.sendRange / 16.0);
@@ -575,6 +747,26 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 						Math.min(entered.size(), from + Protocol.MAX_SHEETS_PER_MESSAGE))));
 			}
 
+			for (LooseSheets.Sheet sheet : this.loose.all()) {
+				if (sheet.world.equals(world) && sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= send &&
+						client.knownLoose.add(sheet.id))
+				{
+					send(player, Protocol.loose(sheet.toProtocol()));
+				}
+			}
+			for (Iterator<Long> known = client.knownLoose.iterator(); known.hasNext(); ) {
+				LooseSheets.Sheet sheet = this.loose.get(known.next());
+				if (sheet == null) {
+					known.remove();
+				} else if (!sheet.owner.equals(player.getUniqueId()) && (!sheet.world.equals(world) ||
+						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget))
+				{
+					// its own are the client's to keep track of, wherever it walks
+					send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, sheet.id));
+					known.remove();
+				}
+			}
+
 			List<Long> left = new ArrayList<>();
 			for (Iterator<Long> known = client.known.iterator(); known.hasNext(); ) {
 				StoredSheet sheet = this.store.get(known.next());
@@ -595,14 +787,18 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	@EventHandler
 	public void onQuit(PlayerQuitEvent event) {
+		this.loose.of(event.getPlayer().getUniqueId()).forEach(sheet -> removeLoose(sheet, false));
 		this.clients.remove(event.getPlayer().getUniqueId());
 	}
 
 	@EventHandler
 	public void onWorldChange(PlayerChangedWorldEvent event) {
+		// what a player left lying in the other world is not theirs to move anymore
+		this.loose.of(event.getPlayer().getUniqueId()).forEach(sheet -> removeLoose(sheet, false));
 		Client client = this.clients.get(event.getPlayer().getUniqueId());
 		if (client != null) {
 			client.known.clear();
+			client.knownLoose.clear();
 			client.wantedImages.clear();
 			send(event.getPlayer(), Protocol.reset());
 		}

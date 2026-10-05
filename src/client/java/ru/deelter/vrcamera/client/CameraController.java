@@ -657,6 +657,14 @@ public final class CameraController implements Tracker {
 	 */
 	public boolean takePhoto() {
 		LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null && !isVRRunning()) {
+			// no VR, no camera: a photo of what the player sees
+			if (!PhotoAlbum.INSTANCE.takeWithoutCamera(player, this.config.photoSheet)) {
+				return false;
+			}
+			CameraEffects.shutter(player);
+			return true;
+		}
 		if (!this.engaged || player == null) {
 			notify(Component.translatable("vrcamera.message.photo.off"));
 			return false;

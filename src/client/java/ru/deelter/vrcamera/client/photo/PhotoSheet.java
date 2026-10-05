@@ -51,12 +51,16 @@ public final class PhotoSheet {
 	private static final double PIN_MAX_SPEED = 1.2;
 	// seconds between looks at what a pinned sheet hangs on, with a few dozen sheets every frame would add up
 	private static final double SUPPORT_CHECK_TIME = 0.5;
+	private static final double GHOST_CATCH_UP = 0.15;
+	private static final double GHOST_JUMP = 6.0;
 	// seconds until the picture starts to show on a new sheet, and until it is all there
 	private static final double DEVELOP_DELAY = 0.8;
 	private static final double DEVELOP_TIME = 5.0;
 
 	private enum State {
-		PRINTING, HELD, FALLING, LYING, PINNED
+		PRINTING, HELD, FALLING, LYING, PINNED,
+		/** someone else's loose sheet: shown where their client says it is, not moved here */
+		GHOST
 	}
 
 	public final Identifier texture;
@@ -77,6 +81,12 @@ public final class PhotoSheet {
 	private boolean hung = true;
 	private double supportCheck = Math.random() * SUPPORT_CHECK_TIME;
 
+	// what the server calls it while it is not pinned and shared with the others, 0 if it is not
+	private long looseId;
+	private Vec3 ghostPosition = Vec3.ZERO;
+	private final Quaternionf ghostRotation = new Quaternionf();
+	private Vec3 sharedPosition;
+	private final Quaternionf sharedRotation = new Quaternionf();
 	// Set while a server knows this sheet, 0 for one that is only on this client
 	private long remoteId;
 	// sent to the server and not answered yet, it is not to be touched until then
@@ -193,7 +203,7 @@ public final class PhotoSheet {
 			// what someone else pinned is theirs, unless the server says otherwise
 			return this.removable && !this.awaitingServer;
 		}
-		return isLoose() || (this.state == State.HELD && this.hand != hand);
+		return isLoose() || isGhost() || (this.state == State.HELD && this.hand != hand);
 	}
 
 	public int hand() {
@@ -360,6 +370,60 @@ public final class PhotoSheet {
 	/**
 	 * comes off what it is pinned to, or is blown away from where it lies
 	 */
+	public long looseId() {
+		return this.looseId;
+	}
+
+	public void setLooseId(long looseId) {
+		this.looseId = looseId;
+	}
+
+	public boolean isGhost() {
+		return this.state == State.GHOST;
+	}
+
+	/**
+	 * @param looseId what the server calls the sheet
+	 */
+	public void makeGhost(long looseId, Vec3 position, Quaternionfc rotation) {
+		this.looseId = looseId;
+		this.position = position;
+		this.rotation.set(rotation);
+		this.ghostPosition = position;
+		this.ghostRotation.set(rotation);
+		this.state = State.GHOST;
+		this.age = DEVELOP_DELAY + DEVELOP_TIME;
+	}
+
+	public void ghostTo(Vec3 position, Quaternionfc rotation) {
+		this.ghostPosition = position;
+		this.ghostRotation.set(rotation);
+	}
+
+	/**
+	 * a sheet that was not printed by a camera: it starts in the air and falls
+	 */
+	public void toss(Vec3 position, Quaternionfc rotation, Vec3 velocity) {
+		this.position = position;
+		this.rotation.set(rotation);
+		this.velocity = velocity;
+		this.state = State.FALLING;
+	}
+
+	/**
+	 * @return if it is somewhere else than when the others were last told. Tells them from here on that it is
+	 * where it is now
+	 */
+	public boolean movedSinceShared() {
+		boolean moved = this.sharedPosition == null || this.sharedPosition.distanceToSqr(this.position) > 1.0E-4 ||
+				Math.abs(this.sharedRotation.dot(this.rotation)) < 0.9995F;
+		if (moved) {
+			this.sharedPosition = this.position;
+			this.sharedRotation.set(this.rotation);
+		}
+		return moved;
+	}
+
 	public void blowOff(Vec3 velocity) {
 		if (this.state == State.PINNED || this.state == State.LYING || this.state == State.FALLING) {
 			this.velocity = velocity;
@@ -383,6 +447,16 @@ public final class PhotoSheet {
 			this.hung = false;
 		} else if (this.state == State.FALLING) {
 			fall(level, dt);
+		} else if (this.state == State.GHOST) {
+			// heard of a few times per second, shown as it comes it would move in steps
+			if (this.position.distanceToSqr(this.ghostPosition) > GHOST_JUMP * GHOST_JUMP) {
+				this.position = this.ghostPosition;
+				this.rotation.set(this.ghostRotation);
+			} else {
+				float follow = (float) (1.0 - Math.exp(-dt / GHOST_CATCH_UP));
+				this.position = this.position.lerp(this.ghostPosition, follow);
+				this.rotation.slerp(this.ghostRotation, follow);
+			}
 		} else if (this.state == State.PINNED) {
 			this.supportCheck -= dt;
 			// Not in an unloaded chunk, there is nothing there for a moment and every sheet would come off

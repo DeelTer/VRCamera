@@ -257,14 +257,19 @@ them, and they stay when you log off. The plugin jar is built together with the 
 in `build/libs/`. Put it into the server's `plugins` folder. Players without the mod see nothing and are not
 affected.
 
-- Only pinned sheets are shared. Loose ones stay yours alone.
+- Pinned sheets are kept by the server and stay.
+- Loose sheets, in a hand, falling or lying around, are shown to the others too, but only held in the server's
+  memory: at most 8 per player, gone when their owner leaves, changes the world or after 10 minutes untouched.
+- Anyone in VR can pick up a loose sheet of someone else. It is theirs from then on, and they can pin it.
+- A player who is not in VR takes a photo of what they see with the photo key (`F6`). The sheet drops in front of
+  them. They can't pick it up again, a player in VR can. They keep at most 3 lying around, older ones go.
 - You take your own sheets off. Others' sheets only if the server lets you.
 - When the block a sheet is pinned to is broken or blown up, it falls for everyone.
 - The server may refuse a pin: too many of your own, too many in that spot, or too fast. The sheet then comes off
   again and a message says why.
 - `showOthersPhotos: false` shows only your own. Yours are still shared.
 - Players within 32 blocks see your camera where it is, in your hand or flying, with "YourName Camera" over it.
-  `shareCamera: false` hides it from them. Sheets you hold are not shown to others, only pinned ones.
+  `shareCamera: false` hides it from them.
 - A player with the mod who is not in VR sees the pinned sheets and the cameras too, but can't pick anything up.
 
 What keeps it light:
@@ -282,6 +287,8 @@ Server settings, `plugins/VRCameraSync/config.yml`:
 |---|---|---|
 | `limits.per-player` | `64` | sheets one player may have pinned |
 | `limits.per-chunk` | `16` | sheets in one chunk, of all players together |
+| `limits.loose-per-player` | `8` | loose sheets of one player the others see; `0` keeps them to their owner |
+| `limits.loose-minutes` | `10` | minutes after which an untouched loose sheet is gone |
 | `limits.total` | `20000` | sheets on the whole server |
 | `limits.image-bytes` | `20000` | largest picture a client may send |
 | `limits.pin-cooldown-ms` | `1500` | wait between two pins of a player |

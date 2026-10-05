@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,9 @@ public final class PhotoSync {
 	private static final int HELLO_TRIES = 5;
 	private static final int HELLO_INTERVAL_TICKS = 40;
 	private static final int PIN_WAIT_TICKS = 200;
+	// five times per second the others are told where this player's loose sheets are
+	private static final int POSE_INTERVAL_TICKS = 4;
+	private static final int MAX_LOOSE_KNOWN = 512;
 	// sheets a server can make this client remember, and how far from square one may be
 	private static final int MAX_KNOWN = 4096;
 	private static final float MIN_ASPECT = 0.25F;
@@ -75,6 +79,12 @@ public final class PhotoSync {
 	// sheets sent to be pinned, by the number the answer will name
 	private final Map<Long, PhotoSheet> pinning = new HashMap<>();
 	private final Map<Long, Integer> pinningSince = new HashMap<>();
+	// loose sheets of other players the server told about, and the ones of them that are in the album
+	private final Map<Long, Protocol.Loose> looseKnown = new HashMap<>();
+	private final Set<Long> ghosts = new HashSet<>();
+	// sheets of this player that were sent to be shared, by the number the answer will name
+	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
+	private final List<PhotoSheet> packedToShare = new ArrayList<>();
 	private int hellos;
 	private long nextReference = 1;
 	private int ticks;
@@ -115,6 +125,10 @@ public final class PhotoSync {
 		this.pinningSince.clear();
 		this.hellos = 0;
 		RemoteCameras.INSTANCE.clear();
+		this.looseKnown.clear();
+		this.ghosts.clear();
+		this.sharing.clear();
+		this.packedToShare.clear();
 	}
 
 	/**
@@ -122,6 +136,9 @@ public final class PhotoSync {
 	 * server told about are still known, and come back from here the next time the player is near them
 	 */
 	public void sheetsDropped() {
+		this.ghosts.clear();
+		this.sharing.clear();
+		this.packedToShare.clear();
 		this.loaded.clear();
 		this.waiting.clear();
 		this.askedServer.clear();
@@ -161,7 +178,33 @@ public final class PhotoSync {
 				case Protocol.S_SHEETS -> Protocol.readSheets(in).forEach(this::learn);
 				case Protocol.S_REMOVE -> removed(in.readLong(), in.readByte());
 				case Protocol.S_FORGET -> Protocol.readForget(in).forEach(this::forget);
-				case Protocol.S_RESET -> new ArrayList<>(this.known.keySet()).forEach(this::forget);
+				case Protocol.S_RESET -> {
+					new ArrayList<>(this.known.keySet()).forEach(this::forget);
+					new ArrayList<>(this.looseKnown.keySet()).forEach(this::looseGone);
+				}
+				case Protocol.S_LOOSE -> {
+					Protocol.Loose loose = Protocol.readLoose(in);
+					if (loose.pose().isSane() && loose.aspect() >= MIN_ASPECT && loose.aspect() <= 1.0F / MIN_ASPECT &&
+							this.looseKnown.size() < MAX_LOOSE_KNOWN)
+					{
+						this.looseKnown.put(loose.id(), new Protocol.Loose(loose.id(), loose.owner(), loose.ownerName(),
+								loose.pose().normalized(), loose.aspect(), loose.imageHash()));
+					}
+				}
+				case Protocol.S_LOOSE_POSE -> {
+					long id = in.readLong();
+					Protocol.Pose pose = Protocol.readPose(in);
+					Protocol.Loose loose = this.looseKnown.get(id);
+					if (loose != null && pose.isSane()) {
+						Protocol.Pose at = pose.normalized();
+						this.looseKnown.put(id, new Protocol.Loose(id, loose.owner(), loose.ownerName(), at,
+								loose.aspect(), loose.imageHash()));
+						PhotoAlbum.INSTANCE.moveGhost(id, new Vec3(at.x(), at.y(), at.z()),
+								new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()));
+					}
+				}
+				case Protocol.S_LOOSE_GONE -> looseGone(in.readLong());
+				case Protocol.S_LOOSE_RESULT -> shared(Protocol.readLooseResult(in));
 				case Protocol.S_IMAGE -> {
 					long hash = in.readLong();
 					byte[] image = Protocol.readImage(in);
@@ -197,6 +240,92 @@ public final class PhotoSync {
 		this.known.put(sheet.id(), new Protocol.Sheet(sheet.id(), sheet.owner(), sheet.ownerName(), sheet.x(),
 				sheet.y(), sheet.z(), sheet.qx() / length, sheet.qy() / length, sheet.qz() / length,
 				sheet.qw() / length, sheet.aspect(), sheet.imageHash(), sheet.removable()));
+	}
+
+	private void looseGone(long id) {
+		this.looseKnown.remove(id);
+		this.ghosts.remove(id);
+		PhotoAlbum.INSTANCE.removeLoose(id);
+	}
+
+	/**
+	 * A sheet of this player that is not pinned, to be seen by the others: fresh out of the camera, or taken off
+	 * a wall. Refused by the server it is just not shared.
+	 *
+	 * @param picture the pixels of the sheet, null if it still has what it was sent with before
+	 */
+	public void shareLoose(PhotoSheet sheet, PhotoCodec.Picture picture) {
+		if (!this.connected || (picture == null && sheet.packed == null)) {
+			return;
+		}
+		int maxBytes = Math.min(this.limits.maxImageBytes(), Protocol.MAX_IMAGE_BYTES);
+		CompletableFuture.supplyAsync(() -> {
+			try {
+				return sheet.packed != null && sheet.packed.length <= maxBytes ? sheet.packed :
+						PhotoCodec.pack(picture, maxBytes);
+			} catch (IOException | RuntimeException e) {
+				Vrcamera.LOGGER.warn("VRCamera: the photo could not be packed for the server", e);
+				return null;
+			}
+		}).thenAcceptAsync(image -> {
+			if (image == null || !this.connected || !PhotoAlbum.INSTANCE.has(sheet) || sheet.isPinned()) {
+				return;
+			}
+			sheet.packed = image;
+			// Not sent from here. A sheet fresh out of the camera is put in its place by the next frame, this may
+			// run before that, and the server would be told it is at the origin of the world
+			this.packedToShare.add(sheet);
+		}, Minecraft.getInstance());
+	}
+
+	private void sharePacked() {
+		for (Iterator<PhotoSheet> packed = this.packedToShare.iterator(); packed.hasNext(); ) {
+			PhotoSheet sheet = packed.next();
+			if (!PhotoAlbum.INSTANCE.has(sheet) || sheet.isPinned() || sheet.isGhost()) {
+				packed.remove();
+			} else if (sheet.position().lengthSqr() > 0) {
+				packed.remove();
+				long reference = this.nextReference++;
+				this.sharing.put(reference, sheet);
+				send(Protocol.newLoose(new Protocol.NewLoose(reference, pose(sheet), sheet.packed)));
+			}
+		}
+	}
+
+	private static Protocol.Pose pose(PhotoSheet sheet) {
+		return new Protocol.Pose(sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
+				sheet.rotation().y, sheet.rotation().z, sheet.rotation().w);
+	}
+
+	private void shared(Protocol.LooseResult result) {
+		PhotoSheet sheet = this.sharing.remove(result.reference());
+		if (sheet == null || result.id() == 0) {
+			return;
+		}
+		if (!PhotoAlbum.INSTANCE.has(sheet) || sheet.isPinned() || sheet.isGhost()) {
+			// gone or pinned while the server was thinking about it
+			dropLoose(result.id());
+			return;
+		}
+		sheet.setLooseId(result.id());
+		this.packed.put(result.imageHash(), sheet.packed);
+	}
+
+	public void dropLoose(long id) {
+		if (this.connected) {
+			send(Protocol.looseId(Protocol.C_LOOSE_DROP, id));
+		}
+	}
+
+	/**
+	 * the player picked up a loose sheet of someone else
+	 */
+	public void takeLoose(long id) {
+		this.looseKnown.remove(id);
+		this.ghosts.remove(id);
+		if (this.connected) {
+			send(Protocol.looseId(Protocol.C_LOOSE_TAKE, id));
+		}
 	}
 
 	private void forget(long id) {
@@ -244,6 +373,15 @@ public final class PhotoSync {
 			}
 			return overdue;
 		});
+		sharePacked();
+		if (this.ticks % POSE_INTERVAL_TICKS == 0) {
+			// only the ones that moved, a sheet that lies still costs nothing
+			PhotoAlbum.INSTANCE.forEachShared(sheet -> {
+				if (sheet.movedSinceShared()) {
+					send(Protocol.loosePose(Protocol.C_LOOSE_POSE, sheet.looseId(), pose(sheet)));
+				}
+			});
+		}
 		if (this.ticks % SCAN_INTERVAL_TICKS != 0) {
 			return;
 		}
@@ -267,6 +405,19 @@ public final class PhotoSync {
 			}
 		}
 		wanted.sort(Comparator.comparingDouble(sheet -> eyes.distanceToSqr(sheet.x(), sheet.y(), sheet.z())));
+		for (Protocol.Loose loose : this.looseKnown.values()) {
+			double distance = eyes.distanceToSqr(loose.pose().x(), loose.pose().y(), loose.pose().z());
+			if (this.ghosts.contains(loose.id())) {
+				if (!showOthers || distance > UNLOAD_DISTANCE * UNLOAD_DISTANCE) {
+					this.ghosts.remove(loose.id());
+					PhotoAlbum.INSTANCE.removeLoose(loose.id());
+				}
+			} else if (showOthers && distance < LOAD_DISTANCE * LOAD_DISTANCE &&
+					this.loaded.size() + this.ghosts.size() + this.waiting.size() < MAX_LOADED)
+			{
+				fetch(loose.imageHash());
+			}
+		}
 		for (Protocol.Sheet sheet : wanted) {
 			if (this.loaded.size() + this.waiting.size() >= MAX_LOADED) {
 				break;
@@ -338,21 +489,36 @@ public final class PhotoSync {
 	 * puts every known sheet with that picture into the world
 	 */
 	private void show(long hash, PhotoCodec.Picture picture, byte[] image) {
+		for (Protocol.Loose loose : this.looseKnown.values()) {
+			if (loose.imageHash() == hash && this.ghosts.add(loose.id())) {
+				Protocol.Pose at = loose.pose();
+				PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
+						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), pixels(picture), image);
+			}
+		}
 		for (Protocol.Sheet sheet : this.known.values()) {
 			if (sheet.imageHash() != hash || this.loaded.contains(sheet.id())) {
 				continue;
 			}
-			// each sheet owns its picture, also if two show the same
-			NativeImage pixels = new NativeImage(picture.width(), picture.height(), false);
-			for (int y = 0; y < picture.height(); y++) {
-				for (int x = 0; x < picture.width(); x++) {
-					pixels.setPixel(x, y, picture.argb()[y * picture.width() + x] | 0xFF000000);
-				}
-			}
 			PhotoAlbum.INSTANCE.addRemote(sheet.id(), sheet.removable(), new Vec3(sheet.x(), sheet.y(), sheet.z()),
-					new Quaternionf(sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw()), sheet.aspect(), pixels, image);
+					new Quaternionf(sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw()), sheet.aspect(),
+					pixels(picture), image);
 			this.loaded.add(sheet.id());
 		}
+	}
+
+	/**
+	 * @return the picture as the game wants it. A new one every time: each sheet owns its own, also if two show
+	 * the same
+	 */
+	private static NativeImage pixels(PhotoCodec.Picture picture) {
+		NativeImage pixels = new NativeImage(picture.width(), picture.height(), false);
+		for (int y = 0; y < picture.height(); y++) {
+			for (int x = 0; x < picture.width(); x++) {
+				pixels.setPixel(x, y, picture.argb()[y * picture.width() + x] | 0xFF000000);
+			}
+		}
+		return pixels;
 	}
 
 	/**
