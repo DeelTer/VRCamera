@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"id": "vrcamera",
+	"version": "${version}",
+	"name": "VRCamera",
+	"description": "Cinematic follow camera and auto director for the Vivecraft handheld camera",
+	"authors": ["DeelTer"],
+	"contact": {},
+	"license": "All-Rights-Reserved",
+	"icon": "assets/vrcamera/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"ru.deelter.vrcamera.client.VrcameraClient"
+		],
+		"modmenu": [
+			"ru.deelter.vrcamera.client.gui.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "vrcamera.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=${loader_version}",
+		"fabric-api": "*",
+		"minecraft": "${minecraft_version}",
+		"vivecraft": ">=1.3.13"
+	},
+	"suggests": {
+		"cloth-config": "*",
+		"modmenu": "*"
+	}
+}

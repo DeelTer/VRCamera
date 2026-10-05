@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "ru.deelter.vrcamera.mixin.client",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"LevelExtractorMixin",
+		"VRWidgetHelperMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

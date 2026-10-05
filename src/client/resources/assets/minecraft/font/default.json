@@ -1,0 +1,13 @@
+{
+	"providers": [
+		{
+			"type": "bitmap",
+			"file": "vrcamera:font/camera.png",
+			"ascent": 8,
+			"height": 8,
+			"chars": [
+				"\ue7c0"
+			]
+		}
+	]
+}
