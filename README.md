@@ -63,7 +63,7 @@
 ./gradlew build -Pmc=26.3
 ```
 
-Готовые моды: `build/libs/vrcamera-1.0+26.2.jar` и `build/libs/vrcamera-1.0+26.3.jar`. Jar одной версии на другой
+Готовые моды: `build/libs/vrcamera-1.0.0+26.2.jar` и `build/libs/vrcamera-1.0.0+26.3.jar`. Jar одной версии на другой
 не запустится: в нём зашита версия Minecraft, а коды клавиш в 26.3 другие.
 
 Версии Minecraft и зависимостей для каждой сборки лежат в `versions/<версия>.properties`. Чтобы добавить новую
@@ -74,7 +74,7 @@
 
 Положить в папку `mods` профиля Minecraft с Fabric:
 
-- `vrcamera-1.0+<версия Minecraft>.jar`
+- `vrcamera-1.0.0+<версия Minecraft>.jar`
 - Vivecraft для той же версии Minecraft (Fabric)
 - Fabric API
 - по желанию Cloth Config и Mod Menu
