@@ -5,6 +5,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -360,6 +361,15 @@ public final class CameraController implements Tracker {
 		this.director = new Director(this.config);
 		this.followShot = null;
 		this.rig.reset();
+	}
+
+	/**
+	 * the player hit something, that is what a fight is filmed against
+	 */
+	public void onAttack(Entity entity) {
+		if (this.mode == Mode.DIRECTOR) {
+			this.director.onAttack(entity);
+		}
 	}
 
 	public void toggleHold() {

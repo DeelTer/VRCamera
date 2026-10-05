@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.client;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -8,6 +9,7 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
+import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -16,7 +18,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
+import net.minecraft.world.InteractionResult;
 import org.vivecraft.api.client.VRClientAPI;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
@@ -27,15 +29,18 @@ public class VrcameraClient implements ClientModInitializer {
 	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
 		Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "main"));
 
+	// key codes are taken from the game, they are not the same in every Minecraft version
+	private static final int UNBOUND = InputConstants.UNKNOWN.getValue();
+
 	// regular key mappings, Vivecraft makes those bindable to VR controllers as well
-	private final KeyMapping keyMode = new KeyMapping("key.vrcamera.mode", GLFW.GLFW_KEY_F8, CATEGORY);
-	private final KeyMapping keyNext = new KeyMapping("key.vrcamera.next", GLFW.GLFW_KEY_F9, CATEGORY);
-	private final KeyMapping keyHold = new KeyMapping("key.vrcamera.hold", GLFW.GLFW_KEY_F10, CATEGORY);
-	private final KeyMapping keyPreset = new KeyMapping("key.vrcamera.preset", GLFW.GLFW_KEY_F7, CATEGORY);
-	private final KeyMapping keyNewPreset = new KeyMapping("key.vrcamera.preset.new", GLFW.GLFW_KEY_UNKNOWN,
+	private final KeyMapping keyMode = new KeyMapping("key.vrcamera.mode", InputConstants.KEY_F8, CATEGORY);
+	private final KeyMapping keyNext = new KeyMapping("key.vrcamera.next", InputConstants.KEY_F9, CATEGORY);
+	private final KeyMapping keyHold = new KeyMapping("key.vrcamera.hold", InputConstants.KEY_F10, CATEGORY);
+	private final KeyMapping keyPreset = new KeyMapping("key.vrcamera.preset", InputConstants.KEY_F7, CATEGORY);
+	private final KeyMapping keyNewPreset = new KeyMapping("key.vrcamera.preset.new", UNBOUND,
 		CATEGORY);
-	private final KeyMapping keySummon = new KeyMapping("key.vrcamera.summon", GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
-	private final KeyMapping keyDebug = new KeyMapping("key.vrcamera.debug", GLFW.GLFW_KEY_UNKNOWN, CATEGORY);
+	private final KeyMapping keySummon = new KeyMapping("key.vrcamera.summon", UNBOUND, CATEGORY);
+	private final KeyMapping keyDebug = new KeyMapping("key.vrcamera.debug", UNBOUND, CATEGORY);
 
 	// set by the settings command, which can't open a screen while the chat is still closing
 	private static boolean openSettings;
@@ -86,6 +91,14 @@ public class VrcameraClient implements ClientModInitializer {
 			while (this.keyDebug.consumeClick()) {
 				controller.toggleDebug();
 			}
+		});
+
+		// tells exactly what was hit, also for hits by swinging a controller, which don't go through the crosshair
+		AttackEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
+			if (level.isClientSide() && player == Minecraft.getInstance().player) {
+				controller.onAttack(entity);
+			}
+			return InteractionResult.PASS;
 		});
 
 		// don't leave the changed camera settings behind in the Vivecraft config

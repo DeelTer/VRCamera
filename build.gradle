@@ -3,7 +3,16 @@ plugins {
     id 'maven-publish'
 }
 
-version = project.mod_version
+// the versions of Minecraft and of the mods built against depend on the Minecraft version that is built for
+def versionFile = file("versions/${project.mc}.properties")
+if (!versionFile.exists()) {
+    throw new GradleException("No versions/${project.mc}.properties, can't build for Minecraft ${project.mc}")
+}
+def versionProperties = new Properties()
+versionFile.withInputStream { versionProperties.load(it) }
+versionProperties.each { key, value -> project.ext.set(key, value) }
+
+version = "${project.mod_version}+${project.minecraft_version}"
 group = project.maven_group
 
 base {

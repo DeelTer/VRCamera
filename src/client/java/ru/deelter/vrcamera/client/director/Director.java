@@ -5,7 +5,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -65,6 +64,8 @@ public final class Director {
 	private double mineTimer;
 	private double fallTimer;
 	private double stillTime;
+	// what the player hit since the last update
+	private Entity attacked;
 
 	// candidate search state
 	private Shot best;
@@ -118,6 +119,13 @@ public final class Director {
 	 */
 	public void next() {
 		this.forceNext = true;
+	}
+
+	/**
+	 * the player hit something
+	 */
+	public void onAttack(Entity entity) {
+		this.attacked = entity;
 	}
 
 	/**
@@ -422,12 +430,12 @@ public final class Director {
 
 		this.combatTimer -= dt;
 		this.mineTimer -= dt;
-		if (player.swinging && mc.hitResult instanceof EntityHitResult hit &&
-			hit.getEntity() instanceof LivingEntity && hit.getEntity().isAlive())
-		{
-			// the player attacks something, hitting a boat or an item frame is no fight
+		Entity attacked = this.attacked;
+		this.attacked = null;
+		if (attacked instanceof LivingEntity && attacked.isAlive()) {
+			// hitting a boat or an item frame is no fight
 			this.combatTimer = 5.0;
-			subject.target = hit.getEntity();
+			subject.target = attacked;
 		} else if (player.hurtTime > 0) {
 			this.combatTimer = 5.0;
 			if (subject.target == null) {
