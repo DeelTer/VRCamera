@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+}
+
+// the server plugin that lets players with the mod see each other's pinned photos
+version = rootProject.mod_version
+group = rootProject.maven_group
+
+base {
+    archivesName = 'vrcamera-sync'
+}
+
+repositories {
+    maven {
+        name = 'PaperMC'
+        url = 'https://repo.papermc.io/repository/maven-public/'
+    }
+}
+
+dependencies {
+    compileOnly "io.papermc.paper:paper-api:${rootProject.paper_api_version}"
+}
+
+sourceSets {
+    main {
+        java {
+            // the protocol, the same source the mod is built with
+            srcDir rootProject.file('src/shared/java')
+        }
+    }
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 25
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filteringCharset 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand 'version': project.version
+    }
+}
+
+jar {
+    // next to the jars of the mod
+    destinationDirectory = rootProject.layout.buildDirectory.dir('libs')
+    from(rootProject.file('LICENSE')) {
+        rename { "${it}_vrcamera-sync" }
+    }
+}

@@ -175,5 +175,13 @@
 	"vrcamera.option.photoGesture.tooltip": "Como tirar uma foto com a câmera na mão. Mesma mão: segure o outro botão da mão que segura a câmera, o gatilho se você a segura pelo grip ou o grip se a segura pelo gatilho. Outra mão: aproxime a outra mão da câmera e segure o botão de interação dela. A tecla e /vrcam photo funcionam sempre.",
 	"vrcamera.option.photoGesture.same_hand": "Outro botão, mesma mão",
 	"vrcamera.option.photoGesture.other_hand": "Outra mão na câmera",
-	"vrcamera.option.photoGesture.off": "Desligado"
+	"vrcamera.option.photoGesture.off": "Desligado",
+	"vrcamera.option.showOthersPhotos": "Mostrar fotos de outros jogadores",
+	"vrcamera.option.showOthersPhotos.tooltip": "Em servidores com o plugin VRCameraSync, as fotos que você fixa são vistas por todos que têm o mod, e você vê as deles. Desligado: só as suas aparecem. Suas fotos continuam sendo compartilhadas.",
+	"vrcamera.message.pin.too_many": "Câmera VR: você tem fotos fixadas demais neste servidor",
+	"vrcamera.message.pin.chunk_full": "Câmera VR: já há fotos demais neste lugar",
+	"vrcamera.message.pin.too_fast": "Câmera VR: devagar, fixe de novo daqui a pouco",
+	"vrcamera.message.pin.refused": "Câmera VR: o servidor não aceitou esta foto",
+	"vrcamera.option.shareCamera": "Mostrar minha câmera aos outros",
+	"vrcamera.option.shareCamera.tooltip": "Em servidores com o plugin VRCameraSync, jogadores com o mod a até 32 blocos veem sua câmera onde ela está, com seu nome em cima. Desligado: ninguém a vê. As fotos fixadas são compartilhadas de qualquer forma."
 }

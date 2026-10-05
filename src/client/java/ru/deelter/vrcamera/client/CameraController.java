@@ -35,6 +35,8 @@ import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.Smooth;
 import ru.deelter.vrcamera.client.math.SmoothVec;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
+import ru.deelter.vrcamera.client.sync.PhotoSync;
+import ru.deelter.vrcamera.client.sync.RemoteCameras;
 import ru.deelter.vrcamera.client.rig.*;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -139,6 +141,7 @@ public final class CameraController implements Tracker {
 	private long albumNanos;
 	private final SecondButton secondButton = new SecondButton();
 	private int shutterTicks;
+	private int shareTicks;
 	private boolean shutterTaken;
 	private Vec3 handPosition;
 	private final Quaternionf handRotation = new Quaternionf();
@@ -462,6 +465,16 @@ public final class CameraController implements Tracker {
 			this.handPosition = null;
 		}
 		tickShutterButton();
+		// every other tick, ten times per second. The others smooth it out
+		if (this.engaged && this.config.shareCamera && ++this.shareTicks % 2 == 0 && isVRRunning()) {
+			CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
+			if (camera.isVisible()) {
+				// where it is seen, in the hand, not where the steadied picture is taken from
+				boolean held = this.handPosition != null;
+				PhotoSync.INSTANCE.shareCamera(held ? this.handPosition : camera.getPosition(),
+						held ? this.handRotation : camera.getRotation());
+			}
+		}
 	}
 
 	/**

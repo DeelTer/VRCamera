@@ -1,0 +1,36 @@
+# VRCameraSync: pinned photos of the VRCamera mod, shared between the players that have it.
+
+limits:
+  # photos one player may have pinned at once, in all worlds
+  per-player: 64
+  # photos in one chunk, of all players together. Keeps a single spot from being plastered
+  per-chunk: 16
+  # photos on the whole server. Each takes about 10 KB on disk
+  total: 20000
+  # largest picture a client may send, in bytes. Never more than 24000
+  image-bytes: 20000
+  # milliseconds a player has to wait between two pins
+  pin-cooldown-ms: 1500
+
+# Who may take a pinned photo off. false: the one who pinned it, and whoever has the permission
+# vrcamera.remove.others (operators by default). true: everyone
+anyone-takes-off: false
+
+range:
+  # blocks around a player in which photos are told to their client. Only a few bytes each, the picture itself
+  # is asked for by the client when it comes closer
+  send: 32
+  # blocks after which the client is told to forget a photo again. Has to be more than send
+  forget: 48
+
+cameras:
+  # players with the mod see the cameras of the others around them, moving, with the name of their owner
+  share: true
+  # blocks around a camera's owner in which it is shown
+  range: 32
+
+network:
+  # pictures sent to one player per second. The channel is shared with everything else the server sends
+  images-per-second: 4
+  # picture requests of one player that may wait at once, more are dropped
+  image-queue: 32

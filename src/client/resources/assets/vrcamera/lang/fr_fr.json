@@ -175,5 +175,13 @@
 	"vrcamera.option.photoGesture.tooltip": "Comment prendre une photo avec une caméra tenue en main. Même main : maintenez l'autre bouton de la main qui tient la caméra, la gâchette si vous la tenez par le grip, ou le grip si vous la tenez par la gâchette. Autre main : approchez l'autre main de la caméra et maintenez son bouton d'interaction. La touche et /vrcam photo fonctionnent toujours.",
 	"vrcamera.option.photoGesture.same_hand": "Autre bouton, même main",
 	"vrcamera.option.photoGesture.other_hand": "Autre main sur la caméra",
-	"vrcamera.option.photoGesture.off": "Désactivé"
+	"vrcamera.option.photoGesture.off": "Désactivé",
+	"vrcamera.option.showOthersPhotos": "Afficher les photos des autres joueurs",
+	"vrcamera.option.showOthersPhotos.tooltip": "Sur les serveurs avec le plugin VRCameraSync, les photos que vous épinglez sont vues par tous ceux qui ont le mod, et vous voyez les leurs. Désactivé : seules les vôtres sont affichées. Vos photos restent partagées.",
+	"vrcamera.message.pin.too_many": "Caméra VR : vous avez trop de photos épinglées sur ce serveur",
+	"vrcamera.message.pin.chunk_full": "Caméra VR : il y a déjà trop de photos à cet endroit",
+	"vrcamera.message.pin.too_fast": "Caméra VR : pas si vite, épinglez-la de nouveau dans un instant",
+	"vrcamera.message.pin.refused": "Caméra VR : le serveur n'a pas accepté cette photo",
+	"vrcamera.option.shareCamera": "Montrer ma caméra aux autres",
+	"vrcamera.option.shareCamera.tooltip": "Sur les serveurs avec le plugin VRCameraSync, les joueurs ayant le mod à moins de 32 blocs voient votre caméra là où elle se trouve, avec votre nom au-dessus. Désactivé : personne ne la voit. Les photos épinglées sont partagées dans tous les cas."
 }

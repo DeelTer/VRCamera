@@ -40,6 +40,8 @@ public final class PhotoStore {
 	private static final String PINNED_FILE = "pinned.json";
 	private static final String LOCAL = "local:";
 	private static final String SERVER = "server:";
+	// pictures of servers kept on disk, about 10 KB each
+	private static final int REMOTE_FILES = 1000;
 
 	/**
 	 * a sheet pinned to a block, as it is written to disk
@@ -163,6 +165,52 @@ public final class PhotoStore {
 			Files.deleteIfExists(file);
 		} catch (IOException e) {
 			Vrcamera.LOGGER.warn("VRCamera: can't remove {}", file, e);
+		}
+	}
+
+	private static Path remoteFile(long hash) {
+		return gameDir().resolve("vrcamera").resolve("remote").resolve(Long.toHexString(hash) + ".jpg");
+	}
+
+	/**
+	 * @return a picture a server sent before, null if it is not on disk
+	 */
+	public static byte[] readRemote(long hash) {
+		try {
+			Path file = remoteFile(hash);
+			return Files.isRegularFile(file) ? Files.readAllBytes(file) : null;
+		} catch (IOException | RuntimeException e) {
+			return null;
+		}
+	}
+
+	public static void writeRemote(long hash, byte[] image) {
+		try {
+			Path file = remoteFile(hash);
+			Files.createDirectories(file.getParent());
+			Files.write(file, image);
+		} catch (IOException | RuntimeException e) {
+			Vrcamera.LOGGER.warn("VRCamera: can't keep a photo of the server on disk", e);
+		}
+	}
+
+	/**
+	 * Keeps the pictures of servers from piling up: only the ones used last stay.
+	 */
+	public static void trimRemote() {
+		Path dir = gameDir().resolve("vrcamera").resolve("remote");
+		if (!Files.isDirectory(dir)) {
+			return;
+		}
+		try (Stream<Path> files = Files.list(dir)) {
+			List<Path> oldestLast = files.filter(file -> file.toString().endsWith(".jpg"))
+					.sorted(Comparator.comparingLong((Path file) -> file.toFile().lastModified()).reversed())
+					.toList();
+			for (Path file : oldestLast.subList(Math.min(REMOTE_FILES, oldestLast.size()), oldestLast.size())) {
+				Files.deleteIfExists(file);
+			}
+		} catch (IOException | RuntimeException e) {
+			Vrcamera.LOGGER.warn("VRCamera: can't clean up {}", dir, e);
 		}
 	}
 

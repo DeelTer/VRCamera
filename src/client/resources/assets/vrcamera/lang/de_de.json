@@ -175,5 +175,13 @@
 	"vrcamera.option.photoGesture.tooltip": "Wie mit einer gehaltenen Kamera fotografiert wird. Gleiche Hand: die andere Taste der Hand halten, die die Kamera hält, den Trigger beim Greifen mit Grip oder den Grip beim Halten mit dem Trigger. Andere Hand: die andere Hand an die Kamera führen und deren Interaktionstaste halten. Taste und /vrcam photo gehen immer.",
 	"vrcamera.option.photoGesture.same_hand": "Andere Taste, gleiche Hand",
 	"vrcamera.option.photoGesture.other_hand": "Andere Hand an der Kamera",
-	"vrcamera.option.photoGesture.off": "Aus"
+	"vrcamera.option.photoGesture.off": "Aus",
+	"vrcamera.option.showOthersPhotos": "Fotos anderer Spieler zeigen",
+	"vrcamera.option.showOthersPhotos.tooltip": "Auf Servern mit dem Plugin VRCameraSync sehen alle mit der Mod die Fotos, die du anheftest, und du siehst ihre. Aus: nur deine eigenen werden gezeigt. Deine Fotos werden weiterhin geteilt.",
+	"vrcamera.message.pin.too_many": "VR-Kamera: du hast auf diesem Server zu viele Fotos angeheftet",
+	"vrcamera.message.pin.chunk_full": "VR-Kamera: an dieser Stelle hängen schon zu viele Fotos",
+	"vrcamera.message.pin.too_fast": "VR-Kamera: nicht so schnell, hefte es gleich noch einmal an",
+	"vrcamera.message.pin.refused": "VR-Kamera: der Server hat dieses Foto nicht angenommen",
+	"vrcamera.option.shareCamera": "Andere meine Kamera sehen lassen",
+	"vrcamera.option.shareCamera.tooltip": "Auf Servern mit dem Plugin VRCameraSync sehen Spieler mit der Mod im Umkreis von 32 Blöcken deine Kamera dort, wo sie ist, mit deinem Namen darüber. Aus: niemand sieht sie. Angeheftete Fotos werden so oder so geteilt."
 }

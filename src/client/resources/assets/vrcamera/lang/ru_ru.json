@@ -175,5 +175,13 @@
 	"vrcamera.option.photoGesture.tooltip": "Как делается фото, когда камера в руке. Та же рука: зажмите вторую кнопку руки, которая держит камеру, — курок, если держите за grip, или grip, если держите курком. Другая рука: поднесите вторую руку к камере и зажмите её кнопку взаимодействия. Клавиша и /vrcam photo работают всегда.",
 	"vrcamera.option.photoGesture.same_hand": "Вторая кнопка той же руки",
 	"vrcamera.option.photoGesture.other_hand": "Другая рука у камеры",
-	"vrcamera.option.photoGesture.off": "Выкл"
+	"vrcamera.option.photoGesture.off": "Выкл",
+	"vrcamera.option.showOthersPhotos": "Показывать чужие фото",
+	"vrcamera.option.showOthersPhotos.tooltip": "На серверах с плагином VRCameraSync закреплённые вами фото видят все, у кого есть мод, а вы видите их фото. Выкл — показываются только ваши. Ваши фото по-прежнему видны другим.",
+	"vrcamera.message.pin.too_many": "VR-камера: у вас слишком много закреплённых фото на этом сервере",
+	"vrcamera.message.pin.chunk_full": "VR-камера: в этом месте уже слишком много фото",
+	"vrcamera.message.pin.too_fast": "VR-камера: слишком быстро, закрепите ещё раз через мгновение",
+	"vrcamera.message.pin.refused": "VR-камера: сервер не принял это фото",
+	"vrcamera.option.shareCamera": "Показывать мою камеру другим",
+	"vrcamera.option.shareCamera.tooltip": "На серверах с плагином VRCameraSync игроки с модом в пределах 32 блоков видят вашу камеру там, где она находится, с вашим именем над ней. Выкл — её никто не видит. Закреплённые фото видны другим в любом случае."
 }

@@ -6,6 +6,7 @@
 	"client": [
 		"ClientPacketListenerMixin",
 		"LevelExtractorMixin",
+		"LevelRendererMixin",
 		"VRPlayerModelMixin",
 		"VRWidgetHelperMixin"
 	],

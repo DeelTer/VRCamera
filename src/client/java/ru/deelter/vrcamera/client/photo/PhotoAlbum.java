@@ -24,7 +24,10 @@ import org.joml.Quaternionfc;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import ru.deelter.vrcamera.Vrcamera;
+import net.minecraft.client.renderer.texture.AbstractTexture;
 import ru.deelter.vrcamera.client.CameraEffects;
+import ru.deelter.vrcamera.client.sync.PhotoCodec;
+import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -235,6 +238,9 @@ public final class PhotoAlbum {
 
 	private void enter(Level level) {
 		leave();
+		// The game makes a new level also when the player only died and came back. The server sends nothing
+		// again for that, so its sheets have to be put back from what is known of them
+		PhotoSync.INSTANCE.sheetsDropped();
 		this.level = level;
 		this.cache = PhotoStore.worldCache();
 		this.dimension = level.dimension().toString();
@@ -272,8 +278,10 @@ public final class PhotoAlbum {
 	}
 
 	private void restore(int session, Map<PhotoStore.Pinned, NativeImage> here, List<PhotoStore.Pinned> elsewhere) {
-		if (session != this.session) {
+		// also if a server took over in the meantime, whichever of the two answers came first
+		if (session != this.session || PhotoSync.INSTANCE.isConnected()) {
 			here.values().forEach(NativeImage::close);
+			this.loaded = session == this.session || this.loaded;
 			return;
 		}
 		this.elsewhere = elsewhere;
@@ -290,6 +298,10 @@ public final class PhotoAlbum {
 	 * Writes where the pinned sheets hang. Not before what was pinned earlier is read, or that would be lost.
 	 */
 	private void save() {
+		if (PhotoSync.INSTANCE.isConnected()) {
+			// the server keeps them, for everyone. Two lists of the same sheets would only disagree
+			return;
+		}
 		this.unsaved = true;
 		if (!this.loaded) {
 			return;
@@ -318,6 +330,77 @@ public final class PhotoAlbum {
 	}
 
 	/**
+	 * @return the pixels of the sheet as it is shown, null if they are gone
+	 */
+	private static PhotoCodec.Picture pixels(PhotoSheet sheet) {
+		AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(sheet.texture);
+		if (!(texture instanceof DynamicTexture dynamic) || dynamic.getPixels() == null) {
+			return null;
+		}
+		NativeImage image = dynamic.getPixels();
+		return new PhotoCodec.Picture(image.getWidth(), image.getHeight(), image.getPixels());
+	}
+
+	/**
+	 * A server keeps the pinned sheets from here on. What this client kept for this server itself, from before
+	 * the server had the plugin, is not shown: the server would not know about it and nobody else would see it
+	 */
+	public void serverTookOver() {
+		this.session++;
+		this.loaded = true;
+		this.unsaved = false;
+		for (int i = this.sheets.size() - 1; i >= 0; i--) {
+			if (this.sheets.get(i).isPinned()) {
+				remove(i, false);
+			}
+		}
+	}
+
+	/**
+	 * a sheet the server told about, pinned by this player earlier or by someone else
+	 *
+	 * @param picture owned by the sheet from here on
+	 */
+	public void addRemote(
+			long id, boolean removable, Vec3 position, Quaternionfc rotation, float aspect, NativeImage picture,
+			byte[] packed) {
+		if (this.level == null) {
+			picture.close();
+			return;
+		}
+		PhotoSheet sheet = add(picture, aspect, null);
+		sheet.restore(position, rotation);
+		sheet.setRemote(id, removable);
+		sheet.packed = packed;
+	}
+
+	/**
+	 * @param fell if what it was pinned to is gone: it falls, and is this client's own loose sheet from then on
+	 */
+	public void removeRemote(long id, boolean fell) {
+		for (int i = this.sheets.size() - 1; i >= 0; i--) {
+			PhotoSheet sheet = this.sheets.get(i);
+			if (sheet.remoteId() != id) {
+				continue;
+			}
+			if (fell && sheet.isPinned()) {
+				sheet.setRemote(0, true);
+				sheet.blowOff(new Vec3(Math.random() - 0.5, 0.3, Math.random() - 0.5));
+			} else {
+				remove(i, false);
+			}
+		}
+	}
+
+	/**
+	 * the server did not take a sheet the player pinned, it comes off again
+	 */
+	public void pinRefused(PhotoSheet sheet) {
+		sheet.setRemote(0, true);
+		sheet.blowOff(Vec3.ZERO);
+	}
+
+	/**
 	 * @return the sheet nearest to the hand that it can take, null if there is none in reach
 	 */
 	public PhotoSheet nearest(Vec3 hand, int handIndex, double reach) {
@@ -337,7 +420,10 @@ public final class PhotoAlbum {
 		boolean wasPinned = sheet.isPinned();
 		VRData.VRDevicePose pose = vr.getController(hand);
 		sheet.grab(hand, pose.getPosition(), pose.getMatrix().getNormalizedRotation(new Quaternionf()));
-		if (wasPinned) {
+		if (wasPinned && sheet.remoteId() != 0) {
+			PhotoSync.INSTANCE.unpin(sheet.remoteId());
+			sheet.setRemote(0, true);
+		} else if (wasPinned) {
 			save();
 		}
 	}
@@ -363,7 +449,11 @@ public final class PhotoAlbum {
 		sheet.release(this.level);
 		if (sheet.isPinned()) {
 			CameraEffects.pinned(this.level, sheet.center());
-			save();
+			if (PhotoSync.INSTANCE.isConnected()) {
+				PhotoSync.INSTANCE.pin(sheet, sheet.packed == null ? pixels(sheet) : null);
+			} else {
+				save();
+			}
 		}
 	}
 
@@ -383,7 +473,7 @@ public final class PhotoAlbum {
 		}
 		for (int i = this.sheets.size() - 1; i >= 0; i--) {
 			PhotoSheet sheet = this.sheets.get(i);
-			if (sheet.hand() >= 0) {
+			if (sheet.hand() >= 0 && vr != null) {
 				VRData.VRDevicePose pose = vr.getController(sheet.hand());
 				sheet.carry(pose.getPosition(), pose.getMatrix().getNormalizedRotation(new Quaternionf()), dt);
 			}
@@ -397,7 +487,10 @@ public final class PhotoAlbum {
 				continue;
 			}
 			BlockPos block = BlockPos.containing(sheet.center());
-			if (level.getFluidState(block).is(FluidTags.LAVA) || level.getBlockState(block).is(BlockTags.FIRE)) {
+			boolean burns = level.getFluidState(block).is(FluidTags.LAVA) ||
+					level.getBlockState(block).is(BlockTags.FIRE);
+			// what a server keeps is not burned on one client alone
+			if (burns && !sheet.isServerOwned()) {
 				boolean burnedPinned = sheet.isPinned();
 				CameraEffects.burned(level, sheet.center());
 				remove(i, true);
@@ -421,7 +514,8 @@ public final class PhotoAlbum {
 		for (PhotoSheet sheet : this.sheets) {
 			Vec3 away = sheet.center().subtract(center);
 			double distance = away.length();
-			if (distance > reach || !(sheet.isPinned() || sheet.isLoose())) {
+			// what the server keeps comes off when the server says so, for everyone at once
+			if (distance > reach || sheet.isServerOwned() || !(sheet.isPinned() || sheet.isLoose())) {
 				continue;
 			}
 			double force = BLAST_SPEED * (1.0 - distance / reach) * (0.6 + Math.random() * 0.8);

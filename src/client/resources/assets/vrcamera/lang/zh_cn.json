@@ -175,5 +175,13 @@
 	"vrcamera.option.photoGesture.tooltip": "手持摄像机时如何拍照。同一只手：按住拿摄像机那只手的另一个按键——用握键拿着时按扳机，用扳机拿着时按握键。另一只手：把另一只手靠近摄像机并按住它的交互键。按键和 /vrcam photo 始终可用。",
 	"vrcamera.option.photoGesture.same_hand": "同一只手的另一个按键",
 	"vrcamera.option.photoGesture.other_hand": "另一只手靠近摄像机",
-	"vrcamera.option.photoGesture.off": "关闭"
+	"vrcamera.option.photoGesture.off": "关闭",
+	"vrcamera.option.showOthersPhotos": "显示其他玩家的照片",
+	"vrcamera.option.showOthersPhotos.tooltip": "在装有 VRCameraSync 插件的服务器上，你钉住的照片会被所有装了本模组的玩家看到，你也能看到他们的。关闭后只显示你自己的，你的照片仍会共享。",
+	"vrcamera.message.pin.too_many": "VR 摄像机：你在此服务器上钉住的照片太多了",
+	"vrcamera.message.pin.chunk_full": "VR 摄像机：这里的照片已经太多了",
+	"vrcamera.message.pin.too_fast": "VR 摄像机：别太快，稍后再钉一次",
+	"vrcamera.message.pin.refused": "VR 摄像机：服务器没有接受这张照片",
+	"vrcamera.option.shareCamera": "让其他人看到我的摄像机",
+	"vrcamera.option.shareCamera.tooltip": "在装有 VRCameraSync 插件的服务器上，32 格内装了本模组的玩家能看到你的摄像机所在位置，上方显示你的名字。关闭后没有人能看到。钉住的照片无论如何都会共享。"
 }

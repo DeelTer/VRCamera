@@ -19,6 +19,20 @@ base {
     archivesName = project.archives_base_name
 }
 
+sourceSets {
+    main {
+        java {
+            // what the mod and the server plugin both need: the protocol they talk in
+            srcDir 'src/shared/java'
+        }
+    }
+}
+
+// one build gives everything: the mod and the server plugin
+tasks.named('build') {
+    dependsOn ':plugin:build'
+}
+
 loom {
     splitEnvironmentSourceSets()
 

@@ -26,6 +26,7 @@ import ru.deelter.vrcamera.client.gui.CameraMenuScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
+import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.LinkedHashMap;
@@ -51,6 +52,8 @@ public class VrcameraClient implements ClientModInitializer {
 					new SheetGrab());
 		});
 
+		PhotoSync.INSTANCE.init();
+
 		key("mode", InputConstants.KEY_F8, this.controller::cycleMode);
 		key("next", InputConstants.KEY_F9, this.controller::nextShot);
 		key("hold", InputConstants.KEY_F10, this.controller::toggleHold);
@@ -65,6 +68,12 @@ public class VrcameraClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			this.controller.tick();
+			PhotoSync.INSTANCE.tick();
+			// In VR sheets move with every frame, from the tracker. Without VR there is no tracker, and nothing
+			// to hold a sheet with either: a tick is often enough for the ones that hang and the few that fall
+			if (mc.player != null && !CameraController.isVRRunning()) {
+				PhotoAlbum.INSTANCE.update(mc.player.level(), null, mc.isPaused() ? 0 : 0.05);
+			}
 			this.keys.forEach((key, action) -> {
 				while (key.consumeClick()) {
 					action.run();
@@ -85,7 +94,10 @@ public class VrcameraClient implements ClientModInitializer {
 
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(PhotoAlbum.INSTANCE::clear));
 		ClientLifecycleEvents.CLIENT_STARTED.register(
-				mc -> CompletableFuture.runAsync(PhotoStore::removeDeletedWorlds));
+				mc -> CompletableFuture.runAsync(() -> {
+					PhotoStore.removeDeletedWorlds();
+					PhotoStore.trimRemote();
+				}));
 
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "debug"),
 				(graphics, deltaTracker) -> DebugOverlay.extract(graphics));

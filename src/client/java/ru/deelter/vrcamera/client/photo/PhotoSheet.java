@@ -77,6 +77,16 @@ public final class PhotoSheet {
 	private boolean hung = true;
 	private double supportCheck = Math.random() * SUPPORT_CHECK_TIME;
 
+	// Set while a server knows this sheet, 0 for one that is only on this client
+	private long remoteId;
+	// sent to the server and not answered yet, it is not to be touched until then
+	private boolean awaitingServer;
+	private boolean removable = true;
+	// the block it is pinned to
+	private BlockPos support = BlockPos.ZERO;
+	/** the picture as it went over the network, kept to pin the sheet again without packing it once more */
+	public byte[] packed;
+
 	private int hand = -1;
 	// where the hand has it, as the controller sees it
 	private final Vector3f gripOffset = new Vector3f();
@@ -98,6 +108,38 @@ public final class PhotoSheet {
 		this.state = State.PINNED;
 		// long developed
 		this.age = DEVELOP_DELAY + DEVELOP_TIME;
+	}
+
+	public long remoteId() {
+		return this.remoteId;
+	}
+
+	public boolean isAwaitingServer() {
+		return this.awaitingServer;
+	}
+
+	public BlockPos support() {
+		return this.support;
+	}
+
+	/**
+	 * @return if what happens to it is decided by a server and not here
+	 */
+	public boolean isServerOwned() {
+		return this.remoteId != 0 || this.awaitingServer;
+	}
+
+	public void awaitServer() {
+		this.awaitingServer = true;
+	}
+
+	/**
+	 * @param remoteId what the server calls it, 0 if it does not know it anymore
+	 */
+	public void setRemote(long remoteId, boolean removable) {
+		this.remoteId = remoteId;
+		this.removable = removable || remoteId == 0;
+		this.awaitingServer = false;
 	}
 
 	public Vec3 position() {
@@ -147,7 +189,11 @@ public final class PhotoSheet {
 	 * @return if the hand can take it: from where it is, or out of the other hand
 	 */
 	public boolean canGrab(int hand) {
-		return isLoose() || isPinned() || (this.state == State.HELD && this.hand != hand);
+		if (isPinned()) {
+			// what someone else pinned is theirs, unless the server says otherwise
+			return this.removable && !this.awaitingServer;
+		}
+		return isLoose() || (this.state == State.HELD && this.hand != hand);
 	}
 
 	public int hand() {
@@ -272,6 +318,7 @@ public final class PhotoSheet {
 		Vector3f right = up.cross(out, new Vector3f());
 		this.rotation.setFromNormalized(new Matrix3f(right, up, out));
 
+		this.support = nearest.getBlockPos();
 		Vec3 flat = touch.add(out.x * GROUND_GAP, out.y * GROUND_GAP, out.z * GROUND_GAP);
 		float half = height() / 2.0F;
 		this.position = flat.add(up.x * half, up.y * half, up.z * half);
@@ -339,7 +386,10 @@ public final class PhotoSheet {
 		} else if (this.state == State.PINNED) {
 			this.supportCheck -= dt;
 			// Not in an unloaded chunk, there is nothing there for a moment and every sheet would come off
-			if (this.supportCheck <= 0 && level.isLoaded(BlockPos.containing(center()))) {
+			// With a server that knows the sheet, the server says when it falls: for everyone at once
+			if (this.remoteId == 0 && !this.awaitingServer && this.supportCheck <= 0 &&
+					level.isLoaded(BlockPos.containing(center())))
+			{
 				this.supportCheck = SUPPORT_CHECK_TIME;
 				if (!supported(level)) {
 					this.state = State.FALLING;

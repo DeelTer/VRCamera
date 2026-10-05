@@ -250,6 +250,62 @@ Pinned sheets and their small pictures are kept per world in `vrcamera/sheets`. 
 deleted, its folder there is removed at the next game start. Folders of servers stay: a server that is gone cannot
 be told from one you are just not on. If a picture is missing from the folder, its sheet is dropped.
 
+### Sharing photos on a server
+
+On a server that runs the **VRCameraSync** plugin (Paper), pinned sheets are shared: everyone with the mod sees
+them, and they stay when you log off. The plugin jar is built together with the mod, `vrcamera-sync-<version>.jar`
+in `build/libs/`. Put it into the server's `plugins` folder. Players without the mod see nothing and are not
+affected.
+
+- Only pinned sheets are shared. Loose ones stay yours alone.
+- You take your own sheets off. Others' sheets only if the server lets you.
+- When the block a sheet is pinned to is broken or blown up, it falls for everyone.
+- The server may refuse a pin: too many of your own, too many in that spot, or too fast. The sheet then comes off
+  again and a message says why.
+- `showOthersPhotos: false` shows only your own. Yours are still shared.
+- Players within 32 blocks see your camera where it is, in your hand or flying, with "YourName Camera" over it.
+  `shareCamera: false` hides it from them. Sheets you hold are not shown to others, only pinned ones.
+- A player with the mod who is not in VR sees the pinned sheets and the cameras too, but can't pick anything up.
+
+What keeps it light:
+
+- A client is told about a sheet in a few dozen bytes when it comes within 32 blocks. The picture itself is only
+  fetched within 16 blocks, and dropped from memory beyond 24.
+- Pictures travel as JPEG, 256 pixels across, about 10 KB. Each is fetched once and then kept on disk in
+  `vrcamera/remote`, at most 1000 of them.
+- At most 48 shared pictures are in memory at once, the nearest ones.
+- The server sends a player 4 pictures per second at most.
+
+Server settings, `plugins/VRCameraSync/config.yml`:
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `limits.per-player` | `64` | sheets one player may have pinned |
+| `limits.per-chunk` | `16` | sheets in one chunk, of all players together |
+| `limits.total` | `20000` | sheets on the whole server |
+| `limits.image-bytes` | `20000` | largest picture a client may send |
+| `limits.pin-cooldown-ms` | `1500` | wait between two pins of a player |
+| `anyone-takes-off` | `false` | `true` lets everyone take off anyone's sheets |
+| `range.send`, `range.forget` | `32`, `48` | blocks in which clients are told about sheets, and after which they forget them |
+| `network.images-per-second` | `4` | pictures sent to one player per second |
+| `cameras.share`, `cameras.range` | `true`, `32` | show players' cameras to the others, and within how many blocks |
+
+Permissions: `vrcamera.pin` (everyone), `vrcamera.remove.others` (operators), `vrcamera.admin` (operators).
+Commands: `/vrcamsync stats`, `/vrcamsync purge <player>`, `/vrcamsync purgenear <blocks>`, `/vrcamsync reload`.
+
+What protects the server and the other players:
+
+- Every picture is unpacked and packed again by the server. No client ever receives bytes another client sent,
+  only a plain JPEG the server made. Its size in pixels is checked before it is unpacked.
+- A sheet has to be within reach of the player who pins it, on a block that is there. Its size comes from the
+  picture, not from what the client claims.
+- A client may send 10 messages per second. One that keeps flooding is ignored for a minute.
+- Pictures are only handed out for sheets the client was told about.
+- The client checks what a server sends the same way, and only takes pictures it asked for.
+
+What it does not do: judge what is in a picture. A player can pin any screenshot of the game. For that there are
+the commands above, the limits and `showOthersPhotos`.
+
 ## Marker, icon and debug overlay
 
 **Marker.** The Vivecraft camera model with its screen shows where the camera is in the headset. It is not in the
@@ -317,6 +373,8 @@ and by `/vrcam reload`.
 | `underwaterLook` | `true` | Physics: wider angle, slow roll and bubbles under water |
 | `menuShotChat` | `true` | the `menu` shot for chat as well |
 | `photoSheet` | `true` | a taken photo comes out of the camera as a sheet; `false` only saves it |
+| `showOthersPhotos` | `true` | show the photos other players pinned, on servers that share them |
+| `shareCamera` | `true` | let players around see your camera, on servers that share that |
 | `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
 | `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |
 | `debugOverlay` | `false` | debug overlay on the HUD |

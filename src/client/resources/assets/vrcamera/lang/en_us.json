@@ -175,5 +175,13 @@
 	"vrcamera.option.photoGesture.tooltip": "How a photo is taken with a held camera. Same hand: hold the other button of the hand that holds the camera, the trigger while you grip it or the grip while you hold the trigger. Other hand: bring the other hand to the camera and hold its interact button. The key and /vrcam photo always work.",
 	"vrcamera.option.photoGesture.same_hand": "Other button, same hand",
 	"vrcamera.option.photoGesture.other_hand": "Other hand at the camera",
-	"vrcamera.option.photoGesture.off": "Off"
+	"vrcamera.option.photoGesture.off": "Off",
+	"vrcamera.option.showOthersPhotos": "Show other players' photos",
+	"vrcamera.option.showOthersPhotos.tooltip": "On servers with the VRCameraSync plugin, photos you pin are seen by everyone who has the mod, and you see theirs. Off: only your own are shown. Your photos are still shared.",
+	"vrcamera.message.pin.too_many": "VR Camera: you have too many photos pinned on this server",
+	"vrcamera.message.pin.chunk_full": "VR Camera: too many photos in this spot already",
+	"vrcamera.message.pin.too_fast": "VR Camera: not so fast, pin it again in a moment",
+	"vrcamera.message.pin.refused": "VR Camera: the server did not take this photo",
+	"vrcamera.option.shareCamera": "Let others see my camera",
+	"vrcamera.option.shareCamera.tooltip": "On servers with the VRCameraSync plugin, players with the mod within 32 blocks see your camera where it is, with your name over it. Off: nobody sees it. Photos you pin are shared either way."
 }

@@ -16,6 +16,7 @@ import org.vivecraft.client_vr.render.helpers.VRWidgetHelper;
 import org.vivecraft.client_vr.render.renderstates.CameraWidgetRenderState;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
+import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
 @Mixin(value = VRWidgetHelper.class, remap = false)
 public class VRWidgetHelperMixin {
@@ -54,6 +55,7 @@ public class VRWidgetHelperMixin {
 			PoseStack poseStack, CallbackInfo ci) {
 		// this is called once in every pass, with a pose stack in world axes: a place to draw into the world from
 		PhotoAlbum.INSTANCE.render(output, cameraState.pos, poseStack);
+		RemoteCameras.INSTANCE.render(output, cameraState.pos, poseStack);
 		if (ClientDataHolderVR.getInstance().currentPass == RenderPass.CAMERA &&
 				CameraController.INSTANCE.isEngaged())
 		{

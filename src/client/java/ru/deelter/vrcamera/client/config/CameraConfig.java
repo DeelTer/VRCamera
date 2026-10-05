@@ -86,6 +86,14 @@ public class CameraConfig {
 	 * a taken photo comes out of the camera as a sheet. Without this it is only saved
 	 */
 	public boolean photoSheet = true;
+	/**
+	 * show the photos other players pinned, on servers that share them
+	 */
+	public boolean showOthersPhotos = true;
+	/**
+	 * let the players around see where the camera is, on servers that share that
+	 */
+	public boolean shareCamera = true;
 	public PhotoGesture photoGesture = PhotoGesture.SAME_HAND;
 	/**
 	 * seconds the button of the photo gesture has to be held
