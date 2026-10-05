@@ -132,5 +132,8 @@
 	"vrcamera.message.shot": "VR-камера: план %s",
 	"vrcamera.command.reloaded": "VR-камера: конфиг перечитан",
 	"vrcamera.command.nocloth": "VR-камера: для экрана настроек нужен Cloth Config",
-	"vrcamera.command.nopreset": "VR-камера: нет такого ракурса, активный %s"
+	"vrcamera.command.nopreset": "VR-камера: нет такого ракурса, активный %s",
+	"vrcamera.gui.menu": "VR-камера...",
+	"vrcamera.shot.bodycam": "Нагрудная камера",
+	"vrcamera.shot.bodycam.tooltip": "На груди, смотрит вперёд, в кадре руки. Используется там, где вокруг игрока нет места для камеры."
 }

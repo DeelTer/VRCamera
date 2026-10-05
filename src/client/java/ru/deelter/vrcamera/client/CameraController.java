@@ -16,6 +16,7 @@ import org.vivecraft.client_vr.VRState;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
+import ru.deelter.vrcamera.client.config.Marker;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
@@ -24,8 +25,6 @@ import ru.deelter.vrcamera.client.rig.Subject;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -90,7 +89,7 @@ public final class CameraController implements Tracker {
 	 * @return if the Vivecraft camera model should not be shown in the headset
 	 */
 	public boolean hidesModel() {
-		return this.engaged && !"model".equals(this.config.marker);
+		return this.engaged && this.config.marker != Marker.MODEL;
 	}
 
 	/**
@@ -100,7 +99,7 @@ public final class CameraController implements Tracker {
 	 * @param worldScale Vivecraft world scale, to keep the size the same for the player
 	 */
 	public void drawMarker(Vec3 pos, float worldScale) {
-		if (!this.engaged || !"dot".equals(this.config.marker)) {
+		if (!this.engaged || this.config.marker != Marker.DOT) {
 			return;
 		}
 		try {
@@ -109,7 +108,7 @@ public final class CameraController implements Tracker {
 				Gizmos.billboardText(markerText(), pos.add(0, 0.07 * worldScale, 0),
 					TextGizmo.Style.forColorAndCentered(MARKER_COLOR).withScale(0.1F * worldScale));
 			}
-		} catch (RuntimeException e) {
+		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
 		}
 	}
@@ -124,37 +123,32 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
-	 * @return lines describing what the camera is doing, for the debug overlay
+	 * @return the shot the camera is showing, null while there is none
 	 */
-	public List<String> debugLines() {
-		List<String> lines = new ArrayList<>();
-		lines.add("VRCamera " + this.mode + (this.engaged || this.mode == Mode.OFF ? "" : " (waiting for VR)") +
-			(this.parkedTime > 0 ? String.format(Locale.ROOT, " (parked %.0fs)", this.parkedTime) : ""));
-		if (this.mode == Mode.OFF) {
-			return lines;
-		}
-		Shot shot = this.mode == Mode.FOLLOW ? this.followShot : this.director.current();
-		if (shot != null) {
-			String time = shot.duration > 1.0E6 ? String.format(Locale.ROOT, "%.1fs", shot.age) :
-				String.format(Locale.ROOT, "%.1f/%.1fs", shot.age, shot.duration);
-			lines.add("shot: " + shot.type + (shot.side < 0 ? " left " : " right ") + time +
-				(this.director.isHolding() ? " HOLD" : ""));
-		}
-		if (this.mode == Mode.DIRECTOR) {
-			lines.add("why: " + this.director.lastReason());
-			lines.add("context: " + this.director.context() + (this.director.isTight() ? " tight" : "") +
-				(this.director.event() != Director.Event.NONE ? " event " + this.director.event() : ""));
-			lines.add(String.format(Locale.ROOT, "blocked: %.1fs", Math.max(0, this.director.occludedTime())));
-		} else {
-			lines.add("preset: " + presetLabel());
-		}
-		lines.add(String.format(Locale.ROOT, "arm: %.0f%%%s  fov: %.0f", this.rig.arm() * 100.0,
-			this.rig.lookingPast() ? " (looking past)" : "", this.rig.fov()));
-		lines.add(String.format(Locale.ROOT, "speed: %.1f  scale: %.2f", this.subject.speed, this.subject.unit));
-		if (this.subject.target != null) {
-			lines.add("target: " + this.subject.target.getName().getString());
-		}
-		return lines;
+	public Shot shot() {
+		return this.mode == Mode.FOLLOW ? this.followShot : this.director.current();
+	}
+
+	public Rig rig() {
+		return this.rig;
+	}
+
+	public Subject subject() {
+		return this.subject;
+	}
+
+	/**
+	 * @return if the camera is being driven, and not just turned on and waiting for VR
+	 */
+	public boolean isEngaged() {
+		return this.engaged;
+	}
+
+	/**
+	 * @return seconds a summoned camera still waits to be picked up
+	 */
+	public double parkedTime() {
+		return this.parkedTime;
 	}
 
 	public void toggleDebug() {
@@ -228,8 +222,8 @@ public final class CameraController implements Tracker {
 			return;
 		}
 		Shot shot = customShot();
-		Shot previous = this.mode == Mode.FOLLOW ? this.followShot : this.director.current();
-		if (previous != null && !previous.isWorld()) {
+		Shot previous = shot();
+		if (previous != null && previous.blends()) {
 			// swing over to it
 			this.rig.blend();
 		} else {

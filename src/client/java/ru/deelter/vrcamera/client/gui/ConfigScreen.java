@@ -10,7 +10,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.config.CameraConfig;
+import ru.deelter.vrcamera.client.config.Marker;
 import ru.deelter.vrcamera.client.config.ShotConfig;
+import ru.deelter.vrcamera.client.config.Transition;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
@@ -20,9 +22,6 @@ import java.util.function.Consumer;
  * Settings screen, built with Cloth Config. Only load this class when Cloth Config is installed.
  */
 public final class ConfigScreen {
-	private static final String[] TRANSITIONS = {"auto", "cut", "blend"};
-	private static final String[] MARKERS = {"dot", "model", "none"};
-
 	private final ConfigEntryBuilder entries;
 
 	private ConfigScreen(ConfigEntryBuilder entries) {
@@ -47,7 +46,7 @@ public final class ConfigScreen {
 		ConfigCategory general = builder.getOrCreateCategory(Component.translatable("vrcamera.config.general"));
 		general.addEntry(screen.toggle("forceMirror", config.forceMirror, defaults.forceMirror,
 			value -> config.forceMirror = value));
-		general.addEntry(screen.selector("marker", MARKERS, config.marker, defaults.marker,
+		general.addEntry(screen.selector("marker", Marker.values(), config.marker, defaults.marker,
 			value -> config.marker = value));
 		general.addEntry(screen.toggle("markerLabel", config.markerLabel, defaults.markerLabel,
 			value -> config.markerLabel = value));
@@ -89,7 +88,7 @@ public final class ConfigScreen {
 			0.1, 5, 0.1, "%.1f s", value -> config.occlusionCutTime = value));
 
 		ConfigCategory director = builder.getOrCreateCategory(Component.translatable("vrcamera.config.director"));
-		director.addEntry(screen.selector("transition", TRANSITIONS, config.transition, defaults.transition,
+		director.addEntry(screen.selector("transition", Transition.values(), config.transition, defaults.transition,
 			value -> config.transition = value));
 		director.addEntry(screen.slider("blendChance", config.blendChance, defaults.blendChance, 0, 1, 0.05, "%.2f",
 			value -> config.blendChance = value));
@@ -103,10 +102,10 @@ public final class ConfigScreen {
 
 		ConfigCategory shots = builder.getOrCreateCategory(Component.translatable("vrcamera.config.shots"));
 		for (ShotType type : ShotType.values()) {
-			ShotConfig shot = type == ShotType.CUSTOM ? null : config.shot(type);
-			if (shot == null) {
+			if (type == ShotType.CUSTOM) {
 				continue;
 			}
+			ShotConfig shot = config.shot(type);
 			String name = type.name().toLowerCase(Locale.ROOT);
 			SubCategoryBuilder group = screen.entries.startSubCategory(Component.translatable("vrcamera.shot." + name))
 				.setTooltip(Component.translatable("vrcamera.shot." + name + ".tooltip"));
@@ -166,25 +165,16 @@ public final class ConfigScreen {
 			.build();
 	}
 
-	private AbstractConfigListEntry<?> selector(
-		String field, String[] values, String value, String def, Consumer<String> save)
+	private <T extends Enum<T>> AbstractConfigListEntry<?> selector(
+		String field, T[] values, T value, T def, Consumer<T> save)
 	{
 		String key = "vrcamera.option." + field;
-		return this.entries.startSelector(Component.translatable(key), values, contains(values, value) ? value : def)
+		return this.entries.startSelector(Component.translatable(key), values, value)
 			.setDefaultValue(def)
-			.setNameProvider(name -> Component.translatable(key + "." + name))
+			.setNameProvider(option -> Component.translatable(key + "." + option.name().toLowerCase(Locale.ROOT)))
 			.setTooltip(Component.translatable(key + ".tooltip"))
 			.setSaveConsumer(save)
 			.build();
-	}
-
-	private static boolean contains(String[] values, String value) {
-		for (String candidate : values) {
-			if (candidate.equals(value)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private AbstractConfigListEntry<?> slider(

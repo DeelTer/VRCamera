@@ -15,6 +15,8 @@ public final class Subject {
 	public LocalPlayer player;
 	public Vec3 feet = Vec3.ZERO;
 	public Vec3 head = Vec3.ZERO;
+	/** direction the headset looks in */
+	public Vec3 headDir = new Vec3(0, 0, 1);
 	/** point the camera aims at and orbits around */
 	public Vec3 center = Vec3.ZERO;
 	/** middle between both hands */
@@ -68,6 +70,7 @@ public final class Subject {
 		this.feet = newFeet;
 
 		this.head = vr.hmd.getPosition();
+		this.headDir = new Vec3(vr.hmd.getDirection());
 		// the headset should be right above the player, if it isn't, something is off and the entity is the safer bet
 		if (this.head.distanceTo(newFeet) > 4.0 * this.unit + 2.0) {
 			this.head = player.getEyePosition(partialTick);

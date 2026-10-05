@@ -29,6 +29,11 @@ public enum ShotType {
 	DEATH(new ShotConfig(1.0, 30, 35, 4.0, 60, 6, 10), 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 	/** from straight above, only shown by the fall event */
 	FALL(new ShotConfig(1.0, 180, 72, 6.5, 75, 6, 10), 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+	/**
+	 * On the chest of the player, looking where they look, with their hands in view. For places with no room for
+	 * a camera around the player. Not picked by its fit to what the player does, but when it is tight around them.
+	 */
+	BODYCAM(new ShotConfig(0.6, 0, 8, 0.4, 90, 5, 10), 1.0, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 	/** placed by hand */
 	CUSTOM(null, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
 
@@ -58,6 +63,13 @@ public enum ShotType {
 	 */
 	public double weight(Context context) {
 		return this.contextWeights[context.ordinal()];
+	}
+
+	/**
+	 * @return if the camera can not swing from or to this shot, because it looks away from the player and not at them
+	 */
+	public boolean cutsOnly() {
+		return this == BODYCAM;
 	}
 
 	/**

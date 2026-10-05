@@ -9,21 +9,14 @@
 	"license": "All-Rights-Reserved",
 	"environment": "client",
 	"entrypoints": {
-		"fabric-datagen": [
-			"ru.deelter.vrcamera.client.VrcameraDataGenerator"
-		],
 		"client": [
 			"ru.deelter.vrcamera.client.VrcameraClient"
-		],
-		"main": [
-			"ru.deelter.vrcamera.Vrcamera"
 		],
 		"modmenu": [
 			"ru.deelter.vrcamera.client.gui.ModMenuIntegration"
 		]
 	},
 	"mixins": [
-		"vrcamera.mixins.json",
 		{
 			"config": "vrcamera.client.mixins.json",
 			"environment": "client"

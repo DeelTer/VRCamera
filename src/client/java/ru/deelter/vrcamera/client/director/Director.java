@@ -4,10 +4,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ShotConfig;
+import ru.deelter.vrcamera.client.config.Transition;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
@@ -24,6 +25,26 @@ import java.util.Random;
 public final class Director {
 	// seconds after a new shot, in which a blocked view is tolerated
 	private static final double OCCLUSION_GRACE = 1.0;
+
+	// shots are further away in flight, and closer where there is little room
+	private static final double FLY_DISTANCE_SCALE = 1.6;
+	private static final double TIGHT_DISTANCE_SCALE = 0.7;
+	// the shot shown when nothing else has room
+	private static final double FALLBACK_DISTANCE_SCALE = 0.6;
+	private static final double BOOST = 4.0;
+	// how well the body camera fits where it is tight, it does not fit anywhere else
+	private static final double TIGHT_BODYCAM_FIT = 0.6;
+	// fights are cut faster
+	private static final double COMBAT_DURATION_SCALE = 0.6;
+
+	// what makes a candidate for the next shot less likely to be picked
+	private static final double HIDDEN_HEAD_PENALTY = 0.6;
+	private static final double ACROSS_WATER_PENALTY = 0.25;
+	private static final double SAME_TYPE_PENALTY = 0.25;
+	private static final double SIMILAR_VIEW_PENALTY = 0.5;
+	private static final double CROSSED_LINE_PENALTY = 0.35;
+	// a view has to turn by more than 30 degrees to count as a different one
+	private static final double SIMILAR_VIEW_DOT = Math.cos(Math.toRadians(30));
 
 	/**
 	 * something happening to the player, that gets its own shot for as long as it lasts
@@ -61,15 +82,14 @@ public final class Director {
 	private boolean tight;
 	private double tightTimer;
 	private double combatTimer;
-	private double mineTimer;
+	// seconds of recent mining, goes up while a block is being broken, slowly down otherwise
+	private double mineTime;
 	private double fallTimer;
+	// an event the player wanted to see something else instead of, ignored until it is over
+	private Event dismissed = Event.NONE;
 	private double stillTime;
 	// what the player hit since the last update
 	private Entity attacked;
-
-	// candidate search state
-	private Shot best;
-	private double bestScore;
 
 	public Director(CameraConfig config) {
 		this.config = config;
@@ -112,6 +132,12 @@ public final class Director {
 		this.forceNext = false;
 		this.forceType = null;
 		this.event = Event.NONE;
+		this.dismissed = Event.NONE;
+		this.boost = null;
+		this.attacked = null;
+		this.combatTimer = 0;
+		this.mineTime = 0;
+		this.fallTimer = 0;
 	}
 
 	/**
@@ -159,7 +185,16 @@ public final class Director {
 	public void update(Subject subject, Rig rig, double dt) {
 		updateContext(subject, dt);
 
-		Event newEvent = this.hold ? Event.NONE : detectEvent(subject, dt);
+		Event detected = this.hold ? Event.NONE : detectEvent(subject, dt);
+		if (detected != this.dismissed) {
+			// what was dismissed is over
+			this.dismissed = Event.NONE;
+		}
+		if (this.forceNext && detected != Event.NONE) {
+			// the player asked for another shot, that goes before the event
+			this.dismissed = detected;
+		}
+		Event newEvent = detected == this.dismissed ? Event.NONE : detected;
 		boolean eventOver = newEvent == Event.NONE && this.event != Event.NONE;
 		if (newEvent != this.event) {
 			this.event = newEvent;
@@ -218,10 +253,15 @@ public final class Director {
 				reason = "finished";
 			} else if (this.current.age >= this.current.duration) {
 				reason = "time";
-			} else if (this.current.age > this.config.minShotTime && this.current.type != ShotType.CUSTOM) {
-				if (this.current.type.weight(this.context) <= 0) {
+			} else if (this.current.age > this.config.minShotTime && this.current.type != ShotType.CUSTOM &&
+				!this.current.forced)
+			{
+				Context now = activity(this.context);
+				if (fit(this.current.type) <= 0) {
 					reason = "unfit for " + this.context;
-				} else if (activity(this.context) != activity(this.shotContext)) {
+				} else if (now != Context.WALK && now != activity(this.shotContext)) {
+					// only when something starts. When a fight or a flight is over the shot may stay, a change of
+					// shot on both ends would be too restless
 					reason = "now " + this.context;
 				}
 			}
@@ -248,8 +288,17 @@ public final class Director {
 		if (player.isDeadOrDying()) {
 			return Event.DEATH;
 		}
-		boolean falling = player.fallDistance > 5.0 && !player.onGround() && !player.isFallFlying() &&
-			!player.isInWater() && !player.isPassenger();
+		boolean falling = false;
+		if (!player.onGround() && !player.isFallFlying() && !player.isInWater() && !player.isPassenger() &&
+			!player.getAbilities().flying)
+		{
+			if (player.fallDistance > 5.0) {
+				falling = true;
+			} else if (player.getDeltaMovement().y < -0.3) {
+				// just went over an edge, don't wait until most of the fall is over
+				falling = WorldProbe.groundDistance(subject, 24.0) > 6.0 * subject.unit;
+			}
+		}
 		if (falling) {
 			// also show the landing
 			this.fallTimer = 1.0;
@@ -261,13 +310,12 @@ public final class Director {
 
 	private void startEvent(Subject subject, Rig rig) {
 		ShotType type = this.event.shot;
-		ShotConfig shotConfig = this.config.shot(type);
-		Shot shot = new Shot(type, shotConfig != null ? shotConfig : type.defaults(),
-			this.random.nextBoolean() ? 1 : -1);
+		Shot shot = new Shot(type, this.config.shot(type), randomSide());
 		shot.start(subject, this.config);
 
-		if (this.current != null && rig.ready() && !this.current.isWorld() && !subject.teleported &&
-			!"cut".equals(this.config.transition))
+		// a fall is over before the camera could swing there
+		if (this.event != Event.FALL && this.current != null && rig.ready() && this.current.blends() &&
+			!subject.teleported && this.config.transition != Transition.CUT)
 		{
 			rig.blend();
 		} else {
@@ -281,79 +329,53 @@ public final class Director {
 	}
 
 	private void choose(Subject subject, Rig rig, boolean cut, String reason) {
-		Vec3 viewDir = rig.ready() ? subject.center.subtract(rig.position()).normalize() : null;
-		double distanceScale = (this.context == Context.FLY ? 1.6 : 1.0) * (this.tight ? 0.7 : 1.0);
-		boolean headInFluid = WorldProbe.inFluid(subject, subject.head);
+		Selection selection = new Selection(subject, rig);
+		double distanceScale = (this.context == Context.FLY ? FLY_DISTANCE_SCALE : 1.0) *
+			(this.tight ? TIGHT_DISTANCE_SCALE : 1.0);
 
-		this.best = null;
-		this.bestScore = 0;
-		for (ShotType type : ShotType.values()) {
-			if (type == ShotType.CUSTOM) {
-				continue;
-			}
-			ShotConfig shotConfig = this.config.shot(type);
-			if (shotConfig == null) {
-				continue;
-			}
-			double weight;
-			if (this.forceType != null) {
-				// the player asked for this one, it doesn't have to fit the situation or be enabled
-				if (type != this.forceType) {
-					continue;
-				}
-				weight = 1.0;
-			} else {
-				if (!shotConfig.enabled || (type == ShotType.DUEL && subject.targetCenter == null)) {
-					continue;
-				}
-				weight = shotConfig.weight * type.weight(this.context) * (this.tight ? type.tightFactor : 1.0) *
-					(type == this.boost ? 4.0 : 1.0);
-			}
-			if (weight <= 0) {
-				continue;
-			}
-			// try both sides of the player
-			for (int side = -1; side <= 1; side += 2) {
-				consider(new Shot(type, shotConfig, side), weight, distanceScale, subject, viewDir, headInFluid);
-			}
-		}
 		if (this.forceType == ShotType.CUSTOM) {
-			consider(new Shot(ShotType.CUSTOM, this.config.preset(), 1), 1.0, 1.0, subject, viewDir, headInFluid);
-		} else if (this.config.customInRotation && this.forceType == null) {
-			// hand placed shots only have the side they were placed on
-			for (ShotConfig preset : this.config.presets) {
-				if (preset.enabled && preset.weight > 0) {
-					consider(new Shot(ShotType.CUSTOM, preset, 1), preset.weight, 1.0, subject, viewDir,
-						headInFluid);
+			selection.consider(new Shot(ShotType.CUSTOM, this.config.preset(), 1), 1.0, 1.0);
+		} else if (this.forceType != null) {
+			// the player asked for this one, it doesn't have to fit the situation or be enabled
+			selection.considerBothSides(this.forceType, 1.0, distanceScale);
+		} else {
+			for (ShotType type : ShotType.values()) {
+				ShotConfig shotConfig = this.config.shot(type);
+				if (type == ShotType.CUSTOM || !shotConfig.enabled ||
+					(type == ShotType.DUEL && subject.targetCenter == null))
+				{
+					continue;
+				}
+				double weight = shotConfig.weight * fit(type) * (type == this.boost ? BOOST : 1.0);
+				if (weight > 0) {
+					selection.considerBothSides(type, weight, distanceScale);
+				}
+			}
+			if (this.config.customInRotation) {
+				// hand placed shots only have the side they were placed on
+				for (ShotConfig preset : this.config.presets) {
+					if (preset.enabled && preset.weight > 0) {
+						selection.consider(new Shot(ShotType.CUSTOM, preset, 1), preset.weight, 1.0);
+					}
 				}
 			}
 		}
 
-		Shot next = this.best;
-		if (next == null && this.forceType != null) {
-			// asked for, so shown even where it has no room, the rig keeps it out of the walls
-			ShotType type = this.forceType;
-			ShotConfig forced = this.config.shot(type);
-			next = new Shot(type, forced != null ? forced : type.defaults(),
-				type == ShotType.CUSTOM || this.random.nextBoolean() ? 1 : -1);
-			next.distanceScale = distanceScale;
-			next.start(subject, this.config);
-			reason += ", no room";
-		}
+		Shot next = selection.best;
 		if (next == null) {
-			// nothing fits, stay close behind the player, the rig keeps that out of the walls
-			ShotConfig fallback = this.config.shot(ShotType.SHOULDER);
-			next = new Shot(ShotType.SHOULDER, fallback != null ? fallback : ShotType.SHOULDER.defaults(),
-				this.random.nextBoolean() ? 1 : -1);
-			next.distanceScale = 0.6;
-			next.start(subject, this.config);
-			reason += ", nothing fits";
+			reason += ", no room";
+			next = fallback(subject, distanceScale);
 		}
 
+		next.forced = this.forceType != null;
 		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, this.random.nextDouble()) *
-			(this.context == Context.COMBAT ? 0.6 : 1.0);
+			(this.context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
 
-		if (!cut && !next.isWorld() && this.current != null && !this.current.isWorld() && wantsBlend(next)) {
+		if (next == this.current) {
+			// still the only shot with room, carry on with it
+			next.age = 0;
+			reason += ", kept";
+		} else if (!cut && next.blends() && this.current != null && this.current.blends() && wantsBlend(next)) {
 			rig.blend();
 			reason += ", blend";
 		} else {
@@ -372,54 +394,143 @@ public final class Director {
 	}
 
 	/**
-	 * rates a shot, and remembers it if it is the best one so far
+	 * @return how well a shot fits what the player is doing and where, 0 means it should not be used
 	 */
-	private void consider(
-		Shot shot, double weight, double distanceScale, Subject subject, Vec3 viewDir, boolean headInFluid)
-	{
-		shot.distanceScale = distanceScale;
+	private double fit(ShotType type) {
+		if (type == ShotType.BODYCAM) {
+			return this.tight ? TIGHT_BODYCAM_FIT : 0.0;
+		}
+		return type.weight(this.context) * (this.tight ? type.tightFactor : 1.0);
+	}
+
+	/**
+	 * @return the shot to show when none has room. The rig keeps the camera out of the walls on any shot, but it
+	 * does that by moving it closer to the player, up to inside of them
+	 */
+	private Shot fallback(Subject subject, double distanceScale) {
+		if (this.forceType != null) {
+			// asked for, so shown anyway
+			Shot shot = new Shot(this.forceType, this.config.shot(this.forceType),
+				this.forceType == ShotType.CUSTOM ? 1 : randomSide());
+			shot.distanceScale = distanceScale;
+			shot.start(subject, this.config);
+			return shot;
+		}
+		// the body camera needs no room, without it stay close behind the player
+		boolean bodycam = this.config.shot(ShotType.BODYCAM).enabled;
+		ShotType type = bodycam ? ShotType.BODYCAM : ShotType.SHOULDER;
+		if (this.current != null && this.current.type == type && !this.current.forced) {
+			return this.current;
+		}
+		Shot shot = new Shot(type, this.config.shot(type), randomSide());
+		shot.distanceScale = bodycam ? 1.0 : FALLBACK_DISTANCE_SCALE;
 		shot.start(subject, this.config);
+		return shot;
+	}
 
-		Vec3 wanted = shot.desiredPosition(subject);
-		double free = WorldProbe.armFraction(subject, subject.center, wanted, this.config);
-		// a camera that stays in place is only good at the spot it was planned for
-		if (shot.isWorld() && free < 0.9) {
-			return;
-		}
-		Vec3 actual = subject.center.lerp(wanted, free);
-		if (actual.distanceTo(subject.center) < shot.type.minDistance * subject.unit) {
-			return;
+	private int randomSide() {
+		return this.random.nextBoolean() ? 1 : -1;
+	}
+
+	/**
+	 * rates the shots that could come next, and keeps the best one
+	 */
+	private final class Selection {
+		private final Subject subject;
+		// direction the camera looks in right now, null if there is no camera position yet
+		private final Vec3 viewDir;
+		// The line the player moves along has a left and a right side, the camera should stay on one of them from
+		// shot to shot. Otherwise the player runs to the right in one shot and to the left in the next.
+		// This points to the right side
+		private final Vec3 right;
+		private final int currentSide;
+		private final boolean headInFluid;
+
+		private Shot best;
+		private double bestScore;
+
+		Selection(Subject subject, Rig rig) {
+			this.subject = subject;
+			Vec3 travel = new Vec3(subject.velocity.x, 0, subject.velocity.z);
+			travel = travel.length() > 1.0 ? travel.normalize() : CamMath.forward(subject.facing);
+			this.right = new Vec3(-travel.z, 0, travel.x);
+			this.headInFluid = WorldProbe.inFluid(subject, subject.head);
+			if (rig.ready()) {
+				this.viewDir = subject.center.subtract(rig.position()).normalize();
+				this.currentSide = side(rig.position());
+			} else {
+				this.viewDir = null;
+				this.currentSide = 0;
+			}
 		}
 
-		double score = weight * (0.35 + 0.65 * free) * (0.8 + 0.4 * this.random.nextDouble());
-		if (!WorldProbe.visible(subject, actual, subject.head)) {
-			score *= 0.6;
+		void considerBothSides(ShotType type, double weight, double distanceScale) {
+			ShotConfig shotConfig = Director.this.config.shot(type);
+			consider(new Shot(type, shotConfig, -1), weight, distanceScale);
+			consider(new Shot(type, shotConfig, 1), weight, distanceScale);
 		}
-		// don't film from under water when the player is above, or the other way around
-		if (WorldProbe.inFluid(subject, actual) != headInFluid) {
-			score *= 0.25;
+
+		void consider(Shot shot, double weight, double distanceScale) {
+			shot.distanceScale = distanceScale;
+			shot.start(this.subject, Director.this.config);
+
+			Vec3 center = this.subject.center;
+			Vec3 wanted = shot.desiredPosition(this.subject);
+			double free = WorldProbe.armFraction(this.subject, center, wanted, Director.this.config);
+			// a camera that stays in place is only good at the spot it was planned for
+			if (shot.isWorld() && free < 0.9) {
+				return;
+			}
+			Vec3 actual = center.lerp(wanted, free);
+			if (actual.distanceTo(center) < shot.type.minDistance * this.subject.unit) {
+				return;
+			}
+
+			double score = weight * (0.35 + 0.65 * free) * (0.8 + 0.4 * Director.this.random.nextDouble());
+			if (!WorldProbe.visible(this.subject, actual, this.subject.head)) {
+				score *= HIDDEN_HEAD_PENALTY;
+			}
+			// don't film from under water when the player is above, or the other way around
+			if (WorldProbe.inFluid(this.subject, actual) != this.headInFluid) {
+				score *= ACROSS_WATER_PENALTY;
+			}
+			if (shot.type == Director.this.lastType) {
+				score *= SAME_TYPE_PENALTY;
+			}
+			// a new shot should look clearly different, or it reads as a glitch
+			if (this.viewDir != null && this.viewDir.dot(center.subtract(actual).normalize()) > SIMILAR_VIEW_DOT) {
+				score *= SIMILAR_VIEW_PENALTY;
+			}
+			if (!shot.type.orbits() && this.currentSide * side(actual) < 0) {
+				score *= CROSSED_LINE_PENALTY;
+			}
+			if (score > this.bestScore) {
+				this.bestScore = score;
+				this.best = shot;
+			}
 		}
-		if (shot.type == this.lastType) {
-			score *= 0.25;
-		}
-		// a new shot should look clearly different, or it reads as a glitch
-		if (viewDir != null &&
-			viewDir.dot(subject.center.subtract(actual).normalize()) > Math.cos(Math.toRadians(30)))
-		{
-			score *= 0.5;
-		}
-		if (score > this.bestScore) {
-			this.bestScore = score;
-			this.best = shot;
+
+		/**
+		 * @return on which side of the line the player moves along a camera position is: -1, 1, or 0 if it is
+		 * close to that line
+		 */
+		private int side(Vec3 cameraPos) {
+			Vec3 offset = cameraPos.subtract(this.subject.center);
+			double length = offset.length();
+			if (length < 1.0E-3) {
+				return 0;
+			}
+			double lateral = offset.dot(this.right) / length;
+			return Math.abs(lateral) < 0.2 ? 0 : (int) Math.signum(lateral);
 		}
 	}
 
 	private boolean wantsBlend(Shot next) {
 		return switch (this.config.transition) {
-			case "cut" -> false;
-			case "blend" -> true;
+			case CUT -> false;
+			case BLEND -> true;
 			// swinging more than a third around the player takes too long
-			default -> this.random.nextDouble() < this.config.blendChance &&
+			case AUTO -> this.random.nextDouble() < this.config.blendChance &&
 				Math.abs(CamMath.wrap(next.azimuth - this.current.azimuth)) < Math.toRadians(130);
 		};
 	}
@@ -429,18 +540,24 @@ public final class Director {
 		LocalPlayer player = subject.player;
 
 		this.combatTimer -= dt;
-		this.mineTimer -= dt;
 		Entity attacked = this.attacked;
 		this.attacked = null;
 		if (attacked instanceof LivingEntity && attacked.isAlive()) {
 			// hitting a boat or an item frame is no fight
 			this.combatTimer = 5.0;
 			subject.target = attacked;
-		} else if (player.hurtTime > 0) {
-			this.combatTimer = 5.0;
-			if (subject.target == null) {
-				subject.target = nearestEnemy(subject);
+		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
+			// only what was done by someone is a fight, not falling or burning
+			DamageSource source = player.getLastDamageSource();
+			Entity attacker = source == null ? null : source.getEntity();
+			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
+				this.combatTimer = 5.0;
+				subject.target = attacker;
 			}
+		}
+		if (player.isDeadOrDying() && subject.target != null) {
+			// keep the killer for the death shot
+			this.combatTimer = 5.0;
 		}
 		if (subject.target != null && (this.combatTimer <= 0 ||
 			subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
@@ -448,9 +565,11 @@ public final class Director {
 		{
 			subject.target = null;
 		}
+		// counts as mining after a second of it, breaking one block on the way is not worth a change of shot
 		if (mc.gameMode != null && mc.gameMode.isDestroying()) {
-			// long enough to not drop out of it between two blocks
-			this.mineTimer = 6.0;
+			this.mineTime = Math.min(3.0, this.mineTime + dt);
+		} else {
+			this.mineTime = Math.max(0.0, this.mineTime - 0.5 * dt);
 		}
 		this.stillTime = subject.speed > 0.5 ? 0 : this.stillTime + dt;
 
@@ -461,7 +580,7 @@ public final class Director {
 			this.context = Context.RIDE;
 		} else if (this.combatTimer > 0) {
 			this.context = Context.COMBAT;
-		} else if (this.mineTimer > 0) {
+		} else if (this.mineTime > 1.0) {
 			this.context = Context.MINE;
 		} else if (player.isSwimming() || player.isInWater()) {
 			this.context = Context.SWIM;
@@ -485,22 +604,4 @@ public final class Director {
 		}
 	}
 
-	/**
-	 * @return the closest hostile mob around the player, or null if there is none
-	 */
-	private static Entity nearestEnemy(Subject subject) {
-		LocalPlayer player = subject.player;
-		Entity nearest = null;
-		double nearestDistance = Double.MAX_VALUE;
-		for (Entity entity : player.level().getEntities(player,
-			player.getBoundingBox().inflate(8.0 + 4.0 * subject.unit), e -> e instanceof Enemy && e.isAlive()))
-		{
-			double distance = entity.distanceToSqr(player);
-			if (distance < nearestDistance) {
-				nearestDistance = distance;
-				nearest = entity;
-			}
-		}
-		return nearest;
-	}
 }

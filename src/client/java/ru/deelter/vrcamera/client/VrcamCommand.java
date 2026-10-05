@@ -5,8 +5,10 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
+import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
@@ -64,7 +66,8 @@ public final class VrcamCommand {
 				return 0;
 			}
 			// the chat screen is still closing, open the settings after that
-			VrcameraClient.openSettingsNextTick();
+			Minecraft mc = context.getSource().getClient();
+			mc.schedule(() -> mc.gui.setScreen(ConfigScreen.create(mc.gui.screen())));
 			return DONE;
 		}));
 
@@ -112,7 +115,7 @@ public final class VrcamCommand {
 	}
 
 	private static int status(FabricClientCommandSource source, CameraController controller) {
-		for (String line : controller.debugLines()) {
+		for (String line : DebugOverlay.lines(controller)) {
 			source.sendFeedback(Component.literal(line));
 		}
 		return DONE;

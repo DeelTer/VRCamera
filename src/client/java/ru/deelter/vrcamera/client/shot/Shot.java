@@ -21,6 +21,8 @@ public final class Shot {
 	/** seconds this shot should run */
 	public double duration = Double.MAX_VALUE;
 	public double distanceScale = 1.0;
+	/** asked for by the player, stays even if it does not fit what they are doing */
+	public boolean forced;
 
 	// where the camera should be, on an orbit around the player, angles in radians
 	public double azimuth;
@@ -54,7 +56,15 @@ public final class Shot {
 	 * @return if the camera should aim exactly where the shot says, without leaving room in front of the player
 	 */
 	public boolean exactAim() {
-		return this.type == ShotType.HANDS || this.type == ShotType.DUEL;
+		return this.type == ShotType.HANDS || this.type == ShotType.DUEL || this.type == ShotType.DEATH ||
+			this.type == ShotType.BODYCAM;
+	}
+
+	/**
+	 * @return if the camera can swing over from or to this shot, instead of jumping
+	 */
+	public boolean blends() {
+		return !isWorld() && !this.type.cutsOnly();
 	}
 
 	/**
@@ -63,8 +73,12 @@ public final class Shot {
 	private double wantedAzimuth(Subject subject) {
 		double reference = subject.facing;
 		if (this.type == ShotType.DUEL && subject.targetCenter != null) {
-			// relative to the opponent, so the camera ends up behind the player, looking at both
-			reference = CamMath.azimuthOf(subject.targetCenter.subtract(subject.center));
+			Vec3 toTarget = subject.targetCenter.subtract(subject.center);
+			// with the opponent right on top of the player there is no direction to them
+			if (toTarget.horizontalDistance() > 0.5 * subject.unit) {
+				// relative to the opponent, so the camera ends up behind the player, looking at both
+				reference = CamMath.azimuthOf(toTarget);
+			}
 		}
 		return reference + Math.toRadians(this.config.azimuth) * this.side;
 	}
@@ -118,10 +132,11 @@ public final class Shot {
 			this.azimuth += this.side * Math.toRadians(config.orbitSpeed) * dt;
 		} else {
 			// swing around when the player turns, but ignore small head movements
-			boolean duel = this.type == ShotType.DUEL;
+			// these have to stay lined up, with the opponent or with the body
+			boolean tight = this.type == ShotType.DUEL || this.type == ShotType.BODYCAM;
 			double error = CamMath.wrap(wantedAzimuth(subject) - this.azimuth);
-			double deadzone = Math.toRadians(duel ? 4.0 : config.turnDeadzone);
-			double lag = Math.max(0.01, duel ? config.turnLag * 0.6 : config.turnLag);
+			double deadzone = Math.toRadians(tight ? 4.0 : config.turnDeadzone);
+			double lag = Math.max(0.01, tight ? config.turnLag * 0.6 : config.turnLag);
 			if (Math.abs(error) > deadzone && dt > 0) {
 				this.azimuth += (error - Math.signum(error) * deadzone) * (1.0 - Math.exp(-dt / lag));
 			}
@@ -137,9 +152,19 @@ public final class Shot {
 			case FRONT ->
 				// slowly move in on a player that stands around
 				this.distance *= CamMath.lerp(1.0, 0.72, CamMath.smoothstep(this.stillTime / 8.0));
-			case DEATH ->
+			case DEATH -> {
 				// slowly back away
 				this.distance *= CamMath.lerp(1.0, 1.6, CamMath.smoothstep(this.age / 8.0));
+				if (subject.targetCenter != null) {
+					// keep what killed the player in the picture
+					this.lookTarget = subject.center.lerp(subject.targetCenter, 0.35);
+				}
+			}
+			case BODYCAM -> {
+				// look away from the player. Mostly where the body points, that is steadier than the head
+				Vec3 aim = CamMath.forward(this.azimuth).scale(0.6).add(subject.headDir.scale(0.4));
+				this.lookTarget = subject.center.add(aim.normalize().scale(8.0 * subject.unit));
+			}
 			case HANDS -> {
 				if (subject.hands.distanceTo(subject.center) < 1.5 * subject.unit) {
 					this.lookTarget = subject.center.lerp(subject.hands, 0.7);

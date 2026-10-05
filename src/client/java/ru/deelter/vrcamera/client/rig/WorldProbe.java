@@ -1,7 +1,9 @@
 package ru.deelter.vrcamera.client.rig;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -40,10 +42,36 @@ public final class WorldProbe {
 				free = Math.min(free, hit.getLocation().distanceTo(start));
 			}
 		}
-		if (free >= length) {
-			return 1.0;
+		double fraction = free >= length ? 1.0 : CamMath.clamp((free - config.collisionMargin) / length, 0.0, 1.0);
+
+		// lava and powder snow don't stop the rays, but a camera inside of them sees nothing
+		if (blinding(subject, from.lerp(to, fraction)) && !blinding(subject, subject.head)) {
+			double step = 0.5 / length;
+			do {
+				fraction -= step;
+			} while (fraction > 0 && blinding(subject, from.lerp(to, fraction)));
+			fraction = Math.max(0.0, fraction);
 		}
-		return CamMath.clamp((free - config.collisionMargin) / length, 0.0, 1.0);
+		return fraction;
+	}
+
+	/**
+	 * @return if a camera at {@code pos} would only see the inside of what it is in
+	 */
+	public static boolean blinding(Subject subject, Vec3 pos) {
+		BlockPos blockPos = BlockPos.containing(pos);
+		return subject.player.level().getFluidState(blockPos).getType().is(FluidTags.LAVA) ||
+			subject.player.level().getBlockState(blockPos).getBlock() == Blocks.POWDER_SNOW;
+	}
+
+	/**
+	 * @param max furthest to look down
+	 * @return blocks of air below the feet of the player, {@code max} if there is no ground in that range
+	 */
+	public static double groundDistance(Subject subject, double max) {
+		BlockHitResult hit = subject.player.level().clip(new ClipContext(subject.feet,
+			subject.feet.add(0, -max, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, subject.player));
+		return hit.getType() == HitResult.Type.MISS ? max : subject.feet.y - hit.getLocation().y;
 	}
 
 	private static double radius(Subject subject, CameraConfig config) {

@@ -23,8 +23,7 @@ public class CameraConfig {
 
 	/** show the camera view on the desktop mirror while the camera is on */
 	public boolean forceMirror = true;
-	/** what shows where the camera is, in the headset: "dot", "model" (the Vivecraft camera) or "none" */
-	public String marker = "dot";
+	public Marker marker = Marker.DOT;
 	/** show the name of the current shot next to the dot */
 	public boolean markerLabel = true;
 	/** size of the dot */
@@ -59,8 +58,7 @@ public class CameraConfig {
 	/** ...for this many seconds */
 	public double occlusionCutTime = 0.6;
 
-	/** "auto", "cut" or "blend" */
-	public String transition = "auto";
+	public Transition transition = Transition.AUTO;
 	/** chance for a smooth swing instead of a hard cut, when transition is "auto" */
 	public double blendChance = 0.6;
 	/** seconds a shot stays at least, before the director may replace it because the situation changed */
@@ -83,8 +81,14 @@ public class CameraConfig {
 	// from before there were presets, only read to carry it over
 	private ShotConfig custom;
 
+	/**
+	 * @return settings of the shot, for the hand placed shot those of the active one
+	 */
 	public ShotConfig shot(ShotType type) {
-		return type == ShotType.CUSTOM ? preset() : this.shots.get(key(type));
+		if (type == ShotType.CUSTOM) {
+			return preset();
+		}
+		return this.shots.computeIfAbsent(key(type), key -> type.defaults());
 	}
 
 	/**
@@ -102,11 +106,8 @@ public class CameraConfig {
 		if (this.shots == null) {
 			this.shots = new LinkedHashMap<>();
 		}
-		for (ShotType type : ShotType.values()) {
-			if (type != ShotType.CUSTOM && this.shots.get(key(type)) == null) {
-				this.shots.put(key(type), type.defaults());
-			}
-		}
+		// a shot set to null in the file counts as missing
+		this.shots.values().removeIf(shot -> shot == null);
 		if (this.presets == null) {
 			this.presets = new ArrayList<>();
 		}
@@ -117,11 +118,16 @@ public class CameraConfig {
 		}
 		this.custom = null;
 		this.activePreset = Math.clamp(this.activePreset, 0, this.presets.size() - 1);
+		// unknown values in the file end up as null
 		if (this.transition == null) {
-			this.transition = "auto";
+			this.transition = Transition.AUTO;
 		}
 		if (this.marker == null) {
-			this.marker = "dot";
+			this.marker = Marker.DOT;
+		}
+		// write all shots to the file, also the ones added by an update
+		for (ShotType type : ShotType.values()) {
+			shot(type);
 		}
 	}
 
