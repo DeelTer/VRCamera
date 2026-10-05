@@ -19,7 +19,7 @@ public class LevelExtractorMixin {
 	private void vrcamera$drawHeadsetAids(CallbackInfo ci) {
 		CameraController controller = CameraController.INSTANCE;
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		if (!controller.isEngaged() || !CameraController.isVRRunning() || !dh.cameraTracker.isVisible()) {
+		if (!CameraController.isVRRunning()) {
 			return;
 		}
 		// only for the eyes of the player, none of this should show up in the recording

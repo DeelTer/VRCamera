@@ -158,5 +158,17 @@
 	"vrcamera.option.menuShotChat": "Plano de menu para o chat",
 	"vrcamera.option.menuShotChat.tooltip": "O diretor se aproxima enquanto o chat está aberto, como faz com um inventário. Desligue se os cortes incomodarem quando o chat fica aberto só por um instante.",
 	"vrcamera.option.kickPower": "Força do golpe de mãos e pés",
-	"vrcamera.option.kickPower.tooltip": "No modo de física: mãos e pés acertam uma câmera solta; dá para chutá-la ou mantê-la no ar como uma bola de vôlei. Os pés precisam de rastreamento de corpo inteiro. Isto define a força; com 0 eles a atravessam."
+	"vrcamera.option.kickPower.tooltip": "No modo de física: mãos e pés acertam uma câmera solta; dá para chutá-la ou mantê-la no ar como uma bola de vôlei. Os pés precisam de rastreamento de corpo inteiro. Isto define a força; com 0 eles a atravessam.",
+	"vrcamera.option.hideHoldingArm": "Ocultar o braço que segura a câmera",
+	"vrcamera.option.hideHoldingArm.tooltip": "O braço que segura a câmera não é desenhado na imagem da câmera, ele fica colado na lente. Continua visível quando a câmera olha para você, como numa selfie. Não muda o que você vê no headset.",
+	"vrcamera.option.faceDistance": "Mirar no rosto de perto",
+	"vrcamera.option.faceDistance.tooltip": "Uma câmera mais perto que este número de blocos mira no rosto, uma com o dobro da distância mira no corpo, com transição suave entre as duas. Permite colocar a câmera bem na sua frente. Com 0 sempre mira no corpo.",
+	"vrcamera.option.underwaterLook": "Visual subaquático",
+	"vrcamera.option.underwaterLook.tooltip": "No modo de física: debaixo d'água a câmera filma com um ângulo mais aberto, afunda balançando devagar em vez de capotar e solta bolhas.",
+	"key.vrcamera.photo": "Tirar uma foto",
+	"vrcamera.message.photo.off": "Câmera VR: ligue a câmera para tirar uma foto",
+	"vrcamera.option.photoSheet": "Imprimir fotos",
+	"vrcamera.option.photoSheet.tooltip": "A foto que você tira sai da câmera como uma folha e cai no chão. Dá para pegá-la como a câmera, arremessá-la, ou soltá-la junto a um bloco para fixá-la ali. As folhas fixadas são mantidas, as outras são esquecidas quando você sai. Desligado: a foto só é salva em screenshots/vrcamera.",
+	"vrcamera.option.photoHoldSeconds": "Foto: tempo segurando",
+	"vrcamera.option.photoHoldSeconds.tooltip": "Segure a câmera com uma mão, aproxime a outra e segure o botão de interação dela. O controle vibra cada vez mais forte e, depois destes segundos, o obturador dispara. Se a primeira mão soltar nesse meio-tempo, a segunda fica com a câmera. 0 desativa."
 }

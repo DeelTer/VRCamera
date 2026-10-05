@@ -1,11 +1,13 @@
 package ru.deelter.vrcamera.client;
 
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -52,6 +54,52 @@ public final class CameraEffects {
 			Vec3 velocity = direction.scale(0.8).add(impact.normal().scale(0.6));
 			level.addParticle(particle, position.x, position.y, position.z, velocity.x, velocity.y, velocity.z);
 		}
+	}
+
+	public static void shutter(LocalPlayer player) {
+		player.playSound(SoundEvents.LEVER_CLICK, 0.6F, 1.9F);
+		player.playSound(SoundEvents.BOOK_PAGE_TURN, 0.5F, 1.2F);
+	}
+
+	public static void pinned(Level level, Vec3 position) {
+		level.playLocalSound(position.x, position.y, position.z, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.PLAYERS,
+				0.6F, 1.3F, false);
+	}
+
+	public static void burned(Level level, Vec3 position) {
+		level.playLocalSound(position.x, position.y, position.z, SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS,
+				0.3F, 1.6F, false);
+		for (int i = 0; i < 6; i++) {
+			level.addParticle(i % 2 == 0 ? ParticleTypes.FLAME : ParticleTypes.SMOKE,
+					position.x + (RANDOM.nextDouble() - 0.5) * 0.15, position.y + RANDOM.nextDouble() * 0.1,
+					position.z + (RANDOM.nextDouble() - 0.5) * 0.15, 0, 0.03, 0);
+		}
+	}
+
+	public static boolean inWater(Level level, Vec3 position) {
+		return level.getFluidState(BlockPos.containing(position)).is(FluidTags.WATER);
+	}
+
+	public static void splash(Level level, Vec3 position, Vec3 lens) {
+		level.playLocalSound(position.x, position.y, position.z, SoundEvents.GENERIC_SPLASH, SoundSource.PLAYERS,
+				0.25F, 1.4F, false);
+		for (int i = 0; i < 8; i++) {
+			bubble(level, position, lens);
+		}
+	}
+
+	/**
+	 * behind the lens like the dust, a bubble right in front of it would fill the picture
+	 */
+	public static void bubble(Level level, Vec3 position, Vec3 lens) {
+		Vec3 offset = new Vec3(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5)
+				.scale(0.3);
+		double ahead = offset.dot(lens);
+		if (ahead > 0) {
+			offset = offset.subtract(lens.scale(2.0 * ahead));
+		}
+		level.addParticle(ParticleTypes.BUBBLE, position.x + offset.x, position.y + offset.y, position.z + offset.z,
+				0, 0.1, 0);
 	}
 
 	/**

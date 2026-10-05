@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
@@ -23,7 +24,10 @@ import org.vivecraft.api.client.VRClientAPI;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.gui.CameraMenuScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
+import ru.deelter.vrcamera.client.photo.PhotoStore;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,13 +47,15 @@ public class VrcameraClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		VRClientAPI.instance().addClientRegistrationHandler(event -> {
 			event.registerTrackers(this.controller);
-			event.registerInteractModules(new CameraPull(this.controller));
+			event.registerInteractModules(new CameraPull(this.controller), new CameraShutter(this.controller),
+					new SheetGrab());
 		});
 
 		key("mode", InputConstants.KEY_F8, this.controller::cycleMode);
 		key("next", InputConstants.KEY_F9, this.controller::nextShot);
 		key("hold", InputConstants.KEY_F10, this.controller::toggleHold);
 		key("preset", InputConstants.KEY_F7, this.controller::nextPreset);
+		key("photo", InputConstants.KEY_F6, this.controller::takePhoto);
 		key("preset.new", UNBOUND, this.controller::newPreset);
 		key("summon", UNBOUND, this.controller::summon);
 		key("debug", UNBOUND, this.controller::toggleDebug);
@@ -76,6 +82,10 @@ public class VrcameraClient implements ClientModInitializer {
 
 		// don't leave the changed camera settings behind in the Vivecraft config
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> this.controller.release());
+
+		ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(PhotoAlbum.INSTANCE::clear));
+		ClientLifecycleEvents.CLIENT_STARTED.register(
+				mc -> CompletableFuture.runAsync(PhotoStore::removeDeletedWorlds));
 
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "debug"),
 				(graphics, deltaTracker) -> DebugOverlay.extract(graphics));

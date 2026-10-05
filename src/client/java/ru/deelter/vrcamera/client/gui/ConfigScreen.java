@@ -62,6 +62,10 @@ public final class ConfigScreen {
 				value -> config.physicsAim = value));
 		general.addEntry(screen.slider("physicsShake", config.physicsShake, defaults.physicsShake, 0, 3, 0.1,
 				"%.1f", value -> config.physicsShake = value));
+		general.addEntry(screen.toggle("underwaterLook", config.underwaterLook, defaults.underwaterLook,
+				value -> config.underwaterLook = value));
+		general.addEntry(screen.toggle("hideHoldingArm", config.hideHoldingArm, defaults.hideHoldingArm,
+				value -> config.hideHoldingArm = value));
 		general.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
 				"%.1f", value -> config.kickPower = value));
 		general.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
@@ -70,6 +74,10 @@ public final class ConfigScreen {
 				"%.2f s", value -> config.pullSeconds = value));
 		general.addEntry(screen.toggle("pullAllModes", config.pullAllModes, defaults.pullAllModes,
 				value -> config.pullAllModes = value));
+		general.addEntry(screen.toggle("photoSheet", config.photoSheet, defaults.photoSheet,
+				value -> config.photoSheet = value));
+		general.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,
+				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
 		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
 				value -> config.menuShotChat = value));
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
@@ -78,6 +86,8 @@ public final class ConfigScreen {
 		ConfigCategory motion = builder.getOrCreateCategory(Component.translatable("vrcamera.config.motion"));
 		motion.addEntry(screen.slider("aimHeight", config.aimHeight, defaults.aimHeight, 0, 1, 0.05, "%.2f",
 				value -> config.aimHeight = value));
+		motion.addEntry(screen.slider("faceDistance", config.faceDistance, defaults.faceDistance, 0, 4, 0.25,
+				"%.2f", value -> config.faceDistance = value));
 		motion.addEntry(screen.slider("positionLag", config.positionLag, defaults.positionLag, 0, 2, 0.05, "%.2f s",
 				value -> config.positionLag = value));
 		motion.addEntry(screen.slider("lookLag", config.lookLag, defaults.lookLag, 0, 1, 0.01, "%.2f s",

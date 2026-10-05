@@ -37,8 +37,8 @@ You need **standing VR**. Vivecraft disables the handheld camera in seated mode.
 2. Press `F8` or the **VR Camera** button in the pause menu. Modes cycle: Off → Director → Follow → Physics.
 3. Capture the Minecraft window in OBS.
 
-While the camera is on, the game window shows its picture. A red dot marks the camera in your headset;
-the marker does not appear in the recording.
+While the camera is on, the game window shows its picture. In your headset you see the Vivecraft camera model
+where the camera is; it does not appear in the recording.
 
 ## Vivecraft and OBS setup
 
@@ -65,6 +65,7 @@ Expect the same FPS drop as with Vivecraft's ordinary camera.
 | Next shot | `F9` |
 | Hold or release the current shot | `F10` |
 | Next own angle | `F7` |
+| Take a photo | `F6` |
 
 You can also use the "VR Camera..." screen in the pause menu to bring the camera to you, manage your own angles
 and open settings. Settings require Cloth Config.
@@ -76,7 +77,7 @@ See the [full command list](docs/GUIDE.md#commands).
 
 ## Camera in your hands
 
-**Grab and place.** Reach for the red dot and hold the interact button. Let go to keep that angle in Follow,
+**Grab and place.** Reach for the camera and hold the interact button. Let go to keep that angle in Follow,
 hold it temporarily in Director, or drop the camera in Physics.
 
 **Throw.** Swing your hand and let go. A faster swing throws the camera further.

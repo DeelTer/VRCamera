@@ -9,7 +9,11 @@ import org.vivecraft.client_vr.VRData;
  */
 public final class LimbStrikes {
 	private static final int LIMBS = 4;
-	private static final double REACH = 0.22;
+	private static final int HANDS = 2;
+	private static final double REACH = 0.18;
+	// blocks per second limb and camera have to close in on each other
+	private static final double MIN_SPEED = 1.2;
+	private static final double HAND_ON_GROUND_MIN_SPEED = 2.5;
 	// faster than any limb, that is a tracking glitch or a teleport
 	private static final double MAX_SPEED = 40.0;
 	private static final double REST_AFTER_HIT = 0.25;
@@ -39,6 +43,8 @@ public final class LimbStrikes {
 			if (position == null || previous == null || dt <= 0 || power <= 0 || this.rest[i] > 0) {
 				continue;
 			}
+			// a hand has to mean it to hit a camera on the ground, or reaching for one would knock it away
+			double minSpeed = i < HANDS && camera.isResting() ? HAND_ON_GROUND_MIN_SPEED : MIN_SPEED;
 			Vec3 velocity = position.subtract(previous).scale(1.0 / dt);
 			if (velocity.length() > MAX_SPEED) {
 				continue;
@@ -50,7 +56,7 @@ public final class LimbStrikes {
 				continue;
 			}
 			Vec3 normal = distance < 1.0E-4 ? new Vec3(0, 1, 0) : offset.scale(1.0 / distance);
-			if (camera.strike(velocity, normal, power)) {
+			if (camera.strike(velocity, normal, power, minSpeed)) {
 				this.rest[i] = REST_AFTER_HIT;
 			}
 		}

@@ -158,5 +158,17 @@
 	"vrcamera.option.menuShotChat": "Menü-Einstellung für den Chat",
 	"vrcamera.option.menuShotChat.tooltip": "Der Regisseur geht nah heran, solange der Chat offen ist, wie beim Inventar. Ausschalten, wenn die Schnitte stören, wenn der Chat nur kurz offen ist.",
 	"vrcamera.option.kickPower": "Schlagkraft von Händen und Füßen",
-	"vrcamera.option.kickPower.tooltip": "Im Physik-Modus: Hände und Füße treffen eine fallengelassene Kamera, man kann sie treten oder wie einen Volleyball in der Luft halten. Füße brauchen Ganzkörper-Tracking. Das hier legt die Stärke fest, bei 0 gehen sie durch die Kamera hindurch."
+	"vrcamera.option.kickPower.tooltip": "Im Physik-Modus: Hände und Füße treffen eine fallengelassene Kamera, man kann sie treten oder wie einen Volleyball in der Luft halten. Füße brauchen Ganzkörper-Tracking. Das hier legt die Stärke fest, bei 0 gehen sie durch die Kamera hindurch.",
+	"vrcamera.option.hideHoldingArm": "Arm an der Kamera ausblenden",
+	"vrcamera.option.hideHoldingArm.tooltip": "Der Arm, der die Kamera hält, wird im Kamerabild nicht gezeichnet, er ist direkt neben dem Objektiv. Schaut die Kamera auf dich, wie bei einem Selfie, bleibt er sichtbar. Ändert nichts an dem, was du im Headset siehst.",
+	"vrcamera.option.faceDistance": "Aus der Nähe aufs Gesicht zielen",
+	"vrcamera.option.faceDistance.tooltip": "Eine Kamera, die näher ist als so viele Blöcke, zielt auf das Gesicht, eine doppelt so weit entfernte auf den Körper, dazwischen geht es fließend über. So lässt sich die Kamera direkt vor einen stellen. Bei 0 zielt sie immer auf den Körper.",
+	"vrcamera.option.underwaterLook": "Unterwasser-Look",
+	"vrcamera.option.underwaterLook.tooltip": "Im Physik-Modus: unter Wasser filmt die Kamera mit weiterem Winkel, sinkt mit langsamem Schaukeln statt zu taumeln und hinterlässt Blasen.",
+	"key.vrcamera.photo": "Foto aufnehmen",
+	"vrcamera.message.photo.off": "VR-Kamera: Kamera einschalten, um ein Foto aufzunehmen",
+	"vrcamera.option.photoSheet": "Fotos ausdrucken",
+	"vrcamera.option.photoSheet.tooltip": "Ein aufgenommenes Foto fährt als Blatt aus der Kamera und fällt zu Boden. Es lässt sich wie die Kamera greifen, werfen oder an einem Block loslassen, dann haftet es dort. Angeheftete Blätter bleiben erhalten, die anderen sind beim Verlassen weg. Aus: das Foto wird nur in screenshots/vrcamera gespeichert.",
+	"vrcamera.option.photoHoldSeconds": "Foto: Haltezeit",
+	"vrcamera.option.photoHoldSeconds.tooltip": "Die Kamera mit einer Hand halten, die andere heranführen und deren Interaktionstaste halten. Der Controller vibriert immer stärker, nach so vielen Sekunden klickt der Auslöser. Lässt die erste Hand währenddessen los, übernimmt die zweite die Kamera. 0 schaltet das aus."
 }

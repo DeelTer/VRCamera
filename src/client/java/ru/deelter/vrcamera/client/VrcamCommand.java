@@ -50,6 +50,10 @@ public final class VrcamCommand {
 			controller.summon();
 			return DONE;
 		}));
+		root.then(ClientCommands.literal("photo").executes(context -> {
+			controller.takePhoto();
+			return DONE;
+		}));
 		root.then(ClientCommands.literal("debug").executes(context -> {
 			controller.toggleDebug();
 			return DONE;

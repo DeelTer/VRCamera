@@ -16,6 +16,7 @@ Brazilian Portuguese and Simplified Chinese.
 | Next shot | `F9` | "VR Camera..." screen |
 | Hold the current shot | `F10` | "VR Camera..." screen |
 | Next own angle | `F7` | "VR Camera..." screen |
+| Take a photo | `F6` | bind it to a controller button, or `/vrcam photo` |
 | Bring camera to me | unbound | "VR Camera..." screen |
 | New own angle | unbound | "VR Camera..." screen |
 | Delete own angle | — | "VR Camera..." screen |
@@ -39,6 +40,7 @@ You can also use `/vrcam`, which supports tab completion. The command runs on th
 | `/vrcam hold` | holds or releases the current shot |
 | `/vrcam shot <name>` | shows a shot: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Turns the director on if needed |
 | `/vrcam summon` | brings the camera to you |
+| `/vrcam photo` | takes a photo |
 | `/vrcam preset next`, `new`, `delete` | own angles |
 | `/vrcam preset <number>` | picks an own angle, counted from 1 |
 | `/vrcam debug` | debug overlay |
@@ -55,7 +57,7 @@ menu, and each can be bound to a controller button in SteamVR.
 
 The following controls work in every mode.
 
-**Grab and place.** Reach for the red dot and hold the interact button, like with the plain Vivecraft camera. When
+**Grab and place.** Reach for the camera and hold the interact button, like with the plain Vivecraft camera. When
 you let go:
 
 - in Follow the camera stays at that spot relative to you;
@@ -79,7 +81,11 @@ happens, turn `pullAllModes` off: pulling then only works in Physics.
 in front of your face for 20 seconds.
 
 **Stabilization.** Your hand can tremble or twitch when the other hand breaks a block. The mod smooths those movements out while
-letting deliberate movements through. Adjust the strength with `handStabilize`; 0 turns it off.
+letting deliberate movements through. Only the picture is steadied: in the headset the camera stays right in your
+hand. Adjust the strength with `handStabilize`; 0 turns it off.
+
+**Hidden arm.** The arm that holds the camera is right next to the lens, so it is not drawn in the picture. It
+shows again when the camera looks at you, like in a selfie. `hideHoldingArm` turns this off.
 
 ### Own angles
 
@@ -97,6 +103,8 @@ For found footage and horror, this mode makes the camera an object you hold.
 
 - Hold it, and it films where your hand points. In the headset it looks like the Vivecraft camera with a screen.
 - Let go, and it falls, bounces and tumbles. It keeps the speed of your hand, so you can throw it.
+- Let go slowly right above a block, and it is put down: it stays as you held it and films where you aimed it.
+- A camera on the ground needs a fast swing of the hand to be hit. Reaching for it does not knock it away.
 - While it comes to rest it turns its lens towards you and stays tilted. Without that it would film the ground or
   the sky most of the time. `physicsAim` sets how much: 0 leaves it as it fell, 1 looks straight at you.
 - Once it lies still it stops following you. Walk away and step into the picture.
@@ -112,6 +120,8 @@ For found footage and horror, this mode makes the camera an object you hold.
 - On impact the zoom jolts, you hear the block and its dust flies. The dust only spawns behind the lens: you see
   it, the camera does not.
 - It sinks slowly in water and lava. It keeps falling if the block below it is broken.
+- Under water it films with a wider angle, also while you hold it. A sinking camera rolls slowly from side to side
+  instead of tumbling, and leaves bubbles. `underwaterLook` turns this off.
 - Further than 40 blocks away it comes back to you, Vivecraft hides a camera that far off.
 - Switching the mode on puts the camera in front of your face for 20 seconds. If you do not pick it up, it falls.
 
@@ -192,10 +202,45 @@ With no room for any angle, like in a one-block tunnel, `pov` takes over. The ca
 front of the face, not in the eyes: there it would see the head of the player model from inside. `distance` of
 that shot sets how far in front.
 
+## Photos
+
+Hold the camera with one hand, bring the other hand to it and hold its interact button. The controller buzzes
+harder and harder, and after `photoHoldSeconds` (1.5 by default) the shutter clicks. The next photo has to wait
+until the sheet of this one has left the camera.
+
+To pass the camera to the other hand: hold on to it with the second hand, then let go with the first.
+
+Without a free hand, or when the camera is not held: `F6`, a controller button you bound to it, or
+`/vrcam photo`. Photos work in every mode while the camera is on.
+
+- The photo is what the camera films at that moment, in full size, saved to `screenshots/vrcamera`. The mod never
+  deletes these.
+- The shutter clicks and the view jolts for a moment. The jolt is not in the photo.
+- A sheet with the photo slides out below the camera, hangs there for a moment, then flutters to the ground. You
+  see it in the headset and in the recording. Other players do not: the mod runs on your client only.
+- `photoSheet: false` only saves the photo.
+
+### Sheets
+
+- **Pick up.** Reach for a sheet and hold the interact button, like with the camera.
+- **Throw.** Let go while moving your hand.
+- **Pin.** Let go slowly next to a block: the sheet sticks to it, upright on a wall. Pick it up again to move it.
+- **Icon.** A sheet that falls or lies around has an icon with the distance, like the camera. Pinned ones do not.
+- **Fire and lava** burn a sheet.
+- **Kept or not.** Only pinned sheets are kept: they are there again the next time you play this world. A sheet
+  you left lying is forgotten when its chunk unloads or you leave, and at most 12 lie around at once. The photo
+  itself stays in `screenshots/vrcamera` either way.
+
+Sheets work while the camera is off as well.
+
+Pinned sheets and their small pictures are kept per world in `vrcamera/sheets`. When a singleplayer world is
+deleted, its folder there is removed at the next game start. Folders of servers stay: a server that is gone cannot
+be told from one you are just not on. If a picture is missing from the folder, its sheet is dropped.
+
 ## Marker, icon and debug overlay
 
-**Marker.** A red dot with `REC` and the name of the shot marks the camera in the headset. It is not in the
-recording. `marker` picks `"dot"`, `"model"` (the Vivecraft camera model) or `"none"`.
+**Marker.** The Vivecraft camera model with its screen shows where the camera is in the headset. It is not in the
+recording. `marker` picks `"model"`, `"dot"` (a red dot with `REC` and the name of the shot) or `"none"`.
 
 **Camera icon.** A camera icon with the distance in blocks, like a waypoint: seen through walls, same size at any
 distance, in both eyes. When the camera is out of view the icon sticks to the edge of the view on that side. It is
@@ -243,19 +288,23 @@ and by `/vrcam reload`.
 | Field | Default | Meaning |
 |---|---|---|
 | `forceMirror` | `true` | show the camera picture in the game window while the camera is on |
-| `marker` | `"dot"` | `"dot"`, `"model"` or `"none"` |
+| `marker` | `"model"` | `"model"`, `"dot"` or `"none"` |
 | `markerLabel` | `true` | name of the shot next to the dot |
 | `markerSize` | `14` | size of the dot |
 | `indicator` | `true` | camera icon with the distance |
 | `indicatorSize` | `1.0` | size of the icon |
 | `throwPower` | `1.0` | throw range multiplier, 0 = no throwing |
 | `handStabilize` | `0.5` | steadying of a held camera, 0 = off, 1 = most |
+| `hideHoldingArm` | `true` | keep the arm that holds the camera out of the picture, except in a selfie |
 | `pullSeconds` | `1.25` | seconds to hold the button to pull the camera, 0 = no pulling |
 | `pullAllModes` | `true` | `false` = pulling only in Physics |
 | `physicsAim` | `0.75` | Physics: how much a dropped camera turns to the player, 0 to 1 |
 | `physicsShake` | `1.0` | Physics: sway of a held camera, 0 = off |
 | `kickPower` | `1.0` | Physics: how hard hands and feet hit a dropped camera, 0 = they pass through |
+| `underwaterLook` | `true` | Physics: wider angle, slow roll and bubbles under water |
 | `menuShotChat` | `true` | the `menu` shot for chat as well |
+| `photoSheet` | `true` | a taken photo comes out of the camera as a sheet; `false` only saves it |
+| `photoHoldSeconds` | `1.5` | seconds the second hand holds interact at a held camera for a photo, 0 = off |
 | `debugOverlay` | `false` | debug overlay on the HUD |
 
 ### Motion
@@ -263,6 +312,7 @@ and by `/vrcam reload`.
 | Field | Default | Meaning |
 |---|---|---|
 | `aimHeight` | `0.6` | where to aim: 0 = feet, 1 = head |
+| `faceDistance` | `1.25` | blocks; a camera closer than this aims at the face, twice as far at the body, 0 = always the body |
 | `positionLag` | `0.35` | seconds to catch up with the wanted position |
 | `lookLag` | `0.12` | seconds for the aim to catch up with the player |
 | `turnLag` | `0.9` | seconds to swing around when the player turns |
@@ -350,7 +400,7 @@ For streams, turn Hotswitching off so the game stays in VR and the camera keeps 
 | "not available in seated mode" | switch Vivecraft to standing |
 | The game window is black | Desktop Mirror is OFF |
 | The window shows first person | `forceMirror` is off, or VR is not running right now |
-| No red dot | set `marker: "model"` to get the Vivecraft camera model |
+| No camera model in the headset | check `marker`: `"model"` shows the Vivecraft camera, `"dot"` a red dot |
 | The camera is behind you in `front` | a bug, please report it |
 | You can't reach the camera | Bring camera to me, or pull it |
 | "internal error, camera turned off" | the mod caught its own error and stopped, to not throw you out of VR. See `logs/latest.log` |

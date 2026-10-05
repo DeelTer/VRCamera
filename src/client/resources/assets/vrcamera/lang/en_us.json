@@ -158,5 +158,17 @@
 	"vrcamera.option.menuShotChat": "Menu shot for chat",
 	"vrcamera.option.menuShotChat.tooltip": "The director moves in close while the chat is open, like it does for an inventory. Turn it off if the cuts bother you when the chat is only open for a moment.",
 	"vrcamera.option.kickPower": "Hit strength of hands and feet",
-	"vrcamera.option.kickPower.tooltip": "In the physics mode: hands and feet hit a dropped camera, so it can be kicked or kept in the air like a volleyball. Feet need full body tracking. This sets how hard, 0 lets them pass through it."
+	"vrcamera.option.kickPower.tooltip": "In the physics mode: hands and feet hit a dropped camera, so it can be kicked or kept in the air like a volleyball. Feet need full body tracking. This sets how hard, 0 lets them pass through it.",
+	"vrcamera.option.hideHoldingArm": "Hide the arm holding the camera",
+	"vrcamera.option.hideHoldingArm.tooltip": "The arm that holds the camera is not drawn in the camera picture, it is right next to the lens. It stays visible when the camera looks at you, like in a selfie. Does not change what you see in the headset.",
+	"vrcamera.option.faceDistance": "Aim at the face up close",
+	"vrcamera.option.faceDistance.tooltip": "A camera closer to you than this many blocks aims at your face, one twice as far at your body, with a smooth change in between. Lets you put the camera right in front of you for a face shot. 0 always aims at the body.",
+	"vrcamera.option.underwaterLook": "Underwater look",
+	"vrcamera.option.underwaterLook.tooltip": "In the physics mode: under water the camera films with a wider angle, sinks with a slow roll instead of tumbling, and leaves bubbles.",
+	"key.vrcamera.photo": "Take a photo",
+	"vrcamera.message.photo.off": "VR Camera: turn the camera on to take a photo",
+	"vrcamera.option.photoSheet": "Print photos",
+	"vrcamera.option.photoSheet.tooltip": "A photo you take slides out of the camera as a sheet of paper and falls to the ground. Pick it up like the camera, throw it, or let go of it at a block to pin it there. Pinned sheets are kept, the others are forgotten when you leave. Off: the photo is only saved to screenshots/vrcamera.",
+	"vrcamera.option.photoHoldSeconds": "Photo: hold time",
+	"vrcamera.option.photoHoldSeconds.tooltip": "Hold the camera with one hand, bring the other hand to it and hold its interact button. The controller buzzes harder and harder, and after this many seconds the shutter clicks. Let go with the first hand meanwhile and the second one takes the camera over. 0 turns this off."
 }

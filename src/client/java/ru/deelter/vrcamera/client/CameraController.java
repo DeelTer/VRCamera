@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -28,7 +29,9 @@ import ru.deelter.vrcamera.client.config.Marker;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
+import ru.deelter.vrcamera.client.math.Smooth;
 import ru.deelter.vrcamera.client.math.SmoothVec;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.rig.*;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -88,8 +91,20 @@ public final class CameraController implements Tracker {
 	private static final double PULL_TIME = 0.12;
 	private static final double PULL_ARRIVED = 0.15;
 	private static final double PULL_SPARKS = 30.0;
+	private static final double SELFIE_COS = Math.cos(Math.toRadians(60));
+	// degrees the view widens under water, and seconds that takes
+	private static final double UNDERWATER_FOV = 18.0;
+	private static final double UNDERWATER_TIME = 0.4;
+	private static final double BUBBLES_PER_SECOND = 6.0;
+	// degrees the view jolts in when a photo is taken, and seconds until that is over
+	private static final double SHUTTER_FOV = 5.0;
+	private static final double SHUTTER_TIME = 0.15;
+	private static final String PHOTO_ICON = "";
+	// closer than this a sheet is seen well enough without its icon
+	private static final double PHOTO_ICON_MIN_DISTANCE = 2.5;
+	private static final double PHOTO_ICON_MAX_DISTANCE = 48.0;
 	// blocks from the hand to the middle of a camera that it pulled, half a camera and a bit
-	private static final double PULL_GRIP_OFFSET = 0.16;
+	private static final double PULL_GRIP_OFFSET = 0.08;
 	// seconds a thrown camera of Vivecraft needs to get where it was thrown
 	private static final double GLIDE_TIME = 0.3;
 	// seconds a summoned camera waits to be picked up
@@ -116,10 +131,19 @@ public final class CameraController implements Tracker {
 	private final DroppedCamera dropped = new DroppedCamera();
 	private final HandheldShake shake = new HandheldShake();
 	private final LimbStrikes limbs = new LimbStrikes();
+	// the other hand that holds on to a camera in the first one, it takes the camera if the first lets go. -1 for none
+	private int offeredHand = -1;
+	private long albumNanos;
+	private Vec3 handPosition;
+	private final Quaternionf handRotation = new Quaternionf();
 	private final HandStabilizer stabilizer = new HandStabilizer();
 	// hand the camera is flying to after it was pulled, null when it is not
 	private InteractionHand pullHand;
 	private final SmoothVec pullGlide = new SmoothVec();
+	private double frameDt;
+	private double shutter;
+	private final Smooth underwater = new Smooth();
+	private boolean wasInWater;
 	private boolean wasDead;
 	// who killed the player, the camera on the ground tries to get them into the picture as well
 	private Entity killer;
@@ -151,23 +175,72 @@ public final class CameraController implements Tracker {
 	 * @return if the Vivecraft camera model should not be shown in the headset
 	 */
 	public boolean hidesModel() {
-		// a camera that is carried around should look like one
-		return this.engaged && this.config.marker != Marker.MODEL && this.mode != Mode.PHYSICS;
+		if (!this.engaged || this.mode == Mode.PHYSICS) {
+			// a camera that is carried around should look like one
+			return false;
+		}
+		Shot shot = shot();
+		// in first person it is right in front of the face
+		return this.config.marker != Marker.MODEL || (shot != null && shot.type == ShotType.POV);
+	}
+
+	/**
+	 * @return where the hand has the camera, before steadying. Null while it is not held
+	 */
+	public Vec3 handPosition() {
+		return this.handPosition;
+	}
+
+	public Quaternionf handRotation() {
+		return this.handRotation;
+	}
+
+	/**
+	 * @return the arm that holds the camera, if it should not be in the picture. Null to leave both arms alone
+	 */
+	public HumanoidArm armToHide() {
+		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		if (!this.engaged || !this.config.hideHoldingArm || this.handPosition == null ||
+				dh.currentPass != RenderPass.CAMERA || !dh.cameraTracker.isMoving())
+		{
+			return null;
+		}
+		CameraTracker camera = dh.cameraTracker;
+		Vec3 lens = new Vec3(camera.getRotation().transform(new Vector3f(0, 0, -1)));
+		Vec3 toHead = this.subject.head.subtract(camera.getPosition());
+		// in a selfie the arm that holds the camera belongs into the picture
+		if (toHead.lengthSqr() > 1.0E-6 && lens.dot(toHead.normalize()) > SELFIE_COS) {
+			return null;
+		}
+		boolean rightHand = (camera.getMovingController() == 0) != dh.vrSettings.reverseHands;
+		return rightHand ? HumanoidArm.RIGHT : HumanoidArm.LEFT;
 	}
 
 	/**
 	 * Draws what helps the player find the camera, called while Vivecraft collects what to render for one of the eyes.
 	 */
 	public void drawHeadsetAids(VRData vr) {
-		Vec3 camera = vr.getEye(RenderPass.CAMERA).getPosition();
 		try {
+			if (this.config.indicator) {
+				Vec3 head = vr.hmd.getPosition();
+				PhotoAlbum.INSTANCE.forEachLoose(sheet -> {
+					double distance = sheet.distanceTo(head);
+					if (distance > PHOTO_ICON_MIN_DISTANCE && distance < PHOTO_ICON_MAX_DISTANCE) {
+						drawIndicator(PHOTO_ICON, sheet, vr, false);
+					}
+				});
+			}
+			if (!this.engaged || !ClientDataHolderVR.getInstance().cameraTracker.isVisible()) {
+				return;
+			}
+			Vec3 camera = this.handPosition != null ? this.handPosition : vr.getEye(RenderPass.CAMERA).getPosition();
 			if (this.config.marker == Marker.DOT && this.mode != Mode.PHYSICS) {
 				drawMarker(camera, vr.worldScale);
 			}
 			Shot shot = shot();
 			// in first person the camera is right in front of the face
 			if (this.config.indicator && (shot == null || shot.type != ShotType.POV)) {
-				drawIndicator(camera, vr);
+				drawIndicator(INDICATOR_ICON, camera, vr, true);
 			}
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
@@ -186,7 +259,7 @@ public final class CameraController implements Tracker {
 	 * The camera icon with the distance to the camera below it, like a waypoint: at the camera and seen through
 	 * walls. While the camera is out of sight the icon sticks to the edge of the view on the side the camera is on.
 	 */
-	private void drawIndicator(Vec3 camera, VRData vr) {
+	private void drawIndicator(String icon, Vec3 camera, VRData vr, boolean alsoOutOfSight) {
 		Vec3 head = vr.hmd.getPosition();
 		Vec3 forward = new Vec3(vr.hmd.getDirection());
 		Vec3 up = new Vec3(vr.hmd.getCustomVector(MathUtils.UP));
@@ -208,6 +281,8 @@ public final class CameraController implements Tracker {
 		if (Math.atan2(sideways, z) < INDICATOR_VIEW_ANGLE) {
 			// above the camera, to not cover it
 			anchor = camera.add(up.scale(0.15 * worldScale));
+		} else if (!alsoOutOfSight) {
+			return;
 		} else {
 			// straight behind has no side, call that right
 			Vec3 side = sideways < 1.0E-3 ? right : right.scale(x / sideways).add(up.scale(y / sideways));
@@ -220,7 +295,7 @@ public final class CameraController implements Tracker {
 		// text is drawn downwards from its position: the icon stands on the anchor, the distance hangs below it
 		Vec3 iconTop = anchor.add(up.scale(iconScale / 2.0));
 		Vec3 textTop = anchor.subtract(up.scale(0.2 * iconScale / 2.0));
-		Gizmos.billboardText(INDICATOR_ICON, iconTop,
+		Gizmos.billboardText(icon, iconTop,
 				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
 		// in blocks, the world scale of Vivecraft changes the size of the player and not of the world
 		Gizmos.billboardText(Math.round(distance) + " M", textTop,
@@ -378,6 +453,7 @@ public final class CameraController implements Tracker {
 			this.wasGrabbed = false;
 			this.parkedTime = 0;
 			this.pullHand = null;
+			this.handPosition = null;
 		}
 	}
 
@@ -434,6 +510,7 @@ public final class CameraController implements Tracker {
 		this.subject.reset();
 		this.wasGrabbed = false;
 		this.parkedTime = 0;
+		this.handPosition = null;
 		this.handThrow.clear();
 		this.glideTarget = null;
 		this.plainHeld = false;
@@ -441,6 +518,8 @@ public final class CameraController implements Tracker {
 		this.pullHand = null;
 		this.wasDead = false;
 		this.killer = null;
+		this.underwater.reset(0);
+		this.wasInWater = false;
 		if (mode == Mode.OFF) {
 			release();
 		}
@@ -517,6 +596,38 @@ public final class CameraController implements Tracker {
 		} else if (camera.isMoving() && camera.getMovingController() == hand.ordinal()) {
 			camera.stopMoving();
 		}
+	}
+
+	/**
+	 * saves what the camera films right now as a picture, and prints it
+	 */
+	public boolean takePhoto() {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (!this.engaged || player == null) {
+			notify(Component.translatable("vrcamera.message.photo.off"));
+			return false;
+		}
+		// One at a time. Before the shutter jolts the view, the photo is of what was seen when it was asked for
+		if (PhotoAlbum.INSTANCE.isPrinting() || !PhotoAlbum.INSTANCE.take(this.config.photoSheet)) {
+			return false;
+		}
+		this.shutter = SHUTTER_TIME;
+		CameraEffects.shutter(player);
+		return true;
+	}
+
+	public void offerHand(int hand) {
+		this.offeredHand = hand;
+	}
+
+	public void withdrawHand(int hand) {
+		if (this.offeredHand == hand) {
+			this.offeredHand = -1;
+		}
+	}
+
+	private double shutterFov() {
+		return SHUTTER_FOV * this.shutter / SHUTTER_TIME;
 	}
 
 	public void nextShot() {
@@ -611,8 +722,23 @@ public final class CameraController implements Tracker {
 
 	@Override
 	public void idleProcess(LocalPlayer player) {
-		if (this.mode == Mode.OFF && player != null && isVRRunning()) {
+		if (player == null || !isVRRunning()) {
+			return;
+		}
+		if (this.mode == Mode.OFF) {
 			throwPlainCamera(player);
+		}
+		// sheets are there whatever the camera does, also while it is off
+		long now = System.nanoTime();
+		double dt = Minecraft.getInstance().isPaused() ? 0 : Math.min((now - this.albumNanos) / 1.0E9, 0.1);
+		this.albumNanos = now;
+		try {
+			PhotoAlbum.INSTANCE.update(player.level(), ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render,
+					dt);
+		} catch (RuntimeException e) {
+			// same as for the camera: nothing here is worth losing the frame of the headset
+			Vrcamera.LOGGER.error("VRCamera: updating photo sheets failed", e);
+			PhotoAlbum.INSTANCE.clear();
 		}
 	}
 
@@ -685,12 +811,22 @@ public final class CameraController implements Tracker {
 		this.wasGrabbed = false;
 		this.parkedTime = 0;
 		this.pullHand = null;
+		this.handPosition = null;
 	}
 
 	@Override
 	public void activeProcess(LocalPlayer player) {
 		try {
+			this.frameDt = 0;
 			process(player);
+			if (this.engaged) {
+				CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
+				boolean held = this.handPosition != null;
+				// they hang from the camera the player sees, not from where it films from
+				PhotoAlbum.INSTANCE.hangFrom(held ? this.handPosition : camera.getPosition(),
+						held ? this.handRotation : camera.getRotation(),
+						ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render.worldScale);
+			}
 		} catch (RuntimeException e) {
 			// this runs right before the frame is rendered for the headset, a crash here would throw the player out
 			// of VR. Turn the camera off instead
@@ -703,6 +839,7 @@ public final class CameraController implements Tracker {
 	private void process(LocalPlayer player) {
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		CameraTracker camera = dh.cameraTracker;
+		this.handPosition = null;
 		if (dh.vrSettings.seated) {
 			// Vivecraft disables the handheld camera in seated mode
 			setMode(Mode.OFF);
@@ -727,6 +864,8 @@ public final class CameraController implements Tracker {
 		// The camera keeps moving while the game is paused, to get to the pause menu. Only what belongs to the world
 		// stands still
 		double worldDt = Minecraft.getInstance().isPaused() ? 0 : dt;
+		this.frameDt = worldDt;
+		this.shutter = Math.max(0.0, this.shutter - dt);
 		if (realDt > RESUME_GAP) {
 			// VR was paused, the player can be anywhere by now
 			this.subject.reset();
@@ -740,8 +879,11 @@ public final class CameraController implements Tracker {
 
 		if (this.mode == Mode.PHYSICS) {
 			watchDeath(player, camera);
-			dh.vrSettings.handCameraFov = (float) CamMath.clamp(this.previousFov + this.dropped.fovOffset(), 1.0,
-					179.0);
+			// no real fisheye, but a wide lens under water reads as one
+			boolean submerged = this.config.underwaterLook && WorldProbe.inFluid(this.subject, camera.getPosition());
+			double wet = this.underwater.update(submerged ? 1.0 : 0.0, UNDERWATER_TIME, dt);
+			dh.vrSettings.handCameraFov = (float) CamMath.clamp(
+					this.previousFov + this.dropped.fovOffset() + wet * UNDERWATER_FOV - shutterFov(), 1.0, 179.0);
 		}
 		if (this.pullHand != null) {
 			flyToHand(camera, vr, player, dt);
@@ -754,16 +896,28 @@ public final class CameraController implements Tracker {
 			this.wasGrabbed = true;
 			this.parkedTime = 0;
 			this.dropped.pickUp();
+			// The model in the headset stays right in the hand, only the picture is steadied. A model that lags
+			// behind the hand looks like it is slipping out of it
+			this.handPosition = camera.getPosition();
+			this.handRotation.set(camera.getRotation());
 			// the throw is what the hand did, not what is left of it
 			this.handThrow.sample(camera.getPosition());
 			// Vivecraft sets the camera from the hand again every frame, so what is changed here does not add up
-			this.stabilizer.update(camera.getPosition(), camera.getRotation(), dt, this.config.handStabilize);
-			camera.setPosition(this.stabilizer.position());
+			// Relative to the play space. In world space walking counts as a move of the hand, and the camera
+			// trails behind the player in jerks
+			this.stabilizer.update(camera.getPosition().subtract(vr.origin), camera.getRotation(), dt,
+					this.config.handStabilize);
+			camera.setPosition(this.stabilizer.position().add(vr.origin));
 			camera.setRotation(new Quaternionf(this.stabilizer.rotation()));
 			if (this.mode == Mode.PHYSICS && this.config.physicsShake > 0) {
 				camera.getRotation().mul(this.shake.update(worldDt, this.subject.speed, player.hurtTime > 0,
 						this.config.physicsShake));
 			}
+			return;
+		}
+		if (this.wasGrabbed && this.offeredHand >= 0) {
+			// handed over: the first hand let go while the second one held on to the camera
+			camera.startMoving(this.offeredHand);
 			return;
 		}
 		if (this.wasGrabbed) {
@@ -772,7 +926,10 @@ public final class CameraController implements Tracker {
 				// keeps the speed of the hand, so it can be thrown
 				// a hand can reach into a wall, the camera should not start in there
 				Vec3 start = WorldProbe.reach(player, this.subject.head, camera.getPosition());
-				this.dropped.drop(start, camera.getRotation(), this.handThrow.velocity(this.subject.velocity));
+				Vec3 handVelocity = this.handThrow.velocity(this.subject.velocity);
+				if (!this.dropped.place(this.subject, start, camera.getRotation(), handVelocity)) {
+					this.dropped.drop(start, camera.getRotation(), handVelocity);
+				}
 				this.limbs.reset();
 				this.limbs.released(camera.getMovingController());
 			} else {
@@ -808,7 +965,7 @@ public final class CameraController implements Tracker {
 
 		camera.setPosition(this.rig.position());
 		camera.setRotation(this.rig.rotation());
-		dh.vrSettings.handCameraFov = (float) CamMath.clamp(this.rig.fov(), 1.0, 179.0);
+		dh.vrSettings.handCameraFov = (float) CamMath.clamp(this.rig.fov() - shutterFov(), 1.0, 179.0);
 	}
 
 	/**
@@ -835,11 +992,19 @@ public final class CameraController implements Tracker {
 		camera.setPosition(this.dropped.position());
 		camera.setRotation(this.dropped.rotation());
 
+		Vec3 lens = new Vec3(this.dropped.rotation().transform(new Vector3f(0, 0, -1)));
 		DroppedCamera.Impact impact = this.dropped.pollImpact();
 		if (impact != null) {
-			Vec3 lens = new Vec3(this.dropped.rotation().transform(new Vector3f(0, 0, -1)));
 			CameraEffects.impact(this.subject.player.level(), impact, lens);
 		}
+		boolean inWater = this.config.underwaterLook &&
+				CameraEffects.inWater(this.subject.player.level(), this.dropped.position());
+		if (inWater && !this.wasInWater) {
+			CameraEffects.splash(this.subject.player.level(), this.dropped.position(), lens);
+		} else if (inWater && !this.dropped.isResting() && Math.random() < dt * BUBBLES_PER_SECOND) {
+			CameraEffects.bubble(this.subject.player.level(), this.dropped.position(), lens);
+		}
+		this.wasInWater = inWater;
 	}
 
 	/**
@@ -888,8 +1053,8 @@ public final class CameraController implements Tracker {
 				ClientDataHolderVR.getInstance().vrSettings.reverseHands;
 		Vec3 toRight = new Vec3(-this.subject.headDir.z, 0, this.subject.headDir.x);
 		toRight = toRight.lengthSqr() < 1.0E-6 ? Vec3.ZERO : toRight.normalize();
-		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition()
-				.add(toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale));
+		Vec3 grip = toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale);
+		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition().add(grip);
 		Vec3 position = this.pullGlide.update(hand, PULL_TIME, dt);
 		Quaternionf atPlayer = new Quaternionf();
 		if (CamMath.lookRotation(this.subject.head.subtract(position), atPlayer)) {
@@ -903,7 +1068,11 @@ public final class CameraController implements Tracker {
 			return;
 		}
 		// there. From here on it is held like a camera that was grabbed, until the button is let go of
-		camera.setPosition(hand);
+		// startMoving measures from where the hand was at the last tick, not in this frame. Placed by this
+		// frame, a walking player would carry the camera a step away from the hand
+		Vec3 tickHand = ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_pre
+				.getController(this.pullHand.ordinal()).getPosition();
+		camera.setPosition(tickHand.add(grip));
 		camera.startMoving(this.pullHand.ordinal());
 		this.pullHand = null;
 		this.handThrow.clear();

@@ -19,14 +19,14 @@ public class CameraConfig {
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
 	// number of the last change of defaults this file has seen, see migrate
-	private static final int VERSION = 3;
+	private static final int VERSION = 4;
 	public int version = VERSION;
 
 	/**
 	 * show the camera view on the desktop mirror while the camera is on
 	 */
 	public boolean forceMirror = true;
-	public Marker marker = Marker.DOT;
+	public Marker marker = Marker.MODEL;
 	/**
 	 * show the name of the current shot next to the dot
 	 */
@@ -61,6 +61,10 @@ public class CameraConfig {
 	 */
 	public double kickPower = 1.0;
 	/**
+	 * under water the camera of the physics mode films wider, sinks with a slow roll and leaves bubbles
+	 */
+	public boolean underwaterLook = true;
+	/**
 	 * Seconds to point at a dropped camera and hold the button, for it to fly into the hand.
 	 * 0 = it can't be pulled
 	 */
@@ -71,9 +75,21 @@ public class CameraConfig {
 	 */
 	public double handStabilize = 0.5;
 	/**
+	 * the arm that holds the camera is not drawn in the picture, unless the camera looks at the player
+	 */
+	public boolean hideHoldingArm = true;
+	/**
 	 * the camera can be pulled in every mode, not only in the physics mode
 	 */
 	public boolean pullAllModes = true;
+	/**
+	 * a taken photo comes out of the camera as a sheet. Without this it is only saved
+	 */
+	public boolean photoSheet = true;
+	/**
+	 * Seconds the second hand holds interact at a held camera to take a photo. 0 = no photo that way
+	 */
+	public double photoHoldSeconds = 1.5;
 	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory
 	 */
@@ -91,6 +107,11 @@ public class CameraConfig {
 	 * seconds the camera needs to catch up with its target position
 	 */
 	public double positionLag = 0.35;
+	/**
+	 * Blocks. A camera closer than this aims at the face, one twice as far at the body, and in between it blends.
+	 * 0 = always the body
+	 */
+	public double faceDistance = 1.25;
 	/**
 	 * seconds the camera aim needs to catch up with the player
 	 */
@@ -252,6 +273,9 @@ public class CameraConfig {
 		if (from < 3 && this.pullSeconds == 2.0) {
 			// pulling the camera took too long
 			this.pullSeconds = 1.25;
+		}
+		if (from < 4 && this.marker == Marker.DOT) {
+			this.marker = Marker.MODEL;
 		}
 		this.version = VERSION;
 	}

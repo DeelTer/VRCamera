@@ -158,5 +158,17 @@
 	"vrcamera.option.menuShotChat": "Plan menu pour le chat",
 	"vrcamera.option.menuShotChat.tooltip": "Le réalisateur se rapproche tant que le chat est ouvert, comme pour un inventaire. Désactivez si les changements de plan gênent quand le chat n'est ouvert qu'un instant.",
 	"vrcamera.option.kickPower": "Force de frappe des mains et des pieds",
-	"vrcamera.option.kickPower.tooltip": "En mode physique : les mains et les pieds frappent une caméra lâchée, on peut la botter ou la garder en l'air comme un ballon de volley. Les pieds demandent le suivi du corps entier. Ceci règle la force, à 0 ils la traversent."
+	"vrcamera.option.kickPower.tooltip": "En mode physique : les mains et les pieds frappent une caméra lâchée, on peut la botter ou la garder en l'air comme un ballon de volley. Les pieds demandent le suivi du corps entier. Ceci règle la force, à 0 ils la traversent.",
+	"vrcamera.option.hideHoldingArm": "Masquer le bras qui tient la caméra",
+	"vrcamera.option.hideHoldingArm.tooltip": "Le bras qui tient la caméra n'est pas dessiné dans l'image de la caméra, il est juste à côté de l'objectif. Il reste visible quand la caméra vous regarde, comme pour un selfie. Ne change rien à ce que vous voyez dans le casque.",
+	"vrcamera.option.faceDistance": "Viser le visage de près",
+	"vrcamera.option.faceDistance.tooltip": "Une caméra plus proche que ce nombre de blocs vise le visage, une caméra deux fois plus loin vise le corps, avec une transition douce entre les deux. Permet de poser la caméra juste devant soi. 0 vise toujours le corps.",
+	"vrcamera.option.underwaterLook": "Rendu sous l'eau",
+	"vrcamera.option.underwaterLook.tooltip": "En mode physique : sous l'eau la caméra filme avec un angle plus large, coule en se balançant lentement au lieu de culbuter, et laisse des bulles.",
+	"key.vrcamera.photo": "Prendre une photo",
+	"vrcamera.message.photo.off": "Caméra VR : activez la caméra pour prendre une photo",
+	"vrcamera.option.photoSheet": "Imprimer les photos",
+	"vrcamera.option.photoSheet.tooltip": "Une photo prise sort de la caméra sous forme de feuille et tombe au sol. Attrapez-la comme la caméra, lancez-la, ou lâchez-la contre un bloc pour l'y épingler. Les feuilles épinglées sont conservées, les autres sont oubliées quand vous partez. Désactivé : la photo est seulement enregistrée dans screenshots/vrcamera.",
+	"vrcamera.option.photoHoldSeconds": "Photo : durée d'appui",
+	"vrcamera.option.photoHoldSeconds.tooltip": "Tenez la caméra d'une main, approchez l'autre et maintenez son bouton d'interaction. La manette vibre de plus en plus fort, puis après ce nombre de secondes le déclencheur claque. Si la première main lâche entre-temps, la seconde reprend la caméra. 0 désactive."
 }

@@ -161,6 +161,12 @@ public final class Rig {
 		this.position = subject.center.lerp(wanted, this.arm);
 
 		Vec3 aim = shot.lookTarget;
+		if (config.faceDistance > 0 && !shot.exactAim()) {
+			// this close only part of the player fits into the picture, and the face is the part worth showing
+			double near = config.faceDistance * subject.unit;
+			double closeness = 1.0 - CamMath.smoothstep((this.position.distanceTo(subject.center) - near) / near);
+			aim = aim.add(subject.head.subtract(subject.center).scale(closeness));
+		}
 		if (config.leadRoom > 0 && !shot.exactAim()) {
 			// aim a bit ahead of a moving player, so the frame has more room where they are going
 			Vec3 lead = new Vec3(subject.velocity.x, 0, subject.velocity.z).scale(config.leadRoom);
