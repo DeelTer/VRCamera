@@ -51,7 +51,7 @@ public final class PhotoSync {
 	private static final int WAIT_TICKS = 100;
 	private static final int SCAN_INTERVAL_TICKS = 5;
 	private static final int PACKED_CACHE = 64;
-	private static final int HELLO_TRIES = 5;
+	private static final int HELLO_TRIES = 15;
 	private static final int HELLO_INTERVAL_TICKS = 40;
 	private static final int PIN_WAIT_TICKS = 200;
 	// five times per second the others are told where this player's loose sheets are
@@ -170,10 +170,17 @@ public final class PhotoSync {
 			switch (message[0]) {
 				case Protocol.S_HELLO -> {
 					Protocol.Limits limits = Protocol.readLimits(in);
+					if (this.connected) {
+						return;
+					}
 					if (limits.version() == Protocol.VERSION) {
 						this.limits = limits;
 						this.connected = true;
 						PhotoAlbum.INSTANCE.serverTookOver();
+						Vrcamera.LOGGER.info("VRCamera: this server shares photos");
+					} else {
+						Vrcamera.LOGGER.warn("VRCamera: the server speaks photo protocol {}, this mod {}. Photos are not shared",
+								limits.version(), Protocol.VERSION);
 					}
 				}
 				case Protocol.S_SHEETS -> Protocol.readSheets(in).forEach(this::learn);

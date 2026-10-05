@@ -18,6 +18,7 @@ import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRegisterChannelEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import ru.deelter.vrcamera.sync.Protocol;
@@ -246,10 +247,16 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					Protocol.VERSION);
 			return;
 		}
-		// Once per connection. Every hello after that would make the server tell about all sheets around again
-		if (this.clients.putIfAbsent(player.getUniqueId(), new Client()) != null) {
-			return;
+		// Known once per connection, or every hello would make the server tell about all sheets around again.
+		// Answered every time: the first answer is lost if the client says hello before it said which channels it
+		// listens on, the server does not send into a channel nobody listens on
+		if (this.clients.putIfAbsent(player.getUniqueId(), new Client()) == null) {
+			getLogger().info(player.getName() + " has the VRCamera mod");
 		}
+		sendHello(player);
+	}
+
+	private void sendHello(Player player) {
 		send(player, Protocol.serverHello(new Protocol.Limits(Protocol.VERSION, this.maxPerPlayer, this.maxPerChunk,
 				this.maxImageBytes)));
 	}
@@ -460,6 +467,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private void pin(Player player, Client client, Protocol.Pin pin) {
 		byte refusal = refusal(player, client, pin);
 		if (refusal != Protocol.PIN_OK) {
+			getLogger().info("Photo of " + player.getName() + " not pinned, reason " + refusal);
 			send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), refusal, 0, 0)));
 			return;
 		}
@@ -514,6 +522,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		long kept = imageHash;
 		if (result != Protocol.PIN_OK || player == null || client == null) {
+			getLogger().info("Photo of " + ownerName + " not pinned, reason " + result);
 			if (kept != 0 && !this.store.hasImage(kept)) {
 				Bukkit.getScheduler().runTaskAsynchronously(this, () -> this.store.deleteImage(kept));
 			}
@@ -523,6 +532,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			return;
 		}
 		this.store.add(sheet);
+		getLogger().info(ownerName + " pinned photo " + sheet.id() + " at " + pin.blockX() + " " + pin.blockY() + " " +
+				pin.blockZ());
 		this.store.cacheImage(imageHash, clean.jpeg);
 		// The one who pinned it has it already. The others get it with the next look at who is near what
 		client.known.add(sheet.id());
@@ -793,6 +804,14 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			if (!left.isEmpty()) {
 				send(player, Protocol.forget(left));
 			}
+		}
+	}
+
+	@EventHandler
+	public void onChannel(PlayerRegisterChannelEvent event) {
+		// its hello came before this, and the answer to that went nowhere
+		if (Protocol.CHANNEL.equals(event.getChannel()) && this.clients.containsKey(event.getPlayer().getUniqueId())) {
+			sendHello(event.getPlayer());
 		}
 	}
 

@@ -4,7 +4,7 @@ limits:
   # photos one player may have pinned at once, in all worlds
   per-player: 64
   # photos in one chunk, of all players together. Keeps a single spot from being plastered
-  per-chunk: 16
+  per-chunk: 24
   # photos on the whole server. Each takes about 10 KB on disk
   total: 20000
   # largest picture a client may send, in bytes. Never more than 24000
