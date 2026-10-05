@@ -1,578 +1,446 @@
 # VRCamera
 
-Аддон для [Vivecraft](https://modrinth.com/mod/vivecraft): превращает ручную (handheld) камеру Vivecraft в оператора,
-который сам снимает игрока от третьего лица. Сделан для стримов и записи через OBS.
+[Русская версия](README_RU.md)
 
-- **Режиссёр**: сам выбирает ракурсы и переключает их, как кинематографическая камера в GTA.
-- **Следование**: камера держится там, куда её поставили рукой, относительно игрока.
-- Камера не залезает в блоки, видит игрока и направлена в центр тела.
-- Учитывает атрибут `scale`: все дистанции умножаются на размер игрока.
+An addon for [Vivecraft](https://modrinth.com/mod/vivecraft). It moves Vivecraft's handheld camera for you and films
+the player in third person. Made for streaming and recording with OBS.
 
-> **Состояние.** Мод собирается и загружается вместе с Vivecraft, но в шлеме ещё не проверен. Значения по умолчанию
-> подобраны на глаз. Что именно проверено — в разделе [Ограничения](#ограничения).
+Four modes:
 
-Как мод устроен внутри — в [ARCHITECTURE.md](ARCHITECTURE.md).
+- **Director** picks camera angles and switches between them, like the cinematic camera in GTA.
+- **Follow** keeps the camera where you put it by hand, relative to the player.
+- **Physics** makes the camera an object: you carry it, drop it, throw it, kick it.
+- **Off** leaves the Vivecraft camera alone.
 
-## Содержание
+The camera stays out of blocks, keeps the player in view and aims at the middle of the body. All distances scale
+with the `scale` attribute.
 
-- [Требования](#требования)
-- [Установка](#установка)
-- [Быстрый старт](#быстрый-старт)
-- [Настройка Vivecraft и OBS](#настройка-vivecraft-и-obs)
-- [Управление](#управление) — клавиши, кнопки, команды `/vrcam`
-- [Режимы](#режимы)
-- [Камера в руках](#камера-в-руках)
-- [Ракурсы](#ракурсы)
-- [Как работает режиссёр](#как-работает-режиссёр)
-- [Как камера избегает блоков](#как-камера-избегает-блоков)
-- [Метка и отладочный оверлей](#метка-и-отладочный-оверлей)
-- [Настройки](#настройки)
-- [Шлем снят, VR выключился](#шлем-снят-vr-выключился)
-- [Первый тест в шлеме](#первый-тест-в-шлеме)
-- [Если что-то не так](#если-что-то-не-так)
-- [Ограничения](#ограничения)
+How the mod works inside: [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Требования
+## Requirements
 
 | | |
 |---|---|
-| Minecraft | 26.2 или 26.3, для каждой версии свой jar |
-| Загрузчик | Fabric Loader 0.19.5+ и Fabric API |
-| Vivecraft | 1.3.13+ (собрано с 1.3.15 для 26.2 и с 1.3.16 для 26.3) |
+| Minecraft | 26.2 or 26.3, one jar per version |
+| Loader | Fabric Loader 0.19.5+ and Fabric API |
+| Vivecraft | 1.3.13+ |
 | Java | 25 |
-| Cloth Config | необязательно: экран настроек в игре |
-| Mod Menu | необязательно: кнопка настроек в списке модов |
+| Cloth Config | optional: settings screen in the game |
+| Mod Menu | optional: settings button in the mod list |
 
-Языки интерфейса: английский, русский, украинский, немецкий, французский, испанский, португальский (Бразилия),
-китайский (упрощённый). Язык берётся из настроек Minecraft.
+Client only, nothing to install on the server. Standing VR only: Vivecraft turns the handheld camera off in seated
+mode.
 
-Только клиент, на сервер ставить не нужно. Работает только в стоячем VR-режиме: в сидячем (seated) Vivecraft
-отключает ручную камеру.
+Translated into English, Russian, Ukrainian, German, French, Spanish, Brazilian Portuguese and Simplified Chinese.
 
-## Установка
+## Install
 
-Собрать для Minecraft 26.2:
+Put into the `mods` folder:
+
+- `vrcamera-1.0.0+<Minecraft version>.jar`
+- Vivecraft for the same Minecraft version (Fabric)
+- Fabric API
+- Cloth Config and Mod Menu, if you want them
+
+A jar built for one Minecraft version does not start on the other.
+
+### Build
 
 ```bash
 ./gradlew build
 ```
 
-Собрать для Minecraft 26.3:
-
 ```bash
 ./gradlew build -Pmc=26.3
 ```
 
-Готовые моды: `build/libs/vrcamera-1.0.0+26.2.jar` и `build/libs/vrcamera-1.0.0+26.3.jar`. Jar одной версии на другой
-не запустится: в нём зашита версия Minecraft, а коды клавиш в 26.3 другие.
+The first command builds for 26.2, the second for 26.3. Jars land in `build/libs/`.
 
-Версии Minecraft и зависимостей для каждой сборки лежат в `versions/<версия>.properties`. Чтобы добавить новую
-версию Minecraft, достаточно положить туда ещё один файл. Версия по умолчанию (её же использует IDE) задаётся
-полем `mc` в `gradle.properties`.
+Versions of Minecraft and of the dependencies are in `versions/<version>.properties`. To support another Minecraft
+version, add a file there. The default version, also used by the IDE, is `mc` in `gradle.properties`.
 
-Проекту нужен Gradle 9.7.0, wrapper в репозитории уже настроен на него.
+## Quick start
 
-Положить в папку `mods` профиля Minecraft с Fabric:
+1. Start the game, turn VR on, enter a world.
+2. Press `F8` or the **VR Camera** button in the pause menu. Modes cycle: Off → Director → Follow → Physics.
+3. Capture the Minecraft window in OBS.
 
-- `vrcamera-1.0.0+<версия Minecraft>.jar`
-- Vivecraft для той же версии Minecraft (Fabric)
-- Fabric API
-- по желанию Cloth Config и Mod Menu
+While the camera is on, the game window shows the third-person picture. In the headset a red dot marks where the
+camera is.
 
-## Быстрый старт
+## Vivecraft and OBS setup
 
-1. Запустить игру, включить VR, зайти в мир.
-2. Нажать `F8` или кнопку **VR-камера** в меню паузы. Режимы идут по кругу: Выкл → Режиссёр → Следование → Физика.
-3. В OBS захватить окно Minecraft.
-
-Пока камера включена, окно игры показывает картинку от третьего лица, а в шлеме на месте камеры видна красная точка.
-
-## Настройка Vivecraft и OBS
-
-Названия настроек — как в английском интерфейсе Vivecraft.
-
-| Настройка Vivecraft | Что поставить | Зачем |
+| Vivecraft setting | Value | Why |
 |---|---|---|
-| Режим игры | стоячий, не Seated | в сидячем ручная камера отключена |
-| Desktop Mirror | любой режим, кроме OFF | при OFF Vivecraft не рисует окно игры вообще |
-| Camera Resolution | 1.0 даёт 1920×1080 | разрешение картинки камеры; выше — дороже по FPS |
-| GUI On Mirror | OFF для стрима | иначе HUD и отладочный оверлей попадут в запись |
-| Hotswitching | OFF для стрима | иначе при снятом шлеме окно переключится на обычный вид, см. [ниже](#шлем-снят-vr-выключился) |
-| Camera as Desktop Mirror | не трогать | мод включает её сам на время работы и возвращает обратно |
+| Play mode | Standing | seated mode has no handheld camera |
+| Desktop Mirror | anything but OFF | with OFF Vivecraft draws nothing into the window |
+| Camera Resolution | 1.0 gives 1920×1080 | higher costs FPS |
+| GUI On Mirror | OFF for streams | or the HUD ends up in the recording |
+| Hotswitching | OFF for streams | or the window switches to first person when the headset comes off |
+| Camera as Desktop Mirror | leave it | the mod turns it on while it works and puts it back after |
 
 OBS:
 
-1. Окно Minecraft сделать 16:9, например 1920×1080. Картинка вписывается с сохранением пропорций, при другом
-   соотношении будут чёрные полосы.
-2. Добавить источник «Захват игры» или «Захват окна» на окно Minecraft.
-3. Окно игры не сворачивать.
+1. Make the Minecraft window 16:9, for example 1920×1080. Other ratios get black bars.
+2. Add a Game Capture or Window Capture source for it.
+3. Don't minimize the window.
 
-Камера — это ещё один полный рендер мира сверх двух глаз. FPS упадёт так же, как при обычной включённой камере
-Vivecraft.
+The camera is one more full render of the world on top of both eyes. FPS drops as much as with the plain Vivecraft
+camera turned on.
 
-## Управление
+## Controls
 
-| Действие | Клавиша | В шлеме |
+| Action | Key | In the headset |
 |---|---|---|
-| Переключить режим | `F8` | кнопка в меню паузы |
-| Следующий план | `F9` | экран «VR-камера...» |
-| Удерживать текущий план | `F10` | экран «VR-камера...» |
-| Камеру ко мне | не назначена | экран «VR-камера...» |
-| Следующий свой ракурс | `F7` | экран «VR-камера...» |
-| Новый свой ракурс | не назначена | экран «VR-камера...» |
-| Удалить свой ракурс | — | экран «VR-камера...» |
-| Отладочный оверлей | не назначена | экран «VR-камера...» |
-| Настройки | — | экран «VR-камера...» (нужен Cloth Config) |
+| Switch mode | `F8` | button in the pause menu |
+| Next shot | `F9` | "VR Camera..." screen |
+| Hold the current shot | `F10` | "VR Camera..." screen |
+| Next own angle | `F7` | "VR Camera..." screen |
+| Bring camera to me | unbound | "VR Camera..." screen |
+| New own angle | unbound | "VR Camera..." screen |
+| Delete own angle | — | "VR Camera..." screen |
+| Debug overlay | unbound | "VR Camera..." screen |
+| Settings | — | "VR Camera..." screen, needs Cloth Config |
 
-- Клавиши — обычные привязки Minecraft. Их можно переназначить в настройках управления и привязать к кнопкам
-  контроллеров в привязках SteamVR.
-- Клавиши работают, когда окно игры в фокусе и не открыто меню. Ими может управлять другой человек за компьютером,
-  пока игрок в шлеме.
-- В левом верхнем углу меню паузы две кнопки мода: переключение режима и **VR-камера...**. Вторая открывает
-  экран со всеми остальными кнопками.
+Keys are regular Minecraft key bindings. Rebind them in the controls settings, or bind them to controller buttons
+in SteamVR. They work while the game window has focus and no menu is open, so someone at the computer can run the
+camera for the player in the headset.
 
-### Команды
+### Commands
 
-Всё то же самое доступно командой `/vrcam`, с подсказками по Tab. Команда выполняется на клиенте, на сервер
-не отправляется и прав не требует.
+`/vrcam` does the same, with tab completion. It runs on the client and needs no permissions.
 
-| Команда | Что делает |
+| Command | What it does |
 |---|---|
-| `/vrcam` или `/vrcam status` | пишет в чат то же, что показывает отладочный оверлей |
-| `/vrcam off`, `director`, `follow`, `physics` | включает конкретный режим |
-| `/vrcam mode` | следующий режим по кругу |
-| `/vrcam next` | следующий план |
-| `/vrcam hold` | удержать или отпустить текущий план |
-| `/vrcam shot <план>` | показать конкретный план: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Включает режиссёра, если он выключен |
-| `/vrcam summon` | камеру ко мне |
-| `/vrcam preset next`, `new`, `delete` | свои ракурсы |
-| `/vrcam preset <номер>` | выбрать свой ракурс по номеру, считая с 1 |
-| `/vrcam debug` | отладочный оверлей |
-| `/vrcam settings` | экран настроек (нужен Cloth Config) |
-| `/vrcam reload` | перечитать файл настроек, не выключая камеру |
+| `/vrcam`, `/vrcam status` | prints what the debug overlay shows |
+| `/vrcam off`, `director`, `follow`, `physics` | switches to that mode |
+| `/vrcam mode` | next mode |
+| `/vrcam next` | next shot |
+| `/vrcam hold` | holds or releases the current shot |
+| `/vrcam shot <name>` | shows a shot: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Turns the director on if needed |
+| `/vrcam summon` | brings the camera to you |
+| `/vrcam preset next`, `new`, `delete` | own angles |
+| `/vrcam preset <number>` | picks an own angle, counted from 1 |
+| `/vrcam debug` | debug overlay |
+| `/vrcam settings` | settings screen, needs Cloth Config |
+| `/vrcam reload` | reads the settings file again |
 
-`/vrcam shot` показывает план, даже если он выключен в настройках или не подходит ситуации. Такой план держится
-свою обычную длительность, затем режиссёр продолжает сам; чтобы план остался, после него выполнить `/vrcam hold`.
-Во время события (смерть, падение) запрошенный план и «следующий план» отменяют событие.
+`/vrcam shot` shows a shot even if it is disabled or does not fit the situation. It lasts as long as usual, then
+the director carries on. To keep it, run `/vrcam hold` after.
 
-### Быстрые команды Vivecraft
+In the headset, put the commands into Vivecraft's Quick Commands. They then show up under **Commands** in the pause
+menu, and each can be bound to a controller button in SteamVR.
 
-В шлеме удобнее всего не печатать, а положить команды в быстрые команды Vivecraft (Quick Commands в его
-настройках). Тогда они доступны двумя способами:
+## Camera in your hands
 
-- кнопка **Commands** в меню паузы открывает список, команда выполняется нажатием;
-- каждую из 12 быстрых команд можно привязать к кнопке контроллера в привязках SteamVR.
+These work in every mode.
 
-Например: `/vrcam mode`, `/vrcam next`, `/vrcam hold`, `/vrcam summon`, `/vrcam shot orbit`.
+**Grab and place.** Reach for the red dot and hold the interact button, like with the plain Vivecraft camera. When
+you let go:
 
-## Режимы
+- in Follow the camera stays at that spot relative to you;
+- in Director it keeps that angle for `manualHoldSeconds`, then the director carries on;
+- in Physics it falls.
 
-| Режим | Что делает камера |
-|---|---|
-| Выкл | мод камеру не трогает, она работает как обычная камера Vivecraft |
-| Режиссёр | сама выбирает и меняет ракурсы |
-| Следование | держит один свой ракурс, поставленный рукой |
-| Физика | камеру носят в руке; отпущенная, она падает на землю и остаётся лежать |
+The camera only remembers the position. It always looks at the player.
 
-### Режим «Физика»
+**Throw.** Swing and let go. The camera flies in that direction and stays where it lands, walls stop it. A faster
+swing goes further. Slower than 2.5 blocks per second is not a throw. `throwPower` sets the range, 0 turns throwing
+off. This also works on the plain Vivecraft camera while the mod is off.
 
-Для съёмки «найденной плёнки» и хоррора: камера ведёт себя как предмет, который держат в руке.
+**Pull from afar.** Look at the camera and point a hand at it: the controller gives a short buzz. Hold the interact
+button. The buzz grows, and after `pullSeconds` (1.25 by default) the camera flies into your hand. It stays there
+until you let go. The hand takes it by the side, so it does not cover the lens. Works from 1.5 to 64 blocks.
 
-- **В руке.** Камеру нужно взять и держать зажатой. Она снимает туда, куда направлена рука, без сглаживания.
-  В шлеме она выглядит как камера Vivecraft с экранчиком, а не как красная точка.
-- **Отпустил — упала.** Камера падает, отскакивает от блоков, кувыркается и останавливается на земле. Скорость
-  руки сохраняется, так что её можно и бросить.
-- **Объектив к игроку.** Это не полная физика: пока камера успокаивается, она доворачивается объективом в сторону
-  игрока и остаётся лежать с завалом набок. Иначе после падения она почти всегда снимала бы землю или небо.
-  Насколько сильно она доворачивается, задаёт `physicsAim`: 0 — лежит как упала, 1 — смотрит точно на игрока.
-- **Лежит и снимает.** После остановки камера больше не двигается и не следит за игроком. Можно отойти и войти
-  в кадр.
-- **Поднять.** Подойти, наклониться и взять рукой, либо нажать «Камеру ко мне».
-- **При включении режима** камера появляется перед лицом и ждёт 20 секунд, пока её возьмут. Не взяли — падает.
-- **Вода.** В воде и лаве камера тонет медленно.
-- **Если блок под ней сломали,** она падает дальше.
-- **Существа и транспорт.** Камера ударяется о хитбоксы существ, лодок, вагонеток так же, как о блоки. Упав на
-  лодку или вагонетку, она остаётся лежать на ней и едет вместе с ней, поворачиваясь вместе с её поворотами.
-  Камеру можно уронить в лодке, в которой сидишь.
-- **Притянуть издалека.** Посмотреть на лежащую камеру, направить на неё руку — контроллер коротко вздрогнет.
-  Зажать кнопку взаимодействия (курок или grip): вибрация нарастает, через `pullSeconds` секунд (по умолчанию
-  1.25) камера со звуком и искрами прилетает в руку и остаётся в ней, пока кнопка зажата. Рука берёт её за бок —
-  правая за правый, левая за левый, — чтобы не закрывать объектив. Работает дальше 1.5 блока
-  и до 64 блоков. `pullSeconds = 0` выключает. Работает и в режимах «Режиссёр» и «Следование»: там отпущенная
-  камера ставится на это место как обычно, а если отпустить кнопку до прилёта — возвращается к своему плану.
-  Если рука ловит камеру случайно, когда та снимает спереди, выключите `pullAllModes`.
-- **Пнуть.** Лежащую камеру отбрасывает тот, кто в неё вошёл: игрок, моб, лодка. Медленный шаг её не трогает.
-- **Стабилизация.** Камера в руке сглаживается: мелкая дрожь и подёргивания руки (например, когда другой рукой
-  ломаешь блок) гасятся, намеренные движения проходят почти без задержки. Работает во всех режимах, пока камера
-  в руке. Сила — `handStabilize`, 0 выключает.
-- **Дрожание в руке.** Камера в руке слегка покачивается от дыхания, сильнее — от шагов и бега, и вздрагивает,
-  когда вас бьют. Сила — `physicsShake`, 0 выключает.
-- **Смерть.** Погибший роняет камеру. Она падает рядом и доворачивается так, чтобы в кадре были тело и убийца.
-  Камера, которая уже лежала, тоже доворачивается.
-- **Удар.** При ударе о блок кадр коротко «дёргает» зумом, слышен звук блока и летит пыль этого блока. Пыль
-  появляется только позади объектива: игрок её видит, камера — нет.
-- **Далеко не уйти.** Дальше 40 блоков камера возвращается к игроку: Vivecraft прячет слишком далёкую камеру.
+In Director and Follow the camera often hangs in front of you, and a hand may catch it by accident. If that
+happens, turn `pullAllModes` off: pulling then only works in Physics.
 
-Режиссёр, свои ракурсы и события в этом режиме не работают.
+**Bring camera to me.** A following camera backs away when you walk up to it. This button puts it at arm's length
+in front of your face for 20 seconds.
 
-При выключении камера скрывается (если её включил мод), а настройки Vivecraft возвращаются к прежним.
+**Stabilization.** A hand trembles, and twitches when the other hand breaks a block. The mod smooths that out while
+moves you mean still get through. `handStabilize` sets how much, 0 turns it off.
 
-## Камера в руках
+### Own angles
 
-### Взять и поставить
+You can keep several hand-placed angles. Placing the camera by hand always writes into the active one.
 
-Камеру можно взять рукой, как обычную камеру Vivecraft: поднести руку к красной точке и зажать кнопку
-взаимодействия. Пока камера в руке, мод её не двигает.
+- **New angle** copies the active one and makes the copy active. Then place the camera.
+- **Next own angle** cycles through them, the camera flies over.
+- **Delete angle** removes the active one. The last one stays.
 
-После отпускания:
+Usual order: New angle → Bring camera to me → grab, place, let go.
 
-- в режиме **Следование** камера остаётся в этой точке относительно игрока;
-- в режиме **Режиссёр** она держит этот ракурс `manualHoldSeconds` секунд, затем режиссёр продолжает сам.
+## Physics mode
 
-Камера запоминает только позицию. Направление она выбирает сама: всегда смотрит на игрока.
+For found footage and horror: the camera is an object you hold.
 
-### Бросить камеру
+- Hold it, and it films where your hand points. In the headset it looks like the Vivecraft camera with a screen.
+- Let go, and it falls, bounces and tumbles. It keeps the speed of your hand, so you can throw it.
+- While it comes to rest it turns its lens towards you and stays tilted. Without that it would film the ground or
+  the sky most of the time. `physicsAim` sets how much: 0 leaves it as it fell, 1 looks straight at you.
+- Once it lies still it stops following you. Walk away and step into the picture.
+- It bounces off mobs, boats and minecarts like off blocks. Landing on a boat or minecart, it rides along. You can
+  drop it in the boat you sit in.
+- Whoever walks into a lying camera kicks it away: you, a mob, a boat. A slow step does not.
+- A held camera sways with your breath, more with your steps, and jolts when you get hurt. `physicsShake` sets how
+  much.
+- When you die you drop it. It turns to get the body and the killer into the picture.
+- On impact the zoom jolts, you hear the block and its dust flies. The dust only spawns behind the lens: you see
+  it, the camera does not.
+- It sinks slowly in water and lava. It falls on when the block below is broken.
+- Further than 40 blocks away it comes back to you, Vivecraft hides a camera that far off.
+- Switching the mode on puts the camera in front of your face for 20 seconds. Not taken, it falls.
 
-Камеру можно не ставить, а бросить: взять рукой, замахнуться и отпустить в движении. Она улетит в сторону броска
-и останется там. Чем быстрее замах, тем дальше: дальность растёт как квадрат скорости руки, как у настоящего
-броска. Медленное движение (до 2.5 блока в секунду) броском не считается, камера просто остаётся в руке.
+The director, own angles and events do not run in this mode.
 
-- Стены на пути останавливают камеру.
-- В режимах **Следование** и **Режиссёр** точка приземления запоминается так же, как при постановке рукой.
-- Обычную камеру Vivecraft, когда мод выключен, бросать тоже можно: она долетит и останется стоять на месте.
+## Shots
 
-Дальность настраивается полем `throwPower`; 0 отключает бросок.
-
-### Камеру ко мне
-
-Следящую камеру трудно взять: она держит дистанцию и отступает, когда к ней идёшь. Кнопка **Камеру ко мне**
-ставит её перед лицом на расстоянии вытянутой руки и оставляет там на 20 секунд. За это время её нужно взять
-и поставить, куда нужно. Если не взять — камера вернётся к работе.
-
-### Свои ракурсы
-
-Поставленных рукой ракурсов может быть несколько. Позиция, поставленная рукой, всегда записывается в активный.
-
-- **Новый ракурс** создаёт копию активного и делает её активной. После этого камеру нужно переставить рукой.
-- **Следующий свой ракурс** переключает их по кругу, камера плавно перелетает.
-- **Удалить ракурс** удаляет активный. Последний удалить нельзя.
-
-Типичный порядок: «Новый ракурс» → «Камеру ко мне» → взять, поставить, отпустить.
-
-## Ракурсы
-
-| Ключ | Что делает | Когда выбирается чаще |
+| Key | What it does | Picked more often |
 |---|---|---|
-| `shoulder` | сзади, из-за плеча | движение, полёт, тесные места |
-| `front` | спереди, пятится перед игроком; наезжает, пока тот стоит | простой, ходьба |
-| `orbit` | медленно облетает игрока по кругу | простой, бой |
-| `flyby` | стоит впереди по пути и провожает игрока поворотом, с зумом | бег, полёт, езда |
-| `crane` | поднимается высоко позади игрока | открытые места, полёт |
-| `low` | от земли, снизу вверх | бой, бег |
-| `hands` | крупный план рук | копание, простой |
-| `duel` | из-за плеча игрока на противника, оба в кадре | бой, когда есть цель |
-| `death` | облёт погибшего игрока с отъездом | только при смерти |
-| `fall` | почти отвесно сверху | только при долгом падении |
-| `pov` | от первого лица: прямо перед лицом, смотрит туда же, куда игрок | в тесных местах и когда больше нигде нет места |
-| `menu` | близко из-за плеча на открытое меню | только пока открыто меню |
-| свой | ракурс, поставленный рукой | режим «Следование» |
+| `shoulder` | from behind, over the shoulder | moving, flying, tight places |
+| `front` | from the front, backing away; moves in while you stand | idle, walking |
+| `orbit` | slowly circles the player | idle, combat |
+| `flyby` | stands ahead on your path and pans as you pass, zoomed | running, flying, riding |
+| `crane` | rises high behind the player | open places, flying |
+| `low` | from the ground, looking up | combat, running |
+| `hands` | close-up of the hands | mining, idle |
+| `duel` | over your shoulder at the opponent, both in frame | combat with a target |
+| `death` | circles the dead player and pulls back | on death only |
+| `fall` | almost straight from above | on a long fall only |
+| `pov` | first person: right in front of the face | where there is no room for anything else |
+| `menu` | close over the shoulder at an open menu | while a menu is open |
+| own | an angle placed by hand | Follow mode |
 
-## Как работает режиссёр
+## How the director works
 
-### Ситуация
+**Situation.** The director knows what you are doing: standing, walking, running, flying with an elytra, riding,
+swimming, fighting, mining. It also knows if the place is tight. Both change the odds of each shot and the
+distances: closer in tight places, further when flying.
 
-Режиссёр определяет, чем занят игрок: стоит, идёт, бежит, летит на элитрах, едет верхом, плывёт, дерётся, копает.
-Отдельно он определяет, тесно ли вокруг. От этого зависят шансы ракурсов и дистанции: в тесноте камера ближе,
-в полёте дальше.
+**Changing shots.** A shot changes when:
 
-### Смена плана
+- its time is up;
+- walls pushed the camera too close;
+- something new started: a fight, flight, ride, swim, or more than a second of mining;
+- you pressed Next shot.
 
-План меняется, когда:
+A change is either a cut, where the camera is at the new spot at once, or a fly-over, where it swings around the
+player. Two similar shots in a row are avoided. The camera also tries to stay on one side of the line you move
+along, or you would run right in one shot and left in the next.
 
-- вышло его время;
-- стены прижали камеру слишком близко;
-- началось что-то новое: бой, полёт, езда, плавание, копание (копанием считается больше секунды работы);
-- нажата «Следующий план».
+On a teleport the camera jumps with you and keeps the angle. Only `flyby` is replaced, because it stands still.
 
-Смена бывает двух видов:
+Hold (`F10`) stops shot changes and events until you release it.
 
-- **Склейка**: камера сразу оказывается в новой точке.
-- **Пролёт**: камера плавно облетает игрока по дуге до новой точки.
+**Combat.** A fight starts when you hit a living thing, also with a controller swing, or one hurts you. That one
+becomes the target. Fall and fire damage do not count. The target is dropped after 5 seconds without fighting, when
+it dies or when it is far away.
 
-Два похожих кадра подряд режиссёр старается не ставить: новый ракурс должен отличаться от текущего.
+**Events.**
 
-Камера старается оставаться по одну сторону от линии, вдоль которой движется игрок. Иначе в одном плане он бежит
-вправо, а в следующем — влево.
+- **Death:** `death` until you respawn. If someone killed you, the killer stays in frame.
+- **Long fall:** `fall` cuts in once you drop with more than 6 blocks of air below, and stays a second after
+  landing.
+- **Elytra takeoff:** `flyby` gets better odds for the next change.
+- **Open menu:** `menu` while an inventory, chest, pause menu, settings screen or chat is open. Vivecraft shows
+  menus in the world, so the menu and the player are both in frame. The camera takes the shoulder with more room.
+  With no room behind either, it switches to first person. `menuShotChat` turns this off for chat.
 
-При телепорте камера прыгает вместе с игроком и сохраняет ракурс. Заменяется только `flyby`, потому что он стоит
-на месте.
+If the shoulder covers the menu, lower the angle around (`azimuth`) of the `menu` shot: 180 is straight behind,
+lower is more to the side. The default is 138.
 
-**Удержание** (`F10`) запрещает смену плана и события, пока его не снять.
+**Lead room.** While you move the camera aims a bit ahead of you, to leave room in the direction of travel.
+`leadRoom: 0` aims at the middle of the body again.
 
-### Бой
+## How the camera avoids blocks
 
-Бой — это когда игрок ударил живое существо (в том числе взмахом контроллера) или живое существо нанесло урон
-игроку. Тот, кого ударили или кто ударил, становится целью. Урон от падения, огня и прочего боем не считается.
-Цель сбрасывается через 5 секунд без боя, при её смерти или если она далеко.
+- Eight rays go from the middle of the body to where the camera wants to be. If a block is in the way, the camera
+  stops in front of it.
+- It moves in at once and back out slowly.
+- A thin obstacle, like a trunk or a post, is ignored for up to `softOcclusionTime` seconds if the camera itself
+  stands in free space. It never enters a block.
+- It stays out of lava and powder snow unless you are in them.
+- Pushed too close for longer than `occlusionCutTime`, the director switches the angle.
 
-В плане `duel` камера встаёт за игроком со стороны, противоположной цели, отъезжает тем дальше, чем дальше цель,
-и целится в точку между ними.
+The camera does not search for a way around. The director picks an angle from which you can be seen.
 
-### События
+With no room for any angle, like in a one-block tunnel, `pov` takes over. The camera stands a third of a block in
+front of the face, not in the eyes: there it would see the head of the player model from inside. `distance` of
+that shot sets how far in front.
 
-- **Смерть**: план `death` держится до возрождения. Если игрока кто-то убил, камера держит убийцу в кадре.
-- **Долгое падение**: план `fall` включается склейкой, как только игрок сорвался и под ним больше 6 блоков пустоты,
-  и держится до приземления и ещё секунду после.
-- **Взлёт на элитрах**: у `flyby` повышенный шанс на следующую смену плана.
-- **Открыто любое меню** (инвентарь, сундук, верстак, меню паузы, настройки, чат; чат отключается настройкой `menuShotChat`): план `menu` — камера
-  близко за плечом, смотрит на меню, угол обзора сужен. Vivecraft показывает меню прямо в мире, так что в кадре
-  видно и его, и игрока. Держится, пока меню открыто. В одиночной игре меню паузы останавливает мир, но камера
-  к меню всё равно подлетает.
-  Камера встаёт за то плечо, где больше места. Если места нет ни за одним (спиной к стене, узкий туннель),
-  вместо этого включается вид от первого лица: меню и так прямо перед глазами.
-  Если плечо закрывает меню, уменьши у плана `menu` «Угол вокруг» (`azimuth`): 180 — камера точно за спиной,
-  чем меньше, тем сильнее она сбоку. По умолчанию 138.
+## Marker, icon and debug overlay
 
-### Композиция
+**Marker.** A red dot with `REC` and the name of the shot marks the camera in the headset. It is not in the
+recording. `marker` picks `"dot"`, `"model"` (the Vivecraft camera model) or `"none"`.
 
-Когда игрок движется, камера целится немного впереди него, чтобы в кадре было больше места по ходу движения.
-`leadRoom: 0` возвращает наведение строго в центр тела. В планах `hands` и `duel` это не применяется.
+**Camera icon.** A camera icon with the distance in blocks, like a waypoint: seen through walls, same size at any
+distance, in both eyes. When the camera is out of view the icon sticks to the edge of the view on that side. It is
+hidden while the camera is closer than 1.2 blocks and in first person. Not in the recording. `indicator` toggles
+it, `indicatorSize` sets the size.
 
-## Как камера избегает блоков
+**Debug overlay.** Shows on the HUD what the camera is doing.
 
-- От центра тела к желаемой точке пускаются 8 лучей — по углам небольшого куба вокруг камеры. Если на пути блок,
-  камера встаёт перед ним. Поэтому между камерой и центром тела свободно.
-- Придвигается камера мгновенно, отодвигается обратно плавно.
-- Тонкое препятствие (не толще блока: ствол, столб, край стены) камера до `softOcclusionTime` секунд игнорирует
-  и смотрит мимо, если сама стоит в свободном месте. В блок она не заходит никогда.
-- В лаву и рыхлый снег камера не встаёт, если сам игрок не в них: оттуда ничего не видно.
-- Если стены прижали камеру слишком близко дольше `occlusionCutTime` секунд, режиссёр меняет ракурс.
-- При выборе ракурса отбрасываются точки в стене и слишком близкие к игроку. Точки, откуда не видно голову или
-  которые по другую сторону воды от игрока, получают штраф.
-
-Камера не ищет путь в обход препятствий. Вместо этого режиссёр переключается на ракурс, с которого игрока видно.
-
-Если места нет ни для одного ракурса (узкий туннель, шахта в один блок), включается `pov` — вид от первого лица.
-Камера стоит не в самих глазах, а в трети блока перед лицом: иначе в кадре была бы только голова модели игрока
-изнутри. Направление взгляда сглажено, поэтому картинка спокойнее, чем настоящий вид из шлема. Насколько впереди
-стоит камера, задаёт `distance` этого плана. Если `pov` выключен в настройках, вместо него камера прижимается
-вплотную за спину.
-
-## Метка и отладочный оверлей
-
-### Метка
-
-В шлеме на месте камеры видна красная точка с подписью `REC` и названием текущего плана. В записи её нет: она
-рисуется только для глаз игрока. За точку камеру берут рукой.
-
-Настройка `marker`: `"dot"` — точка, `"model"` — модель камеры Vivecraft с экранчиком, `"none"` — ничего.
-
-### Значок камеры
-
-В шлеме над камерой виден значок камеры, а под ним — расстояние до неё в блоках, например `5 M`. Он работает как
-метка в модах с путевыми точками:
-
-- виден сквозь стены и деревья;
-- одного размера для глаза на любом расстоянии;
-- расстояние уменьшается, когда подходишь;
-- виден обоими глазами, на правильной глубине.
-
-Когда камера вне поля зрения, значок не пропадает, а прилипает к краю обзора с той стороны, где она находится:
-слева, справа, сверху или снизу. Если камера за спиной — с той стороны, через которую до неё ближе повернуться.
-
-Значка нет, когда камера ближе 1.2 блока (в руке или прямо перед лицом) и в плане от первого лица. В запись он
-не попадает.
-
-Настройки: `indicator` включает и выключает, `indicatorSize` задаёт размер.
-
-### Отладочный оверлей
-
-Показывает на HUD, что делает камера. Нужен для подбора настроек.
-
-| Строка | Что значит |
+| Line | Meaning |
 |---|---|
-| `VRCamera DIRECTOR` | режим; `(waiting for VR)` — VR не работает; `(parked 12s)` — камера ждёт, пока её возьмут |
-| `shot: ORBIT left 3.2/9.5s` | план, сторона, сколько идёт и сколько продлится; `HOLD` — удержание |
-| `why: time, blend` | почему выбран этот план и как к нему перешли |
-| `context: RUN tight` | ситуация; `tight` — тесно; `event FALL` — идёт событие |
-| `blocked: 0.4s` | сколько секунд камера зажата стенами |
-| `arm: 100%` | на какой доле своей дистанции стоит камера; `(looking past)` — смотрит мимо тонкого препятствия |
-| `fov`, `speed`, `scale` | угол обзора, скорость игрока, его размер |
-| `target: Zombie` | цель в бою |
+| `VRCamera DIRECTOR` | mode; `(waiting for VR)` VR is not running; `(parked 12s)` waiting to be picked up |
+| `shot: ORBIT left 3.2/9.5s` | shot, side, how long it runs and will run; `HOLD` when held |
+| `why: time, blend` | why this shot was picked and how the camera got there |
+| `context: RUN tight` | situation; `tight` place; `event FALL` |
+| `blocked: 0.4s` | how long walls have been pushing the camera in |
+| `arm: 100%` | how much of its distance the camera has; `(looking past)` a thin obstacle |
+| `fov`, `speed`, `scale` | field of view, your speed, your size |
+| `target: Zombie` | combat target |
 
-Причины в строке `why`:
+Reasons in `why`:
 
-| Причина | Когда |
+| Reason | When |
 |---|---|
-| `start` | первый план после включения или возврата VR |
-| `time` | вышла длительность |
-| `blocked` | камера была зажата стенами |
-| `finished` | план закончился сам: `flyby` — игрок ушёл, `duel` — цель пропала |
-| `now COMBAT` | началось новое занятие |
-| `unfit for SWIM` | план не подходит новой ситуации |
-| `key` | нажата «Следующий план» |
-| `teleport` | телепорт во время `flyby` |
-| `event FALL`, `event over` | началось или закончилось событие |
-| `manual` | ракурс поставлен рукой или выбран свой ракурс |
+| `start` | first shot after turning on or VR coming back |
+| `time` | time was up |
+| `blocked` | walls pushed the camera in |
+| `finished` | the shot ended on its own: `flyby` you left, `duel` the target is gone |
+| `now COMBAT` | something new started |
+| `unfit for SWIM` | the shot does not fit the new situation |
+| `key` | Next shot was pressed |
+| `teleport` | teleport during `flyby` |
+| `event FALL`, `event over` | an event started or ended |
+| `manual` | placed by hand or an own angle was picked |
 
-## Настройки
+## Settings
 
-### Экран в игре
+**In the game.** Needs Cloth Config. Open it from the "VR Camera..." screen, or from the mod list with Mod Menu.
+All numbers are sliders, so nothing has to be typed in VR. Changes apply on Save.
 
-Нужен Cloth Config. Открывается кнопкой **Настройки** в меню паузы или из списка модов, если стоит Mod Menu.
+**File.** `config/vrcamera.json`, created on first start. It is read again when the camera is switched on from Off,
+and by `/vrcam reload`.
 
-- Разделы: Общее, Движение, Коллизии, Режиссёр, Планы, Свои ракурсы.
-- Все числа — слайдеры, чтобы не набирать их в VR.
-- Изменения применяются сразу после «Сохранить», камеру выключать не нужно.
-- В одиночной игре открытое меню ставит игру на паузу, поэтому результат виден после закрытия экрана.
-- Слайдеры округляют значения до своего шага.
+### General
 
-### Файл
-
-`config/vrcamera.json` создаётся при первом запуске игры. Перечитывается при включении камеры из режима «Выкл»:
-поправил файл → выключил камеру → включил.
-
-### Общие поля
-
-| Поле | По умолчанию | Значение |
+| Field | Default | Meaning |
 |---|---|---|
-| `forceMirror` | `true` | показывать картинку камеры в окне игры, пока камера включена |
-| `marker` | `"dot"` | метка камеры в шлеме: `"dot"`, `"model"` или `"none"` |
-| `markerLabel` | `true` | подпись с названием плана рядом с точкой |
-| `markerSize` | `14` | размер точки |
-| `indicator` | `true` | значок камеры с расстоянием в шлеме |
-| `indicatorSize` | `1.0` | размер значка |
-| `throwPower` | `1.0` | множитель дальности броска камеры; 0 — бросок выключен |
-| `physicsAim` | `0.75` | режим «Физика»: насколько упавшая камера доворачивается объективом к игроку, от 0 до 1 |
-| `physicsShake` | `1.0` | режим «Физика»: сила дрожания камеры в руке (дыхание, шаги, урон), 0 — выключено |
-| `menuShotChat` | `true` | режиссёр приближает камеру и при открытом чате, как для инвентаря |
-| `handStabilize` | `0.5` | стабилизация камеры в руке, во всех режимах: 0 — выключена, 1 — максимум |
-| `pullSeconds` | `1.25` | сколько секунд держать кнопку, чтобы притянуть камеру в руку, 0 — выключено |
-| `pullAllModes` | `true` | притягивание во всех режимах; `false` — только в режиме «Физика» |
-| `debugOverlay` | `false` | отладочный оверлей на HUD |
-| `aimHeight` | `0.6` | куда целиться: 0 — ноги, 1 — голова |
-| `positionLag` | `0.35` | секунд, за которые камера догоняет нужную позицию |
-| `lookLag` | `0.12` | секунд, за которые прицел догоняет игрока |
-| `turnLag` | `0.9` | секунд, за которые камера облетает игрока при его повороте |
-| `turnDeadzone` | `12` | на сколько градусов можно повернуться, не сдвинув камеру |
-| `speedFov` | `true` | расширять угол обзора на большой скорости |
-| `leadRoom` | `0.25` | на сколько секунд движения вперёд целится камера; 0 — выключено |
-| `leadRoomMax` | `0.8` | предел этого смещения, в размерах игрока |
-| `collisionRadius` | `0.15` | отступ камеры от стен, в блоках |
-| `collisionMargin` | `0.12` | дополнительный отступ от блока на пути |
-| `softOcclusionTime` | `0.35` | сколько секунд игнорировать тонкое препятствие; 0 — выключено |
-| `occlusionRatio` | `0.45` | доля дистанции, ближе которой камера считается зажатой |
-| `occlusionCutTime` | `0.6` | секунд в зажатом состоянии до смены ракурса |
-| `transition` | `"auto"` | `"auto"`, `"cut"` (только склейки) или `"blend"` (только пролёты) |
-| `blendChance` | `0.6` | шанс пролёта вместо склейки при `"auto"` |
-| `minShotTime` | `2.5` | минимум секунд до смены ракурса из-за изменения ситуации |
-| `manualHoldSeconds` | `20` | сколько режиссёр держит ракурс, поставленный рукой |
-| `orbitSpeed` | `14` | скорость облёта, градусов в секунду |
-| `events` | `true` | особые планы для смерти и падения |
-| `activePreset` | `0` | номер активного своего ракурса, считая с нуля |
-| `customInRotation` | `false` | включить свои ракурсы в ротацию режиссёра |
+| `forceMirror` | `true` | show the camera picture in the game window while the camera is on |
+| `marker` | `"dot"` | `"dot"`, `"model"` or `"none"` |
+| `markerLabel` | `true` | name of the shot next to the dot |
+| `markerSize` | `14` | size of the dot |
+| `indicator` | `true` | camera icon with the distance |
+| `indicatorSize` | `1.0` | size of the icon |
+| `throwPower` | `1.0` | throw range multiplier, 0 = no throwing |
+| `handStabilize` | `0.5` | steadying of a held camera, 0 = off, 1 = most |
+| `pullSeconds` | `1.25` | seconds to hold the button to pull the camera, 0 = no pulling |
+| `pullAllModes` | `true` | `false` = pulling only in Physics |
+| `physicsAim` | `0.75` | Physics: how much a dropped camera turns to the player, 0 to 1 |
+| `physicsShake` | `1.0` | Physics: sway of a held camera, 0 = off |
+| `menuShotChat` | `true` | the `menu` shot for chat as well |
+| `debugOverlay` | `false` | debug overlay on the HUD |
 
-### Поля ракурса
+### Motion
 
-Блок `shots` содержит по записи на ракурс, список `presets` — ракурсы, поставленные рукой.
+| Field | Default | Meaning |
+|---|---|---|
+| `aimHeight` | `0.6` | where to aim: 0 = feet, 1 = head |
+| `positionLag` | `0.35` | seconds to catch up with the wanted position |
+| `lookLag` | `0.12` | seconds for the aim to catch up with the player |
+| `turnLag` | `0.9` | seconds to swing around when the player turns |
+| `turnDeadzone` | `12` | degrees you can turn without moving the camera |
+| `speedFov` | `true` | wider field of view at high speed |
+| `leadRoom` | `0.25` | seconds of movement the camera aims ahead, 0 = off |
+| `leadRoomMax` | `0.8` | limit of that offset, in player sizes |
 
-| Поле | Значение |
+### Collision
+
+| Field | Default | Meaning |
+|---|---|---|
+| `collisionRadius` | `0.15` | gap between camera and walls, in blocks |
+| `collisionMargin` | `0.12` | extra gap to a block in the way |
+| `softOcclusionTime` | `0.35` | seconds a thin obstacle is ignored, 0 = off |
+| `occlusionRatio` | `0.45` | part of the distance below which the camera counts as pushed in |
+| `occlusionCutTime` | `0.6` | seconds pushed in before the angle changes |
+
+### Director
+
+| Field | Default | Meaning |
+|---|---|---|
+| `transition` | `"auto"` | `"auto"`, `"cut"` or `"blend"` (fly-overs only) |
+| `blendChance` | `0.6` | chance of a fly-over with `"auto"` |
+| `minShotTime` | `2.5` | least seconds before a change because the situation changed |
+| `manualHoldSeconds` | `20` | how long the director keeps a hand-placed angle |
+| `orbitSpeed` | `14` | circling speed, degrees per second |
+| `events` | `true` | special shots for death and falling |
+| `activePreset` | `0` | number of the active own angle, counted from 0 |
+| `customInRotation` | `false` | own angles take part in the director's rotation |
+
+### Per shot
+
+`shots` has one entry per shot, `presets` lists the hand-placed angles.
+
+| Field | Meaning |
 |---|---|
-| `enabled` | использовать ли ракурс |
-| `weight` | относительный шанс выбора |
-| `azimuth` | градусы вокруг игрока: 0 — спереди, 180 — сзади. Сторона (лево или право) выбирается случайно |
-| `elevation` | градусы над горизонтом |
-| `distance` | дистанция в блоках для игрока обычного размера |
-| `fov` | угол обзора |
-| `minDuration`, `maxDuration` | длительность плана в секундах |
+| `enabled` | use the shot or not |
+| `weight` | relative odds |
+| `azimuth` | degrees around the player: 0 in front, 180 behind. Left or right is random |
+| `elevation` | degrees above the horizon |
+| `distance` | blocks, for a player of regular size |
+| `fov` | field of view |
+| `minDuration`, `maxDuration` | length of the shot in seconds |
 
-Особенности:
+Exceptions:
 
-- `flyby`: `distance` задаёт, насколько далеко впереди встаёт камера; `azimuth` и `elevation` не используются.
-- `duel`: `azimuth` отсчитывается от направления на противника, а не от взгляда игрока.
-- свои ракурсы: `azimuth` со знаком, от −180 до 180, сторона не зеркалится.
+- `flyby`: `distance` is how far ahead the camera stands, the angles are not used.
+- `duel`: `azimuth` is measured from the direction to the opponent.
+- own angles: `azimuth` is signed, −180 to 180, and not mirrored.
 
-### Что крутить
+### What to change
 
-| Что видишь | Что менять |
+| You see | Change |
 |---|---|
-| Камеру мотает при поворотах головы | `turnDeadzone` больше, `turnLag` больше |
-| Камера вялая, отстаёт | `positionLag` меньше |
-| Слишком частые смены в тесноте | `occlusionCutTime` больше, `occlusionRatio` меньше |
-| Камера дёргается у деревьев и столбов | `softOcclusionTime` больше |
-| Игрок пропадает за деревьями | `softOcclusionTime` меньше или 0 |
-| Планы слишком короткие или длинные | `minDuration`, `maxDuration` у ракурса |
-| Нужны только склейки или только пролёты | `transition` |
-| Игрок не по центру при беге | `leadRoom: 0` |
-| Точка в шлеме мелкая или огромная | `markerSize` |
-| Ракурс не нравится | `enabled: false` у него |
+| The camera swings when you turn your head | raise `turnDeadzone` and `turnLag` |
+| The camera is sluggish | lower `positionLag` |
+| Too many changes in tight places | raise `occlusionCutTime`, lower `occlusionRatio` |
+| The camera twitches near trees and posts | raise `softOcclusionTime` |
+| You disappear behind trees | lower `softOcclusionTime` or set 0 |
+| Shots are too short or too long | `minDuration`, `maxDuration` of the shot |
+| You want only cuts or only fly-overs | `transition` |
+| You are off-center when running | `leadRoom: 0` |
+| The held camera shakes | raise `handStabilize`, lower `physicsShake` |
+| The hand catches the camera by accident | `pullAllModes: false` |
+| You don't like a shot | `enabled: false` on it |
 
-## Шлем снят, VR выключился
+## Headset off, VR gone
 
-В Vivecraft есть настройка **Hotswitching**: когда шлем снят, игра переключается в обычный режим без VR. VR может
-выключиться и по другим причинам: его отключили вручную или случилась ошибка рендера.
+With Vivecraft's **Hotswitching** on, taking the headset off switches the game to non-VR. VR can also stop when you
+turn it off or on a render error.
 
-Что при этом происходит:
+- The game window then shows plain first person. That is Vivecraft: without VR there is no handheld camera.
+- The mod puts Vivecraft's settings back and waits. The mode is kept.
+- When VR is back, the camera turns on again and starts with a new shot.
+- Pressing `F8` while VR is off turns the camera off.
 
-- Окно игры показывает обычный вид от первого лица, а не камеру. Это поведение Vivecraft: без VR ручная камера
-  не рисуется.
-- Мод возвращает настройки Vivecraft к прежним и ждёт. Режим камеры сохраняется.
-- Когда VR возвращается, камера включается сама и начинает с нового плана.
-- Если нажать `F8`, пока VR не работает, камера выключится.
+For streams turn Hotswitching off. The game then stays in VR and the camera keeps filming.
 
-**Для стрима Hotswitching лучше выключить.** Тогда при снятом шлеме игра остаётся в VR и камера продолжает снимать.
+## Troubleshooting
 
-## Первый тест в шлеме
-
-Включи отладочный оверлей, затем режиссёра.
-
-1. **Постой 10–15 секунд.** В окне игры ты в кадре. Строка `why:` показывает причину выбора плана.
-2. **Проверь перед и зад.** Нажимай `F9`, пока не будет `shot: FRONT`. Камера должна быть перед лицом.
-3. **Пройдись и пробегись.** `context:` меняется на `WALK` и `RUN`.
-4. **Покрути головой и корпусом.** Смотри, мотает ли камеру.
-5. **Пройди мимо дерева, вдоль стены, зайди в пещеру.** Смотри `arm:` и `(looking past)`. Внутренностей блоков
-   в кадре быть не должно.
-6. **Телепортнись несколько раз.** План сохраняется, камера прыгает вместе с тобой.
-7. **Ударь моба.** Появляются `target:` и план `DUEL`.
-8. **Спрыгни с высоты больше 5 блоков.** `event FALL`, вид сверху.
-9. **Умри.** `event DEATH`, облёт до возрождения.
-10. **Режим «Следование».** «Камеру ко мне», взять точку, поставить перед собой, отпустить, походить.
-11. **Свои ракурсы.** «Новый ракурс», переставить камеру, затем `F7` — камера перелетает между точками.
-12. **Сними шлем** при включённом Hotswitching, надень обратно. Камера должна вернуться сама.
-
-## Если что-то не так
-
-| Симптом | Причина и что делать |
+| Symptom | Cause and fix |
 |---|---|
-| Сообщение «VR не запущен» | VR в Vivecraft выключен или шлем не подхвачен |
-| Сообщение «недоступна в сидячем режиме» | переключить Vivecraft в стоячий режим |
-| Окно игры чёрное | Desktop Mirror стоит в OFF |
-| В окне вид из глаз, а не от третьего лица | `forceMirror` выключен, или VR сейчас не работает (шлем снят) |
-| Нет красной точки | поставить `marker: "model"`, вернётся модель камеры Vivecraft |
-| Камера за спиной в плане `front` | перепутано направление тела, это ошибка мода — сообщить |
-| Камеру не достать рукой | кнопка «Камеру ко мне» |
-| Сообщение «внутренняя ошибка, камера выключена» | мод поймал свою ошибку и отключился, чтобы не уронить VR; подробности в `logs/latest.log` |
-| Нет кнопки «Настройки» | не установлен Cloth Config |
-| Клавиши не работают | окно игры не в фокусе или открыто меню |
+| "VR is not running" | VR is off in Vivecraft or the headset was not picked up |
+| "not available in seated mode" | switch Vivecraft to standing |
+| The game window is black | Desktop Mirror is OFF |
+| The window shows first person | `forceMirror` is off, or VR is not running right now |
+| No red dot | set `marker: "model"` to get the Vivecraft camera model |
+| The camera is behind you in `front` | a bug, please report it |
+| You can't reach the camera | Bring camera to me, or pull it |
+| "internal error, camera turned off" | the mod caught its own error and stopped, to not throw you out of VR. See `logs/latest.log` |
+| No Settings button | Cloth Config is missing |
+| Keys do nothing | the game window has no focus, or a menu is open |
 
-## Ограничения
+## Known limits
 
-**Проверено:**
-
-- сборка для 26.2 и 26.3;
-- загрузка в dev-клиенте 26.2 и 26.3 вместе с Vivecraft и Cloth Config, без ошибок от мода;
-- экран настроек строится;
-- математика поворота камеры и пружин, отдельным числовым тестом.
-
-**Не проверено:** всё поведение в шлеме — ракурсы, смены планов, коллизии, бой, события, метка, постановка рукой,
-возврат после снятия шлема. Mod Menu в dev-клиенте не запускался.
-
-**Известные особенности:**
-
-- Мод использует внутренние классы Vivecraft, а не только публичный API. Новая версия Vivecraft может его сломать.
-- Поза камеры отстаёт на один кадр: Vivecraft считывает её до запуска трекеров.
-- Пока камера включена, мод меняет у Vivecraft угол обзора камеры и вывод камеры в окно игры. При выключении,
-  пропаже VR и выходе из игры они возвращаются. Если Vivecraft сохранит свой конфиг в это время, а игра упадёт,
-  изменённые значения останутся в его файле.
-- Метка рисуется отладочными примитивами Minecraft. Её размер в шлеме подбирается настройкой `markerSize`.
-- Отдельных клавиш для каждого ракурса нет, конкретный ракурс выбирается командой `/vrcam shot`.
+- The mod uses Vivecraft's internal classes, not only its public API. A Vivecraft update can break it.
+- The camera pose is one frame late: Vivecraft reads it before it runs the trackers.
+- While the camera is on, the mod changes Vivecraft's camera field of view and mirror setting, and puts them back
+  when it turns off. If Vivecraft saves its config in that time and the game crashes, the changed values stay in
+  Vivecraft's file.
+- While you look at the camera and point a hand at it, that hand's interact button belongs to the pull gesture.
+- A pulled camera flies through walls.
+- The body of a dead player disappears after about a second, the death shot runs until respawn.
+- There are no automated tests.

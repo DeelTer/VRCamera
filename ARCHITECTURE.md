@@ -1,557 +1,576 @@
-# Архитектура VRCamera
+# VRCamera architecture
 
-Документ для того, кто будет менять код. Как пользоваться модом — в [README.md](README.md).
+For whoever changes the code. How to use the mod: [README.md](README.md).
 
-## Что делает мод, в одном абзаце
+## The mod in one paragraph
 
-Vivecraft умеет рисовать мир ещё раз из отдельной «ручной» камеры и показывать эту картинку в окне игры. Мод
-ничего не рисует сам: раз в кадр он вычисляет, где эта камера должна стоять, куда смотреть и с каким углом обзора,
-и записывает это в Vivecraft. Всё остальное — выбор ракурсов, сглаживание, защита от стен — происходит до этой
-записи.
+Vivecraft can render the world once more from a separate handheld camera and show that picture in the game window.
+The mod draws nothing itself. Once per frame it works out where that camera should be, where it should look and
+with which field of view, and writes that into Vivecraft. Picking shots, smoothing and keeping out of walls all
+happen before that write.
 
-## Как устроена камера в Vivecraft
+## The camera in Vivecraft
 
-Это нужно знать, чтобы понимать, за что мод цепляется. Имена классов — из Vivecraft 1.3.15 для Minecraft 26.2.
+What the mod hooks into. Class names are from Vivecraft 1.3.15 for Minecraft 26.2.
 
-| Что | Где в Vivecraft | Как используется модом |
+| What | Where in Vivecraft | How the mod uses it |
 |---|---|---|
-| Поза ручной камеры (мировые координаты) | `CameraTracker`: `position`, `rotation` | мод пишет через `setPosition`, `setRotation` |
-| Видимость камеры | `CameraTracker.isVisible`, `toggleVisibility` | мод включает камеру, если она выключена |
-| Камера в руке игрока | `CameraTracker.isMoving`, `ScreenshotCameraModule` | пока `isMoving`, мод камеру не трогает |
-| Угол обзора камеры | `VRSettings.handCameraFov`, читается в `CameraVRMixin` каждый проход | мод пишет каждый кадр |
-| Вывод камеры в окно игры | `VRSettings.displayMirrorUseScreenshotCamera`, читается в `ShaderHelper` | мод включает на время работы |
-| Буфер камеры | `VRRenderer.cameraFramebuffer`, 1920×1080 × «Camera Resolution» | мод не трогает |
-| Проход рендера камеры | `RenderPass.CAMERA`, цикл в `VRPassHelper.renderAndSubmit` | мод не трогает |
-| Запуск кода раз в кадр | `Tracker` с `ProcessType.PER_FRAME`, вызывается из `VRPlayer.preRender` | точка входа мода |
-| Позы шлема и рук | `VRPlayer.vrdata_world_render` (`VRData`) | источник данных об игроке |
-| Модель камеры в шлеме | `VRWidgetHelper.extractVRHandheldCameraWidget` | миксин заменяет её на метку |
+| Pose of the handheld camera, world space | `CameraTracker`: `position`, `rotation` | written with `setPosition`, `setRotation` |
+| Camera visibility | `CameraTracker.isVisible`, `toggleVisibility` | turned on if it is off |
+| Camera held by the player | `CameraTracker.isMoving`, `startMoving`, `stopMoving`, `ScreenshotCameraModule` | while `isMoving` the mod only steadies it |
+| Camera field of view | `VRSettings.handCameraFov`, read in `CameraVRMixin` every pass | written every frame |
+| Camera picture in the game window | `VRSettings.displayMirrorUseScreenshotCamera`, read in `ShaderHelper` | turned on while the mod works |
+| Camera buffer | `VRRenderer.cameraFramebuffer`, 1920×1080 × Camera Resolution | untouched |
+| Camera render pass | `RenderPass.CAMERA`, loop in `VRPassHelper.renderAndSubmit` | untouched |
+| Code that runs once per frame | `Tracker` with `ProcessType.PER_FRAME`, called from `VRPlayer.preRender` | entry point of the mod |
+| Interact button | `InteractTracker`, `HeldInteractModule` | the pull gesture |
+| Headset and hand poses | `VRPlayer.vrdata_world_render` (`VRData`) | where player data comes from |
+| Camera model in the headset | `VRWidgetHelper.extractVRHandheldCameraWidget` | hidden by a mixin |
 
-Порядок внутри кадра в Vivecraft:
+Order within a frame:
 
-1. `VRPlayer.preRender` строит `vrdata_world_render`. В этот момент поза камеры копируется в `VRData.cam`.
-2. Там же запускаются все `PER_FRAME`-трекеры, включая `CameraController` мода.
-3. `VRPassHelper.renderAndSubmit` рисует проходы: глаза, затем `CAMERA`.
-4. `ShaderHelper` копирует буфер камеры в окно игры.
+1. `VRPlayer.preRender` builds `vrdata_world_render`. The camera pose is copied into `VRData.cam` here.
+2. All `PER_FRAME` trackers run, Vivecraft's own first, then `CameraController`.
+3. `VRPassHelper.renderAndSubmit` renders the passes: both eyes, then `CAMERA`.
+4. `ShaderHelper` copies the camera buffer into the game window.
 
-Из шагов 1 и 2 следует **задержка в один кадр**: поза, записанная модом, попадёт в `VRData.cam` только на следующем
-кадре. При сглаживании это незаметно.
+Steps 1 and 2 mean the pose is **one frame late**: what the mod writes reaches `VRData.cam` on the next frame. With
+smoothing this does not show.
 
-Мод использует публичный API Vivecraft только для регистрации трекера (`VRClientAPI.addClientRegistrationHandler`).
-Всё остальное — внутренние классы: `ClientDataHolderVR`, `CameraTracker`, `VRSettings`, `VRData`, `VRState`,
-`VRWidgetHelper`. Это главная точка хрупкости при обновлении Vivecraft.
+The public Vivecraft API is only used to register the tracker and the interact module
+(`VRClientAPI.addClientRegistrationHandler`) and for haptics. Everything else is internal classes:
+`ClientDataHolderVR`, `CameraTracker`, `VRSettings`, `VRData`, `VRState`, `GuiHandler`. This is what breaks first
+on a Vivecraft update.
 
-## Поток данных за кадр
+## Data flow of a frame
 
 ```
 VRPlayer.preRender (Vivecraft)
-  └─ CameraController.activeProcess          точка входа, раз в кадр
-       ├─ Subject.update                     кто и где игрок: ноги, голова, центр, скорость, scale, цель
-       ├─ камера в руке? → выход             пока игрок держит камеру, мод её не трогает
-       ├─ Director.update  (режим «Режиссёр»)
-       │    ├─ updateContext                 чем занят игрок, тесно ли вокруг, цель в бою
-       │    ├─ detectEvent                   смерть, падение
-       │    ├─ нужна смена плана? → choose   перебор кандидатов и оценка
-       │    └─ Shot.update                   где план хочет камеру прямо сейчас
-       ├─ Shot.update      (режим «Следование», один свой ракурс)
-       ├─ Rig.update                         сглаживание → защита от стен → наведение → FOV
-       └─ запись в CameraTracker и VRSettings
+  └─ CameraController.activeProcess          entry point, once per frame
+       ├─ Subject.update                     the player: feet, head, center, velocity, scale, target
+       ├─ camera flying to a hand? → move it and return
+       ├─ camera in a hand? → steady it and return
+       ├─ PHYSICS: DroppedCamera.update      fall, bounce, rest
+       ├─ Director.update  (DIRECTOR)
+       │    ├─ updateContext                 what the player does, tight place, combat target
+       │    ├─ detectEvent                   death, fall, menu
+       │    ├─ change needed? → choose       candidates and their scores
+       │    └─ Shot.update                   where the shot wants the camera now
+       ├─ Shot.update      (FOLLOW, one own angle)
+       ├─ Rig.update                         smoothing → walls → aim → FOV
+       └─ write to CameraTracker and VRSettings
 ```
 
-Разделение ответственности:
+Who answers what:
 
-- **Shot** отвечает на вопрос «где камера хочет быть», не зная о стенах и плавности.
-- **Rig** отвечает на вопрос «где камера окажется на самом деле».
-- **Director** отвечает на вопрос «какой Shot сейчас и когда его менять».
-- **Subject** — единственное место, откуда остальные берут данные об игроке.
-- **CameraController** связывает всё с Vivecraft и хранит состояние режима.
+- **Shot**: where the camera wants to be. Knows nothing about walls or smoothness.
+- **Rig**: where the camera ends up.
+- **Director**: which shot runs now and when it changes.
+- **Subject**: the only place the others take player data from.
+- **CameraController**: ties it to Vivecraft and keeps the mode.
 
-## Пакеты и классы
+## Packages and classes
 
-| Класс | Ответственность |
+| Class | Responsibility |
 |---|---|
-| `client.VrcameraClient` | точка входа Fabric: регистрация трекера, клавиш (таблица «клавиша → действие»), команды, кнопок меню паузы, оверлея |
-| `client.VrcamCommand` | клиентская команда `/vrcam`: те же действия, что у клавиш и кнопок, плюс выбор конкретного плана |
-| `client.CameraController` | трекер Vivecraft; режимы; захват и возврат настроек Vivecraft; постановка рукой; свои ракурсы; метка |
-| `client.rig.Subject` | снимок игрока за кадр |
-| `client.rig.Rig` | пружины, длина «руки», наведение, итоговая поза |
-| `client.rig.WorldProbe` | все обращения к блокам мира: лучи, свободное место, толщина препятствия, открытость |
-| `client.rig.HandThrow` | следит за камерой в руке и отличает бросок от обычного отпускания |
-| `client.rig.DroppedCamera` | режим «Физика»: падение, отскоки, пинки, удары и поза камеры, которую отпустили |
-| `client.rig.HandheldShake` | режим «Физика»: дрожание камеры в руке от дыхания, шагов и урона |
-| `client.CameraPull` | модуль взаимодействия Vivecraft: притягивание лежащей камеры в руку |
-| `client.CameraEffects` | частицы и звуки камеры: пыль от удара, притягивание |
-| `client.shot.ShotType` | список планов: значения по умолчанию и пригодность по ситуациям |
-| `client.shot.Shot` | работающий план: целевые азимут, высота, дистанция, FOV, точка наведения |
-| `client.director.Director` | ситуация, цель, события, выбор и смена планов |
-| `client.director.Context` | перечень ситуаций |
-| `client.config.CameraConfig`, `ShotConfig` | чтение и запись `vrcamera.json` |
-| `client.config.Marker`, `Transition` | перечисления для настроек с фиксированным набором значений; в файле пишутся строчными буквами |
-| `client.gui.ConfigScreen` | экран настроек на Cloth Config |
-| `client.gui.CameraMenuScreen` | экран со всеми кнопками управления, открывается из меню паузы |
-| `client.gui.DebugOverlay` | текст отладочного оверлея и его отрисовка; те же строки выводит `/vrcam status` |
-| `client.gui.ModMenuIntegration` | кнопка настроек в Mod Menu |
-| `client.math.*` | пружины (`Smooth`, `SmoothAngle`, `SmoothVec`) и геометрия (`CamMath`) |
-| `mixin.client.VRWidgetHelperMixin` | скрывает модель камеры Vivecraft и рисует метку |
+| `client.VrcameraClient` | Fabric entry point: tracker, interact module, keys (a key → action table), command, pause menu buttons, overlay |
+| `client.VrcamCommand` | client command `/vrcam`: what keys and buttons do, plus picking a shot |
+| `client.CameraController` | Vivecraft tracker; modes; taking and restoring Vivecraft settings; placing by hand; own angles; marker and icon |
+| `client.CameraPull` | Vivecraft interact module: pulling the camera into a hand |
+| `client.CameraEffects` | particles and sounds: impact dust, pulling |
+| `client.rig.Subject` | snapshot of the player for a frame |
+| `client.rig.Rig` | springs, arm length, aim, final pose |
+| `client.rig.WorldProbe` | every look at the blocks of the world: rays, free space, obstacle thickness, openness |
+| `client.rig.HandThrow` | watches a held camera and tells a throw from letting go |
+| `client.rig.HandStabilizer` | steadies a held camera |
+| `client.rig.HandheldShake` | Physics: sway of a held camera from breath, steps and damage |
+| `client.rig.DroppedCamera` | Physics: fall, bounces, kicks, impacts and rest pose of a camera that was let go of |
+| `client.shot.ShotType` | list of shots: defaults and how well each fits a situation |
+| `client.shot.Shot` | a running shot: wanted azimuth, elevation, distance, FOV, look target |
+| `client.director.Director` | situation, target, events, picking and changing shots |
+| `client.director.Context` | the situations |
+| `client.config.CameraConfig`, `ShotConfig` | reading and writing `vrcamera.json` |
+| `client.config.Marker`, `Transition` | enums for settings with fixed values, lower case in the file |
+| `client.gui.ConfigScreen` | settings screen on Cloth Config |
+| `client.gui.CameraMenuScreen` | screen with all control buttons, opened from the pause menu |
+| `client.gui.DebugOverlay` | text of the debug overlay and drawing it; `/vrcam status` prints the same lines |
+| `client.gui.ModMenuIntegration` | settings button in Mod Menu |
+| `client.math.*` | springs (`Smooth`, `SmoothAngle`, `SmoothVec`) and geometry (`CamMath`) |
+| `mixin.client.VRWidgetHelperMixin` | hides the Vivecraft camera model |
+| `mixin.client.LevelExtractorMixin` | draws marker and icon for the eyes |
 
-## Системы координат и соглашения
+## Coordinates and conventions
 
-- **Yaw** — как в Minecraft: 0 смотрит на юг (+Z), вектор направления `(-sin, 0, cos)`. Так же считает Vivecraft
-  в `VRDevicePose.getYawRad`.
-- **Орбита.** Положение камеры относительно игрока задаётся тремя числами: азимут (мировой yaw направления
-  от игрока к камере), высота над горизонтом, дистанция. `CamMath.orbit` переводит их в вектор.
-- **Азимут в конфиге** — относительный: 0 значит «перед игроком», 180 — «позади». В `Shot` он складывается
-  с направлением тела и становится мировым. У плана `duel` отсчёт идёт от направления на противника.
-- **Сторона.** У планов режиссёра азимут зеркалится множителем `side` (−1 или 1). У своих ракурсов `side` всегда 1,
-  и азимут хранится со знаком.
-- **Поворот камеры.** Vivecraft считает направлением взгляда локальную ось −Z. `CamMath.lookRotation` строит
-  кватернион из базиса «право, верх, назад» без крена. Проверено числом: ошибка направления нулевая.
-- **Единица длины.** Все дистанции из конфига умножаются на `Subject.unit` — `LivingEntity.getScale()`, то есть
-  атрибут `scale` учтён везде, включая радиус коллизий и минимальные дистанции.
+- **Yaw** as in Minecraft: 0 faces south (+Z), direction vector `(-sin, 0, cos)`. Vivecraft's
+  `VRDevicePose.getYawRad` does the same.
+- **Orbit.** The camera position relative to the player is three numbers: azimuth (world yaw of the direction from
+  player to camera), elevation above the horizon, distance. `CamMath.orbit` turns them into a vector.
+- **Azimuth in the config** is relative: 0 is in front of the player, 180 behind. `Shot` adds the body direction
+  to get the world value. For `duel` it is measured from the direction to the opponent.
+- **Side.** Director shots mirror the azimuth with `side` (−1 or 1). Own angles always have `side` 1 and a signed
+  azimuth.
+- **Camera rotation.** Vivecraft looks along local −Z. `CamMath.lookRotation` builds a quaternion from the basis
+  right, up, back, without roll.
+- **Unit of length.** Every distance from the config is multiplied by `Subject.unit`, which is
+  `LivingEntity.getScale()`. So the `scale` attribute applies everywhere, including collision radius and minimum
+  distances.
 
-## Subject: что известно об игроке
+## Subject: what is known about the player
 
-| Поле | Откуда | Зачем |
+| Field | From | For |
 |---|---|---|
-| `feet` | `player.getPosition(partialTick)` | основание, интерполировано между тиками |
-| `head` | положение шлема из `VRData.hmd`; если оно дальше разумного от сущности — глаза сущности | верх тела |
-| `center` | между `feet` и `head` в доле `aimHeight` | точка наведения и центр орбиты |
-| `hands` | середина между контроллерами | план `hands` |
-| `unit` | `player.getScale()` | масштаб всех дистанций |
-| `facing` | `VRData.getBodyYawRad()`, сглажен за 0.3 с | «куда смотрит тело» |
-| `velocity`, `speed` | разность `feet` между кадрами, сглажена за 0.25 с | ситуация, упреждение, FOV |
-| `teleported` | сдвиг за кадр больше `max(1 блок, 70 блоков/с × время кадра)` | признак прыжка |
-| `target`, `targetCenter` | назначает `Director` | бой |
+| `feet` | `player.getPosition(partialTick)` | base, interpolated between ticks |
+| `head` | headset position from `VRData.hmd`; the entity's eyes if that is too far from the entity | top of the body |
+| `center` | between `feet` and `head` at `aimHeight` | look target and orbit center |
+| `hands` | middle between the controllers | `hands` shot |
+| `unit` | `player.getScale()` | scale of all distances |
+| `facing` | `VRData.getBodyYawRad()`, smoothed over 0.3 s | where the body faces |
+| `velocity`, `speed` | difference of `feet` between frames, smoothed over 0.25 s | situation, lead room, FOV |
+| `teleported` | moved more in a frame than `max(1 block, 70 blocks/s × frame time)` | jump detection |
+| `guiCenter` | set by the controller | `menu` shot |
+| `target`, `targetCenter` | set by `Director` | combat |
 
-Почему `facing` — тело, а не шлем: игрок постоянно крутит головой, и камера, привязанная к шлему, мотается.
-Vivecraft оценивает направление тела по шлему и рукам.
+`facing` is the body, not the headset: players turn their heads all the time, and a camera tied to the headset
+swings with it. Vivecraft estimates the body direction from headset and hands.
 
-Почему порог телепорта такой: Vivecraft переносит игрока через `snapTo`, это один кадр без интерполяции.
-Обычное движение, включая элитры, не даёт 70 блоков/с.
+The teleport threshold: Vivecraft moves the player with `snapTo`, one frame without interpolation. Nothing a player
+does, elytra included, reaches 70 blocks/s.
 
-## Shot: где план хочет камеру
+## Shot: where a shot wants the camera
 
-`Shot` хранит цель в орбитальных координатах и обновляет её каждый кадр. Поведение по типам:
+`Shot` keeps its goal in orbit coordinates and updates it every frame.
 
-| Тип | Особенность |
+| Type | Behavior |
 |---|---|
-| `SHOULDER`, `LOW`, `HANDS`, `CRANE`, `FALL`, `CUSTOM` | азимут догоняет `facing + свой угол` с мёртвой зоной `turnDeadzone` и запаздыванием `turnLag` |
-| `FRONT` | то же, плюс дистанция уменьшается до 72%, пока игрок стоит |
-| `ORBIT`, `DEATH` | азимут растёт со скоростью `orbitSpeed`, от взгляда игрока не зависит; `DEATH` ещё и отъезжает |
-| `CRANE` | высота и дистанция растут за время плана |
-| `DUEL` | азимут отсчитывается от направления на цель; дистанция растёт с расстоянием до цели; наведение между игроком и целью |
-| `HANDS` | наведение смещено к рукам |
-| `LOW` | высота камеры не ниже ног игрока |
-| `FLYBY` | единственный «мировой» план: точка выбирается один раз впереди по ходу движения и не двигается; FOV подбирается так, чтобы игрок был одного размера в кадре |
-| `POV` | вид от первого лица. Единственный план, чья позиция считается не от орбиты: `Shot.position` ставит камеру перед лицом, на `distance` впереди головы по горизонтали. Смотрит туда же, куда голова, с задержкой 0.25 с. К этому плану и от него только склейка (`ShotType.cutsOnly`) |
-| `MENU` | как `DUEL`, только вместо противника открытое меню: азимут отсчитывается от направления на него, наведение на 80% смещено к меню |
+| `SHOULDER`, `LOW`, `HANDS`, `CRANE`, `FALL`, `CUSTOM` | azimuth follows `facing + own angle` with the dead zone `turnDeadzone` and the lag `turnLag` |
+| `FRONT` | same, and the distance shrinks to 72% while the player stands |
+| `ORBIT`, `DEATH` | azimuth grows at `orbitSpeed`, whatever the player looks at; `DEATH` also pulls back |
+| `CRANE` | elevation and distance grow over the shot |
+| `DUEL` | azimuth is measured from the direction to the target; distance grows with the distance to it; aims between player and target |
+| `HANDS` | aim is shifted to the hands |
+| `LOW` | the camera is never below the player's feet |
+| `FLYBY` | the only world shot: a spot ahead on the path is picked once and stays; the FOV keeps the player the same size in frame |
+| `POV` | first person. The only shot not placed on the orbit: `Shot.position` puts the camera `distance` in front of the head, horizontally. It looks where the head looks, 0.25 s late. Only cuts lead to it and away from it (`ShotType.cutsOnly`) |
+| `MENU` | like `DUEL` with the open menu as opponent: azimuth is measured from the direction to it, the aim is shifted 80% to the menu |
 
-Мёртвая зона нужна, чтобы малые повороты корпуса не двигали камеру вовсе, а запаздывание — чтобы большие
-превращались в плавный облёт.
+The dead zone keeps small body turns from moving the camera at all. The lag turns large ones into a smooth swing.
 
-`Shot.finished` сообщает, что плану больше нечего показывать: `FLYBY` — игрок ушёл далеко, `DUEL` — цель пропала.
+`Shot.finished` says the shot has nothing left to show: for `FLYBY` the player is far away, for `DUEL` the target
+is gone.
 
-## Rig: от желаемого к настоящему
+## Rig: from wanted to actual
 
-Шаги `Rig.update`, по порядку:
+Steps of `Rig.update`, in order:
 
-1. **Якорь.** Центр игрока сглаживается (0.18 с), чтобы камера не повторяла покачивания головы. Отставание,
-   которое даёт сглаживание при движении, компенсируется добавкой `скорость × 0.18`.
-2. **Орбита.** Азимут, высота и дистанция сглаживаются по отдельности пружинами. Сглаживается именно орбита,
-   а не точка в пространстве: поэтому при смене ракурса камера облетает игрока по дуге, а не летит сквозь него.
-3. **Рука (arm).** От центра игрока к желаемой точке `WorldProbe.armFraction` пускает 8 лучей — по углам кубика
-   размером с отступ от стен. Результат — доля пути, свободная от блоков. Камера ставится на этой доле.
-4. **Мягкое препятствие.** Если путь перекрыло что-то не толще блока, а сама камера стоит в свободном месте,
-   рука не укорачивается до `softOcclusionTime` секунд.
-5. **Наведение.** Точка наведения из плана, плюс упреждение по ходу движения (`leadRoom`), сглаживается (`lookLag`)
-   и превращается в поворот без крена.
-6. **FOV** сглаживается за 0.5 с.
+1. **Anchor.** The player center is smoothed (0.18 s), so the camera does not copy every head bob. The lag this
+   causes while moving is made up for by adding `velocity × 0.18`.
+2. **Orbit.** Azimuth, elevation and distance each have their own spring. The orbit is smoothed, not the point in
+   space. That is why the camera swings around the player on a shot change and does not fly through them.
+3. **Arm.** `WorldProbe.armFraction` casts 8 rays from the player center to the wanted spot, one per corner of a
+   cube the size of the wall gap. The result is the part of the way that is free of blocks. The camera goes there.
+4. **Soft obstacle.** If the way is blocked by something no thicker than a block and the camera itself stands in
+   free space, the arm is not shortened for up to `softOcclusionTime` seconds.
+5. **Aim.** The look target of the shot, plus lead room (`leadRoom`), is smoothed (`lookLag`) and turned into a
+   rotation without roll.
+6. **FOV** is smoothed over 0.5 s.
 
-Свойства, которые важно не сломать:
+What must not break:
 
-- **Камера не встаёт в лаву и рыхлый снег**, если голова игрока не в них: `armFraction` отодвигает её назад
-  по лучу шагами по полблока.
-- **Камера не бывает в блоке.** Она стоит либо на свободной доле луча, либо (шаг 4) в точке, для которой
-  `spotFree` подтвердил, что кубик камеры ни с чем не пересекается.
-- **Центр тела всегда виден**, кроме окна мягкого препятствия: камера стоит на отрезке от центра, перед первым
-  блоком.
-- **Рука укорачивается мгновенно, удлиняется плавно** (0.6 с). Иначе камера дёргалась бы наружу после каждого столба.
-- **Сразу после склейки мягкое препятствие запрещено** (`softArmed`), пока обзор хоть раз не станет чистым. Иначе
-  новый план мог бы начаться с закрытого игрока.
+- **No lava or powder snow** unless the player's head is in it: `armFraction` moves the camera back along the ray
+  in half-block steps.
+- **Never inside a block.** The camera is either on the free part of the ray or, in step 4, at a spot for which
+  `spotFree` confirmed that the camera cube touches nothing.
+- **The body center is visible**, except during the soft obstacle window: the camera is on the line from the
+  center, before the first block.
+- **The arm shortens at once and grows slowly** (0.6 s). Otherwise the camera would jerk outwards after every
+  post.
+- **No soft obstacle right after a cut** (`softArmed`) until the view was clear once. Otherwise a new shot could
+  start with the player hidden.
 
-Переходы между планами:
+Transitions:
 
-- `snap` — склейка: все пружины ставятся в целевые значения.
-- `blend` — пролёт: пружины не трогаются, но 1.6 с работают в 3.5 раза медленнее, чтобы движение читалось как пролёт.
-- `rebase` — телепорт: якорь и наведение переносятся к игроку, орбита сохраняется. Ракурс остаётся тем же.
-- `adopt` — постановка рукой: склейка, но орбита берётся из фактического положения камеры, чтобы она не прыгнула.
+- `snap`: a cut. All springs are set to their goals.
+- `blend`: a fly-over. The springs keep their state but run 3.5 times slower for 1.6 s, so the move reads as one.
+- `rebase`: a teleport. Anchor and aim move to the player, the orbit stays. Same angle.
+- `adopt`: placed by hand. A cut, but the orbit comes from where the camera is, so it does not jump.
 
-Пружина (`Smooth`) — критически демпфированная, по формуле SmoothDamp: не перелетает цель и не зависит от частоты
-кадров. `SmoothAngle` всегда идёт коротким путём по кругу.
+The spring (`Smooth`) is critically damped, the SmoothDamp formula: it does not overshoot and does not depend on
+the frame rate. `SmoothAngle` always takes the short way around.
 
-## Director: какой план и когда
+## Director: which shot and when
 
-### Ситуация
+### Situation
 
-`updateContext` каждый кадр выбирает одну из восьми ситуаций, по приоритету сверху вниз:
+`updateContext` picks one of eight situations every frame, first match from the top:
 
-| Ситуация | Условие |
+| Situation | Condition |
 |---|---|
-| `FLY` | полёт на элитрах |
-| `RIDE` | игрок — пассажир |
-| `COMBAT` | за последние 5 с игрок ударил живое существо или получил урон от живого существа |
-| `MINE` | игрок ломает блоки дольше секунды; счётчик растёт при работе и вдвое медленнее убывает без неё |
-| `SWIM` | в воде |
-| `RUN` | скорость выше 4.8 блока/с |
-| `IDLE` | стоит дольше 1.2 с |
-| `WALK` | всё остальное |
+| `FLY` | flying with an elytra |
+| `RIDE` | the player is a passenger |
+| `COMBAT` | in the last 5 s the player hit a living entity or was hurt by one |
+| `MINE` | breaking blocks for more than a second; the counter rises while working and falls half as fast without |
+| `SWIM` | in water |
+| `RUN` | faster than 4.8 blocks/s |
+| `IDLE` | standing for more than 1.2 s |
+| `WALK` | everything else |
 
-Отдельно раз в полсекунды считается **теснота**: 9 лучей от центра игрока на 5 блоков. Если в среднем свободно
-меньше 55% длины, место считается тесным: дистанции умножаются на 0.7, шансы дальних планов падают.
+**Tightness** is measured twice a second: 9 rays of 5 blocks from the player center. If less than 55% of their
+length is free on average, the place is tight: distances are multiplied by 0.7 and far shots lose odds.
 
-### Цель в бою
+### Combat target
 
-- Игрок ударил живое существо — оно становится целью. Удар приходит из события Fabric `AttackEntityCallback`,
-  поэтому учитываются и удары взмахом контроллера мимо прицела.
-- Игрок получил урон — целью становится тот, кто его нанёс: `player.getLastDamageSource().getEntity()`. Источник
-  урона клиент получает от сервера. Урон без живого виновника боем не считается.
-- Пока игрок мёртв, цель удерживается, чтобы план `DEATH` мог показать убийцу.
-- Цель сбрасывается, когда истекли 5 с боя, она умерла или ушла далеко.
+- The player hit a living entity: it becomes the target. The hit comes from Fabric's `AttackEntityCallback`, so
+  controller swings that miss the crosshair count too.
+- The player was hurt: the target is who did it, `player.getLastDamageSource().getEntity()`. The client gets the
+  damage source from the server. Damage without a living attacker is no fight.
+- While the player is dead the target is kept, so `DEATH` can show the killer.
+- The target is dropped after 5 s without fighting, when it dies or when it is far away.
 
-### События
+### Events
 
-`detectEvent` возвращает `DEATH`, `FALL`, `MENU` или ничего, в этом порядке приоритета. `MENU` — у игрока открыт
-экран и Vivecraft знает его место в мире
-(`GuiHandler.GUI_POS_ROOM`, переводится в мировые координаты через `VRPlayer.roomToWorldPos`). Контроллер кладёт
-эту точку в `Subject.guiCenter` каждый кадр. Меню считается любой открытый экран; чат — только при включённом `menuShotChat`.
-Пока игра на паузе, время для режиссёра и рига не останавливается, иначе камера не доехала бы до меню паузы;
-стоит только то, что принадлежит миру: падение камеры в режиме `PHYSICS` и ожидание после «Камеру ко мне». Для `MENU` `Director.eventShot` пробует оба плеча и берёт то, за которым
-больше места; если камера и там оказалась бы ближе `minDistance` к игроку, вместо плана `MENU` ставится `POV`.
-Пока событие длится, показывается его план и обычный выбор
-не работает. При удержании плана события отключены.
+`detectEvent` returns `DEATH`, `FALL`, `MENU` or nothing, in that order. While an event runs its shot is shown and
+the regular choice is off. A held shot turns events off.
 
-Падение определяется двумя способами: `fallDistance > 5`, либо игрок не на земле, падает быстрее 0.3 блока за тик
-и под ногами больше 6 блоков пустоты (`WorldProbe.groundDistance`). Второй способ срабатывает в начале падения.
-Событие держится ещё секунду после приземления. К плану `FALL` камера всегда переходит склейкой: пролёт дольше
-самого падения.
+**Fall** is detected two ways: `fallDistance > 5`, or the player is in the air, falls faster than 0.3 blocks per
+tick and has more than 6 blocks of air below (`WorldProbe.groundDistance`). The second one fires at the start of a
+fall. The event stays for a second after landing. The camera always cuts to `FALL`: a fly-over takes longer than
+the fall.
 
-Если во время события нажать «следующий план» или запросить план командой, событие помечается отменённым
-(`dismissed`) и не показывается, пока не закончится.
+**Menu** means a screen is open and Vivecraft knows where it is in the world (`GuiHandler.GUI_POS_ROOM`, turned
+into world space by `VRPlayer.roomToWorldPos`). The controller puts that point into `Subject.guiCenter` every
+frame. Any open screen counts; chat only with `menuShotChat` on. `Director.eventShot` tries both shoulders and
+takes the one with more room. If the camera would still be closer than `minDistance`, `POV` is used instead.
 
-### Когда меняется план
+While the game is paused, time keeps running for director and rig, or the camera would never reach the pause menu.
+Only what belongs to the world stands still: a falling camera in `PHYSICS` and the wait after Bring camera to me.
 
-Проверки идут по порядку, срабатывает первая. Её название попадает в отладочный оверлей как причина.
+Pressing Next shot or asking for a shot during an event marks it `dismissed`. It is not shown again until it ends.
 
-| Причина | Условие | Переход |
+### When a shot changes
+
+Checked in order, the first match wins. Its name shows in the debug overlay as the reason.
+
+| Reason | Condition | Transition |
 |---|---|---|
-| `start` | плана ещё нет или риг сброшен | склейка |
-| `teleport` | телепорт при мировом плане | склейка |
-| `key` | нажата «Следующий план» | по настройке |
-| `asked for …` | конкретный план запрошен командой `/vrcam shot` | по настройке |
-| `event over` | событие закончилось | по настройке |
-| `held shot ended` | удерживаемый мировой план закрыт или закончился | склейка |
-| `blocked` | рука короче порога дольше `occlusionCutTime` | склейка |
-| `finished` | план сам сообщил, что закончен | по настройке |
-| `time` | вышла длительность | по настройке |
-| `unfit for …` | план не подходит новой ситуации, прошло `minShotTime` | по настройке |
-| `now …` | началось новое занятие, прошло `minShotTime` | по настройке |
+| `start` | no shot yet, or the rig was reset | cut |
+| `teleport` | teleport during a world shot | cut |
+| `key` | Next shot was pressed | by setting |
+| `asked for …` | `/vrcam shot` asked for a shot | by setting |
+| `event over` | the event ended | by setting |
+| `held shot ended` | a held world shot is blocked or finished | cut |
+| `blocked` | the arm was below the threshold for longer than `occlusionCutTime` | cut |
+| `finished` | the shot said it is done | by setting |
+| `time` | its time is up | by setting |
+| `unfit for …` | the shot does not fit the new situation, `minShotTime` has passed | by setting |
+| `now …` | something new started, `minShotTime` has passed | by setting |
 
-«Занятие» — ситуация, в которой `IDLE`, `WALK` и `RUN` считаются одним. Правило срабатывает только на **начало**
-боя, полёта, езды, плавания или копания. Конец занятия план не меняет: иначе один удар давал бы две смены подряд.
+"Something new" compares activities, where `IDLE`, `WALK` and `RUN` are the same one. The rule only fires at the
+**start** of a fight, flight, ride, swim or mining. The end of an activity changes nothing, or a single hit would
+cause two changes in a row.
 
-Запрошенный командой план (`Shot.forced`) от правил `unfit for …` и `now …` освобождён.
+A shot asked for by command (`Shot.forced`) is exempt from `unfit for …` and `now …`.
 
-Главная идея: **препятствия решаются сменой плана, а не поиском пути**. Камера не пытается облететь стену —
-режиссёр переключается на ракурс, с которого игрока видно.
+The main idea: **obstacles are solved by changing the shot, not by finding a path.** The camera does not try to
+fly around a wall. The director switches to an angle from which the player can be seen.
 
-### Выбор плана
+### Picking a shot
 
-`choose` перебирает все включённые планы с ненулевым весом для текущей ситуации, каждый — с обеих сторон.
-Для каждого кандидата `consider`:
+`choose` goes through every enabled shot with a weight above zero for the situation, each from both sides. For
+each candidate `consider`:
 
-1. Запускает план и берёт желаемую точку.
-2. Считает свободную долю луча. Мировой план с долей ниже 0.9 отбрасывается: он хорош только в задуманной точке.
-3. Отбрасывает кандидата, если камера оказалась бы ближе минимальной дистанции.
-4. Считает оценку: `вес × (0.35 + 0.65 × свободная доля) × случайность 0.8–1.2`.
-5. Штрафует: голова не видна (×0.6), камера и голова по разные стороны воды (×0.25), тот же тип, что прошлый
-   (×0.25), направление взгляда отличается от текущего меньше чем на 30° (×0.5), камера оказалась бы по другую
-   сторону линии движения (×0.35).
+1. Starts the shot and takes the wanted spot.
+2. Measures the free part of the ray. A world shot below 0.9 is dropped: it only works at its intended spot.
+3. Drops the candidate if the camera would be closer than the minimum distance.
+4. Scores it: `weight × (0.35 + 0.65 × free part) × random 0.8–1.2`.
+5. Applies penalties: head not visible (×0.6), camera and head on different sides of a water surface (×0.25), same
+   type as the last shot (×0.25), view direction less than 30° from the current one (×0.5), camera on the other
+   side of the line of movement (×0.35).
 
-Побеждает максимальная оценка. Перебор и оценка живут во внутреннем классе `Director.Selection`: он создаётся
-на один выбор и хранит всё, что нужно кандидатам общего — линию движения, текущую сторону, направление взгляда.
+The highest score wins. All of this lives in the inner class `Director.Selection`. One is made per choice and
+holds what the candidates share: the line of movement, the current side, the view direction.
 
-Если не подошёл никто (`Director.fallback`) — `POV`, которому место не нужно; если он выключен — близкий
-`SHOULDER`, а риг удержит его вне стен. Если запасной план уже показывается, он остаётся как есть, без новой склейки.
+Weight = `config weight × fit of the type for the situation × tightness factor × one-time bonus`. Fit and
+tightness factor are tables in `ShotType`. There is one bonus (×4): `FLYBY` on elytra takeoff.
 
-`POV` не имеет пригодности по ситуациям: `Director.fit` даёт ему вес только в тесном месте. Поэтому, когда
-вокруг снова просторно, он заменяется по правилу `unfit for …`.
+The 30° penalty is an editing rule: two similar shots in a row look like a glitch.
 
-Почему камера `POV` стоит перед лицом, а не в глазах: в проходе `CAMERA` Vivecraft рисует модель игрока целиком,
-с головой. Камера внутри головы видела бы её изнутри.
+The line of movement is the direction of the player's velocity, or of the body while standing. The side of the
+camera is the sign of its sideways offset from that line. A camera nearly on the line, in front or behind, has no
+side and gets no penalty. Circling shots are exempt. This is the 180-degree rule: while the camera stays on one
+side, the player moves the same way across the screen.
 
-Вес = `вес из конфига × пригодность типа для ситуации × множитель тесноты × разовый бонус`. Пригодность и множитель
-тесноты заданы таблицей в `ShotType`. Бонус (×4) сейчас один: `FLYBY` при взлёте на элитрах.
+If nobody fits (`Director.fallback`), `POV` is used, which needs no room. If it is disabled, a close `SHOULDER` is
+used and the rig keeps it out of walls. If the fallback is already showing it stays, without a new cut.
 
-Штраф за угол меньше 30° — правило монтажа: два похожих кадра подряд выглядят как сбой.
+`POV` has no fit per situation: `Director.fit` gives it weight only in tight places. When there is room again, it
+is replaced by `unfit for …`.
 
-Линия движения — направление скорости игрока, а если он стоит, направление тела. Сторона камеры — знак её бокового
-смещения от этой линии; камера почти на самой линии (спереди или сзади) стороны не имеет и штрафа не получает.
-Облёты от этого правила освобождены. Это «правило 180 градусов»: пока камера по одну сторону, игрок на экране
-движется в одну и ту же сторону.
+The `POV` camera stands in front of the face and not in the eyes because Vivecraft draws the whole player model,
+head included, in the `CAMERA` pass. A camera inside the head would see it from inside.
 
-Запрошенный план (`Director.force`) идёт тем же путём, но кандидатами становятся только две стороны этого типа,
-без учёта ситуации и флага `enabled`. Если места нет ни с одной стороны, план всё равно ставится, а из стен его
-выводит риг.
+A shot asked for (`Director.force`) goes the same way, but the candidates are only the two sides of that type,
+whatever the situation and the `enabled` flag. With no room on either side the shot is still set, and the rig gets
+it out of the walls.
 
-Склейка или пролёт при `transition: "auto"`: пролёт с шансом `blendChance`, если оба плана не мировые и камере
-нужно облететь меньше 130° вокруг игрока.
+Cut or fly-over with `transition: "auto"`: a fly-over with the chance `blendChance`, if neither shot is a world
+shot and the camera has to go less than 130° around the player.
 
-## CameraController: связь с Vivecraft
+## CameraController: the link to Vivecraft
 
-### Режимы
+### Modes
 
-- `OFF` — мод камеру не трогает.
-- `DIRECTOR` — планы выбирает `Director`.
-- `FOLLOW` — один активный свой ракурс, без смены.
-- `PHYSICS` — камера в руке или лежит там, куда упала. `Director`, `Rig` и `Shot` в нём не участвуют.
+- `OFF`: the mod leaves the camera alone.
+- `DIRECTOR`: `Director` picks the shots.
+- `FOLLOW`: one active own angle, no changes.
+- `PHYSICS`: the camera is in a hand or lies where it fell. `Director`, `Rig` and `Shot` take no part.
 
-### Режим PHYSICS
+### Taking and restoring settings
 
-Состояния и переходы:
+While the camera works (`engaged`) the mod keeps three things changed in Vivecraft: camera visibility, the camera
+picture in the game window and the camera FOV. `engage` remembers the old values, `release` puts them back.
 
-| Состояние | Признак | Кто двигает камеру |
+`release` is called:
+
+- on switching to `OFF`;
+- from `tick`, when VR stopped or the player left the world;
+- when the game closes (`CLIENT_STOPPING`).
+
+### Hot switch and losing VR
+
+Vivecraft can turn VR off at any time: headset off (Hotswitching), VR disabled by hand, a render error.
+`VRState.VR_RUNNING` goes false, `VRPlayer.preRender` is no longer called, and the tracker just stops getting
+frames, without notice. When VR is turned off fully, `dh.vr`, `dh.vrPlayer` and `dh.vrRenderer` become null.
+
+| Situation | What the mod does |
+|---|---|
+| VR is gone while the camera was on | `tick` (every client tick, also without VR) restores Vivecraft's settings and resets the rig. The mode is kept |
+| VR is back | the tracker gets frames again, takes the settings again, the first shot is a cut |
+| More than 0.5 s between frames | VR was paused: player data and rig are reset |
+| Mode switch pressed without VR | the camera turns off instead of going to the next mode |
+| Pause menu without VR while the camera is on | the mod's buttons are shown, so the camera can be turned off |
+| Any access to `vrPlayer` | only through `isVRRunning()`, which checks it for null |
+
+### Crash guard
+
+`activeProcess` runs right before the frame is rendered for the headset. An exception there would throw the player
+out of VR. So the body is in a `try`: the error is logged, the camera turns off, the player gets a message.
+
+### Commands
+
+`VrcamCommand` is registered with Fabric's client command API and calls the same `CameraController` methods as keys
+and buttons. It never reaches the server. Vivecraft sends its quick commands through
+`ClientPacketListener.sendCommand`, which Fabric intercepts, so `/vrcam` works from there as well.
+
+The settings screen is opened on the next tick, not at once: the chat is still closing when the command runs.
+
+## Camera in a hand
+
+Applies to every mode.
+
+- **Held.** While `CameraTracker.isMoving()` the mod does not place the camera and remembers that it was held.
+- **Stabilization** (`HandStabilizer`). The pose `CameraTracker` computed, the raw pose of the hand, goes through a
+  filter and is written back. The filter lag is `0.3 s × handStabilize`, divided by `1 + how far behind / soft
+  threshold` (5 cm and 4°): small twitches are swallowed, a large move is caught up with fast. This does not add
+  up over frames, because `CameraTracker` computes the pose from the hand again every frame and the mod's tracker
+  runs after it. `HandThrow` gets the raw position, or a throw would lose speed.
+- **Let go.** On the first frame after, `placedByHand` turns the camera position into an orbit around the player,
+  writes it into the active own angle and saves the config. In `PHYSICS` the camera is dropped instead.
+- **Throw.** While held, `HandThrow.sample` records the position over the last 0.12 s. On release it takes the
+  hand speed minus the player speed. Below 2.5 blocks/s it is no throw. Otherwise the range is
+  `0.3 × speed² × throwPower`, at most 24 blocks. The landing spot is clipped by blocks and written into the own
+  angle; the rig starts from the hand (`adopt`) and flies there (`blend`).
+- **Throwing the plain Vivecraft camera.** While the mod is off, `idleProcess`, which runs every frame for an
+  inactive tracker too, watches the camera the same way and moves it to the landing spot with a spring over 0.3 s.
+- **Bring camera to me** (`summon`). A following camera backs away when approached. `summon` puts it in front of
+  the face and parks it for 20 s: the mod does not move it until it is taken or the time is up.
+
+### Pulling
+
+`CameraPull` is a `HeldInteractModule` with priority 760, right after Vivecraft's camera grab at 750.
+
+- `isActive`: the camera can be pulled (`canPull`), the hand is 1.5 to 64 blocks from it, the hand points at it
+  within 14° and the head within 35°. Once found, both angles get 40% slack, or a hand at the edge would buzz over
+  and over. Vivecraft gives the short buzz itself when a module becomes active.
+- `canPull`: in `PHYSICS` the camera has to be dropped. In `FOLLOW` and `DIRECTOR` it needs `pullAllModes`, a ready
+  rig and a camera that is not held.
+- `onHoldTick` sends a pulse every tick, rising in frequency and amplitude. After `pullSeconds` it calls
+  `startPull`.
+- `CameraController.flyToHand` moves the camera with a `SmoothVec` (0.12 s), past the `Rig`. The goal is not the
+  hand but a point 0.16 blocks to its side along the player's view: left of a right hand, right of a left one,
+  respecting `reverseHands`. So the hand grips the side and stays out of the lens.
+- Within 0.15 blocks it calls `CameraTracker.startMoving`, which keeps that offset. From here it is a held camera.
+- `onRelease` → `endPull` → `stopMoving`. Released before arrival: in `PHYSICS` the camera falls from where it is;
+  in the other modes `rig.adopt` takes its position and `rig.blend` swings it back to the shot.
+
+While a module is active, Vivecraft gives that hand's interact button to it. So the hand cannot attack or use
+items while it points at the camera and the player looks at it. This is why `pullAllModes` exists: in `FOLLOW` and
+`DIRECTOR` the camera is often in front of the player.
+
+## PHYSICS mode
+
+| State | Sign | Who moves the camera |
 |---|---|---|
-| ждёт | `parkedTime > 0` (после включения режима или «Камеру ко мне») | никто |
-| в руке | `CameraTracker.isMoving()` | Vivecraft |
-| падает | `DroppedCamera.isDropped()` и не `isResting()` | `DroppedCamera` |
-| лежит | `isResting()` | никто; первые 1.5 с доворачивается |
-| летит в руку | `pullHand != null` | `CameraController.flyToHand` |
+| waiting | `parkedTime > 0`, after switching the mode on or Bring camera to me | nobody |
+| held | `CameraTracker.isMoving()` | Vivecraft, steadied and shaken by the mod |
+| flying to a hand | `pullHand != null` | `CameraController.flyToHand` |
+| falling | `DroppedCamera.isDropped()` and not `isResting()` | `DroppedCamera` |
+| lying | `isResting()` | nobody; it turns for the first 1.5 s |
+| carried | `isCarried()` | the entity it lies on |
 
-- **Отпускание.** `DroppedCamera.drop` получает положение, поворот и скорость руки из `HandThrow.velocity`.
-  Порога скорости, как у броска в других режимах, здесь нет: камера всегда падает.
-- **Падение** (`DroppedCamera.fall`). Гравитация 16 блоков/с², слабое сопротивление воздуха, сильное в жидкости.
-  Столкновения — один луч вдоль шага, продлённый на размер камеры. При попадании камера ставится на поверхность,
-  скорость по нормали гасится до 35% и меняет знак, вдоль поверхности — до 55%.
-- **Сущности** (`DroppedCamera.trace`). Тот же луч проверяется по хитбоксам всех сущностей, в которые можно попасть
-  (`isPickable`: существа, лодки, вагонетки; не предметы и не стрелы), кроме самого игрока. Берётся ближайшее
-  из попаданий по блоку и по сущностям. Нормаль для хитбокса — та его грань, к которой точка попадания ближе.
-  Если камеру отпустили внутри хитбокса (рука в лодке, в которой сидит игрок), она ставится на его верхнюю грань.
-- **Остановка.** Камера останавливается, когда ударилась о поверхность, смотрящую вверх, и медленнее 0.9 блока/с.
-  На блоке каждый кадр проверяется опора под ней; если опоры нет, падение продолжается.
-- **Перевозка** (`DroppedCamera.ride`). Остановившись на сущности, камера запоминает её, своё смещение от неё
-  и её поворот. Дальше каждый кадр положение считается от интерполированной позиции сущности, смещение и поворот
-  камеры доворачиваются на изменение её yaw. Если сущность исчезла, камера падает дальше.
-- **Поворот — не физика.** В полёте камера вращается вокруг случайной оси со скоростью, зависящей от скорости
-  полёта; после каждого отскока ось новая. Одновременно поворот плавно тянется к позе покоя.
-- **Поза покоя** (`restRotation`). На каждое падение выбирается случайная поза: любой курс и заметный завал набок.
-  Поза покоя — сферическая интерполяция между ней и «объектив на центр тела игрока» с долей `physicsAim`.
-  При 0.75 камера смотрит примерно на игрока, но с завалом — это и даёт «упавший» кадр.
-- **После остановки** поворот доводится до позы покоя ещё 1.5 с и замирает. Дальше камера за игроком не следит.
-- **Привязь.** Дальше 40 блоков от головы камера возвращается через `summon`. Телепорт игрока сам по себе
-  её не возвращает: отойти от лежащей камеры телепортом — нормальный способ войти в кадр.
-- **Пинок** (`DroppedCamera.getKicked`). Лежащая на блоке камера каждый кадр ищет сущность (включая игрока), чей
-  хитбокс её накрыл и которая движется по горизонтали быстрее 1.5 блока/с (скорость из `getX() - xo`). Камера
-  получает её скорость и толчок вверх и снова падает. Пнувшая сущность 0.6 с не участвует в столкновениях,
-  иначе камера сразу легла бы ей на голову.
-- **Удар** (`DroppedCamera.Impact`, `pollImpact`). Удар быстрее 1 блока/с по нормали и каждый пинок записываются
-  и забираются контроллером раз в кадр. `CameraEffects.impact` играет звук удара по блоку и спавнит частицы
-  этого блока (для сущности — `POOF`). Скрыть частицы от одного прохода рендера нельзя, поэтому направления
-  частиц отражаются в полусферу позади объектива.
-- **Рывок FOV** (`DroppedCamera.fovOffset`). Удар задаёт затухающее колебание: до 12°, 0.2 с, сначала в сторону
-  приближения. В режиме `PHYSICS` контроллер каждый кадр пишет `handCameraFov = previousFov + fovOffset()`.
-- **Стабилизация в руке** (`HandStabilizer`, все режимы). Пока `isMoving()`, поза от `CameraTracker` — сырая поза
-  руки — проходит фильтр и записывается обратно. Задержка фильтра `0.3 с × handStabilize`, делённая на
-  `1 + отставание / мягкий порог` (5 см и 4°): мелкие подёргивания гасятся, большое движение догоняется быстро.
-  `HandThrow` получает сырую позицию, иначе бросок терял бы скорость. Не накапливается по той же причине, что
-  и дрожание.
-- **Хват сбоку.** Цель полёта при притягивании — не рука, а точка в 0.16 блока от неё вбок по взгляду игрока:
-  влево для правой руки, вправо для левой (с учётом `reverseHands`). `startMoving` запоминает это смещение.
-- **Дрожание в руке** (`HandheldShake`). Пока `isMoving()`, к повороту камеры домножается малый поворот: сумма
-  синусов для дыхания, шагов (по `Subject.speed`) и урона (`hurtTime`). Не накапливается: `CameraTracker`
-  каждый кадр заново считает поворот от руки, а трекер мода идёт после него.
-- **Смерть** (`CameraController.watchDeath`). В момент смерти запоминается убийца из `getLastDamageSource()`,
-  камера в руке отпускается (`stopMoving`), лежащая получает ещё 1.5 с доворота (`settleAgain`). Пока убийца
-  жив, точка наведения позы покоя — середина между телом и убийцей (`restFocus`).
-- **Притягивание** (`CameraPull`, `HeldInteractModule`, приоритет 760 — сразу после захвата камеры Vivecraft, 750).
-  `isActive`: камера лежит (`canPull`), от руки до неё от 1.5 до 64 блоков, рука наведена точнее 14°, голова —
-  точнее 35°. Vivecraft сам даёт короткую вибрацию, когда модуль становится активным. `onHoldTick` каждый тик
-  даёт импульс с растущими частотой и амплитудой; через `pullSeconds` вызывает `startPull`. Дальше
-  `CameraController.flyToHand` ведёт камеру к руке через `SmoothVec` (0.12 с) и на расстоянии 0.15 вызывает
-  `CameraTracker.startMoving` — с этого места это обычная камера в руке. `onRelease` → `endPull` → `stopMoving`.
-  В `FOLLOW` и `DIRECTOR` (`canPull`: `pullAllModes`, `rig.ready()`, камера не в руке) полёт идёт так же, мимо
-  `Rig`; после прилёта отпускание попадает в обычный `placedByHand`. Отпускание до прилёта: `rig.adopt` с места,
-  где камера сейчас, и `rig.blend` — она плавно возвращается к плану. В этих режимах камера часто висит перед
-  игроком, жест может сработать случайно, поэтому `pullAllModes` выключается.
-- **Метка.** Модель камеры Vivecraft не скрывается, красная точка не рисуется; значок камеры работает.
+- **Letting go.** `DroppedCamera.drop` gets position, rotation and the hand velocity from `HandThrow.velocity`.
+  There is no speed threshold as for throws in the other modes: the camera always falls.
+- **Falling** (`fall`). Gravity 16 blocks/s², little drag in air, a lot in fluids. Collision is one ray along the
+  step, extended by the camera size. On a hit the camera is put on the surface; speed along the normal drops to
+  35% and flips, along the surface to 55%.
+- **Entities** (`trace`). The same ray is tested against the hitboxes of all entities that can be hit
+  (`isPickable`: mobs, boats, minecarts; not items or arrows), except the player. The nearest hit of block and
+  entities wins. The normal of a hitbox is the face the hit point is closest to. A camera let go of inside a
+  hitbox, like a hand in the boat the player sits in, is put on top of it.
+- **Coming to rest.** The camera stops when it hit a surface facing up and is slower than 0.9 blocks/s. On a block
+  the support below is checked every frame; without it the camera falls on.
+- **Riding** (`ride`). At rest on an entity the camera remembers it, its offset from it and its yaw. From then on
+  the position follows the entity's interpolated position, and offset and rotation turn with its yaw. If the
+  entity is gone, the camera falls on.
+- **Kicks** (`getKicked`). A camera lying on a block looks every frame for an entity, the player included, whose
+  hitbox covers it and that moves faster than 1.5 blocks/s horizontally (speed from `getX() - xo`). It takes that
+  speed plus a push upwards and falls again. For 0.6 s it does not collide with what kicked it, or it would land
+  on its head.
+- **Rotation is not physics.** In the air the camera spins around a random axis, faster the faster it flies; every
+  bounce picks a new axis. At the same time the rotation is pulled towards the rest pose.
+- **Rest pose** (`restRotation`). Each drop picks a random pose: any heading and a clear tilt. The rest pose is a
+  slerp between that and "lens at the focus" by `physicsAim`. At 0.75 the camera looks roughly at the player, but
+  tilted. That is what makes the shot look dropped.
+- **After stopping** the rotation goes to the rest pose for 1.5 s more and then freezes. The camera does not
+  follow the player after that.
+- **Death** (`CameraController.watchDeath`). At the moment of death the killer is taken from
+  `getLastDamageSource()`, a held camera is let go of (`stopMoving`), a lying one gets 1.5 s more of turning
+  (`settleAgain`). While the killer lives, the focus of the rest pose is the middle between body and killer
+  (`restFocus`).
+- **Shake** (`HandheldShake`). While held, the rotation is multiplied by a small one: sines for breath, steps (by
+  `Subject.speed`) and damage (`hurtTime`). It does not add up, for the same reason as the stabilization.
+- **Impacts** (`DroppedCamera.Impact`, `pollImpact`). A hit faster than 1 block/s along the normal, and every
+  kick, is recorded and picked up by the controller once per frame. `CameraEffects.impact` plays the hit sound of
+  the block and spawns its particles, `POOF` for an entity. Particles cannot be hidden from one render pass, so
+  their directions are mirrored into the half-space behind the lens.
+- **FOV jolt** (`fovOffset`). An impact starts a damped swing: up to 12°, 0.2 s, zooming in first. In `PHYSICS`
+  the controller writes `handCameraFov = previousFov + fovOffset()` every frame.
+- **Leash.** Further than 40 blocks from the head the camera comes back through `summon`. A teleport alone does
+  not bring it back: teleporting away from a lying camera is a normal way to step into the picture.
+- **Marker.** The Vivecraft camera model stays visible and the red dot is not drawn. The icon works.
 
-### Захват и возврат настроек
+## Marker and camera icon
 
-Пока камера работает (`engaged`), мод держит у Vivecraft изменёнными три вещи: видимость камеры, вывод камеры
-в окно игры и угол обзора камеры. `engage` запоминает прежние значения, `release` возвращает.
+Two mixins:
 
-`release` вызывается:
+- `VRWidgetHelperMixin` in `VRWidgetHelper.extractVRHandheldCameraWidget` hides the Vivecraft camera model.
+- `LevelExtractorMixin` at the head of vanilla `LevelExtractor.extractGizmos` calls `drawHeadsetAids`, only in the
+  eye passes (`LEFT`, `RIGHT`). That draws the marker (dot and label) and the camera icon with the distance through
+  `Gizmos`. They are not drawn in the `CAMERA` pass, so they are not in the recording.
 
-- при переходе в `OFF`;
-- из `tick`, когда VR перестал работать или игрок вышел из мира;
-- при закрытии игры (`CLIENT_STOPPING`).
+**Why `extractGizmos`.** The game takes the collected gizmos once per pass, in `extractGizmos`. Whatever is added
+later in the same pass is drawn in the next one. Vivecraft collects its own state, and calls
+`extractVRHandheldCameraWidget`, at the very end of `GameRenderer.extract`, after that point. The marker used to be
+added from there. What was added in the left eye pass was drawn in the right eye, and what was added in the right
+eye pass was drawn in the camera pass after it, so in the recording. In the headset the marker showed in one eye.
+Vivecraft's own debug rendering is added at the same place and only looks right with two passes because the next
+pass after the right eye is the left eye of the next frame.
 
-### Hot switch и пропажа VR
+**The icon is a font glyph.** `Gizmos` can draw lines, points and text in the default font, no textures. So the
+icon is added to the default font as one glyph from the private use area (`U+E7C0`):
+`assets/minecraft/font/default.json` with one bitmap provider, the picture in
+`assets/vrcamera/textures/font/camera.png`. Minecraft merges font definitions of all resource packs, so the file
+adds a glyph and replaces nothing.
 
-Vivecraft может выключить VR в любой момент: шлем снят (настройка Hotswitching), VR отключён вручную, ошибка
-рендера. При этом `VRState.VR_RUNNING` становится ложным, `VRPlayer.preRender` перестаёт вызываться, и трекер
-мода просто больше не получает кадров — без уведомления. При полном отключении VR поля `dh.vr`, `dh.vrPlayer`,
-`dh.vrRenderer` обнуляются.
+**Where it is drawn** (`drawIndicator`). The vector from headset to camera is split into right, up and forward of
+the head.
 
-Что делает мод:
+- Camera within 35° of the view direction: the icon goes above the camera, in world space.
+- Otherwise: 0.6 blocks in front of the face, 30° off the view center towards the camera. 30° is less than 35°, so
+  when the camera leaves the view the icon does not jump. It slides to the edge and stays there.
 
-| Ситуация | Поведение |
+**Size.** Text of scale 1 in `Gizmos` is half a block tall. The scale of icon and label is multiplied by the
+distance from the head to where they stand, so they look the same size to the eye.
+
+Both texts are drawn on top of everything (`setAlwaysOnTop`), or a wall between player and camera would hide the
+icon. They are drawn again for each pass from the current head pose, so an icon stuck to the edge does not lag.
+
+The mixin has `require = 0`: if the method is renamed, only marker and icon are lost and the game still starts.
+
+## Building for several Minecraft versions
+
+- One source tree for all versions. The Gradle property `mc` picks the version: the default is in
+  `gradle.properties`, on the command line it is `-Pmc=26.3`.
+- `build.gradle` reads `versions/<mc>.properties`: versions of Minecraft, Fabric API, Vivecraft, Cloth Config and
+  Mod Menu.
+- The Minecraft version goes into the jar name and into the `minecraft` dependency in `fabric.mod.json`.
+
+Differences between 26.2 and 26.3 so far:
+
+| Difference | Solution |
 |---|---|
-| VR пропал, камера была включена | `tick` (каждый клиентский тик, работает и без VR) возвращает настройки Vivecraft и сбрасывает риг. Режим сохраняется |
-| VR вернулся | трекер снова получает кадры, заново захватывает настройки, план выбирается с нуля склейкой |
-| Между кадрами прошло больше 0.5 с | считается, что VR стоял на паузе: данные об игроке и риг сбрасываются |
-| Нажато переключение режима без VR | камера выключается, а не пытается перейти в следующий режим |
-| Меню паузы без VR при включённой камере | кнопки мода показываются, чтобы камеру можно было выключить |
-| Любое обращение к `vrPlayer` | только через `isVRRunning()`, который проверяет его на `null` |
+| Key codes differ, `org.lwjgl.glfw` is not available in 26.3 | codes come from the game's `InputConstants` |
+| The field `LivingEntity.swinging` became a method in 26.3 | hits come from Fabric's `AttackEntityCallback` |
+| `Quaternionf.dot` takes a `Quaternionf` in 26.2 and a `Quaternionfc` in 26.3 | the dot product is written out |
 
-### Команды
+The rule: use no API that is missing in one of the supported versions. The check is a build for each version.
 
-`VrcamCommand` регистрируется через клиентский API команд Fabric и вызывает те же методы `CameraController`,
-что клавиши и кнопки. Команда не уходит на сервер. Vivecraft отправляет свои быстрые команды через
-`ClientPacketListener.sendCommand`, который Fabric перехватывает, поэтому `/vrcam` работает и из них.
+## Config
 
-Экран настроек команда открывает не сразу, а на следующем тике: в момент выполнения ещё закрывается чат.
+- One `CameraConfig` object, written by Gson to `config/vrcamera.json`.
+- Loaded at game start and again when the camera is switched on from `OFF`. That picks up edits to the file.
+- `fillDefaults` adds missing shots and fields, so old files survive updates.
+- The settings screen changes fields of **the same object** that `Director` and `Rig` read. Changes apply at once,
+  without restarting the camera.
+- Own angles are the list `presets` and the index `activePreset`. The old field `custom` is moved into the list on
+  load.
+- `version` and `CameraConfig.migrate`. When a default turns out bad and is changed, players already have the old
+  one in their file. `migrate` moves only values that equal the old default exactly, so the player never touched
+  them. Files without `version` count as version 1.
 
-### Защита от падения
+## Optional dependencies
 
-`activeProcess` выполняется прямо перед отрисовкой кадра для шлема. Исключение здесь выкинуло бы игрока из VR,
-поэтому тело обёрнуто в `try`: при ошибке она пишется в лог, камера выключается, игрок видит сообщение.
+- **Cloth Config.** `ConfigScreen` refers to its classes, so `ConfigScreen` is only touched after
+  `ConfigScreen.isAvailable()`.
+- **Mod Menu.** `ModMenuIntegration` is only loaded by Mod Menu itself, through the `modmenu` entry point. In the
+  dev environment Mod Menu is `compileOnly`.
 
-### Камера в руке
+## Adding a shot
 
-- `CameraTracker.isMoving()` истинно — мод ничего не пишет и запоминает, что камеру держали.
-- На первом кадре после отпускания `placedByHand` переводит положение камеры в орбиту относительно игрока,
-  записывает её в активный свой ракурс и сохраняет конфиг.
-- **Бросок.** Пока камера в руке, `HandThrow.sample` каждый кадр запоминает её положение за последние 0.12 с.
-  При отпускании `release` считает скорость руки за вычетом скорости игрока. Ниже 2.5 блока/с это не бросок.
-  Иначе дальность равна `0.3 × скорость² × throwPower`, но не больше 24 блоков. Точка приземления обрезается
-  по блокам, записывается в свой ракурс, а риг начинает из руки (`adopt`) и долетает пролётом (`blend`).
-- **Бросок обычной камеры Vivecraft.** Когда мод выключен, `idleProcess` (вызывается каждый кадр и для неактивного
-  трекера) так же следит за камерой и после броска сам ведёт её к точке приземления пружиной за 0.3 с.
-- **«Камеру ко мне»** (`summon`). Следящую камеру нельзя взять просто так: она отступает, когда к ней подходишь.
-  Поэтому `summon` ставит её перед лицом и «паркует» на 20 с — мод её не двигает, пока игрок не возьмёт её
-  или не истечёт время.
+1. Add a value to `ShotType`: defaults, tightness factor, minimum distance and eight weights, one per situation in
+   the order of `Context`. All zeros means the shot is never picked on its own, only by an event.
+2. For special behavior add a branch in `Shot.update`, and in `wantedAzimuth`, `finished` or `position` if needed.
+3. Add `vrcamera.shot.<name>` and `vrcamera.shot.<name>.tooltip` to all language files.
 
-### Метка и значок камеры
+Config and settings screen pick the shot up on their own: `fillDefaults` creates the entry in `shots`, the screen
+is built by going through `ShotType`.
 
-Два миксина:
+## Adding an event
 
-- `VRWidgetHelperMixin` в `VRWidgetHelper.extractVRHandheldCameraWidget` скрывает модель камеры Vivecraft.
-- `LevelExtractorMixin` в начало ванильного `LevelExtractor.extractGizmos` вызывает `drawHeadsetAids`, только
-  в проходах глаз (`LEFT`, `RIGHT`). Тот через `Gizmos` рисует метку (точку и подпись) и значок камеры
-  с расстоянием. В проходе `CAMERA` их нет, поэтому их нет и в записи.
+1. A value in `Director.Event` with its `ShotType`.
+2. A condition in `Director.detectEvent`.
 
-**Почему именно в `extractGizmos`.** Игра за проход один раз забирает накопленные примитивы — в `extractGizmos`.
-Всё, что добавлено в том же проходе позже, будет нарисовано только в следующем. Vivecraft собирает своё состояние
-(и вызывает `extractVRHandheldCameraWidget`) в самом конце `GameRenderer.extract`, уже после этого момента. Раньше
-метка добавлялась оттуда, и получалось так: добавленное в проходе левого глаза рисовалось в правом, а добавленное
-в проходе правого глаза — в следующем за ним проходе камеры, то есть в записи. В шлеме метка была видна одним
-глазом. Собственная отладка Vivecraft добавляется там же и при двух проходах выглядит правильно только потому, что
-«следующий проход» для правого глаза — левый глаз следующего кадра.
+## Adding a setting
 
-**Значок — это символ шрифта.** `Gizmos` умеет рисовать только линии, точки и текст шрифтом по умолчанию,
-текстур у него нет. Поэтому значок добавлен в шрифт по умолчанию как один символ из области частного
-использования (`U+E7C0`): файл `assets/minecraft/font/default.json` с одним растровым провайдером, картинка
-в `assets/vrcamera/textures/font/camera.png`. Minecraft объединяет описания шрифтов из всех наборов ресурсов,
-так что файл добавляет символ и ничего не заменяет. Проверено в dev-клиенте: ширина символа 9, ширина обычного
-текста прежняя.
+1. A field with a default in `CameraConfig`.
+2. An entry in `ConfigScreen`.
+3. `vrcamera.option.<field>` and `vrcamera.option.<field>.tooltip` in all eight language files.
+4. A row in both READMEs.
 
-**Где рисуется** (`drawIndicator`). Вектор от шлема к камере раскладывается на «вправо», «вверх» и «вперёд»
-в системе координат головы.
+## Testing
 
-- Камера ближе 35° к направлению взгляда: значок ставится над камерой, в мировых координатах.
-- Иначе: значок ставится в 0.6 блока перед лицом, смещённый на 30° от центра взгляда в сторону камеры. 30° меньше
-  35°, поэтому при уходе камеры из поля зрения значок не прыгает, а доезжает до края и остаётся там.
+There are no automated tests. A change is checked by building for every supported version and then by hand in a
+headset.
 
-**Размер.** Текст масштаба 1 в `Gizmos` высотой полблока. Масштаб значка и подписи умножается на расстояние
-от головы до точки, где они стоят, поэтому для глаза размер постоянный.
+## Known weak spots
 
-Оба текста рисуются поверх всего (`setAlwaysOnTop`), иначе стена между игроком и камерой скрыла бы значок.
-Рисуется заново для каждого прохода по текущей позе головы, поэтому прилипший к краю значок не отстаёт.
-
-Миксин объявлен с `require = 0`: если Vivecraft переименует метод, пропадут только метка и значок, игра запустится.
-
-## Сборка под несколько версий Minecraft
-
-- Исходники одни на все версии. Версия выбирается свойством Gradle `mc` (по умолчанию из `gradle.properties`,
-  с командной строки `-Pmc=26.3`).
-- `build.gradle` читает `versions/<mc>.properties`: версии Minecraft, Fabric API, Vivecraft, Cloth Config, Mod Menu.
-- Версия Minecraft попадает в имя jar и в зависимость `minecraft` в `fabric.mod.json`.
-
-Что различалось между 26.2 и 26.3 и как это обойдено:
-
-| Различие | Решение |
-|---|---|
-| Коды клавиш другие, `org.lwjgl.glfw` в 26.3 недоступен | коды берутся из `InputConstants` игры, а не из GLFW |
-| Поле `LivingEntity.swinging` в 26.3 заменено методом | удар определяется событием Fabric `AttackEntityCallback` |
-
-Правило на будущее: не использовать API, которого нет хотя бы в одной из поддерживаемых версий. Проверка —
-сборка под каждую версию.
-
-## Конфиг
-
-- Один объект `CameraConfig`, сериализуется Gson в `config/vrcamera.json`.
-- Загружается при старте игры и заново при включении камеры из `OFF` — так подхватываются правки файла.
-- `fillDefaults` дописывает недостающие планы и поля, поэтому старые файлы переживают обновления.
-- Экран настроек меняет поля **того же объекта**, который читают `Director` и `Rig`, поэтому изменения действуют
-  сразу, без перезапуска камеры.
-- Свои ракурсы — список `presets` и индекс `activePreset`. Старое поле `custom` переносится в список при загрузке.
-- Поле `version` и `CameraConfig.migrate`. Когда значение по умолчанию оказалось неудачным и меняется, у игрока
-  в файле уже записано старое. `migrate` переносит на новое только те значения, которые в точности равны старому
-  умолчанию, то есть игрок их не трогал. Файлы без поля `version` считаются версией 1.
-
-## Необязательные зависимости
-
-- **Cloth Config.** `ConfigScreen` ссылается на его классы, поэтому к `ConfigScreen` обращаются только после
-  проверки `ConfigScreen.isAvailable()`.
-- **Mod Menu.** `ModMenuIntegration` загружается только самим Mod Menu через точку входа `modmenu`. В dev-окружении
-  Mod Menu подключён как `compileOnly`.
-
-## Как добавить новый план
-
-1. Добавить значение в `ShotType`: настройки по умолчанию, множитель тесноты, минимальная дистанция и восемь весов
-   по ситуациям в порядке перечисления `Context`. Все нули — план не выбирается сам, только событием.
-2. Если нужно особое поведение — ветка в `Shot.update`, при необходимости в `wantedAzimuth`, `finished`, `position`.
-3. Добавить в файлы локализации `vrcamera.shot.<имя>` и `vrcamera.shot.<имя>.tooltip`.
-
-Конфиг и экран настроек подхватят план сами: запись в `shots` создаст `fillDefaults`, раздел на экране строится
-перебором `ShotType`.
-
-## Как добавить событие
-
-1. Значение в `Director.Event` со ссылкой на `ShotType`.
-2. Условие в `Director.detectEvent`.
-
-## Что проверено и что нет
-
-| Проверено | Как |
-|---|---|
-| Сборка | `./gradlew build` и `./gradlew build -Pmc=26.3` |
-| Загрузка с Vivecraft и Cloth Config | запуск dev-клиента 26.2 и 26.3, лог без ошибок мода |
-| Экран настроек строится | временный код в dev-клиенте, удалён |
-| Математика поворота, орбиты, пружин | отдельный числовой тест вне репозитория |
-
-Не проверено: всё поведение в шлеме. Планы, смены, коллизии, бой, события, метка, постановка рукой, hot switch
-написаны по чтению исходников Vivecraft и ни разу не запускались в VR. Автотестов в репозитории нет.
-
-## Известные слабые места
-
-- **Внутренние классы Vivecraft.** Перечислены в начале документа; обновление Vivecraft может сломать сборку или
-  поведение.
-- **Задержка позы на кадр.** Убирается миксином в начало `VRPlayer.preRender`.
-- **Настройки Vivecraft на диске.** Если Vivecraft сохранит свой конфиг, пока камера работает, а игра упадёт,
-  в файле останутся FOV и вывод на зеркало, выставленные модом.
-- **Компенсация отставания якоря.** При резкой остановке камера может слегка проскочить вперёд.
-- **Падение в VR.** Событие падения опирается на `fallDistance` и вертикальную скорость сущности игрока; как они
-  ведут себя при перемещении в VR, не проверено.
-- **Тело после смерти.** Модель погибшего игрока исчезает примерно через секунду, а план смерти держится
-  до возрождения. С убийцей в кадре это выглядит осмысленно, без него камера кружит над пустым местом.
-- **Размер метки.** Единицы размера точки `Gizmos.point` не выяснены, подбирается настройкой.
+- **Internal Vivecraft classes.** Listed at the top. A Vivecraft update can break the build or the behavior.
+- **Pose one frame late.** A mixin at the head of `VRPlayer.preRender` could fix it.
+- **Vivecraft settings on disk.** If Vivecraft saves its config while the camera works and the game crashes, the
+  FOV and mirror setting of the mod stay in its file.
+- **Anchor lag compensation.** On a sudden stop the camera can overshoot a little.
+- **Physics collisions.** One ray per step. A fast camera can clip a corner.
+- **Killer on the client.** Taken from the last damage source the server sent. If the server sends none, the
+  camera only looks at the body.
+- **Body after death.** The model of a dead player disappears after about a second, the death shot runs until
+  respawn. With a killer in frame that works; without one the camera circles an empty spot.
+- **Marker size.** The unit of the point size in `Gizmos.point` is unknown, the setting is tuned by eye.
