@@ -265,7 +265,7 @@ sheet like any other: pick it up, pin it.
 - Only your own game opens the address, and the site sees your IP address, like in a browser. Other players never
   get the address, only the small picture the server made of it.
 
-On a server such a sheet is marked as custom. Other players see a black sheet labelled "Custom picture, hidden" in
+On a server such a sheet is marked as custom. Other players see a black sheet labelled "Picture hidden by your settings", with the setting to turn on below it, in
 its place, and their game does not download the picture, unless they turned `showCustomPhotos` on. It is off by
 default: custom pictures are not photos of the game and can show anything.
 
@@ -414,6 +414,7 @@ and by `/vrcam reload`.
 | `shareCamera` | `true` | let players around see your camera, on servers that share that |
 | `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
 | `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |
+| `photoBrightness` | `0.3` | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed |
 | `debugOverlay` | `false` | debug overlay on the HUD |
 
 ### Motion

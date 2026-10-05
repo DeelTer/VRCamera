@@ -186,10 +186,13 @@
 	"vrcamera.option.shareCamera.tooltip": "Auf Servern mit dem Plugin VRCameraSync sehen Spieler mit der Mod im Umkreis von 32 Blöcken deine Kamera dort, wo sie ist, mit deinem Namen darüber. Aus: niemand sieht sie. Angeheftete Fotos werden so oder so geteilt.",
 	"vrcamera.option.showCustomPhotos": "Fremde Bilder aus dem Internet zeigen",
 	"vrcamera.option.showCustomPhotos.tooltip": "Spieler können mit /vrcam load Bilder aus dem Internet auf Blätter bringen. Das sind keine Fotos aus dem Spiel und können alles zeigen. Aus: an ihrer Stelle hängt ein schwarzes Blatt, das Bild wird nicht geladen. Deine eigenen siehst du immer.",
-	"vrcamera.label.custom": "Bild aus dem Internet, ausgeblendet",
+	"vrcamera.label.custom": "Bild durch deine Einstellungen ausgeblendet",
 	"vrcamera.message.load.start": "VR-Kamera: Bild wird geladen...",
 	"vrcamera.message.load.busy": "VR-Kamera: Moment, ein Bild lädt noch",
 	"vrcamera.message.load.failed": "VR-Kamera: Bild konnte nicht geladen werden: %s",
 	"vrcamera.message.load.done": "VR-Kamera: Bild geladen, es ist vor dir",
-	"vrcamera.message.pin.not_allowed": "VR-Kamera: dieser Server erlaubt dir das nicht"
+	"vrcamera.message.pin.not_allowed": "VR-Kamera: dieser Server erlaubt dir das nicht",
+	"vrcamera.option.photoBrightness": "Foto: Helligkeit des Blatts",
+	"vrcamera.option.photoBrightness.tooltip": "Wie stark das Bild auf einem Blatt aufgehellt wird. Ein Blatt wird von der Welt beleuchtet und wirkt dunkler als der Bildschirm. 0 lässt es wie aufgenommen. Gilt für neue Fotos, die gespeicherte Datei bleibt unverändert.",
+	"vrcamera.label.custom.hint": "VR-Kamera-Einstellungen → Fremde Bilder aus dem Internet zeigen"
 }

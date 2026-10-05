@@ -105,6 +105,10 @@ public class CameraConfig {
 	 */
 	public double photoHoldSeconds = 1.0;
 	/**
+	 * how much the picture on a sheet is lifted, 0 = as it was taken, 1 = most. Only the sheet, not the file
+	 */
+	public double photoBrightness = 0.3;
+	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory
 	 */
 	public boolean menuShotChat = true;

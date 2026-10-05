@@ -30,6 +30,7 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.CameraEffects;
 import ru.deelter.vrcamera.client.sync.PhotoCodec;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
@@ -60,16 +61,8 @@ public final class PhotoAlbum {
 	private static final int MAX_LOOSE_WITHOUT_VR = 3;
 	// a sheet in the dark still shows its picture
 	private static final int MIN_LIGHT = 7;
-	// A print is lit by the world around it and never as bright as the screen it was taken from. The picture on
-	// the sheet is lifted to make up for that, the file of the photo stays as it was taken
-	private static final double SHEET_GAMMA = 0.8;
-	private static final int[] BRIGHTER = new int[256];
-
-	static {
-		for (int i = 0; i < 256; i++) {
-			BRIGHTER[i] = (int) Math.round(255.0 * Math.pow(i / 255.0, SHEET_GAMMA));
-		}
-	}
+	// the gamma of the picture on a sheet at the highest photoBrightness
+	private static final double BRIGHTEST_GAMMA = 0.5;
 
 	private static final double DRAW_DISTANCE = 64.0;
 	private static final double LABEL_DISTANCE = 5.0;
@@ -176,14 +169,21 @@ public final class PhotoAlbum {
 		int width = Math.min(SHEET_PIXELS, image.getWidth());
 		int height = Math.max(1, Math.round(width * image.getHeight() / (float) image.getWidth()));
 		NativeImage small = new NativeImage(width, height, false);
+		// A print is lit by the world around it and never as bright as the screen it was taken from. The picture on
+		// the sheet is lifted to make up for that, the file of the photo stays as it was taken
+		double brightness = Math.clamp(CameraController.INSTANCE.config().photoBrightness, 0.0, 1.0);
+		int[] brighter = new int[256];
+		for (int i = 0; i < 256; i++) {
+			brighter[i] = (int) Math.round(255.0 * Math.pow(i / 255.0, 1.0 - (1.0 - BRIGHTEST_GAMMA) * brightness));
+		}
 		try {
 			image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), small);
 			// what was filmed through glass or water is not see-through on paper
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					int pixel = small.getPixel(x, y);
-					small.setPixel(x, y, 0xFF000000 | BRIGHTER[pixel >> 16 & 0xFF] << 16 |
-							BRIGHTER[pixel >> 8 & 0xFF] << 8 | BRIGHTER[pixel & 0xFF]);
+					small.setPixel(x, y, 0xFF000000 | brighter[pixel >> 16 & 0xFF] << 16 |
+							brighter[pixel >> 8 & 0xFF] << 8 | brighter[pixel & 0xFF]);
 				}
 			}
 		} catch (RuntimeException e) {
@@ -670,8 +670,13 @@ public final class PhotoAlbum {
 			Vec3 eyes = player.getEyePosition();
 			for (PhotoSheet sheet : this.sheets) {
 				if (sheet.placeholder && sheet.center().distanceToSqr(eyes) < LABEL_DISTANCE * LABEL_DISTANCE) {
-					Gizmos.billboardText(Component.translatable("vrcamera.label.custom").getString(), sheet.center(),
-							TextGizmo.Style.forColorAndCentered(0xFFFFFFFF).withScale(0.03F));
+					// what it is, and below that where to turn it on
+					Gizmos.billboardText(Component.translatable("vrcamera.label.custom").getString(),
+							sheet.center().add(0, 0.02, 0),
+							TextGizmo.Style.forColorAndCentered(0xFFFFFFFF).withScale(0.045F));
+					Gizmos.billboardText(Component.translatable("vrcamera.label.custom.hint").getString(),
+							sheet.center().add(0, -0.02, 0),
+							TextGizmo.Style.forColorAndCentered(0xFFC0C0C0).withScale(0.03F));
 				}
 			}
 		} catch (IllegalStateException e) {

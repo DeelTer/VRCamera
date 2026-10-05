@@ -186,10 +186,13 @@
 	"vrcamera.option.shareCamera.tooltip": "On servers with the VRCameraSync plugin, players with the mod within 32 blocks see your camera where it is, with your name over it. Off: nobody sees it. Photos you pin are shared either way.",
 	"vrcamera.option.showCustomPhotos": "Show custom pictures of others",
 	"vrcamera.option.showCustomPhotos.tooltip": "Players can put pictures from the internet on sheets with /vrcam load. Those are not photos of the game and can show anything. Off: a black sheet stands in for them and the picture is not downloaded. Your own are always shown.",
-	"vrcamera.label.custom": "Custom picture, hidden",
+	"vrcamera.label.custom": "Picture hidden by your settings",
 	"vrcamera.message.load.start": "VR Camera: loading the picture...",
 	"vrcamera.message.load.busy": "VR Camera: wait, a picture is still loading",
 	"vrcamera.message.load.failed": "VR Camera: could not load the picture: %s",
 	"vrcamera.message.load.done": "VR Camera: picture loaded, it is in front of you",
-	"vrcamera.message.pin.not_allowed": "VR Camera: this server does not let you do that"
+	"vrcamera.message.pin.not_allowed": "VR Camera: this server does not let you do that",
+	"vrcamera.option.photoBrightness": "Photo: sheet brightness",
+	"vrcamera.option.photoBrightness.tooltip": "How much the picture on a sheet is brightened. A sheet is lit by the world around it and looks darker than the screen. 0 leaves it as taken. Applies to new photos, the saved file is not changed.",
+	"vrcamera.label.custom.hint": "VR Camera settings → Show custom pictures of others"
 }

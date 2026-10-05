@@ -6,7 +6,7 @@
 	"description": "Cinematic follow camera and auto director for the Vivecraft handheld camera",
 	"authors": ["DeelTer"],
 	"contact": {},
-	"license": "All-Rights-Reserved",
+	"license": "GPL-3.0-only",
 	"icon": "assets/vrcamera/icon.png",
 	"environment": "client",
 	"entrypoints": {

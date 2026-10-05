@@ -186,10 +186,13 @@
 	"vrcamera.option.shareCamera.tooltip": "Sur les serveurs avec le plugin VRCameraSync, les joueurs ayant le mod à moins de 32 blocs voient votre caméra là où elle se trouve, avec votre nom au-dessus. Désactivé : personne ne la voit. Les photos épinglées sont partagées dans tous les cas.",
 	"vrcamera.option.showCustomPhotos": "Afficher les images Internet des autres",
 	"vrcamera.option.showCustomPhotos.tooltip": "Les joueurs peuvent mettre des images d'Internet sur des feuilles avec /vrcam load. Ce ne sont pas des photos du jeu et elles peuvent montrer n'importe quoi. Désactivé : une feuille noire les remplace et l'image n'est pas téléchargée. Les vôtres sont toujours affichées.",
-	"vrcamera.label.custom": "Image Internet, masquée",
+	"vrcamera.label.custom": "Image masquée par vos paramètres",
 	"vrcamera.message.load.start": "Caméra VR : chargement de l'image...",
 	"vrcamera.message.load.busy": "Caméra VR : patientez, une image est encore en chargement",
 	"vrcamera.message.load.failed": "Caméra VR : impossible de charger l'image : %s",
 	"vrcamera.message.load.done": "Caméra VR : image chargée, elle est devant vous",
-	"vrcamera.message.pin.not_allowed": "Caméra VR : ce serveur ne vous le permet pas"
+	"vrcamera.message.pin.not_allowed": "Caméra VR : ce serveur ne vous le permet pas",
+	"vrcamera.option.photoBrightness": "Photo : luminosité de la feuille",
+	"vrcamera.option.photoBrightness.tooltip": "À quel point l'image sur une feuille est éclaircie. Une feuille est éclairée par le monde et paraît plus sombre que l'écran. 0 la laisse telle quelle. S'applique aux nouvelles photos, le fichier enregistré n'est pas modifié.",
+	"vrcamera.label.custom.hint": "Paramètres Caméra VR → Afficher les images Internet des autres"
 }

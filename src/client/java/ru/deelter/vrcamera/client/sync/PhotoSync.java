@@ -40,6 +40,9 @@ public final class PhotoSync {
 	private static final int MAX_LOADED = 48;
 	// pictures asked for and not yet answered. More at once would not arrive any sooner, the server paces them
 	private static final int MAX_WAITING = 2;
+	// squared blocks a loaded sheet has to be further than a wanted one to give up its place, or two sheets at
+	// about the same distance would take turns
+	private static final double EVICT_MARGIN = 9.0;
 	private static final int WAIT_TICKS = 100;
 	private static final int SCAN_INTERVAL_TICKS = 5;
 	private static final int PACKED_CACHE = 64;
@@ -448,7 +451,22 @@ public final class PhotoSync {
 		}
 		for (Protocol.Sheet sheet : wanted) {
 			if (this.loaded.size() + this.waiting.size() >= MAX_LOADED) {
-				break;
+				// full: the nearest ones are the ones to see, a loaded one that is clearly further makes room
+				Protocol.Sheet farthest = null;
+				double farthestDistance = eyes.distanceToSqr(sheet.x(), sheet.y(), sheet.z()) + EVICT_MARGIN;
+				for (long id : this.loaded) {
+					Protocol.Sheet other = this.known.get(id);
+					double distance = other == null ? 0 : eyes.distanceToSqr(other.x(), other.y(), other.z());
+					if (distance > farthestDistance) {
+						farthest = other;
+						farthestDistance = distance;
+					}
+				}
+				if (farthest == null) {
+					break;
+				}
+				this.loaded.remove(farthest.id());
+				PhotoAlbum.INSTANCE.removeRemote(farthest.id(), false);
 			}
 			fetch(sheet.imageHash());
 		}

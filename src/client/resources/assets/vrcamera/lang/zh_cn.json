@@ -186,10 +186,13 @@
 	"vrcamera.option.shareCamera.tooltip": "在装有 VRCameraSync 插件的服务器上，32 格内装了本模组的玩家能看到你的摄像机所在位置，上方显示你的名字。关闭后没有人能看到。钉住的照片无论如何都会共享。",
 	"vrcamera.option.showCustomPhotos": "显示其他玩家的网络图片",
 	"vrcamera.option.showCustomPhotos.tooltip": "玩家可以用 /vrcam load 把网络图片放到纸张上。这些不是游戏内的照片，内容不受限制。关闭后会用黑色纸张代替，图片不会下载。你自己的始终显示。",
-	"vrcamera.label.custom": "网络图片，已隐藏",
+	"vrcamera.label.custom": "图片已被你的设置隐藏",
 	"vrcamera.message.load.start": "VR 摄像机：正在加载图片…",
 	"vrcamera.message.load.busy": "VR 摄像机：请稍候，还有图片在加载",
 	"vrcamera.message.load.failed": "VR 摄像机：无法加载图片：%s",
 	"vrcamera.message.load.done": "VR 摄像机：图片已加载，就在你面前",
-	"vrcamera.message.pin.not_allowed": "VR 摄像机：此服务器不允许你这样做"
+	"vrcamera.message.pin.not_allowed": "VR 摄像机：此服务器不允许你这样做",
+	"vrcamera.option.photoBrightness": "照片：纸张亮度",
+	"vrcamera.option.photoBrightness.tooltip": "纸张上的图片提亮多少。纸张受周围世界的光照，看起来比屏幕暗。0 为保持原样。仅对新照片生效，保存的文件不变。",
+	"vrcamera.label.custom.hint": "VR 摄像机设置 → 显示其他玩家的网络图片"
 }
