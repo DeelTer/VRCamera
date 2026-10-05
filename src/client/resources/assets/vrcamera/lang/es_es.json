@@ -138,8 +138,13 @@
 	"vrcamera.shot.pov.tooltip": "Justo delante de la cara, mirando hacia donde mira el jugador. Se usa donde no hay sitio para una cámara alrededor del jugador. La distancia indica cuánto por delante de los ojos; los ángulos no se usan.",
 	"vrcamera.shot.menu": "Menú",
 	"vrcamera.shot.menu.tooltip": "De cerca sobre el hombro hacia un inventario o cofre abierto. Solo mientras está abierto. El ángulo alrededor se mide desde el menú.",
-	"vrcamera.option.indicator": "Flecha hacia la cámara",
-	"vrcamera.option.indicator.tooltip": "Muestra en el visor una flecha hacia la cámara mientras no está a la vista. Nunca aparece en la grabación.",
+	"vrcamera.option.indicator": "Icono de cámara",
+	"vrcamera.option.indicator.tooltip": "Muestra en el visor un icono de cámara con la distancia, donde está la cámara, también a través de las paredes. Mientras la cámara no está a la vista, el icono se queda en el borde de la vista por ese lado. Nunca aparece en la grabación.",
 	"vrcamera.option.throwPower": "Fuerza de lanzamiento",
-	"vrcamera.option.throwPower.tooltip": "La cámara se puede agarrar y lanzar; un lanzamiento más rápido llega más lejos. Esto ajusta cuánto. 0 desactiva el lanzamiento."
+	"vrcamera.option.throwPower.tooltip": "La cámara se puede agarrar y lanzar; un lanzamiento más rápido llega más lejos. Esto ajusta cuánto. 0 desactiva el lanzamiento.",
+	"vrcamera.mode.physics": "Física",
+	"vrcamera.option.physicsAim": "La cámara caída mira al jugador",
+	"vrcamera.option.physicsAim.tooltip": "En el modo de física: cuánto gira su objetivo hacia el jugador una cámara caída mientras se detiene. 0 la deja como cayó, 1 hace que mire directamente al jugador.",
+	"vrcamera.option.indicatorSize": "Tamaño del icono",
+	"vrcamera.option.indicatorSize.tooltip": "Tamaño del icono de cámara y de la distancia que aparece debajo."
 }

@@ -140,7 +140,9 @@ public final class Shot {
 		this.age += dt;
 		this.stillTime = subject.speed < 0.5 ? this.stillTime + dt : Math.max(0, this.stillTime - 2.0 * dt);
 
-		double baseDistance = this.config.distance * subject.unit * this.distanceScale;
+		// first person has to keep its distance, any closer and the camera is inside the head of the player model
+		double scale = this.type == ShotType.POV ? 1.0 : this.distanceScale;
+		double baseDistance = this.config.distance * subject.unit * scale;
 		this.elevation = Math.toRadians(this.config.elevation);
 		this.distance = baseDistance;
 		this.fov = this.config.fov;

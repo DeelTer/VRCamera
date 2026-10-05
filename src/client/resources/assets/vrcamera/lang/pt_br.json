@@ -138,8 +138,13 @@
 	"vrcamera.shot.pov.tooltip": "Bem na frente do rosto, olhando para onde o jogador olha. Usada onde não há espaço para uma câmera em volta do jogador. A distância é o quanto à frente dos olhos; os ângulos não são usados.",
 	"vrcamera.shot.menu": "Menu",
 	"vrcamera.shot.menu.tooltip": "De perto, por cima do ombro, em direção a um inventário ou baú aberto. Só enquanto estiver aberto. O ângulo ao redor é medido a partir do menu.",
-	"vrcamera.option.indicator": "Seta para a câmera",
-	"vrcamera.option.indicator.tooltip": "Mostra no headset uma seta apontando para a câmera enquanto ela está fora de vista. Nunca aparece na gravação.",
+	"vrcamera.option.indicator": "Ícone da câmera",
+	"vrcamera.option.indicator.tooltip": "Mostra no headset um ícone de câmera com a distância, onde a câmera está, também através das paredes. Enquanto a câmera está fora de vista, o ícone fica na borda da visão daquele lado. Nunca aparece na gravação.",
 	"vrcamera.option.throwPower": "Força do arremesso",
-	"vrcamera.option.throwPower.tooltip": "A câmera pode ser pega e arremessada; um arremesso mais rápido vai mais longe. Isto define o quanto. 0 desativa o arremesso."
+	"vrcamera.option.throwPower.tooltip": "A câmera pode ser pega e arremessada; um arremesso mais rápido vai mais longe. Isto define o quanto. 0 desativa o arremesso.",
+	"vrcamera.mode.physics": "Física",
+	"vrcamera.option.physicsAim": "Câmera caída olha para o jogador",
+	"vrcamera.option.physicsAim.tooltip": "No modo de física: o quanto uma câmera caída vira a lente para o jogador enquanto para. 0 a deixa como caiu, 1 faz com que olhe direto para o jogador.",
+	"vrcamera.option.indicatorSize": "Tamanho do ícone",
+	"vrcamera.option.indicatorSize.tooltip": "Tamanho do ícone da câmera e da distância abaixo dele."
 }

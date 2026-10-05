@@ -314,22 +314,56 @@ public final class Director {
 	}
 
 	private void startEvent(Subject subject, Rig rig) {
-		ShotType type = this.event.shot;
-		Shot shot = new Shot(type, this.config.shot(type), randomSide());
-		shot.start(subject, this.config);
+		Shot shot = eventShot(subject);
 
 		// a fall is over before the camera could swing there
-		if (this.event != Event.FALL && this.current != null && rig.ready() && this.current.blends() &&
+		if (this.event != Event.FALL && shot.blends() && this.current != null && rig.ready() && this.current.blends() &&
 				!subject.teleported && this.config.transition != Transition.CUT) {
 			rig.blend();
 		} else {
 			rig.snap(shot, subject);
 		}
 		this.current = shot;
-		this.lastType = type;
+		this.lastType = shot.type;
 		this.shotContext = this.context;
 		this.occludedTime = -OCCLUSION_GRACE;
-		this.lastReason = "event " + this.event;
+		this.lastReason = "event " + this.event + (shot.type == this.event.shot ? "" : ", no room");
+	}
+
+	/**
+	 * @return the shot for the event that just started
+	 */
+	private Shot eventShot(Subject subject) {
+		ShotType type = this.event.shot;
+		ShotConfig shotConfig = this.config.shot(type);
+		if (this.event != Event.MENU) {
+			Shot shot = new Shot(type, shotConfig, randomSide());
+			shot.start(subject, this.config);
+			return shot;
+		}
+
+		// A menu is opened anywhere, also with the back to a wall. Take the shoulder with more room behind it
+		Shot best = null;
+		double bestRoom = -1;
+		for (int side = -1; side <= 1; side += 2) {
+			Shot shot = new Shot(type, shotConfig, side);
+			shot.start(subject, this.config);
+			Vec3 wanted = shot.desiredPosition(subject);
+			double room = wanted.distanceTo(subject.center) *
+					WorldProbe.armFraction(subject, subject.center, wanted, this.config);
+			if (room > bestRoom) {
+				bestRoom = room;
+				best = shot;
+			}
+		}
+		if (bestRoom < type.minDistance * subject.unit && this.config.shot(ShotType.POV).enabled) {
+			// no room on either side, the camera would end up inside the player. In first person the menu is
+			// right in front of the camera anyway
+			Shot shot = new Shot(ShotType.POV, this.config.shot(ShotType.POV), 1);
+			shot.start(subject, this.config);
+			return shot;
+		}
+		return best;
 	}
 
 	private void choose(Subject subject, Rig rig, boolean cut, String reason) {

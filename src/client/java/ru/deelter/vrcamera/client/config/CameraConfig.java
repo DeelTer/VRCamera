@@ -31,13 +31,22 @@ public class CameraConfig {
 	 */
 	public double markerSize = 14;
 	/**
-	 * show an arrow in the headset that points to the camera, while it is out of sight
+	 * show the camera icon and the distance to the camera in the headset
 	 */
 	public boolean indicator = true;
+	/**
+	 * size of the camera icon
+	 */
+	public double indicatorSize = 1.0;
 	/**
 	 * how far a camera flies that is thrown by hand, 0 = it can't be thrown
 	 */
 	public double throwPower = 1.0;
+	/**
+	 * How much a dropped camera turns its lens to the player while it comes to rest, in the physics mode.
+	 * 0 = it lies however it fell, 1 = it looks right at the player
+	 */
+	public double physicsAim = 0.75;
 	/**
 	 * show what the director is doing on the hud
 	 */

@@ -26,6 +26,7 @@ import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.SmoothVec;
+import ru.deelter.vrcamera.client.rig.DroppedCamera;
 import ru.deelter.vrcamera.client.rig.HandThrow;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
@@ -53,7 +54,9 @@ public final class CameraController implements Tracker {
 		/**
 		 * the camera stays where it was placed by hand, relative to the player
 		 */
-		FOLLOW;
+		FOLLOW,
+		/** the camera is carried in the hand, and falls to the ground when let go of */
+		PHYSICS;
 
 		public Component label() {
 			return Component.translatable("vrcamera.mode." + name().toLowerCase(Locale.ROOT));
@@ -61,14 +64,24 @@ public final class CameraController implements Tracker {
 	}
 
 	private static final int MARKER_COLOR = 0xFFFF2020;
-	// the arrow to the camera: how far in front of the face it floats, how far from the middle of the view, its size.
-	// In blocks, about meters for the player
-	private static final double INDICATOR_DISTANCE = 0.6;
-	private static final double INDICATOR_RING = 0.15;
-	private static final double INDICATOR_LENGTH = 0.06;
-	private static final float INDICATOR_WIDTH = 4.0F;
-	// no arrow while the camera is this close to the middle of the view
-	private static final double INDICATOR_HIDE_ANGLE = Math.toRadians(25);
+	// The camera icon of the default font, see assets/minecraft/font/default.json. From the private use area,
+	// to not collide with a real character
+	private static final String INDICATOR_ICON = "\uE7C0";
+	// the icon is left out while the camera is closer than this, in the hand or right in front of the face
+	private static final double INDICATOR_MIN_DISTANCE = 1.2;
+	// further from the middle of the view than this the camera counts as out of sight
+	private static final double INDICATOR_VIEW_ANGLE = Math.toRadians(35);
+	// where the icon goes while the camera is out of sight: this far in front of the face, and this far off the
+	// middle of the view, a bit inside of where it would leave the view
+	private static final double INDICATOR_PINNED_DISTANCE = 0.6;
+	private static final double INDICATOR_PINNED_ANGLE = Math.toRadians(30);
+	// Text scale of icon and distance per block they are away. Growing with the distance keeps them the same size
+	// for the eye. Text of scale 1 is half a block tall
+	private static final double INDICATOR_ICON_SCALE = 0.11;
+	private static final double INDICATOR_TEXT_SCALE = 0.05;
+	private static final int INDICATOR_COLOR = 0xFFFFFFFF;
+	// blocks the camera of the physics mode can be left behind, before it comes back to the player
+	private static final double PHYSICS_LEASH = 40.0;
 	// seconds a thrown camera of Vivecraft needs to get where it was thrown
 	private static final double GLIDE_TIME = 0.3;
 	// seconds a summoned camera waits to be picked up
@@ -92,6 +105,7 @@ public final class CameraController implements Tracker {
 
 	private boolean wasGrabbed;
 	private final HandThrow handThrow = new HandThrow();
+	private final DroppedCamera dropped = new DroppedCamera();
 	// for throwing the camera of Vivecraft while this mod is off: where it is flying to, null when it is not flying
 	private Vec3 glideTarget;
 	private boolean plainHeld;
@@ -120,7 +134,8 @@ public final class CameraController implements Tracker {
 	 * @return if the Vivecraft camera model should not be shown in the headset
 	 */
 	public boolean hidesModel() {
-		return this.engaged && this.config.marker != Marker.MODEL;
+		// a camera that is carried around should look like one
+		return this.engaged && this.config.marker != Marker.MODEL && this.mode != Mode.PHYSICS;
 	}
 
 	/**
@@ -129,7 +144,7 @@ public final class CameraController implements Tracker {
 	public void drawHeadsetAids(VRData vr) {
 		Vec3 camera = vr.getEye(RenderPass.CAMERA).getPosition();
 		try {
-			if (this.config.marker == Marker.DOT) {
+			if (this.config.marker == Marker.DOT && this.mode != Mode.PHYSICS) {
 				drawMarker(camera, vr.worldScale);
 			}
 			Shot shot = shot();
@@ -151,32 +166,49 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
-	 * An arrow floating in front of the face, on a ring around where the player looks, pointing to the side the
-	 * camera is on. Not shown while the camera is in view anyway.
+	 * The camera icon with the distance to the camera below it, like a waypoint: at the camera and seen through
+	 * walls. While the camera is out of sight the icon sticks to the edge of the view on the side the camera is on.
 	 */
 	private void drawIndicator(Vec3 camera, VRData vr) {
 		Vec3 head = vr.hmd.getPosition();
 		Vec3 forward = new Vec3(vr.hmd.getDirection());
 		Vec3 up = new Vec3(vr.hmd.getCustomVector(MathUtils.UP));
 		Vec3 right = forward.cross(up);
+		float worldScale = vr.worldScale;
 
-		// where the camera is, as seen by the player
 		Vec3 toCamera = camera.subtract(head);
+		double distance = toCamera.length();
+		if (distance < INDICATOR_MIN_DISTANCE * worldScale) {
+			return;
+		}
+		// where the camera is, as seen by the player
 		double x = toCamera.dot(right);
 		double y = toCamera.dot(up);
 		double z = toCamera.dot(forward);
 		double sideways = Math.sqrt(x * x + y * y);
-		if (Math.atan2(sideways, z) < INDICATOR_HIDE_ANGLE) {
-			return;
-		}
-		// straight behind has no side, call that right
-		Vec3 side = sideways < 1.0E-3 ? right : right.scale(x / sideways).add(up.scale(y / sideways));
 
-		float scale = vr.worldScale;
-		Vec3 ring = head.add(forward.scale(INDICATOR_DISTANCE * scale));
-		Vec3 base = ring.add(side.scale(INDICATOR_RING * scale));
-		Vec3 tip = ring.add(side.scale((INDICATOR_RING + INDICATOR_LENGTH) * scale));
-		Gizmos.arrow(base, tip, MARKER_COLOR, INDICATOR_WIDTH).setAlwaysOnTop();
+		Vec3 anchor;
+		if (Math.atan2(sideways, z) < INDICATOR_VIEW_ANGLE) {
+			// above the camera, to not cover it
+			anchor = camera.add(up.scale(0.15 * worldScale));
+		} else {
+			// straight behind has no side, call that right
+			Vec3 side = sideways < 1.0E-3 ? right : right.scale(x / sideways).add(up.scale(y / sideways));
+			double depth = INDICATOR_PINNED_DISTANCE * worldScale;
+			anchor = head.add(forward.scale(depth)).add(side.scale(depth * Math.tan(INDICATOR_PINNED_ANGLE)));
+		}
+
+		double size = this.config.indicatorSize * anchor.distanceTo(head);
+		float iconScale = (float) (INDICATOR_ICON_SCALE * size);
+		// text is drawn downwards from its position: the icon stands on the anchor, the distance hangs below it
+		Vec3 iconTop = anchor.add(up.scale(iconScale / 2.0));
+		Vec3 textTop = anchor.subtract(up.scale(0.2 * iconScale / 2.0));
+		Gizmos.billboardText(INDICATOR_ICON, iconTop,
+			TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
+		// in blocks, the world scale of Vivecraft changes the size of the player and not of the world
+		Gizmos.billboardText(Math.round(distance) + " M", textTop,
+				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale((float) (INDICATOR_TEXT_SCALE * size)))
+			.setAlwaysOnTop();
 	}
 
 	private String markerText() {
@@ -352,6 +384,7 @@ public final class CameraController implements Tracker {
 		CamMath.lookRotation(head.subtract(pos), rotation);
 		dh.cameraTracker.setPosition(pos);
 		dh.cameraTracker.setRotation(rotation);
+		this.dropped.pickUp();
 
 		this.parkedTime = PARK_SECONDS;
 		notify(Component.translatable("vrcamera.message.summon"));
@@ -386,10 +419,28 @@ public final class CameraController implements Tracker {
 		this.handThrow.clear();
 		this.glideTarget = null;
 		this.plainHeld = false;
+		this.dropped.pickUp();
 		if (mode == Mode.OFF) {
 			release();
 		}
 		notify(Component.translatable("vrcamera.message.mode", mode.label()));
+		if (mode == Mode.PHYSICS) {
+			// it has to be taken into the hand first
+			summon();
+		}
+	}
+
+	/**
+	 * @return what the camera of the physics mode is doing, for the debug overlay
+	 */
+	public String physicsState() {
+		if (this.parkedTime > 0) {
+			return "waiting";
+		}
+		if (!this.dropped.isDropped()) {
+			return "held";
+		}
+		return this.dropped.isResting() ? "lying" : "falling";
 	}
 
 	public void nextShot() {
@@ -612,16 +663,28 @@ public final class CameraController implements Tracker {
 			// the player holds the camera in their hand
 			this.wasGrabbed = true;
 			this.parkedTime = 0;
+			this.dropped.pickUp();
 			this.handThrow.sample(camera.getPosition());
 			return;
 		}
 		if (this.wasGrabbed) {
 			this.wasGrabbed = false;
-			placedByHand(camera.getPosition());
+			if (this.mode == Mode.PHYSICS) {
+				// keeps the speed of the hand, so it can be thrown
+				// a hand can reach into a wall, the camera should not start in there
+				Vec3 start = WorldProbe.reach(player, this.subject.head, camera.getPosition());
+				this.dropped.drop(start, camera.getRotation(), this.handThrow.velocity(this.subject.velocity));
+			} else {
+				placedByHand(camera.getPosition());
+			}
 		}
 		if (this.parkedTime > 0) {
 			// waiting to be picked up, runs out if nobody does
 			this.parkedTime -= dt;
+			return;
+		}
+		if (this.mode == Mode.PHYSICS) {
+			letFall(camera, vr, dt);
 			return;
 		}
 
@@ -645,6 +708,26 @@ public final class CameraController implements Tracker {
 		camera.setPosition(this.rig.position());
 		camera.setRotation(this.rig.rotation());
 		dh.vrSettings.handCameraFov = (float) CamMath.clamp(this.rig.fov(), 1.0, 179.0);
+	}
+
+	/**
+	 * the physics mode while the camera is not in the hand: it falls and stays where it lands
+	 */
+	private void letFall(CameraTracker camera, VRData vr, double dt) {
+		// only by distance. Teleporting a few blocks away from it is how to get into the picture
+		if (camera.getPosition().distanceTo(this.subject.head) > PHYSICS_LEASH) {
+			// left behind, Vivecraft would hide a camera that far away. Back to the player with it
+			this.dropped.pickUp();
+			summon();
+			return;
+		}
+		if (!this.dropped.isDropped()) {
+			// nobody took it while it was waiting in front of the player
+			this.dropped.drop(camera.getPosition(), camera.getRotation(), Vec3.ZERO);
+		}
+		this.dropped.update(this.subject, dt, this.config);
+		camera.setPosition(this.dropped.position());
+		camera.setRotation(this.dropped.rotation());
 	}
 
 	private Shot customShot() {

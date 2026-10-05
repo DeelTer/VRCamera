@@ -54,8 +54,12 @@ public final class ConfigScreen {
 				value -> config.markerSize = value));
 		general.addEntry(screen.toggle("indicator", config.indicator, defaults.indicator,
 				value -> config.indicator = value));
+		general.addEntry(screen.slider("indicatorSize", config.indicatorSize, defaults.indicatorSize, 0.3, 3, 0.1,
+				"%.1f", value -> config.indicatorSize = value));
 		general.addEntry(screen.slider("throwPower", config.throwPower, defaults.throwPower, 0, 3, 0.1, "%.1f",
 				value -> config.throwPower = value));
+		general.addEntry(screen.slider("physicsAim", config.physicsAim, defaults.physicsAim, 0, 1, 0.05, "%.2f",
+			value -> config.physicsAim = value));
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
 				value -> config.debugOverlay = value));
 

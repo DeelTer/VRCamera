@@ -46,21 +46,31 @@ public final class HandThrow {
 	 * @return how far and where to the camera should fly, {@link Vec3#ZERO} if it was not thrown
 	 */
 	public Vec3 release(Vec3 drift, double power) {
+		Vec3 velocity = velocity(drift);
+		double speed = velocity.length();
+		if (speed < MIN_SPEED || power <= 0) {
+			return Vec3.ZERO;
+		}
+		return velocity.normalize().scale(Math.min(RANGE * speed * speed * power, MAX_DISTANCE));
+	}
+
+	/**
+	 * call when the camera was let go of
+	 *
+	 * @param drift velocity of the player, that is not part of the movement of the hand
+	 * @return how fast the hand was moving, in blocks per second
+	 */
+	public Vec3 velocity(Vec3 drift) {
 		Sample first = this.trail.peekFirst();
 		Sample last = this.trail.peekLast();
 		this.trail.clear();
-		if (first == null || first == last || power <= 0) {
+		if (first == null || first == last) {
 			return Vec3.ZERO;
 		}
 		double seconds = (last.nanos - first.nanos) / 1.0E9;
 		if (seconds < 0.01) {
 			return Vec3.ZERO;
 		}
-		Vec3 velocity = last.pos.subtract(first.pos).scale(1.0 / seconds).subtract(drift);
-		double speed = velocity.length();
-		if (speed < MIN_SPEED) {
-			return Vec3.ZERO;
-		}
-		return velocity.normalize().scale(Math.min(RANGE * speed * speed * power, MAX_DISTANCE));
+		return last.pos.subtract(first.pos).scale(1.0 / seconds).subtract(drift);
 	}
 }

@@ -138,8 +138,13 @@
 	"vrcamera.shot.pov.tooltip": "Direkt vor dem Gesicht, blickt dorthin, wohin der Spieler schaut. Wird benutzt, wo um den Spieler kein Platz für eine Kamera ist. Die Entfernung gibt an, wie weit vor den Augen; die Winkel werden nicht benutzt.",
 	"vrcamera.shot.menu": "Menü",
 	"vrcamera.shot.menu.tooltip": "Nah über die Schulter auf ein offenes Inventar oder eine Truhe. Nur solange eines offen ist. Der Winkel ringsum wird vom Menü aus gemessen.",
-	"vrcamera.option.indicator": "Pfeil zur Kamera",
-	"vrcamera.option.indicator.tooltip": "Zeigt im Headset einen Pfeil in Richtung der Kamera, solange sie nicht zu sehen ist. In der Aufnahme nie zu sehen.",
+	"vrcamera.option.indicator": "Kamerasymbol",
+	"vrcamera.option.indicator.tooltip": "Zeigt im Headset ein Kamerasymbol mit der Entfernung dort, wo die Kamera ist, auch durch Wände. Solange die Kamera nicht im Blick ist, bleibt das Symbol auf ihrer Seite am Rand des Sichtfelds. In der Aufnahme nie zu sehen.",
 	"vrcamera.option.throwPower": "Wurfstärke",
-	"vrcamera.option.throwPower.tooltip": "Die Kamera lässt sich greifen und werfen, ein schnellerer Wurf fliegt weiter. Das hier legt fest, wie weit. 0 schaltet das Werfen aus."
+	"vrcamera.option.throwPower.tooltip": "Die Kamera lässt sich greifen und werfen, ein schnellerer Wurf fliegt weiter. Das hier legt fest, wie weit. 0 schaltet das Werfen aus.",
+	"vrcamera.mode.physics": "Physik",
+	"vrcamera.option.physicsAim": "Fallengelassene Kamera zeigt zum Spieler",
+	"vrcamera.option.physicsAim.tooltip": "Im Physik-Modus: wie stark sich eine fallengelassene Kamera beim Liegenbleiben mit dem Objektiv zum Spieler dreht. Bei 0 bleibt sie liegen, wie sie gefallen ist, bei 1 schaut sie genau auf den Spieler.",
+	"vrcamera.option.indicatorSize": "Größe des Kamerasymbols",
+	"vrcamera.option.indicatorSize.tooltip": "Größe des Kamerasymbols und der Entfernung darunter."
 }
