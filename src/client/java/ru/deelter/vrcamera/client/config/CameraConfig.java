@@ -57,6 +57,10 @@ public class CameraConfig {
 	 */
 	public double physicsShake = 1.0;
 	/**
+	 * how hard hands and feet hit a dropped camera, in the physics mode. 0 = they pass through it
+	 */
+	public double kickPower = 1.0;
+	/**
 	 * Seconds to point at a dropped camera and hold the button, for it to fly into the hand.
 	 * 0 = it can't be pulled
 	 */

@@ -156,5 +156,7 @@
 	"vrcamera.option.handStabilize": "手持稳定",
 	"vrcamera.option.handStabilize.tooltip": "稳定手持的摄像机：手的抖动和抽动（例如另一只手在挖方块时）会被平滑掉，有意的移动仍会通过。0 为关闭；数值越高越稳，但相对手的延迟越大。",
 	"vrcamera.option.menuShotChat": "聊天时使用菜单镜头",
-	"vrcamera.option.menuShotChat.tooltip": "打开聊天时导演会像打开物品栏一样把镜头拉近。如果只是短暂打开聊天时的切镜让你觉得烦，请关闭。"
+	"vrcamera.option.menuShotChat.tooltip": "打开聊天时导演会像打开物品栏一样把镜头拉近。如果只是短暂打开聊天时的切镜让你觉得烦，请关闭。",
+	"vrcamera.option.kickPower": "手脚击打力度",
+	"vrcamera.option.kickPower.tooltip": "物理模式下：手和脚可以击打掉落的摄像机，可以把它踢开，或像排球一样颠在空中。脚需要全身追踪。此项设置力度，0 表示直接穿过摄像机。"
 }

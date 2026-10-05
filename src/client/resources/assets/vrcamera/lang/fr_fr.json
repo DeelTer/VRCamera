@@ -156,5 +156,7 @@
 	"vrcamera.option.handStabilize": "Stabilisation en main",
 	"vrcamera.option.handStabilize.tooltip": "Stabilise une caméra tenue en main : les tremblements et à-coups de la main, par exemple quand l'autre main casse un bloc, sont lissés, les mouvements voulus passent. 0 la désactive, plus haut c'est plus stable mais avec plus de retard sur la main.",
 	"vrcamera.option.menuShotChat": "Plan menu pour le chat",
-	"vrcamera.option.menuShotChat.tooltip": "Le réalisateur se rapproche tant que le chat est ouvert, comme pour un inventaire. Désactivez si les changements de plan gênent quand le chat n'est ouvert qu'un instant."
+	"vrcamera.option.menuShotChat.tooltip": "Le réalisateur se rapproche tant que le chat est ouvert, comme pour un inventaire. Désactivez si les changements de plan gênent quand le chat n'est ouvert qu'un instant.",
+	"vrcamera.option.kickPower": "Force de frappe des mains et des pieds",
+	"vrcamera.option.kickPower.tooltip": "En mode physique : les mains et les pieds frappent une caméra lâchée, on peut la botter ou la garder en l'air comme un ballon de volley. Les pieds demandent le suivi du corps entier. Ceci règle la force, à 0 ils la traversent."
 }

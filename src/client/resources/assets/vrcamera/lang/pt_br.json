@@ -156,5 +156,7 @@
 	"vrcamera.option.handStabilize": "Estabilização na mão",
 	"vrcamera.option.handStabilize.tooltip": "Estabiliza uma câmera segurada na mão: o tremor e os trancos da mão, por exemplo quando a outra quebra um bloco, são suavizados, e os movimentos intencionais passam. 0 desativa; mais alto é mais estável, mas com mais atraso em relação à mão.",
 	"vrcamera.option.menuShotChat": "Plano de menu para o chat",
-	"vrcamera.option.menuShotChat.tooltip": "O diretor se aproxima enquanto o chat está aberto, como faz com um inventário. Desligue se os cortes incomodarem quando o chat fica aberto só por um instante."
+	"vrcamera.option.menuShotChat.tooltip": "O diretor se aproxima enquanto o chat está aberto, como faz com um inventário. Desligue se os cortes incomodarem quando o chat fica aberto só por um instante.",
+	"vrcamera.option.kickPower": "Força do golpe de mãos e pés",
+	"vrcamera.option.kickPower.tooltip": "No modo de física: mãos e pés acertam uma câmera solta; dá para chutá-la ou mantê-la no ar como uma bola de vôlei. Os pés precisam de rastreamento de corpo inteiro. Isto define a força; com 0 eles a atravessam."
 }

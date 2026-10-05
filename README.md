@@ -189,6 +189,9 @@ For found footage and horror, this mode makes the camera an object you hold.
 - It bounces off mobs, boats and minecarts like off blocks. Landing on a boat or minecart, it rides along. You can
   drop it in the boat you sit in.
 - Whoever walks into a lying camera kicks it away: you, a mob, a boat. A slow step does not.
+- Hands and feet hit a dropped camera, in the air or on the ground: kick it, or keep it up like a volleyball. A
+  camera falling onto a still hand bounces off it. Feet need full body tracking. `kickPower` sets how hard, 0 turns
+  it off.
 - A held camera sways with your breath, more with your steps, and jolts when you get hurt. `physicsShake` sets how
   much.
 - When you die you drop it. It turns to get the body and the killer into the picture.
@@ -337,6 +340,7 @@ and by `/vrcam reload`.
 | `pullAllModes` | `true` | `false` = pulling only in Physics |
 | `physicsAim` | `0.75` | Physics: how much a dropped camera turns to the player, 0 to 1 |
 | `physicsShake` | `1.0` | Physics: sway of a held camera, 0 = off |
+| `kickPower` | `1.0` | Physics: how hard hands and feet hit a dropped camera, 0 = they pass through |
 | `menuShotChat` | `true` | the `menu` shot for chat as well |
 | `debugOverlay` | `false` | debug overlay on the HUD |
 

@@ -156,5 +156,7 @@
 	"vrcamera.option.handStabilize": "Stabilisierung in der Hand",
 	"vrcamera.option.handStabilize.tooltip": "Beruhigt eine Kamera in der Hand: Zittern und Zucken der Hand, etwa wenn die andere Hand einen Block abbaut, wird geglättet, gewollte Bewegungen kommen durch. 0 schaltet es aus, höher ist ruhiger, hängt der Hand aber mehr nach.",
 	"vrcamera.option.menuShotChat": "Menü-Einstellung für den Chat",
-	"vrcamera.option.menuShotChat.tooltip": "Der Regisseur geht nah heran, solange der Chat offen ist, wie beim Inventar. Ausschalten, wenn die Schnitte stören, wenn der Chat nur kurz offen ist."
+	"vrcamera.option.menuShotChat.tooltip": "Der Regisseur geht nah heran, solange der Chat offen ist, wie beim Inventar. Ausschalten, wenn die Schnitte stören, wenn der Chat nur kurz offen ist.",
+	"vrcamera.option.kickPower": "Schlagkraft von Händen und Füßen",
+	"vrcamera.option.kickPower.tooltip": "Im Physik-Modus: Hände und Füße treffen eine fallengelassene Kamera, man kann sie treten oder wie einen Volleyball in der Luft halten. Füße brauchen Ganzkörper-Tracking. Das hier legt die Stärke fest, bei 0 gehen sie durch die Kamera hindurch."
 }

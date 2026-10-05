@@ -62,6 +62,8 @@ public final class ConfigScreen {
 				value -> config.physicsAim = value));
 		general.addEntry(screen.slider("physicsShake", config.physicsShake, defaults.physicsShake, 0, 3, 0.1,
 				"%.1f", value -> config.physicsShake = value));
+		general.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
+				"%.1f", value -> config.kickPower = value));
 		general.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
 				"%.2f", value -> config.handStabilize = value));
 		general.addEntry(screen.slider("pullSeconds", config.pullSeconds, defaults.pullSeconds, 0, 5, 0.25,

@@ -115,6 +115,7 @@ public final class CameraController implements Tracker {
 	private final HandThrow handThrow = new HandThrow();
 	private final DroppedCamera dropped = new DroppedCamera();
 	private final HandheldShake shake = new HandheldShake();
+	private final LimbStrikes limbs = new LimbStrikes();
 	private final HandStabilizer stabilizer = new HandStabilizer();
 	// hand the camera is flying to after it was pulled, null when it is not
 	private InteractionHand pullHand;
@@ -772,6 +773,8 @@ public final class CameraController implements Tracker {
 				// a hand can reach into a wall, the camera should not start in there
 				Vec3 start = WorldProbe.reach(player, this.subject.head, camera.getPosition());
 				this.dropped.drop(start, camera.getRotation(), this.handThrow.velocity(this.subject.velocity));
+				this.limbs.reset();
+				this.limbs.released(camera.getMovingController());
 			} else {
 				placedByHand(camera.getPosition());
 			}
@@ -822,7 +825,12 @@ public final class CameraController implements Tracker {
 		if (!this.dropped.isDropped()) {
 			// nobody took it while it was waiting in front of the player
 			this.dropped.drop(camera.getPosition(), camera.getRotation(), Vec3.ZERO);
+			this.limbs.reset();
 		}
+		if (this.subject.teleported) {
+			this.limbs.reset();
+		}
+		this.limbs.update(vr, this.dropped, dt, this.config.kickPower);
 		this.dropped.update(this.subject, dt, this.config, restFocus());
 		camera.setPosition(this.dropped.position());
 		camera.setRotation(this.dropped.rotation());

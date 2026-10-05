@@ -60,6 +60,8 @@ public final class DroppedCamera {
 	private static final double KICK_LIFT = 2.2;
 	// seconds a kicked camera passes through what kicked it, or it would land on its head
 	private static final double KICK_IGNORE_TIME = 0.6;
+	private static final double STRIKE_MIN_SPEED = 1.2;
+	private static final double STRIKE_BOUNCE = 0.6;
 
 	/**
 	 * the camera ran into something
@@ -215,6 +217,28 @@ public final class DroppedCamera {
 			this.settleTime -= dt;
 			this.rotation.slerp(target, (float) (1.0 - Math.exp(-dt / 0.25)));
 		}
+	}
+
+	/**
+	 * A hand or foot hits the camera. Counts how fast they close in on each other, so a camera falling onto a still
+	 * hand bounces off it as well.
+	 *
+	 * @param normal from the limb to the camera
+	 * @return false if they are not closing in fast enough
+	 */
+	public boolean strike(Vec3 limbVelocity, Vec3 normal, double power) {
+		if (!isDropped()) {
+			return false;
+		}
+		double closing = limbVelocity.subtract(this.velocity).dot(normal);
+		if (closing < STRIKE_MIN_SPEED) {
+			return false;
+		}
+		this.velocity = this.velocity.add(normal.scale(closing * (1.0 + STRIKE_BOUNCE) * power));
+		startFalling();
+		tumble(closing);
+		hit(new Impact(this.position, normal, closing, null));
+		return true;
 	}
 
 	private void startFalling() {

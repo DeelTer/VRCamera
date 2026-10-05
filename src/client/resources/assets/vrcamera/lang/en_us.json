@@ -156,5 +156,7 @@
 	"vrcamera.option.handStabilize": "Hand stabilization",
 	"vrcamera.option.handStabilize.tooltip": "Steadies a camera held in the hand: trembling and twitching of the hand, like while the other hand breaks a block, is smoothed out, moves that are meant still get through. 0 turns it off, higher is steadier but lags more behind the hand.",
 	"vrcamera.option.menuShotChat": "Menu shot for chat",
-	"vrcamera.option.menuShotChat.tooltip": "The director moves in close while the chat is open, like it does for an inventory. Turn it off if the cuts bother you when the chat is only open for a moment."
+	"vrcamera.option.menuShotChat.tooltip": "The director moves in close while the chat is open, like it does for an inventory. Turn it off if the cuts bother you when the chat is only open for a moment.",
+	"vrcamera.option.kickPower": "Hit strength of hands and feet",
+	"vrcamera.option.kickPower.tooltip": "In the physics mode: hands and feet hit a dropped camera, so it can be kicked or kept in the air like a volleyball. Feet need full body tracking. This sets how hard, 0 lets them pass through it."
 }
