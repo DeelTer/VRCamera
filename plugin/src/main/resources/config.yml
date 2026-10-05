@@ -26,6 +26,11 @@ anyone-takes-off: false
 # as well, which everyone has unless you take it away. false: nobody may
 custom-pictures: true
 
+# true: a block with a photo pinned to it is not blown up, burned, pushed by a piston or decayed. A player can
+# still break it, and the photo falls. Careful: it lets anyone make a block blast-proof and unmovable by
+# pinning a photo to it
+photos-protect-blocks: true
+
 range:
   # blocks around a player in which photos are told to their client. Only a few bytes each, the picture itself
   # is asked for by the client when it comes closer

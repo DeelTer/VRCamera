@@ -20,7 +20,9 @@ import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.sync.Protocol;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -33,9 +35,13 @@ public final class RemoteCameras {
 
 	// A camera not heard of for this long is off, or its owner walked away. Nothing else says so
 	private static final long GONE_NANOS = 1_500_000_000L;
-	// Seconds to catch up with where it was last heard to be. It is heard of ten times per second, shown as it
-	// comes it would move in steps
-	private static final double CATCH_UP = 0.12;
+	// A camera is shown where it was this long ago, between two places it was heard to be. It is heard of ten
+	// times per second and not evenly: chasing the last place moves in jerks, this moves along the path it took
+	private static final long DELAY_NANOS = 200_000_000L;
+	// messages that arrive in a bunch were not sent in one
+	private static final long MIN_SPACING_NANOS = 50_000_000L;
+	private static final long MAX_AHEAD_NANOS = 150_000_000L;
+	private static final int MAX_SAMPLES = 8;
 	// further than this it jumped: its owner teleported, or called it
 	private static final double JUMP = 6.0;
 	// the model of the Vivecraft camera, sized and set off the way Vivecraft does it
@@ -44,11 +50,14 @@ public final class RemoteCameras {
 	private static final float MODEL_BACK = 0.28F;
 	private static final int MAX_CAMERAS = 64;
 	private static final int LABEL_COLOR = 0xFFFFFFFF;
+	// the camera glyph of the mod, see assets/minecraft/font/default.json
+	private static final String CAMERA_ICON = "";
+
+	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {}
 
 	private static final class Camera {
 		String ownerName;
-		Vec3 heardAt;
-		final Quaternionf heardRotation = new Quaternionf();
+		final ArrayDeque<Sample> samples = new ArrayDeque<>();
 		Vec3 position;
 		final Quaternionf rotation = new Quaternionf();
 		long heardNanos;
@@ -56,7 +65,6 @@ public final class RemoteCameras {
 
 	private final Map<UUID, Camera> cameras = new HashMap<>();
 	private final ItemStackRenderState model = new ItemStackRenderState();
-	private long lastNanos;
 	private boolean broken;
 
 	private RemoteCameras() {
@@ -83,31 +91,54 @@ public final class RemoteCameras {
 			this.cameras.put(heard.owner(), camera);
 		}
 		camera.ownerName = heard.ownerName().length() > 32 ? heard.ownerName().substring(0, 32) : heard.ownerName();
-		camera.heardAt = new Vec3(heard.x(), heard.y(), heard.z());
-		camera.heardRotation.set(heard.qx() / length, heard.qy() / length, heard.qz() / length, heard.qw() / length);
-		camera.heardNanos = System.nanoTime();
-		if (camera.position == null || camera.position.distanceTo(camera.heardAt) > JUMP) {
-			camera.position = camera.heardAt;
-			camera.rotation.set(camera.heardRotation);
+		Vec3 position = new Vec3(heard.x(), heard.y(), heard.z());
+		Quaternionf rotation = new Quaternionf(heard.qx() / length, heard.qy() / length, heard.qz() / length,
+				heard.qw() / length);
+		long now = System.nanoTime();
+		camera.heardNanos = now;
+		Sample last = camera.samples.peekLast();
+		if (camera.position == null || (last != null && last.position.distanceTo(position) > JUMP)) {
+			camera.samples.clear();
+			camera.position = position;
+			camera.rotation.set(rotation);
+			last = null;
+		}
+		long nanos = last == null ? now :
+				Math.min(Math.max(now, last.nanos + MIN_SPACING_NANOS), now + MAX_AHEAD_NANOS);
+		camera.samples.addLast(new Sample(nanos, position, rotation));
+		if (camera.samples.size() > MAX_SAMPLES) {
+			camera.samples.removeFirst();
 		}
 	}
 
 	/**
-	 * moves every camera a bit towards where it was last heard to be. Once per frame, however many passes draw it
+	 * puts every camera where it was a moment ago
 	 */
 	private void update() {
 		long now = System.nanoTime();
-		double dt = Math.min((now - this.lastNanos) / 1.0E9, 0.1);
-		if (dt < 0.002) {
-			return;
-		}
-		this.lastNanos = now;
 		this.cameras.values().removeIf(camera -> now - camera.heardNanos > GONE_NANOS);
-		float follow = (float) (1.0 - Math.exp(-dt / CATCH_UP));
+		long shown = now - DELAY_NANOS;
 		for (Camera camera : this.cameras.values()) {
-			camera.position = camera.position.lerp(camera.heardAt, follow);
-			camera.rotation.slerp(camera.heardRotation, follow);
+			ArrayDeque<Sample> samples = camera.samples;
+			while (samples.size() > 2 && second(samples).nanos <= shown) {
+				samples.removeFirst();
+			}
+			Sample from = samples.peekFirst();
+			if (from == null || shown <= from.nanos) {
+				continue;
+			}
+			Sample to = samples.size() > 1 ? second(samples) : from;
+			float along = to.nanos <= from.nanos ? 1.0F :
+					(float) Math.min(1.0, (shown - from.nanos) / (double) (to.nanos - from.nanos));
+			camera.position = from.position.lerp(to.position, along);
+			from.rotation.slerp(to.rotation, along, camera.rotation);
 		}
+	}
+
+	private static Sample second(ArrayDeque<Sample> samples) {
+		Iterator<Sample> all = samples.iterator();
+		all.next();
+		return all.next();
 	}
 
 	/**
@@ -157,7 +188,7 @@ public final class RemoteCameras {
 		try {
 			for (Camera camera : this.cameras.values()) {
 				if (camera.position != null) {
-					Gizmos.billboardText(camera.ownerName + " Camera", camera.position.add(0, 0.28, 0),
+					Gizmos.billboardText(CAMERA_ICON + " " + camera.ownerName, camera.position.add(0, 0.28, 0),
 							TextGizmo.Style.forColorAndCentered(LABEL_COLOR).withScale(0.12F));
 				}
 			}

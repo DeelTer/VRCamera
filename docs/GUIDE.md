@@ -4,6 +4,9 @@
 
 Detailed controls, camera behaviour and configuration.
 
+**Required:** turn on **Show Playermodel** in Vivecraft (VR Settings → Playermodel Settings). Without it your
+character is missing from the camera's picture.
+
 All camera distances scale with the player's `scale` attribute.
 The mod is translated into English, Russian, Ukrainian, German, French, Spanish,
 Brazilian Portuguese and Simplified Chinese.
@@ -292,7 +295,7 @@ affected.
 - The server may refuse a pin: too many of your own, too many in that spot, or too fast. The sheet then comes off
   again and a message says why.
 - `showOthersPhotos: false` shows only your own. Yours are still shared.
-- Players within 32 blocks see your camera where it is, in your hand or flying, with "YourName Camera" over it.
+- Players within 32 blocks see your camera where it is, in your hand or flying, with a camera icon and your name over it.
   `shareCamera: false` hides it from them.
 - A player with the mod who is not in VR sees the pinned sheets and the cameras too, but can't pick anything up.
 
@@ -318,6 +321,7 @@ Server settings, `plugins/VRCameraSync/config.yml`:
 | `limits.pin-cooldown-ms` | `1500` | wait between two pins of a player |
 | `anyone-takes-off` | `false` | `true` lets everyone take off anyone's sheets |
 | `custom-pictures` | `true` | `false`: nobody may put up pictures from the internet |
+| `photos-protect-blocks` | `false` | `true`: a block with a photo on it is not blown up, burned, pushed by a piston or decayed. Players still break it. Lets anyone make a block blast-proof with a photo |
 | `range.send`, `range.forget` | `32`, `48` | blocks in which clients are told about sheets, and after which they forget them |
 | `network.images-per-second` | `4` | pictures sent to one player per second |
 | `cameras.share`, `cameras.range` | `true`, `32` | show players' cameras to the others, and within how many blocks |
@@ -504,6 +508,7 @@ For streams, turn Hotswitching off so the game stays in VR and the camera keeps 
 | "VR is not running" | VR is off in Vivecraft or the headset was not picked up |
 | "not available in seated mode" | switch Vivecraft to standing |
 | The game window is black | Desktop Mirror is OFF |
+| Your character is not in the camera's picture | turn on Show Playermodel in Vivecraft: VR Settings → Playermodel Settings |
 | The window shows first person | `forceMirror` is off, or VR is not running right now |
 | No camera model in the headset | check `marker`: `"model"` shows the Vivecraft camera, `"dot"` a red dot |
 | The camera is behind you in `front` | a bug, please report it |

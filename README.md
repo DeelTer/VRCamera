@@ -45,6 +45,7 @@ where the camera is; it does not appear in the recording.
 | Vivecraft setting | Recommended value |
 |---|---|
 | Play mode | Standing |
+| Show Playermodel | **ON, required.** In VR Settings → Playermodel Settings. Off, your character is missing from the camera's picture |
 | Desktop Mirror | anything but OFF, otherwise the game window is black |
 | Camera Resolution | 1.0 for 1920×1080; higher values cost more FPS |
 | GUI On Mirror | OFF to keep the HUD out of streams |
@@ -100,6 +101,7 @@ You can also edit `config/vrcamera.json`, created on first start, and apply it w
 |---|---|
 | VR is not running or seated mode is reported | enable VR and use standing mode in Vivecraft |
 | The game window is black | Desktop Mirror must not be OFF |
+| Your character is not in the camera's picture | turn on Show Playermodel in Vivecraft: VR Settings → Playermodel Settings |
 | The window shows first person | check that VR is running and `forceMirror` is enabled |
 | You cannot reach the camera | use Bring camera to me or pull it |
 | There is no Settings button | install Cloth Config |

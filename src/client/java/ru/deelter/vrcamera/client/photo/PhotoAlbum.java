@@ -65,7 +65,17 @@ public final class PhotoAlbum {
 	// A player without VR can't pick sheets up again, theirs only add up. So they get to have a few
 	private static final int MAX_LOOSE_WITHOUT_VR = 3;
 	// a sheet in the dark still shows its picture
-	private static final int MIN_LIGHT = 5;
+	private static final int MIN_LIGHT = 7;
+	// A print is lit by the world around it and never as bright as the screen it was taken from. The picture on
+	// the sheet is lifted to make up for that, the file of the photo stays as it was taken
+	private static final double SHEET_GAMMA = 0.8;
+	private static final int[] BRIGHTER = new int[256];
+
+	static {
+		for (int i = 0; i < 256; i++) {
+			BRIGHTER[i] = (int) Math.round(255.0 * Math.pow(i / 255.0, SHEET_GAMMA));
+		}
+	}
 	private static final double DRAW_DISTANCE = 64.0;
 	private static final double LABEL_DISTANCE = 5.0;
 	private static final float VEIL_GAP = 0.0015F;
@@ -176,7 +186,9 @@ public final class PhotoAlbum {
 			// what was filmed through glass or water is not see-through on paper
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
-					small.setPixel(x, y, small.getPixel(x, y) | 0xFF000000);
+					int pixel = small.getPixel(x, y);
+					small.setPixel(x, y, 0xFF000000 | BRIGHTER[pixel >> 16 & 0xFF] << 16 |
+							BRIGHTER[pixel >> 8 & 0xFF] << 8 | BRIGHTER[pixel & 0xFF]);
 				}
 			}
 		} catch (RuntimeException e) {
@@ -791,11 +803,19 @@ public final class PhotoAlbum {
 				sheet.position().z - viewPosition.z);
 		// as a matrix, a quaternion is not taken by every supported Minecraft version
 		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
-		output.submitCustomGeometry(poseStack, RenderTypes.entityCutout(sheet.texture), (pose, consumer) -> {
+		// Each side only seen from its own: the picture from the front, which is what faces away from a block the
+		// sheet is pinned to, and blank paper from behind
+		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(sheet.texture), (pose, consumer) -> {
 			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
 			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
 			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
 			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
+		});
+		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(WHITE), (pose, consumer) -> {
+			vertex(consumer, pose, -half, 0, 0, 0, 0, light, 1.0F);
+			vertex(consumer, pose, half, 0, 0, 1, 0, light, 1.0F);
+			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
+			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
 		});
 		float veil = sheet.veil();
 		if (veil > 0.01F) {
@@ -819,6 +839,8 @@ public final class PhotoAlbum {
 				.setUv(u, v)
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(light)
-				.setNormal(pose, 0, 0, 1);
+				// facing up whichever way the sheet is turned: the game shades by this, and a photo on a wall or
+				// face down would be up to half as bright
+				.setNormal(0, 1, 0);
 	}
 }

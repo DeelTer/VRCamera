@@ -114,6 +114,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private double cameraRange;
 	private int maxLoose;
 	private boolean allowCustom;
+	private boolean protectBlocks;
 	private long looseLifetime;
 
 	@Override
@@ -161,6 +162,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		this.cameraRange = Math.max(4.0, getConfig().getDouble("cameras.range", 32));
 		this.maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
 		this.allowCustom = getConfig().getBoolean("custom-pictures", true);
+		this.protectBlocks = getConfig().getBoolean("photos-protect-blocks", false);
 		this.looseLifetime = Math.max(1, getConfig().getLong("limits.loose-minutes", 10)) * 60_000L;
 	}
 
@@ -844,6 +846,57 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			for (StoredSheet sheet : new ArrayList<>(pinned)) {
 				remove(sheet, Protocol.REMOVED_FELL);
 			}
+		}
+	}
+
+	private boolean holdsPhoto(Block block) {
+		return this.protectBlocks && !this.store.onBlock(new StoredSheet.BlockKey(block.getWorld().getUID(),
+				block.getX(), block.getY(), block.getZ())).isEmpty();
+	}
+
+	// With photos-protect-blocks, what a photo is pinned to only goes when a player breaks it. These run before
+	// the handlers below, which then find nothing that fell
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void protectFromFire(BlockBurnEvent event) {
+		if (holdsPhoto(event.getBlock())) {
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void protectFromDecay(LeavesDecayEvent event) {
+		if (holdsPhoto(event.getBlock())) {
+			event.setCancelled(true);
+		}
+	}
+
+	// the explosion still happens, it only leaves these blocks standing
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void protectFromBlockExplosion(BlockExplodeEvent event) {
+		if (this.protectBlocks) {
+			event.blockList().removeIf(this::holdsPhoto);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void protectFromEntityExplosion(EntityExplodeEvent event) {
+		if (this.protectBlocks) {
+			event.blockList().removeIf(this::holdsPhoto);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void protectFromPiston(BlockPistonExtendEvent event) {
+		if (this.protectBlocks && event.getBlocks().stream().anyMatch(this::holdsPhoto)) {
+			event.setCancelled(true);
+		}
+	}
+
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void protectFromPiston(BlockPistonRetractEvent event) {
+		if (this.protectBlocks && event.getBlocks().stream().anyMatch(this::holdsPhoto)) {
+			event.setCancelled(true);
 		}
 	}
 
