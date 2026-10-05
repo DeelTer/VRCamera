@@ -2,10 +2,10 @@
 
 [Русская версия](README_RU.md)
 
-An addon for [Vivecraft](https://modrinth.com/mod/vivecraft). It moves Vivecraft's handheld camera for you and films
-the player in third person. Made for streaming and recording with OBS.
+An addon for [Vivecraft](https://modrinth.com/mod/vivecraft) that moves its handheld camera for you, filming
+the player in third person. It was made for streaming and recording with OBS.
 
-Four modes:
+There are four modes to choose from:
 
 - **Director** picks camera angles and switches between them, like the cinematic camera in GTA.
 - **Follow** keeps the camera where you put it by hand, relative to the player.
@@ -28,21 +28,21 @@ How the mod works inside: [ARCHITECTURE.md](ARCHITECTURE.md).
 | Cloth Config | optional: settings screen in the game |
 | Mod Menu | optional: settings button in the mod list |
 
-Client only, nothing to install on the server. Standing VR only: Vivecraft turns the handheld camera off in seated
+The mod runs on the client, so there is nothing to install on the server. You do need standing VR: Vivecraft turns the handheld camera off in seated
 mode.
 
 Translated into English, Russian, Ukrainian, German, French, Spanish, Brazilian Portuguese and Simplified Chinese.
 
 ## Install
 
-Put into the `mods` folder:
+Put these files in your `mods` folder:
 
 - `vrcamera-1.0.0+<Minecraft version>.jar`
 - Vivecraft for the same Minecraft version (Fabric)
 - Fabric API
 - Cloth Config and Mod Menu, if you want them
 
-A jar built for one Minecraft version does not start on the other.
+Each jar works with its own Minecraft version; it will not start on the other.
 
 ### Build
 
@@ -56,13 +56,13 @@ A jar built for one Minecraft version does not start on the other.
 
 The first command builds for 26.2, the second for 26.3. Jars land in `build/libs/`.
 
-All versions at once:
+Want to build all versions at once? Run:
 
 ```bash
 ./gradlew buildAll
 ```
 
-Versions of Minecraft and of the dependencies are in `versions/<version>.properties`. To support another Minecraft
+Minecraft and dependency versions are listed in `versions/<version>.properties`. To support another Minecraft
 version, add a file there. The default version, also used by the IDE, is `mc` in `gradle.properties`.
 
 ## Quick start
@@ -91,7 +91,7 @@ OBS:
 2. Add a Game Capture or Window Capture source for it.
 3. Don't minimize the window.
 
-The camera is one more full render of the world on top of both eyes. FPS drops as much as with the plain Vivecraft
+The camera adds another full render of the world on top of the two eye views. Expect the same FPS drop as with the plain Vivecraft
 camera turned on.
 
 ## Controls
@@ -114,7 +114,7 @@ camera for the player in the headset.
 
 ### Commands
 
-`/vrcam` does the same, with tab completion. It runs on the client and needs no permissions.
+You can also use `/vrcam`, which supports tab completion. The command runs on the client and needs no permissions.
 
 | Command | What it does |
 |---|---|
@@ -132,14 +132,14 @@ camera for the player in the headset.
 | `/vrcam reload` | reads the settings file again |
 
 `/vrcam shot` shows a shot even if it is disabled or does not fit the situation. It lasts as long as usual, then
-the director carries on. To keep it, run `/vrcam hold` after.
+the director carries on. To keep that shot, follow it with `/vrcam hold`.
 
 In the headset, put the commands into Vivecraft's Quick Commands. They then show up under **Commands** in the pause
 menu, and each can be bound to a controller button in SteamVR.
 
 ## Camera in your hands
 
-These work in every mode.
+The following controls work in every mode.
 
 **Grab and place.** Reach for the red dot and hold the interact button, like with the plain Vivecraft camera. When
 you let go:
@@ -148,10 +148,10 @@ you let go:
 - in Director it keeps that angle for `manualHoldSeconds`, then the director carries on;
 - in Physics it falls.
 
-The camera only remembers the position. It always looks at the player.
+Only the position is remembered. The camera still looks at the player.
 
-**Throw.** Swing and let go. The camera flies in that direction and stays where it lands, walls stop it. A faster
-swing goes further. Slower than 2.5 blocks per second is not a throw. `throwPower` sets the range, 0 turns throwing
+**Throw.** Swing and let go. The camera flies in that direction, stops at walls and stays where it lands. A faster
+swing goes further. A swing slower than 2.5 blocks per second does not count as a throw. `throwPower` sets the range, 0 turns throwing
 off. This also works on the plain Vivecraft camera while the mod is off.
 
 **Pull from afar.** Look at the camera and point a hand at it: the controller gives a short buzz. Hold the interact
@@ -164,8 +164,8 @@ happens, turn `pullAllModes` off: pulling then only works in Physics.
 **Bring camera to me.** A following camera backs away when you walk up to it. This button puts it at arm's length
 in front of your face for 20 seconds.
 
-**Stabilization.** A hand trembles, and twitches when the other hand breaks a block. The mod smooths that out while
-moves you mean still get through. `handStabilize` sets how much, 0 turns it off.
+**Stabilization.** Your hand can tremble or twitch when the other hand breaks a block. The mod smooths those movements out while
+letting deliberate movements through. Adjust the strength with `handStabilize`; 0 turns it off.
 
 ### Own angles
 
@@ -175,11 +175,11 @@ You can keep several hand-placed angles. Placing the camera by hand always write
 - **Next own angle** cycles through them, the camera flies over.
 - **Delete angle** removes the active one. The last one stays.
 
-Usual order: New angle → Bring camera to me → grab, place, let go.
+The usual sequence is: New angle → Bring camera to me → grab, place, let go.
 
 ## Physics mode
 
-For found footage and horror: the camera is an object you hold.
+For found footage and horror, this mode makes the camera an object you hold.
 
 - Hold it, and it films where your hand points. In the headset it looks like the Vivecraft camera with a screen.
 - Let go, and it falls, bounces and tumbles. It keeps the speed of your hand, so you can throw it.
@@ -194,9 +194,9 @@ For found footage and horror: the camera is an object you hold.
 - When you die you drop it. It turns to get the body and the killer into the picture.
 - On impact the zoom jolts, you hear the block and its dust flies. The dust only spawns behind the lens: you see
   it, the camera does not.
-- It sinks slowly in water and lava. It falls on when the block below is broken.
+- It sinks slowly in water and lava. It keeps falling if the block below it is broken.
 - Further than 40 blocks away it comes back to you, Vivecraft hides a camera that far off.
-- Switching the mode on puts the camera in front of your face for 20 seconds. Not taken, it falls.
+- Switching the mode on puts the camera in front of your face for 20 seconds. If you do not pick it up, it falls.
 
 The director, own angles and events do not run in this mode.
 
@@ -221,7 +221,7 @@ The director, own angles and events do not run in this mode.
 ## How the director works
 
 **Situation.** The director knows what you are doing: standing, walking, running, flying with an elytra, riding,
-swimming, fighting, mining. It also knows if the place is tight. Both change the odds of each shot and the
+swimming, fighting, mining. It also knows if the place is tight. These affect the odds of each shot and the
 distances: closer in tight places, further when flying.
 
 **Changing shots.** A shot changes when:
@@ -231,15 +231,15 @@ distances: closer in tight places, further when flying.
 - something new started: a fight, flight, ride, swim, or more than a second of mining;
 - you pressed Next shot.
 
-A change is either a cut, where the camera is at the new spot at once, or a fly-over, where it swings around the
+Shot changes use either a cut, which puts the camera at the new spot immediately, or a fly-over that swings around the
 player. Two similar shots in a row are avoided. The camera also tries to stay on one side of the line you move
 along, or you would run right in one shot and left in the next.
 
 On a teleport the camera jumps with you and keeps the angle. Only `flyby` is replaced, because it stands still.
 
-Hold (`F10`) stops shot changes and events until you release it.
+Use Hold (`F10`) to stop shot changes and events until you release it.
 
-**Combat.** A fight starts when you hit a living thing, also with a controller swing, or one hurts you. That one
+**Combat.** A fight starts when you hit a living thing, including with a controller swing, or when one hurts you. That entity
 becomes the target. Fall and fire damage do not count. The target is dropped after 5 seconds without fighting, when
 it dies or when it is far away.
 
@@ -269,7 +269,7 @@ lower is more to the side. The default is 138.
 - It stays out of lava and powder snow unless you are in them.
 - Pushed too close for longer than `occlusionCutTime`, the director switches the angle.
 
-The camera does not search for a way around. The director picks an angle from which you can be seen.
+The camera does not search for a route around obstacles. Instead, the director picks an angle from which you can be seen.
 
 With no room for any angle, like in a one-block tunnel, `pov` takes over. The camera stands a third of a block in
 front of the face, not in the eyes: there it would see the head of the player model from inside. `distance` of
@@ -285,7 +285,7 @@ distance, in both eyes. When the camera is out of view the icon sticks to the ed
 hidden while the camera is closer than 1.2 blocks and in first person. Not in the recording. `indicator` toggles
 it, `indicatorSize` sets the size.
 
-**Debug overlay.** Shows on the HUD what the camera is doing.
+**Debug overlay.** Shows what the camera is doing, right on the HUD.
 
 | Line | Meaning |
 |---|---|
@@ -316,7 +316,7 @@ Reasons in `why`:
 ## Settings
 
 **In the game.** Needs Cloth Config. Open it from the "VR Camera..." screen, or from the mod list with Mod Menu.
-All numbers are sliders, so nothing has to be typed in VR. Changes apply on Save.
+Every number has a slider, so you can adjust it without typing in VR. Save to apply your changes.
 
 **File.** `config/vrcamera.json`, created on first start. It is read again when the camera is switched on from Off,
 and by `/vrcam reload`.
@@ -422,7 +422,7 @@ turn it off or on a render error.
 - When VR is back, the camera turns on again and starts with a new shot.
 - Pressing `F8` while VR is off turns the camera off.
 
-For streams turn Hotswitching off. The game then stays in VR and the camera keeps filming.
+For streams, turn Hotswitching off so the game stays in VR and the camera keeps filming.
 
 ## Troubleshooting
 
@@ -448,5 +448,5 @@ For streams turn Hotswitching off. The game then stays in VR and the camera keep
   Vivecraft's file.
 - While you look at the camera and point a hand at it, that hand's interact button belongs to the pull gesture.
 - A pulled camera flies through walls.
-- The body of a dead player disappears after about a second, the death shot runs until respawn.
+- The body of a dead player disappears after about a second. The death shot keeps running until respawn.
 - There are no automated tests.

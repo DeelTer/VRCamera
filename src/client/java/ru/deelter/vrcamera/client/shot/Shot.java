@@ -175,16 +175,13 @@ public final class Shot {
 
 		switch (this.type) {
 			case CRANE -> {
-				// rise up over the duration of the shot
 				double progress = CamMath.smoothstep(this.age / Math.max(1.0, this.config.maxDuration));
 				this.elevation *= CamMath.lerp(0.5, 1.0, progress);
 				this.distance *= CamMath.lerp(0.6, 1.0, progress);
 			}
 			case FRONT ->
-				// slowly move in on a player that stands around
 					this.distance *= CamMath.lerp(1.0, 0.72, CamMath.smoothstep(this.stillTime / 8.0));
 			case DEATH -> {
-				// slowly back away
 				this.distance *= CamMath.lerp(1.0, 1.6, CamMath.smoothstep(this.age / 8.0));
 				if (subject.targetCenter != null) {
 					// keep what killed the player in the picture
@@ -254,9 +251,6 @@ public final class Shot {
 		return pos;
 	}
 
-	/**
-	 * @return camera position this shot wants right now
-	 */
 	public Vec3 desiredPosition(Subject subject) {
 		return isWorld() ? this.worldPos :
 				position(subject.center, subject, this.azimuth, this.elevation, this.distance);

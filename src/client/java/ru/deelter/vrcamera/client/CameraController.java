@@ -422,7 +422,6 @@ public final class CameraController implements Tracker {
 				return;
 			}
 			if (this.mode == Mode.OFF) {
-				// pick up changes made to the file
 				this.config = CameraConfig.load();
 				this.director = new Director(this.config);
 			}
@@ -748,7 +747,6 @@ public final class CameraController implements Tracker {
 			return;
 		}
 		if (camera.isMoving()) {
-			// the player holds the camera in their hand
 			if (!this.wasGrabbed) {
 				this.stabilizer.reset();
 			}
@@ -931,10 +929,8 @@ public final class CameraController implements Tracker {
 		this.config.save();
 
 		Shot shot = customShot();
-		// start where the hand let go
 		this.rig.adopt(cameraPos, shot, this.subject);
 		if (wasThrown) {
-			// and fly from there to where it was thrown
 			this.rig.blend();
 		}
 		if (this.mode == Mode.FOLLOW) {

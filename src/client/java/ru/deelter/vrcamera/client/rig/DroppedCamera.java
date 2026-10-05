@@ -157,9 +157,6 @@ public final class DroppedCamera {
 		}
 	}
 
-	/**
-	 * the camera is back in the hand
-	 */
 	public void pickUp() {
 		this.falling = false;
 		this.resting = false;
@@ -199,7 +196,6 @@ public final class DroppedCamera {
 			if (this.carrier != null) {
 				ride(subject);
 			} else if (!supported(subject)) {
-				// the block it was lying on is gone
 				startFalling();
 			} else {
 				getKicked(subject);

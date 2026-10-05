@@ -19,9 +19,6 @@ public final class Subject {
 	public float partialTick;
 	public Vec3 feet = Vec3.ZERO;
 	public Vec3 head = Vec3.ZERO;
-	/**
-	 * direction the headset looks in
-	 */
 	public Vec3 headDir = new Vec3(0, 0, 1);
 	/**
 	 * point the camera aims at and orbits around
@@ -54,9 +51,6 @@ public final class Subject {
 	 */
 	public Vec3 guiCenter;
 
-	/**
-	 * what the player fights, if anything
-	 */
 	public Entity target;
 	/**
 	 * middle of the {@link #target}, null without one
@@ -83,7 +77,6 @@ public final class Subject {
 		this.player = player;
 		this.partialTick = partialTick;
 		Vec3 newFeet = player.getPosition(partialTick);
-		// includes the scale attribute
 		this.unit = Math.max(0.05, player.getScale());
 
 		// Vivecraft teleports move the player in a single frame, nothing a player does is faster than 70 blocks/s
