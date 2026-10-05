@@ -86,10 +86,11 @@ public class CameraConfig {
 	 * a taken photo comes out of the camera as a sheet. Without this it is only saved
 	 */
 	public boolean photoSheet = true;
+	public PhotoGesture photoGesture = PhotoGesture.SAME_HAND;
 	/**
-	 * Seconds the second hand holds interact at a held camera to take a photo. 0 = no photo that way
+	 * seconds the button of the photo gesture has to be held
 	 */
-	public double photoHoldSeconds = 1.5;
+	public double photoHoldSeconds = 1.0;
 	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory
 	 */

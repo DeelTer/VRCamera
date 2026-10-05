@@ -170,5 +170,10 @@
 	"vrcamera.option.photoSheet": "Fotos ausdrucken",
 	"vrcamera.option.photoSheet.tooltip": "Ein aufgenommenes Foto fährt als Blatt aus der Kamera und fällt zu Boden. Es lässt sich wie die Kamera greifen, werfen oder an einem Block loslassen, dann haftet es dort. Angeheftete Blätter bleiben erhalten, die anderen sind beim Verlassen weg. Aus: das Foto wird nur in screenshots/vrcamera gespeichert.",
 	"vrcamera.option.photoHoldSeconds": "Foto: Haltezeit",
-	"vrcamera.option.photoHoldSeconds.tooltip": "Die Kamera mit einer Hand halten, die andere heranführen und deren Interaktionstaste halten. Der Controller vibriert immer stärker, nach so vielen Sekunden klickt der Auslöser. Lässt die erste Hand währenddessen los, übernimmt die zweite die Kamera. 0 schaltet das aus."
+	"vrcamera.option.photoHoldSeconds.tooltip": "Wie lange die Taste der Foto-Geste gehalten werden muss. Der Controller vibriert immer stärker, bis der Auslöser klickt. Bei 0 wird sofort fotografiert.",
+	"vrcamera.option.photoGesture": "Foto-Geste",
+	"vrcamera.option.photoGesture.tooltip": "Wie mit einer gehaltenen Kamera fotografiert wird. Gleiche Hand: die andere Taste der Hand halten, die die Kamera hält, den Trigger beim Greifen mit Grip oder den Grip beim Halten mit dem Trigger. Andere Hand: die andere Hand an die Kamera führen und deren Interaktionstaste halten. Taste und /vrcam photo gehen immer.",
+	"vrcamera.option.photoGesture.same_hand": "Andere Taste, gleiche Hand",
+	"vrcamera.option.photoGesture.other_hand": "Andere Hand an der Kamera",
+	"vrcamera.option.photoGesture.off": "Aus"
 }

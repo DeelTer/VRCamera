@@ -15,6 +15,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.vivecraft.api.client.Tracker;
+import org.vivecraft.api.client.VRClientAPI;
+import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
@@ -26,6 +28,7 @@ import org.vivecraft.common.utils.MathUtils;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.Marker;
+import ru.deelter.vrcamera.client.config.PhotoGesture;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
@@ -134,6 +137,9 @@ public final class CameraController implements Tracker {
 	// the other hand that holds on to a camera in the first one, it takes the camera if the first lets go. -1 for none
 	private int offeredHand = -1;
 	private long albumNanos;
+	private final SecondButton secondButton = new SecondButton();
+	private int shutterTicks;
+	private boolean shutterTaken;
 	private Vec3 handPosition;
 	private final Quaternionf handRotation = new Quaternionf();
 	private final HandStabilizer stabilizer = new HandStabilizer();
@@ -454,6 +460,41 @@ public final class CameraController implements Tracker {
 			this.parkedTime = 0;
 			this.pullHand = null;
 			this.handPosition = null;
+		}
+		tickShutterButton();
+	}
+
+	/**
+	 * the photo gesture of the hand that holds the camera: its other button, held for a moment
+	 */
+	private void tickShutterButton() {
+		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
+		if (!this.engaged || this.config.photoGesture != PhotoGesture.SAME_HAND || !isVRRunning() ||
+				!camera.isMoving() || camera.isQuickMode())
+		{
+			this.secondButton.reset();
+			this.shutterTicks = 0;
+			this.shutterTaken = false;
+			return;
+		}
+		int hand = camera.getMovingController();
+		if (!this.secondButton.isDown(hand)) {
+			this.shutterTicks = 0;
+			this.shutterTaken = false;
+			return;
+		}
+		if (this.shutterTaken) {
+			// one photo per press
+			return;
+		}
+		double seconds = this.config.photoHoldSeconds;
+		double progress = seconds <= 0 ? 1.0 : Math.min(1.0, ++this.shutterTicks / (seconds * 20.0));
+		// gets stronger and higher until the shutter clicks, so it does not come as a surprise
+		VRClientAPI.instance().triggerHapticPulse(hand == 0 ? VRBodyPart.MAIN_HAND : VRBodyPart.OFF_HAND, 0.05F,
+				(float) CamMath.lerp(120.0, 320.0, progress), (float) CamMath.lerp(0.15, 1.0, progress), 0.0F);
+		// may be refused while the last sheet is still coming out, then it is taken as soon as that is over
+		if (progress >= 1.0 && takePhoto()) {
+			this.shutterTaken = true;
 		}
 	}
 

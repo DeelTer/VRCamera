@@ -204,11 +204,17 @@ that shot sets how far in front.
 
 ## Photos
 
-Hold the camera with one hand, bring the other hand to it and hold its interact button. The controller buzzes
-harder and harder, and after `photoHoldSeconds` (1.5 by default) the shutter clicks. The next photo has to wait
-until the sheet of this one has left the camera.
+Hold the camera, then hold the other button of the same hand: the trigger while you grip the camera, or the grip
+while you hold it with the trigger. The controller buzzes harder and harder, and after `photoHoldSeconds`
+(1 by default) the shutter clicks. The next photo has to wait until the sheet of this one has left the camera.
 
-To pass the camera to the other hand: hold on to it with the second hand, then let go with the first.
+`photoGesture` picks the gesture:
+
+| Value | Gesture |
+|---|---|
+| `"same_hand"` | the other button of the hand that holds the camera. Needs SteamVR; found by what else that button is bound to, so it has to be bound to something |
+| `"other_hand"` | bring the other hand to the camera and hold its interact button. To pass the camera over, hold on with the second hand and let go with the first |
+| `"off"` | key and command only |
 
 Without a free hand, or when the camera is not held: `F6`, a controller button you bound to it, or
 `/vrcam photo`. Photos work in every mode while the camera is on.
@@ -222,11 +228,18 @@ Without a free hand, or when the camera is not held: `F6`, a controller button y
 
 ### Sheets
 
-- **Pick up.** Reach for a sheet and hold the interact button, like with the camera.
+- **Developing.** A fresh sheet is blank, the picture comes through over a few seconds.
+- **Pick up.** Reach for a sheet and hold the interact button, like with the camera. The other hand can take it
+  out of the first the same way.
 - **Throw.** Let go while moving your hand.
-- **Pin.** Let go slowly next to a block: the sheet sticks to it, upright on a wall. Pick it up again to move it.
+- **Pin.** Hold the back of the sheet against a block and let go slowly: it sticks there, turned the way you held
+  it. Upright, on its side for a portrait, or at an angle; within 7° of straight it is made straight. Signs and
+  banners work too, and on a head, standing sign or banner the sheet follows the way that is turned. Pick it up
+  again to move it.
 - **Icon.** A sheet that falls or lies around has an icon with the distance, like the camera. Pinned ones do not.
 - **Fire and lava** burn a sheet.
+- **Coming off.** When the block a sheet is pinned to is broken, it falls. An explosion blows sheets off and away,
+  each a bit differently. A sheet that came off is loose again: pin it again or it is forgotten.
 - **Kept or not.** Only pinned sheets are kept: they are there again the next time you play this world. A sheet
   you left lying is forgotten when its chunk unloads or you leave, and at most 12 lie around at once. The photo
   itself stays in `screenshots/vrcamera` either way.
@@ -304,7 +317,8 @@ and by `/vrcam reload`.
 | `underwaterLook` | `true` | Physics: wider angle, slow roll and bubbles under water |
 | `menuShotChat` | `true` | the `menu` shot for chat as well |
 | `photoSheet` | `true` | a taken photo comes out of the camera as a sheet; `false` only saves it |
-| `photoHoldSeconds` | `1.5` | seconds the second hand holds interact at a held camera for a photo, 0 = off |
+| `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
+| `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |
 | `debugOverlay` | `false` | debug overlay on the HUD |
 
 ### Motion

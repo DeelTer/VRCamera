@@ -170,5 +170,10 @@
 	"vrcamera.option.photoSheet": "Print photos",
 	"vrcamera.option.photoSheet.tooltip": "A photo you take slides out of the camera as a sheet of paper and falls to the ground. Pick it up like the camera, throw it, or let go of it at a block to pin it there. Pinned sheets are kept, the others are forgotten when you leave. Off: the photo is only saved to screenshots/vrcamera.",
 	"vrcamera.option.photoHoldSeconds": "Photo: hold time",
-	"vrcamera.option.photoHoldSeconds.tooltip": "Hold the camera with one hand, bring the other hand to it and hold its interact button. The controller buzzes harder and harder, and after this many seconds the shutter clicks. Let go with the first hand meanwhile and the second one takes the camera over. 0 turns this off."
+	"vrcamera.option.photoHoldSeconds.tooltip": "How long the button of the photo gesture has to be held. The controller buzzes harder and harder until the shutter clicks. 0 takes the photo at once.",
+	"vrcamera.option.photoGesture": "Photo gesture",
+	"vrcamera.option.photoGesture.tooltip": "How a photo is taken with a held camera. Same hand: hold the other button of the hand that holds the camera, the trigger while you grip it or the grip while you hold the trigger. Other hand: bring the other hand to the camera and hold its interact button. The key and /vrcam photo always work.",
+	"vrcamera.option.photoGesture.same_hand": "Other button, same hand",
+	"vrcamera.option.photoGesture.other_hand": "Other hand at the camera",
+	"vrcamera.option.photoGesture.off": "Off"
 }

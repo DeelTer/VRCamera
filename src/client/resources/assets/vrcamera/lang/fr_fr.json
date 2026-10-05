@@ -170,5 +170,10 @@
 	"vrcamera.option.photoSheet": "Imprimer les photos",
 	"vrcamera.option.photoSheet.tooltip": "Une photo prise sort de la caméra sous forme de feuille et tombe au sol. Attrapez-la comme la caméra, lancez-la, ou lâchez-la contre un bloc pour l'y épingler. Les feuilles épinglées sont conservées, les autres sont oubliées quand vous partez. Désactivé : la photo est seulement enregistrée dans screenshots/vrcamera.",
 	"vrcamera.option.photoHoldSeconds": "Photo : durée d'appui",
-	"vrcamera.option.photoHoldSeconds.tooltip": "Tenez la caméra d'une main, approchez l'autre et maintenez son bouton d'interaction. La manette vibre de plus en plus fort, puis après ce nombre de secondes le déclencheur claque. Si la première main lâche entre-temps, la seconde reprend la caméra. 0 désactive."
+	"vrcamera.option.photoHoldSeconds.tooltip": "Combien de temps le bouton du geste photo doit être maintenu. La manette vibre de plus en plus fort jusqu'au déclic. 0 prend la photo tout de suite.",
+	"vrcamera.option.photoGesture": "Geste photo",
+	"vrcamera.option.photoGesture.tooltip": "Comment prendre une photo avec une caméra tenue en main. Même main : maintenez l'autre bouton de la main qui tient la caméra, la gâchette si vous la tenez par le grip, ou le grip si vous la tenez par la gâchette. Autre main : approchez l'autre main de la caméra et maintenez son bouton d'interaction. La touche et /vrcam photo fonctionnent toujours.",
+	"vrcamera.option.photoGesture.same_hand": "Autre bouton, même main",
+	"vrcamera.option.photoGesture.other_hand": "Autre main sur la caméra",
+	"vrcamera.option.photoGesture.off": "Désactivé"
 }

@@ -1,9 +1,14 @@
 package ru.deelter.vrcamera.client.photo;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AbstractSkullBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -35,8 +40,20 @@ public final class PhotoSheet {
 	private static final double GROUND_GAP = 0.01;
 	// blocks from the middle of a sheet to a block it is pinned to when let go of
 	private static final double PIN_REACH = 0.3;
+	// how deep a hand may have pushed the sheet into what it is pinned to
+	private static final double PIN_PUSHED_IN = 0.15;
+	// closer than this to upright or to lying on its side, a pinned sheet is made exactly that
+	private static final double PIN_STRAIGHTEN = Math.toRadians(7);
+	// blocks from the middle of a block to the side of a head on it, and to the face of a sign or banner
+	private static final double HEAD_HALF_SIZE = 0.25;
+	private static final double BOARD_HALF_THICKNESS = 0.07;
 	// let go of faster than this it is thrown, also next to a block
 	private static final double PIN_MAX_SPEED = 1.2;
+	// seconds between looks at what a pinned sheet hangs on, with a few dozen sheets every frame would add up
+	private static final double SUPPORT_CHECK_TIME = 0.5;
+	// seconds until the picture starts to show on a new sheet, and until it is all there
+	private static final double DEVELOP_DELAY = 0.8;
+	private static final double DEVELOP_TIME = 5.0;
 
 	private enum State {
 		PRINTING, HELD, FALLING, LYING, PINNED
@@ -58,6 +75,7 @@ public final class PhotoSheet {
 	private boolean gone;
 	// if the camera held on to it since the last update, it falls when the camera is gone
 	private boolean hung = true;
+	private double supportCheck = Math.random() * SUPPORT_CHECK_TIME;
 
 	private int hand = -1;
 	// where the hand has it, as the controller sees it
@@ -78,6 +96,8 @@ public final class PhotoSheet {
 		this.position = position;
 		this.rotation.set(rotation);
 		this.state = State.PINNED;
+		// long developed
+		this.age = DEVELOP_DELAY + DEVELOP_TIME;
 	}
 
 	public Vec3 position() {
@@ -123,8 +143,11 @@ public final class PhotoSheet {
 		return this.state == State.FALLING || this.state == State.LYING;
 	}
 
-	public boolean canGrab() {
-		return isLoose() || isPinned();
+	/**
+	 * @return if the hand can take it: from where it is, or out of the other hand
+	 */
+	public boolean canGrab(int hand) {
+		return isLoose() || isPinned() || (this.state == State.HELD && this.hand != hand);
 	}
 
 	public int hand() {
@@ -183,15 +206,23 @@ public final class PhotoSheet {
 			return false;
 		}
 		Vec3 center = center();
-		BlockHitResult nearest = null;
-		double nearestDistance = Double.MAX_VALUE;
-		for (Direction direction : Direction.values()) {
-			Vec3 reach = new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ()).scale(PIN_REACH);
-			BlockHitResult hit = level.clip(new ClipContext(center, center.add(reach), ClipContext.Block.COLLIDER,
-					ClipContext.Fluid.NONE, CollisionContext.empty()));
-			if (hit.getType() != HitResult.Type.MISS && hit.getLocation().distanceToSqr(center) < nearestDistance) {
-				nearest = hit;
-				nearestDistance = hit.getLocation().distanceToSqr(center);
+		Vector3f front = this.rotation.transform(new Vector3f(0, 0, 1));
+		Vec3 behind = new Vec3(-front.x, -front.y, -front.z);
+		// What the back of the sheet is held against, looked for from a bit in front of it. A hand pushes a
+		// sheet into a thin block like a trapdoor, and from in there the nearest face is the wrong one
+		BlockHitResult nearest = surface(level, center.subtract(behind.scale(PIN_PUSHED_IN)), center.add(
+				behind.scale(PIN_REACH)));
+		if (nearest == null) {
+			// held some other way, like flat over a floor: whatever is closest
+			double nearestDistance = Double.MAX_VALUE;
+			for (Direction direction : Direction.values()) {
+				Vec3 reach = new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ())
+						.scale(PIN_REACH);
+				BlockHitResult hit = surface(level, center, center.add(reach));
+				if (hit != null && hit.getLocation().distanceToSqr(center) < nearestDistance) {
+					nearest = hit;
+					nearestDistance = hit.getLocation().distanceToSqr(center);
+				}
 			}
 		}
 		if (nearest == null) {
@@ -199,23 +230,101 @@ public final class PhotoSheet {
 		}
 		Direction face = nearest.getDirection();
 		Vector3f out = new Vector3f(face.getStepX(), face.getStepY(), face.getStepZ());
-		// Upright on a wall. On the floor or ceiling there is no up, it stays turned the way the hand had it
-		Vector3f up = face.getAxis().isVertical() ? this.rotation.transform(new Vector3f(0, 1, 0)) :
-				new Vector3f(0, 1, 0);
+		Vec3 touch = nearest.getLocation();
+
+		// Heads, standing signs and banners are drawn turned in sixteen steps, while what a ray hits is a box
+		// along the axes. A sheet on their side goes on what is seen
+		BlockState state = level.getBlockState(nearest.getBlockPos());
+		if (!face.getAxis().isVertical() && state.hasProperty(BlockStateProperties.ROTATION_16)) {
+			boolean box = state.getBlock() instanceof AbstractSkullBlock;
+			// a head has four sides to choose from, a board two
+			double step = box ? Math.PI / 2.0 : Math.PI;
+			double turned = Math.toRadians(state.getValue(BlockStateProperties.ROTATION_16) * 22.5);
+			double facing = Math.atan2(-front.x, front.z);
+			double yaw = turned + Math.round((facing - turned) / step) * step;
+			out.set((float) -Math.sin(yaw), 0, (float) Math.cos(yaw));
+			Vec3 normal = new Vec3(out.x, 0, out.z);
+			Vec3 onSide = Vec3.atBottomCenterOf(nearest.getBlockPos()).add(normal.scale(box ? HEAD_HALF_SIZE :
+					BOARD_HALF_THICKNESS));
+			touch = center.subtract(normal.scale(center.subtract(onSide).dot(normal)));
+		}
+
+		// Turned the way the hand had it: upright, on its side, at an angle. Close to straight it is made
+		// straight, a hand does not hold anything level
+		Vector3f up = this.rotation.transform(new Vector3f(0, 1, 0));
 		up.sub(new Vector3f(out).mul(up.dot(out)));
 		if (up.lengthSquared() < 1.0E-4F) {
 			up.set(0, 0, 1);
 		}
 		up.normalize();
+		Vector3f level0 = face.getAxis().isVertical() ? new Vector3f(0, 0, 1) : new Vector3f(0, 1, 0);
+		level0.sub(new Vector3f(out).mul(level0.dot(out)));
+		if (level0.lengthSquared() > 1.0E-4F) {
+			level0.normalize();
+			Vector3f side = out.cross(level0, new Vector3f());
+			double angle = Math.atan2(up.dot(side), up.dot(level0));
+			double straight = Math.round(angle / (Math.PI / 2.0)) * (Math.PI / 2.0);
+			if (Math.abs(angle - straight) < PIN_STRAIGHTEN) {
+				up.set(level0).mul((float) Math.cos(straight)).add(side.mul((float) Math.sin(straight)));
+				up.normalize();
+			}
+		}
 		Vector3f right = up.cross(out, new Vector3f());
 		this.rotation.setFromNormalized(new Matrix3f(right, up, out));
 
-		Vec3 flat = nearest.getLocation().add(out.x * GROUND_GAP, out.y * GROUND_GAP, out.z * GROUND_GAP);
+		Vec3 flat = touch.add(out.x * GROUND_GAP, out.y * GROUND_GAP, out.z * GROUND_GAP);
 		float half = height() / 2.0F;
 		this.position = flat.add(up.x * half, up.y * half, up.z * half);
 		this.velocity = Vec3.ZERO;
 		this.state = State.PINNED;
 		return true;
+	}
+
+	/**
+	 * @return what a sheet can be pinned to on the way, null if there is nothing
+	 */
+	private static BlockHitResult surface(Level level, Vec3 from, Vec3 to) {
+		BlockHitResult solid = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, CollisionContext.empty()));
+		if (solid.getType() != HitResult.Type.MISS) {
+			return solid;
+		}
+		// Signs and banners can be walked through, but are made to hang things on. Not every block with an
+		// outline though, or sheets would stick to grass
+		BlockHitResult outline = level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE,
+				ClipContext.Fluid.NONE, CollisionContext.empty()));
+		if (outline.getType() == HitResult.Type.MISS) {
+			return null;
+		}
+		BlockState state = level.getBlockState(outline.getBlockPos());
+		return state.is(BlockTags.ALL_SIGNS) || state.is(BlockTags.BANNERS) ? outline : null;
+	}
+
+	/**
+	 * @return if what the sheet is pinned to is still there
+	 */
+	private boolean supported(Level level) {
+		Vector3f front = this.rotation.transform(new Vector3f(0, 0, 1));
+		Vec3 out = new Vec3(front.x, front.y, front.z);
+		Vec3 center = center();
+		return surface(level, center.add(out.scale(0.05)), center.subtract(out.scale(0.15))) != null;
+	}
+
+	/**
+	 * comes off what it is pinned to, or is blown away from where it lies
+	 */
+	public void blowOff(Vec3 velocity) {
+		if (this.state == State.PINNED || this.state == State.LYING || this.state == State.FALLING) {
+			this.velocity = velocity;
+			this.state = State.FALLING;
+		}
+	}
+
+	/**
+	 * @return how much the picture is still hidden, a photo takes a moment to show after it is printed
+	 */
+	public float veil() {
+		return 1.0F - (float) CamMath.smoothstep((this.age - DEVELOP_DELAY) / DEVELOP_TIME);
 	}
 
 	public void update(Level level, double dt) {
@@ -227,6 +336,15 @@ public final class PhotoSheet {
 			this.hung = false;
 		} else if (this.state == State.FALLING) {
 			fall(level, dt);
+		} else if (this.state == State.PINNED) {
+			this.supportCheck -= dt;
+			// Not in an unloaded chunk, there is nothing there for a moment and every sheet would come off
+			if (this.supportCheck <= 0 && level.isLoaded(BlockPos.containing(center()))) {
+				this.supportCheck = SUPPORT_CHECK_TIME;
+				if (!supported(level)) {
+					this.state = State.FALLING;
+				}
+			}
 		}
 	}
 

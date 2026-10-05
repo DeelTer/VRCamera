@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.Marker;
+import ru.deelter.vrcamera.client.config.PhotoGesture;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.config.Transition;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -76,6 +77,8 @@ public final class ConfigScreen {
 				value -> config.pullAllModes = value));
 		general.addEntry(screen.toggle("photoSheet", config.photoSheet, defaults.photoSheet,
 				value -> config.photoSheet = value));
+		general.addEntry(screen.selector("photoGesture", PhotoGesture.values(), config.photoGesture,
+				defaults.photoGesture, value -> config.photoGesture = value));
 		general.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,
 				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
 		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,

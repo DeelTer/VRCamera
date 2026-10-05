@@ -57,7 +57,13 @@ public final class PhotoAlbum {
 	// a sheet in the dark still shows its picture
 	private static final int MIN_LIGHT = 5;
 	private static final double DRAW_DISTANCE = 64.0;
+	private static final float VEIL_GAP = 0.0015F;
 	private static final long DEVELOP_TIMEOUT_NANOS = 3_000_000_000L;
+	// an explosion reaches sheets this many times its radius away, and throws the nearest ones this fast
+	private static final double BLAST_REACH = 2.5;
+	private static final double BLAST_SPEED = 9.0;
+	private static final Identifier WHITE = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID,
+			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
 	private int nextTexture;
@@ -314,12 +320,12 @@ public final class PhotoAlbum {
 	/**
 	 * @return the sheet nearest to the hand that it can take, null if there is none in reach
 	 */
-	public PhotoSheet nearest(Vec3 hand, double reach) {
+	public PhotoSheet nearest(Vec3 hand, int handIndex, double reach) {
 		PhotoSheet nearest = null;
 		double nearestDistance = reach * reach;
 		for (PhotoSheet sheet : this.sheets) {
 			double distance = sheet.center().distanceToSqr(hand);
-			if (sheet.canGrab() && distance < nearestDistance) {
+			if (sheet.canGrab(handIndex) && distance < nearestDistance) {
 				nearest = sheet;
 				nearestDistance = distance;
 			}
@@ -381,22 +387,51 @@ public final class PhotoAlbum {
 				VRData.VRDevicePose pose = vr.getController(sheet.hand());
 				sheet.carry(pose.getPosition(), pose.getMatrix().getNormalizedRotation(new Quaternionf()), dt);
 			}
+			boolean wasPinned = sheet.isPinned();
 			sheet.update(level, dt);
+			if (wasPinned && !sheet.isPinned()) {
+				// what it was pinned to is gone. It is loose now, and forgotten like any sheet left lying
+				save();
+			}
 			if (sheet.isPrinting()) {
 				continue;
 			}
 			BlockPos block = BlockPos.containing(sheet.center());
 			if (level.getFluidState(block).is(FluidTags.LAVA) || level.getBlockState(block).is(BlockTags.FIRE)) {
-				boolean wasPinned = sheet.isPinned();
+				boolean burnedPinned = sheet.isPinned();
 				CameraEffects.burned(level, sheet.center());
 				remove(i, true);
-				if (wasPinned) {
+				if (burnedPinned) {
 					save();
 				}
 			} else if (sheet.isGone() || (sheet.isLoose() && !level.isLoaded(block))) {
 				// nobody picked it up, and now nobody is there to see it
 				remove(i, true);
 			}
+		}
+	}
+
+	/**
+	 * An explosion blows sheets off what they are pinned to and away from where they lie. Each a bit differently,
+	 * paper does not fly in formation.
+	 */
+	public void explosion(Vec3 center, float radius) {
+		double reach = radius * BLAST_REACH;
+		boolean unpinned = false;
+		for (PhotoSheet sheet : this.sheets) {
+			Vec3 away = sheet.center().subtract(center);
+			double distance = away.length();
+			if (distance > reach || !(sheet.isPinned() || sheet.isLoose())) {
+				continue;
+			}
+			double force = BLAST_SPEED * (1.0 - distance / reach) * (0.6 + Math.random() * 0.8);
+			Vec3 direction = distance < 1.0E-3 ? new Vec3(0, 1, 0) : away.scale(1.0 / distance);
+			Vec3 scatter = new Vec3(Math.random() - 0.5, Math.random() * 0.8, Math.random() - 0.5);
+			unpinned |= sheet.isPinned();
+			sheet.blowOff(direction.add(scatter).scale(force));
+		}
+		if (unpinned) {
+			save();
 		}
 	}
 
@@ -453,18 +488,30 @@ public final class PhotoAlbum {
 		// as a matrix, a quaternion is not taken by every supported Minecraft version
 		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
 		output.submitCustomGeometry(poseStack, RenderTypes.entityCutout(sheet.texture), (pose, consumer) -> {
-			vertex(consumer, pose, -half, bottom, 0, 1, light);
-			vertex(consumer, pose, half, bottom, 1, 1, light);
-			vertex(consumer, pose, half, 0, 1, topV, light);
-			vertex(consumer, pose, -half, 0, 0, topV, light);
+			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
+			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
+			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
+			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
 		});
+		float veil = sheet.veil();
+		if (veil > 0.01F) {
+			// A fresh photo is blank and the picture comes through, like from an instant camera: white paper
+			// over it that fades. Only over the side with the picture, a hair in front of it
+			output.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(WHITE), (pose, consumer) -> {
+				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
+				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
+				vertex(consumer, pose, half, 0, VEIL_GAP, 1, 0, light, veil);
+				vertex(consumer, pose, -half, 0, VEIL_GAP, 0, 0, light, veil);
+			});
+		}
 		poseStack.popPose();
 	}
 
 	private static void vertex(
-			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v, int light) {
-		consumer.addVertex(pose, x, y, 0)
-				.setColor(1.0F, 1.0F, 1.0F, 1.0F)
+			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light,
+			float alpha) {
+		consumer.addVertex(pose, x, y, z)
+				.setColor(1.0F, 1.0F, 1.0F, alpha)
 				.setUv(u, v)
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(light)

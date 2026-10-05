@@ -11,6 +11,7 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.config.PhotoGesture;
 import ru.deelter.vrcamera.client.math.CamMath;
 
 /**
@@ -59,8 +60,9 @@ public final class CameraShutter implements HeldInteractModule {
 	public boolean isActive(LocalPlayer player, InteractionHand hand, Vec3 handPosition) {
 		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		CameraTracker camera = dh.cameraTracker;
-		if (!this.controller.isEngaged() || !camera.isMoving() || camera.isQuickMode() ||
-				camera.getMovingController() == hand.ordinal())
+		// with another gesture the second hand takes the camera right away, the way Vivecraft does it
+		if (this.controller.config().photoGesture != PhotoGesture.OTHER_HAND || !this.controller.isEngaged() ||
+				!camera.isMoving() || camera.isQuickMode() || camera.getMovingController() == hand.ordinal())
 		{
 			return false;
 		}
@@ -96,10 +98,10 @@ public final class CameraShutter implements HeldInteractModule {
 			return true;
 		}
 		double seconds = this.controller.config().photoHoldSeconds;
-		if (this.taken[index] || seconds <= 0) {
+		if (this.taken[index]) {
 			return true;
 		}
-		double progress = Math.min(1.0, ++this.heldTicks[index] / (seconds * 20.0));
+		double progress = seconds <= 0 ? 1.0 : Math.min(1.0, ++this.heldTicks[index] / (seconds * 20.0));
 		// gets stronger and higher until the shutter clicks, so it does not come as a surprise
 		VRClientAPI.instance().triggerHapticPulse(VRBodyPart.fromInteractionHand(hand), 0.05F,
 				(float) CamMath.lerp(120.0, 320.0, progress), (float) CamMath.lerp(0.15, 1.0, progress), 0.0F);

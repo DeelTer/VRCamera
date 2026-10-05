@@ -170,5 +170,10 @@
 	"vrcamera.option.photoSheet": "Imprimir fotos",
 	"vrcamera.option.photoSheet.tooltip": "A foto que você tira sai da câmera como uma folha e cai no chão. Dá para pegá-la como a câmera, arremessá-la, ou soltá-la junto a um bloco para fixá-la ali. As folhas fixadas são mantidas, as outras são esquecidas quando você sai. Desligado: a foto só é salva em screenshots/vrcamera.",
 	"vrcamera.option.photoHoldSeconds": "Foto: tempo segurando",
-	"vrcamera.option.photoHoldSeconds.tooltip": "Segure a câmera com uma mão, aproxime a outra e segure o botão de interação dela. O controle vibra cada vez mais forte e, depois destes segundos, o obturador dispara. Se a primeira mão soltar nesse meio-tempo, a segunda fica com a câmera. 0 desativa."
+	"vrcamera.option.photoHoldSeconds.tooltip": "Por quanto tempo o botão do gesto de foto precisa ser segurado. O controle vibra cada vez mais forte até o obturador disparar. Com 0 a foto sai na hora.",
+	"vrcamera.option.photoGesture": "Gesto de foto",
+	"vrcamera.option.photoGesture.tooltip": "Como tirar uma foto com a câmera na mão. Mesma mão: segure o outro botão da mão que segura a câmera, o gatilho se você a segura pelo grip ou o grip se a segura pelo gatilho. Outra mão: aproxime a outra mão da câmera e segure o botão de interação dela. A tecla e /vrcam photo funcionam sempre.",
+	"vrcamera.option.photoGesture.same_hand": "Outro botão, mesma mão",
+	"vrcamera.option.photoGesture.other_hand": "Outra mão na câmera",
+	"vrcamera.option.photoGesture.off": "Desligado"
 }

@@ -170,5 +170,10 @@
 	"vrcamera.option.photoSheet": "打印照片",
 	"vrcamera.option.photoSheet.tooltip": "拍下的照片会像纸张一样从摄像机中滑出并落到地上。可以像拿摄像机一样拿起它、扔出去，或在方块旁松手把它钉在那里。钉住的照片会保留，其余的在离开时消失。关闭后照片只保存到 screenshots/vrcamera。",
 	"vrcamera.option.photoHoldSeconds": "拍照：按住时间",
-	"vrcamera.option.photoHoldSeconds.tooltip": "一只手拿着摄像机，把另一只手靠近并按住它的交互键。手柄震动越来越强，按住这么多秒后快门响起。如果这期间第一只手松开，第二只手就接过摄像机。0 为关闭。"
+	"vrcamera.option.photoHoldSeconds.tooltip": "拍照手势的按键需要按住多久。手柄震动会越来越强，直到快门响起。0 表示立即拍照。",
+	"vrcamera.option.photoGesture": "拍照手势",
+	"vrcamera.option.photoGesture.tooltip": "手持摄像机时如何拍照。同一只手：按住拿摄像机那只手的另一个按键——用握键拿着时按扳机，用扳机拿着时按握键。另一只手：把另一只手靠近摄像机并按住它的交互键。按键和 /vrcam photo 始终可用。",
+	"vrcamera.option.photoGesture.same_hand": "同一只手的另一个按键",
+	"vrcamera.option.photoGesture.other_hand": "另一只手靠近摄像机",
+	"vrcamera.option.photoGesture.off": "关闭"
 }
