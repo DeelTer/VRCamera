@@ -393,7 +393,7 @@ public final class PhotoAlbum {
 				if (wasPinned) {
 					save();
 				}
-			} else if (sheet.isGone() || (sheet.isLoose() && !level.hasChunkAt(block))) {
+			} else if (sheet.isGone() || (sheet.isLoose() && !level.isLoaded(block))) {
 				// nobody picked it up, and now nobody is there to see it
 				remove(i, true);
 			}
