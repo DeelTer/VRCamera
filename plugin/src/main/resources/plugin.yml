@@ -1,4 +1,4 @@
-name: VRCameraSync
+name: VRCamera
 version: '${version}'
 main: ru.deelter.vrcamera.sync.plugin.SyncPlugin
 api-version: '1.21'
