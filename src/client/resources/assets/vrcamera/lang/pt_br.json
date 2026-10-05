@@ -150,5 +150,7 @@
 	"vrcamera.option.physicsShake": "Tremor na mão",
 	"vrcamera.option.physicsShake.tooltip": "No modo de física: o quanto uma câmera segurada na mão balança com a respiração e os passos, e sacode quando você leva dano. 0 a mantém tão firme quanto a mão.",
 	"vrcamera.option.pullSeconds": "Puxar a câmera: tempo segurando",
-	"vrcamera.option.pullSeconds.tooltip": "No modo de física: olhe para uma câmera caída, aponte a mão para ela e segure o botão de interação. O controle vibra cada vez mais forte e, depois destes segundos, a câmera voa para a mão. 0 desativa o puxão."
+	"vrcamera.option.pullSeconds.tooltip": "Olhe para a câmera de longe, aponte a mão para ela e segure o botão de interação. O controle vibra cada vez mais forte e, depois destes segundos, a câmera voa para a mão. 0 desativa o puxão.",
+	"vrcamera.option.pullAllModes": "Puxar a câmera em todos os modos",
+	"vrcamera.option.pullAllModes.tooltip": "Desligado: a câmera só pode ser puxada no modo de física. Desligue se a mão pegar a câmera sem querer quando ela filma você de frente."
 }

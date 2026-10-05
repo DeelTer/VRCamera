@@ -64,6 +64,8 @@ public final class ConfigScreen {
 			"%.1f", value -> config.physicsShake = value));
 		general.addEntry(screen.slider("pullSeconds", config.pullSeconds, defaults.pullSeconds, 0, 5, 0.25,
 			"%.2f s", value -> config.pullSeconds = value));
+		general.addEntry(screen.toggle("pullAllModes", config.pullAllModes, defaults.pullAllModes,
+			value -> config.pullAllModes = value));
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
 				value -> config.debugOverlay = value));
 

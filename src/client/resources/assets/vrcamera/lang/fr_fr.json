@@ -150,5 +150,7 @@
 	"vrcamera.option.physicsShake": "Tremblement en main",
 	"vrcamera.option.physicsShake.tooltip": "En mode physique : à quel point une caméra tenue en main oscille avec la respiration et les pas, et sursaute quand vous êtes touché. 0 la garde aussi stable que la main.",
 	"vrcamera.option.pullSeconds": "Attirer la caméra : durée d'appui",
-	"vrcamera.option.pullSeconds.tooltip": "En mode physique : regardez une caméra tombée, pointez la main vers elle et maintenez le bouton d'interaction. La manette vibre de plus en plus fort, puis après ce nombre de secondes la caméra vole dans la main. 0 désactive l'attraction."
+	"vrcamera.option.pullSeconds.tooltip": "Regardez la caméra de loin, pointez la main vers elle et maintenez le bouton d'interaction. La manette vibre de plus en plus fort, puis après ce nombre de secondes la caméra vole dans la main. 0 désactive l'attraction.",
+	"vrcamera.option.pullAllModes": "Attirer la caméra dans tous les modes",
+	"vrcamera.option.pullAllModes.tooltip": "Désactivé : la caméra ne peut être attirée qu'en mode physique. Désactivez si la main attrape la caméra par accident quand elle vous filme de face."
 }

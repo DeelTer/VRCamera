@@ -471,12 +471,19 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
-	 * @return if the camera lies somewhere, to be pulled into a hand from afar
+	 * @return if the camera is somewhere on its own, to be pulled into a hand from afar
 	 */
 	public boolean canPull() {
-		// The other modes film the player from the front a lot, pointing at the camera happens there all the time.
-		// And their camera comes when called anyway
-		return this.engaged && this.mode == Mode.PHYSICS && this.pullHand == null && this.dropped.isDropped();
+		if (!this.engaged || this.pullHand != null) {
+			return false;
+		}
+		if (this.mode == Mode.PHYSICS) {
+			return this.dropped.isDropped();
+		}
+		// These modes film the player from the front a lot, where a hand points at the camera without meaning it.
+		// So that can be turned off
+		return this.config.pullAllModes && this.rig.ready() &&
+			!ClientDataHolderVR.getInstance().cameraTracker.isMoving();
 	}
 
 	/**
@@ -488,6 +495,7 @@ public final class CameraController implements Tracker {
 			return;
 		}
 		this.pullHand = hand;
+		this.parkedTime = 0;
 		this.dropped.pickUp();
 		this.pullGlide.reset(ClientDataHolderVR.getInstance().cameraTracker.getPosition());
 		CameraEffects.pullStart(player);
@@ -499,8 +507,13 @@ public final class CameraController implements Tracker {
 	public void endPull(InteractionHand hand) {
 		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
 		if (this.pullHand == hand) {
-			// still on its way, it falls from where it is
+			// Still on its way. A physical camera falls from where it is, the others swing back to their shot
 			this.pullHand = null;
+			Shot shot = shot();
+			if (this.mode != Mode.PHYSICS && shot != null && this.rig.ready() && this.subject.player != null) {
+				this.rig.adopt(camera.getPosition(), shot, this.subject);
+				this.rig.blend();
+			}
 		} else if (camera.isMoving() && camera.getMovingController() == hand.ordinal()) {
 			camera.stopMoving();
 		}

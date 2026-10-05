@@ -150,5 +150,7 @@
 	"vrcamera.option.physicsShake": "Handheld sway",
 	"vrcamera.option.physicsShake.tooltip": "In the physics mode: how much a camera held in the hand sways with breath and steps, and jolts when you get hurt. 0 keeps it as steady as the hand.",
 	"vrcamera.option.pullSeconds": "Pull camera: hold time",
-	"vrcamera.option.pullSeconds.tooltip": "In the physics mode: look at a dropped camera, point a hand at it and hold the interact button. The controller buzzes harder and harder, and after this many seconds the camera flies into the hand. 0 turns pulling off."
+	"vrcamera.option.pullSeconds.tooltip": "Look at the camera from afar, point a hand at it and hold the interact button. The controller buzzes harder and harder, and after this many seconds the camera flies into the hand. 0 turns pulling off.",
+	"vrcamera.option.pullAllModes": "Pull camera in every mode",
+	"vrcamera.option.pullAllModes.tooltip": "Off: the camera can only be pulled in the physics mode. Turn it off if the hand catches the camera by accident while it films you from the front."
 }

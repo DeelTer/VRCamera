@@ -14,7 +14,8 @@ import ru.deelter.vrcamera.client.math.CamMath;
 
 /**
  * Pulls a camera that is out of reach into the hand: point at it, look at it, and hold the interact button until it
- * comes flying.
+ * comes flying. Let go of, it falls in the physics mode, and is placed there like any camera put down by hand in the
+ * other modes.
  * <p>
  * As an interact module of Vivecraft. That gives the short buzz when the hand finds the camera, and keeps the button
  * from attacking or using the held item meanwhile.

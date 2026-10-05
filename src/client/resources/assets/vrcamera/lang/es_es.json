@@ -150,5 +150,7 @@
 	"vrcamera.option.physicsShake": "Temblor en la mano",
 	"vrcamera.option.physicsShake.tooltip": "En el modo de física: cuánto se balancea una cámara sostenida en la mano con la respiración y los pasos, y cuánto se sacude al recibir daño. 0 la mantiene tan firme como la mano.",
 	"vrcamera.option.pullSeconds": "Atraer la cámara: tiempo de pulsación",
-	"vrcamera.option.pullSeconds.tooltip": "En el modo de física: mira una cámara caída, apunta la mano hacia ella y mantén el botón de interacción. El mando vibra cada vez más fuerte y, tras estos segundos, la cámara vuela a la mano. 0 desactiva la atracción."
+	"vrcamera.option.pullSeconds.tooltip": "Mira la cámara desde lejos, apunta la mano hacia ella y mantén el botón de interacción. El mando vibra cada vez más fuerte y, tras estos segundos, la cámara vuela a la mano. 0 desactiva la atracción.",
+	"vrcamera.option.pullAllModes": "Atraer la cámara en todos los modos",
+	"vrcamera.option.pullAllModes.tooltip": "Desactivado: la cámara solo se puede atraer en el modo de física. Desactívalo si la mano atrapa la cámara sin querer cuando te graba de frente."
 }

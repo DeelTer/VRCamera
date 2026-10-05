@@ -62,6 +62,10 @@ public class CameraConfig {
 	 */
 	public double pullSeconds = 2.0;
 	/**
+	 * the camera can be pulled in every mode, not only in the physics mode
+	 */
+	public boolean pullAllModes = true;
+	/**
 	 * show what the director is doing on the hud
 	 */
 	public boolean debugOverlay = false;

@@ -150,5 +150,7 @@
 	"vrcamera.option.physicsShake": "手持晃动",
 	"vrcamera.option.physicsShake.tooltip": "物理模式下：手持摄像机随呼吸和脚步晃动、受伤时抖动的程度。0 表示和手一样稳。",
 	"vrcamera.option.pullSeconds": "拉回摄像机：按住时间",
-	"vrcamera.option.pullSeconds.tooltip": "物理模式下：看向掉落的摄像机，用手指向它并按住交互键。手柄震动会越来越强，按住这么多秒后摄像机飞到手中。0 为关闭拉回。"
+	"vrcamera.option.pullSeconds.tooltip": "从远处看向摄像机，用手指向它并按住交互键。手柄震动会越来越强，按住这么多秒后摄像机飞到手中。0 为关闭拉回。",
+	"vrcamera.option.pullAllModes": "所有模式下都可拉回",
+	"vrcamera.option.pullAllModes.tooltip": "关闭后只能在物理模式下拉回摄像机。如果摄像机从正面拍你时手会误触，请关闭。"
 }
