@@ -107,6 +107,29 @@ jar {
     }
 }
 
+// buildAll builds for every Minecraft version there is a file for in versions/, one after the other
+def minecraftVersions = fileTree("versions").matching { include "*.properties" }.files
+        .collect { it.name - ".properties" }.sort()
+def versionBuilds = []
+minecraftVersions.each { minecraftVersion ->
+    def previous = versionBuilds.empty ? null : versionBuilds.last()
+    versionBuilds << tasks.register("build_${minecraftVersion.replace('.', '_')}", GradleBuild) {
+        group = "build"
+        description = "Builds for Minecraft ${minecraftVersion}"
+        buildName = "vrcamera-${minecraftVersion.replace('.', '-')}"
+        tasks = ["build"]
+        startParameter.projectProperties = [mc: minecraftVersion]
+        if (previous != null) {
+            mustRunAfter previous
+        }
+    }
+}
+tasks.register("buildAll") {
+    group = "build"
+    description = "Builds for every supported Minecraft version"
+    dependsOn versionBuilds
+}
+
 // configure the maven publication
 publishing {
     publications {

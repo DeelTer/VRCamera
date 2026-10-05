@@ -503,6 +503,7 @@ The mixin has `require = 0`: if the method is renamed, only marker and icon are 
 - `build.gradle` reads `versions/<mc>.properties`: versions of Minecraft, Fabric API, Vivecraft, Cloth Config and
   Mod Menu.
 - The Minecraft version goes into the jar name and into the `minecraft` dependency in `fabric.mod.json`.
+- `buildAll` runs one nested build (`GradleBuild`) per file in `versions/`, one after the other.
 
 Differences between 26.2 and 26.3 so far:
 

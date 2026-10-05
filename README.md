@@ -56,6 +56,12 @@ A jar built for one Minecraft version does not start on the other.
 
 The first command builds for 26.2, the second for 26.3. Jars land in `build/libs/`.
 
+All versions at once:
+
+```bash
+./gradlew buildAll
+```
+
 Versions of Minecraft and of the dependencies are in `versions/<version>.properties`. To support another Minecraft
 version, add a file there. The default version, also used by the IDE, is `mc` in `gradle.properties`.
 
