@@ -152,5 +152,9 @@
 	"vrcamera.option.pullSeconds": "Puxar a câmera: tempo segurando",
 	"vrcamera.option.pullSeconds.tooltip": "Olhe para a câmera de longe, aponte a mão para ela e segure o botão de interação. O controle vibra cada vez mais forte e, depois destes segundos, a câmera voa para a mão. 0 desativa o puxão.",
 	"vrcamera.option.pullAllModes": "Puxar a câmera em todos os modos",
-	"vrcamera.option.pullAllModes.tooltip": "Desligado: a câmera só pode ser puxada no modo de física. Desligue se a mão pegar a câmera sem querer quando ela filma você de frente."
+	"vrcamera.option.pullAllModes.tooltip": "Desligado: a câmera só pode ser puxada no modo de física. Desligue se a mão pegar a câmera sem querer quando ela filma você de frente.",
+	"vrcamera.option.handStabilize": "Estabilização na mão",
+	"vrcamera.option.handStabilize.tooltip": "Estabiliza uma câmera segurada na mão: o tremor e os trancos da mão, por exemplo quando a outra quebra um bloco, são suavizados, e os movimentos intencionais passam. 0 desativa; mais alto é mais estável, mas com mais atraso em relação à mão.",
+	"vrcamera.option.menuShotChat": "Plano de menu para o chat",
+	"vrcamera.option.menuShotChat.tooltip": "O diretor se aproxima enquanto o chat está aberto, como faz com um inventário. Desligue se os cortes incomodarem quando o chat fica aberto só por um instante."
 }

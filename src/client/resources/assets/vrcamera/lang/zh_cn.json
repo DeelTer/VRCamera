@@ -152,5 +152,9 @@
 	"vrcamera.option.pullSeconds": "拉回摄像机：按住时间",
 	"vrcamera.option.pullSeconds.tooltip": "从远处看向摄像机，用手指向它并按住交互键。手柄震动会越来越强，按住这么多秒后摄像机飞到手中。0 为关闭拉回。",
 	"vrcamera.option.pullAllModes": "所有模式下都可拉回",
-	"vrcamera.option.pullAllModes.tooltip": "关闭后只能在物理模式下拉回摄像机。如果摄像机从正面拍你时手会误触，请关闭。"
+	"vrcamera.option.pullAllModes.tooltip": "关闭后只能在物理模式下拉回摄像机。如果摄像机从正面拍你时手会误触，请关闭。",
+	"vrcamera.option.handStabilize": "手持稳定",
+	"vrcamera.option.handStabilize.tooltip": "稳定手持的摄像机：手的抖动和抽动（例如另一只手在挖方块时）会被平滑掉，有意的移动仍会通过。0 为关闭；数值越高越稳，但相对手的延迟越大。",
+	"vrcamera.option.menuShotChat": "聊天时使用菜单镜头",
+	"vrcamera.option.menuShotChat.tooltip": "打开聊天时导演会像打开物品栏一样把镜头拉近。如果只是短暂打开聊天时的切镜让你觉得烦，请关闭。"
 }

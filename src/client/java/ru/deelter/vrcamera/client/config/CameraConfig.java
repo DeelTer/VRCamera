@@ -19,7 +19,7 @@ public class CameraConfig {
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
 	// number of the last change of defaults this file has seen, see migrate
-	private static final int VERSION = 2;
+	private static final int VERSION = 3;
 	public int version = VERSION;
 
 	/**
@@ -60,11 +60,20 @@ public class CameraConfig {
 	 * Seconds to point at a dropped camera and hold the button, for it to fly into the hand.
 	 * 0 = it can't be pulled
 	 */
-	public double pullSeconds = 2.0;
+	public double pullSeconds = 1.25;
+	/**
+	 * How much a camera held in the hand is steadied against trembling and twitching of that hand.
+	 * 0 = not at all, 1 = as much as it gets
+	 */
+	public double handStabilize = 0.5;
 	/**
 	 * the camera can be pulled in every mode, not only in the physics mode
 	 */
 	public boolean pullAllModes = true;
+	/**
+	 * the director shows the menu shot for the chat as well, like for an inventory
+	 */
+	public boolean menuShotChat = true;
 	/**
 	 * show what the director is doing on the hud
 	 */
@@ -235,6 +244,10 @@ public class CameraConfig {
 			if (menu.azimuth == 155) {
 				menu.azimuth = ShotType.MENU.defaults().azimuth;
 			}
+		}
+		if (from < 3 && this.pullSeconds == 2.0) {
+			// pulling the camera took too long
+			this.pullSeconds = 1.25;
 		}
 		this.version = VERSION;
 	}

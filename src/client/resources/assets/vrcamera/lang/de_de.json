@@ -152,5 +152,9 @@
 	"vrcamera.option.pullSeconds": "Kamera heranziehen: Haltezeit",
 	"vrcamera.option.pullSeconds.tooltip": "Die Kamera aus der Ferne ansehen, mit der Hand auf sie zeigen und die Interaktionstaste halten. Der Controller vibriert immer stärker, nach so vielen Sekunden fliegt die Kamera in die Hand. 0 schaltet das Heranziehen aus.",
 	"vrcamera.option.pullAllModes": "Heranziehen in jedem Modus",
-	"vrcamera.option.pullAllModes.tooltip": "Aus: die Kamera lässt sich nur im Physik-Modus heranziehen. Ausschalten, wenn die Hand die Kamera versehentlich erwischt, während sie von vorn filmt."
+	"vrcamera.option.pullAllModes.tooltip": "Aus: die Kamera lässt sich nur im Physik-Modus heranziehen. Ausschalten, wenn die Hand die Kamera versehentlich erwischt, während sie von vorn filmt.",
+	"vrcamera.option.handStabilize": "Stabilisierung in der Hand",
+	"vrcamera.option.handStabilize.tooltip": "Beruhigt eine Kamera in der Hand: Zittern und Zucken der Hand, etwa wenn die andere Hand einen Block abbaut, wird geglättet, gewollte Bewegungen kommen durch. 0 schaltet es aus, höher ist ruhiger, hängt der Hand aber mehr nach.",
+	"vrcamera.option.menuShotChat": "Menü-Einstellung für den Chat",
+	"vrcamera.option.menuShotChat.tooltip": "Der Regisseur geht nah heran, solange der Chat offen ist, wie beim Inventar. Ausschalten, wenn die Schnitte stören, wenn der Chat nur kurz offen ist."
 }

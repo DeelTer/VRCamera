@@ -152,5 +152,9 @@
 	"vrcamera.option.pullSeconds": "Pull camera: hold time",
 	"vrcamera.option.pullSeconds.tooltip": "Look at the camera from afar, point a hand at it and hold the interact button. The controller buzzes harder and harder, and after this many seconds the camera flies into the hand. 0 turns pulling off.",
 	"vrcamera.option.pullAllModes": "Pull camera in every mode",
-	"vrcamera.option.pullAllModes.tooltip": "Off: the camera can only be pulled in the physics mode. Turn it off if the hand catches the camera by accident while it films you from the front."
+	"vrcamera.option.pullAllModes.tooltip": "Off: the camera can only be pulled in the physics mode. Turn it off if the hand catches the camera by accident while it films you from the front.",
+	"vrcamera.option.handStabilize": "Hand stabilization",
+	"vrcamera.option.handStabilize.tooltip": "Steadies a camera held in the hand: trembling and twitching of the hand, like while the other hand breaks a block, is smoothed out, moves that are meant still get through. 0 turns it off, higher is steadier but lags more behind the hand.",
+	"vrcamera.option.menuShotChat": "Menu shot for chat",
+	"vrcamera.option.menuShotChat.tooltip": "The director moves in close while the chat is open, like it does for an inventory. Turn it off if the cuts bother you when the chat is only open for a moment."
 }

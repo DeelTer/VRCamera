@@ -152,5 +152,9 @@
 	"vrcamera.option.pullSeconds": "Atraer la cámara: tiempo de pulsación",
 	"vrcamera.option.pullSeconds.tooltip": "Mira la cámara desde lejos, apunta la mano hacia ella y mantén el botón de interacción. El mando vibra cada vez más fuerte y, tras estos segundos, la cámara vuela a la mano. 0 desactiva la atracción.",
 	"vrcamera.option.pullAllModes": "Atraer la cámara en todos los modos",
-	"vrcamera.option.pullAllModes.tooltip": "Desactivado: la cámara solo se puede atraer en el modo de física. Desactívalo si la mano atrapa la cámara sin querer cuando te graba de frente."
+	"vrcamera.option.pullAllModes.tooltip": "Desactivado: la cámara solo se puede atraer en el modo de física. Desactívalo si la mano atrapa la cámara sin querer cuando te graba de frente.",
+	"vrcamera.option.handStabilize": "Estabilización en la mano",
+	"vrcamera.option.handStabilize.tooltip": "Estabiliza una cámara sostenida en la mano: el temblor y los tirones de la mano, por ejemplo cuando la otra rompe un bloque, se suavizan, y los movimientos intencionados pasan. 0 la desactiva; más alto es más estable, pero con más retraso respecto a la mano.",
+	"vrcamera.option.menuShotChat": "Plano de menú para el chat",
+	"vrcamera.option.menuShotChat.tooltip": "El director se acerca mientras el chat está abierto, como con un inventario. Desactívalo si molestan los cortes cuando el chat solo se abre un momento."
 }

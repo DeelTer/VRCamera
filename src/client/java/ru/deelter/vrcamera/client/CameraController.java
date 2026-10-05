@@ -30,6 +30,7 @@ import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.SmoothVec;
 import ru.deelter.vrcamera.client.rig.DroppedCamera;
+import ru.deelter.vrcamera.client.rig.HandStabilizer;
 import ru.deelter.vrcamera.client.rig.HandThrow;
 import ru.deelter.vrcamera.client.rig.HandheldShake;
 import ru.deelter.vrcamera.client.rig.Rig;
@@ -91,6 +92,8 @@ public final class CameraController implements Tracker {
 	private static final double PULL_TIME = 0.12;
 	private static final double PULL_ARRIVED = 0.15;
 	private static final double PULL_SPARKS = 30.0;
+	// blocks from the hand to the middle of a camera that it pulled, half a camera and a bit
+	private static final double PULL_GRIP_OFFSET = 0.16;
 	// seconds a thrown camera of Vivecraft needs to get where it was thrown
 	private static final double GLIDE_TIME = 0.3;
 	// seconds a summoned camera waits to be picked up
@@ -116,6 +119,7 @@ public final class CameraController implements Tracker {
 	private final HandThrow handThrow = new HandThrow();
 	private final DroppedCamera dropped = new DroppedCamera();
 	private final HandheldShake shake = new HandheldShake();
+	private final HandStabilizer stabilizer = new HandStabilizer();
 	// hand the camera is flying to after it was pulled, null when it is not
 	private InteractionHand pullHand;
 	private final SmoothVec pullGlide = new SmoothVec();
@@ -662,10 +666,12 @@ public final class CameraController implements Tracker {
 	/**
 	 * @return where in the world the menu is that the player has open, null if there is none
 	 */
-	private static Vec3 openMenuPosition(VRData vr) {
+	private Vec3 openMenuPosition(VRData vr) {
 		Screen screen = Minecraft.getInstance().gui.screen();
-		// chat is not looked at for long, and is typed into while doing other things
-		if (GuiHandler.GUI_POS_ROOM == null || screen == null || screen instanceof ChatScreen) {
+		// chat is often only open for a moment, not everyone wants a cut for that
+		if (GuiHandler.GUI_POS_ROOM == null || screen == null ||
+			(screen instanceof ChatScreen && !this.config.menuShotChat))
+		{
 			return null;
 		}
 		return VRPlayer.roomToWorldPos(GuiHandler.GUI_POS_ROOM, vr);
@@ -748,12 +754,19 @@ public final class CameraController implements Tracker {
 		}
 		if (camera.isMoving()) {
 			// the player holds the camera in their hand
+			if (!this.wasGrabbed) {
+				this.stabilizer.reset();
+			}
 			this.wasGrabbed = true;
 			this.parkedTime = 0;
 			this.dropped.pickUp();
+			// the throw is what the hand did, not what is left of it
 			this.handThrow.sample(camera.getPosition());
+			// Vivecraft sets the camera from the hand again every frame, so what is changed here does not add up
+			this.stabilizer.update(camera.getPosition(), camera.getRotation(), dt, this.config.handStabilize);
+			camera.setPosition(this.stabilizer.position());
+			camera.setRotation(new Quaternionf(this.stabilizer.rotation()));
 			if (this.mode == Mode.PHYSICS && this.config.physicsShake > 0) {
-				// Vivecraft sets the rotation from the hand again every frame, so this does not add up
 				camera.getRotation().mul(this.shake.update(worldDt, this.subject.speed, player.hurtTime > 0,
 					this.config.physicsShake));
 			}
@@ -868,7 +881,14 @@ public final class CameraController implements Tracker {
 	 * a pulled camera on its way to the hand that pulled it
 	 */
 	private void flyToHand(CameraTracker camera, VRData vr, LocalPlayer player, double dt) {
-		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition();
+		// The hand takes the camera by its side, the right hand by the right one as the player sees it. In the
+		// middle of it the hand would be in front of the lens
+		boolean rightHand = (this.pullHand == InteractionHand.MAIN_HAND) !=
+			ClientDataHolderVR.getInstance().vrSettings.reverseHands;
+		Vec3 toRight = new Vec3(-this.subject.headDir.z, 0, this.subject.headDir.x);
+		toRight = toRight.lengthSqr() < 1.0E-6 ? Vec3.ZERO : toRight.normalize();
+		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition()
+			.add(toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale));
 		Vec3 position = this.pullGlide.update(hand, PULL_TIME, dt);
 		Quaternionf atPlayer = new Quaternionf();
 		if (CamMath.lookRotation(this.subject.head.subtract(position), atPlayer)) {

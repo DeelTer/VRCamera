@@ -152,5 +152,9 @@
 	"vrcamera.option.pullSeconds": "Attirer la caméra : durée d'appui",
 	"vrcamera.option.pullSeconds.tooltip": "Regardez la caméra de loin, pointez la main vers elle et maintenez le bouton d'interaction. La manette vibre de plus en plus fort, puis après ce nombre de secondes la caméra vole dans la main. 0 désactive l'attraction.",
 	"vrcamera.option.pullAllModes": "Attirer la caméra dans tous les modes",
-	"vrcamera.option.pullAllModes.tooltip": "Désactivé : la caméra ne peut être attirée qu'en mode physique. Désactivez si la main attrape la caméra par accident quand elle vous filme de face."
+	"vrcamera.option.pullAllModes.tooltip": "Désactivé : la caméra ne peut être attirée qu'en mode physique. Désactivez si la main attrape la caméra par accident quand elle vous filme de face.",
+	"vrcamera.option.handStabilize": "Stabilisation en main",
+	"vrcamera.option.handStabilize.tooltip": "Stabilise une caméra tenue en main : les tremblements et à-coups de la main, par exemple quand l'autre main casse un bloc, sont lissés, les mouvements voulus passent. 0 la désactive, plus haut c'est plus stable mais avec plus de retard sur la main.",
+	"vrcamera.option.menuShotChat": "Plan menu pour le chat",
+	"vrcamera.option.menuShotChat.tooltip": "Le réalisateur se rapproche tant que le chat est ouvert, comme pour un inventaire. Désactivez si les changements de plan gênent quand le chat n'est ouvert qu'un instant."
 }

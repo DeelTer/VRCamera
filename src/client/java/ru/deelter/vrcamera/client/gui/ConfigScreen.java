@@ -62,10 +62,14 @@ public final class ConfigScreen {
 			value -> config.physicsAim = value));
 		general.addEntry(screen.slider("physicsShake", config.physicsShake, defaults.physicsShake, 0, 3, 0.1,
 			"%.1f", value -> config.physicsShake = value));
+		general.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
+			"%.2f", value -> config.handStabilize = value));
 		general.addEntry(screen.slider("pullSeconds", config.pullSeconds, defaults.pullSeconds, 0, 5, 0.25,
 			"%.2f s", value -> config.pullSeconds = value));
 		general.addEntry(screen.toggle("pullAllModes", config.pullAllModes, defaults.pullAllModes,
 			value -> config.pullAllModes = value));
+		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
+			value -> config.menuShotChat = value));
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
 				value -> config.debugOverlay = value));
 
