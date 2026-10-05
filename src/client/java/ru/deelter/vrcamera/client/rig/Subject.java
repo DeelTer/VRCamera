@@ -13,6 +13,8 @@ import ru.deelter.vrcamera.client.math.SmoothVec;
  */
 public final class Subject {
 	public LocalPlayer player;
+	/** how far the current frame is between two game ticks, to get where entities are drawn */
+	public float partialTick;
 	public Vec3 feet = Vec3.ZERO;
 	public Vec3 head = Vec3.ZERO;
 	/**
@@ -77,6 +79,7 @@ public final class Subject {
 	public void update(
 			LocalPlayer player, VRData vr, float partialTick, double dt, double realDt, CameraConfig config) {
 		this.player = player;
+		this.partialTick = partialTick;
 		Vec3 newFeet = player.getPosition(partialTick);
 		// includes the scale attribute
 		this.unit = Math.max(0.05, player.getScale());

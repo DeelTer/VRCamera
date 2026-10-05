@@ -137,7 +137,7 @@
 	"vrcamera.shot.pov": "第一人称",
 	"vrcamera.shot.pov.tooltip": "位于脸部正前方，朝玩家注视的方向拍摄。用于玩家周围没有空间放置摄像机的地方。距离表示在眼睛前方多远，角度不使用。",
 	"vrcamera.shot.menu": "菜单",
-	"vrcamera.shot.menu.tooltip": "越过肩膀近距离拍摄打开的物品栏或箱子。仅在其打开时出现。环绕角度以菜单方向为基准。",
+	"vrcamera.shot.menu.tooltip": "越过肩膀近距离拍摄打开的菜单：物品栏、箱子、暂停菜单。仅在其打开时出现。环绕角度以菜单方向为基准；调小可以让肩膀之外露出更多画面。",
 	"vrcamera.option.indicator": "摄像机图标",
 	"vrcamera.option.indicator.tooltip": "在头显中于摄像机所在位置显示摄像机图标和距离，可穿墙显示。摄像机不在视野内时，图标会停在视野边缘靠近它的一侧。不会出现在录像中。",
 	"vrcamera.option.throwPower": "投掷力度",
@@ -146,5 +146,9 @@
 	"vrcamera.option.physicsAim": "掉落的摄像机朝向玩家",
 	"vrcamera.option.physicsAim.tooltip": "物理模式下：掉落的摄像机在静止过程中把镜头转向玩家的程度。0 表示保持落地时的姿态，1 表示正对玩家。",
 	"vrcamera.option.indicatorSize": "图标大小",
-	"vrcamera.option.indicatorSize.tooltip": "摄像机图标及其下方距离文字的大小。"
+	"vrcamera.option.indicatorSize.tooltip": "摄像机图标及其下方距离文字的大小。",
+	"vrcamera.option.physicsShake": "手持晃动",
+	"vrcamera.option.physicsShake.tooltip": "物理模式下：手持摄像机随呼吸和脚步晃动、受伤时抖动的程度。0 表示和手一样稳。",
+	"vrcamera.option.pullSeconds": "拉回摄像机：按住时间",
+	"vrcamera.option.pullSeconds.tooltip": "物理模式下：看向掉落的摄像机，用手指向它并按住交互键。手柄震动会越来越强，按住这么多秒后摄像机飞到手中。0 为关闭拉回。"
 }

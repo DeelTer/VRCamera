@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -16,6 +17,10 @@ import java.util.*;
 public class CameraConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
+
+	// number of the last change of defaults this file has seen, see migrate
+	private static final int VERSION = 2;
+	public int version = VERSION;
 
 	/**
 	 * show the camera view on the desktop mirror while the camera is on
@@ -47,6 +52,15 @@ public class CameraConfig {
 	 * 0 = it lies however it fell, 1 = it looks right at the player
 	 */
 	public double physicsAim = 0.75;
+	/**
+	 * how much a camera held in the hand sways with breath and steps, in the physics mode. 0 = steady
+	 */
+	public double physicsShake = 1.0;
+	/**
+	 * Seconds to point at a dropped camera and hold the button, for it to fly into the hand.
+	 * 0 = it can't be pulled
+	 */
+	public double pullSeconds = 2.0;
 	/**
 	 * show what the director is doing on the hud
 	 */
@@ -183,12 +197,6 @@ public class CameraConfig {
 		if (this.presets.isEmpty()) {
 			this.presets.add(this.custom != null ? this.custom : defaultPreset());
 		}
-		for (ShotConfig preset : this.presets) {
-			// the first default was too close. One still at exactly that was never placed by hand, move it out
-			if (preset.azimuth == 0 && preset.elevation == 5 && preset.distance == 2.5) {
-				preset.distance = defaultPreset().distance;
-			}
-		}
 		this.custom = null;
 		this.activePreset = Math.clamp(this.activePreset, 0, this.presets.size() - 1);
 		// unknown values in the file end up as null
@@ -204,11 +212,39 @@ public class CameraConfig {
 		}
 	}
 
+	/**
+	 * Moves values that are still at a default that turned out badly on to the new default. Values that were
+	 * changed by the player stay as they are.
+	 *
+	 * @param from version of the file that was read
+	 */
+	private void migrate(int from) {
+		if (from < 2) {
+			// hand placed shots started too close
+			for (ShotConfig preset : this.presets) {
+				if (preset.azimuth == 0 && preset.elevation == 5 && preset.distance == 2.5) {
+					preset.distance = defaultPreset().distance;
+				}
+			}
+			// the menu shot was too far behind the player, the shoulder covered the menu
+			ShotConfig menu = shot(ShotType.MENU);
+			if (menu.azimuth == 155) {
+				menu.azimuth = ShotType.MENU.defaults().azimuth;
+			}
+		}
+		this.version = VERSION;
+	}
+
 	public static CameraConfig load() {
 		CameraConfig config = null;
 		if (Files.exists(PATH)) {
 			try (Reader reader = Files.newBufferedReader(PATH)) {
-				config = GSON.fromJson(reader, CameraConfig.class);
+				JsonObject json = GSON.fromJson(reader, JsonObject.class);
+				config = GSON.fromJson(json, CameraConfig.class);
+				if (config != null && !json.has("version")) {
+					// from before files had a version
+					config.version = 1;
+				}
 			} catch (Exception e) {
 				Vrcamera.LOGGER.error("VRCamera: failed to read {}, using defaults", PATH, e);
 			}
@@ -217,6 +253,7 @@ public class CameraConfig {
 			config = new CameraConfig();
 		}
 		config.fillDefaults();
+		config.migrate(config.version);
 		config.save();
 		return config;
 	}

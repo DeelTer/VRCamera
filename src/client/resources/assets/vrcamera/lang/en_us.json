@@ -137,7 +137,7 @@
 	"vrcamera.shot.pov": "First person",
 	"vrcamera.shot.pov.tooltip": "Right in front of the face, looking where the player looks. Used where there is no room for a camera around the player. Distance is how far in front of the eyes, the angles are not used.",
 	"vrcamera.shot.menu": "Menu",
-	"vrcamera.shot.menu.tooltip": "Close over the shoulder onto an open inventory or chest. Only shown while one is open. The angle around is measured from the menu.",
+	"vrcamera.shot.menu.tooltip": "Close over the shoulder onto an open menu: inventory, chest, pause menu. Only shown while one is open. The angle around is measured from the menu, lower it to see more past the shoulder.",
 	"vrcamera.option.indicator": "Camera icon",
 	"vrcamera.option.indicator.tooltip": "Shows a camera icon with the distance in the headset, where the camera is, also through walls. While the camera is out of sight the icon sticks to the edge of the view on that side. Never visible in the recording.",
 	"vrcamera.option.throwPower": "Throw strength",
@@ -146,5 +146,9 @@
 	"vrcamera.option.physicsAim": "Dropped camera faces player",
 	"vrcamera.option.physicsAim.tooltip": "In the physics mode: how much a dropped camera turns its lens to the player while it comes to rest. 0 leaves it lying however it fell, 1 makes it look right at the player.",
 	"vrcamera.option.indicatorSize": "Camera icon size",
-	"vrcamera.option.indicatorSize.tooltip": "Size of the camera icon and of the distance below it."
+	"vrcamera.option.indicatorSize.tooltip": "Size of the camera icon and of the distance below it.",
+	"vrcamera.option.physicsShake": "Handheld sway",
+	"vrcamera.option.physicsShake.tooltip": "In the physics mode: how much a camera held in the hand sways with breath and steps, and jolts when you get hurt. 0 keeps it as steady as the hand.",
+	"vrcamera.option.pullSeconds": "Pull camera: hold time",
+	"vrcamera.option.pullSeconds.tooltip": "In the physics mode: look at a dropped camera, point a hand at it and hold the interact button. The controller buzzes harder and harder, and after this many seconds the camera flies into the hand. 0 turns pulling off."
 }

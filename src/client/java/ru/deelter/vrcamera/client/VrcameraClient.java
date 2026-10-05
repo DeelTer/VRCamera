@@ -41,7 +41,10 @@ public class VrcameraClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
-		VRClientAPI.instance().addClientRegistrationHandler(event -> event.registerTrackers(this.controller));
+		VRClientAPI.instance().addClientRegistrationHandler(event -> {
+			event.registerTrackers(this.controller);
+			event.registerInteractModules(new CameraPull(this.controller));
+		});
 
 		key("mode", InputConstants.KEY_F8, this.controller::cycleMode);
 		key("next", InputConstants.KEY_F9, this.controller::nextShot);

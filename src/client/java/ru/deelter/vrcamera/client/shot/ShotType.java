@@ -54,10 +54,10 @@ public enum ShotType {
 	 */
 	POV(new ShotConfig(0.6, 0, 0, 0.34, 90, 5, 10), 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 	/**
-	 * Close over the shoulder onto an open inventory or chest, only shown while one is open. The azimuth is relative
-	 * to the direction to the menu.
+	 * Close over the shoulder onto an open menu: inventory, chest, pause menu. Only shown while one is open. The
+	 * azimuth is relative to the direction to the menu.
 	 */
-	MENU(new ShotConfig(1.0, 155, 18, 1.7, 55, 6, 10), 1.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+	MENU(new ShotConfig(1.0, 138, 18, 1.7, 55, 6, 10), 1.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 	/**
 	 * placed by hand
 	 */

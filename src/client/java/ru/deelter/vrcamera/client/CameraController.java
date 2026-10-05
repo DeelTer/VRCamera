@@ -1,11 +1,14 @@
 package ru.deelter.vrcamera.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
@@ -28,6 +31,7 @@ import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.SmoothVec;
 import ru.deelter.vrcamera.client.rig.DroppedCamera;
 import ru.deelter.vrcamera.client.rig.HandThrow;
+import ru.deelter.vrcamera.client.rig.HandheldShake;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
 import ru.deelter.vrcamera.client.rig.WorldProbe;
@@ -82,6 +86,11 @@ public final class CameraController implements Tracker {
 	private static final int INDICATOR_COLOR = 0xFFFFFFFF;
 	// blocks the camera of the physics mode can be left behind, before it comes back to the player
 	private static final double PHYSICS_LEASH = 40.0;
+	// A pulled camera flies to the hand: seconds it needs to catch up with it, how close counts as there, and
+	// sparks it leaves behind per second
+	private static final double PULL_TIME = 0.12;
+	private static final double PULL_ARRIVED = 0.15;
+	private static final double PULL_SPARKS = 30.0;
 	// seconds a thrown camera of Vivecraft needs to get where it was thrown
 	private static final double GLIDE_TIME = 0.3;
 	// seconds a summoned camera waits to be picked up
@@ -106,6 +115,13 @@ public final class CameraController implements Tracker {
 	private boolean wasGrabbed;
 	private final HandThrow handThrow = new HandThrow();
 	private final DroppedCamera dropped = new DroppedCamera();
+	private final HandheldShake shake = new HandheldShake();
+	// hand the camera is flying to after it was pulled, null when it is not
+	private InteractionHand pullHand;
+	private final SmoothVec pullGlide = new SmoothVec();
+	private boolean wasDead;
+	// who killed the player, the camera on the ground tries to get them into the picture as well
+	private Entity killer;
 	// for throwing the camera of Vivecraft while this mod is off: where it is flying to, null when it is not flying
 	private Vec3 glideTarget;
 	private boolean plainHeld;
@@ -360,6 +376,7 @@ public final class CameraController implements Tracker {
 			this.rig.reset();
 			this.wasGrabbed = false;
 			this.parkedTime = 0;
+			this.pullHand = null;
 		}
 	}
 
@@ -385,6 +402,7 @@ public final class CameraController implements Tracker {
 		dh.cameraTracker.setPosition(pos);
 		dh.cameraTracker.setRotation(rotation);
 		this.dropped.pickUp();
+		this.pullHand = null;
 
 		this.parkedTime = PARK_SECONDS;
 		notify(Component.translatable("vrcamera.message.summon"));
@@ -420,6 +438,9 @@ public final class CameraController implements Tracker {
 		this.glideTarget = null;
 		this.plainHeld = false;
 		this.dropped.pickUp();
+		this.pullHand = null;
+		this.wasDead = false;
+		this.killer = null;
 		if (mode == Mode.OFF) {
 			release();
 		}
@@ -434,13 +455,55 @@ public final class CameraController implements Tracker {
 	 * @return what the camera of the physics mode is doing, for the debug overlay
 	 */
 	public String physicsState() {
+		if (this.pullHand != null) {
+			return "pulled";
+		}
 		if (this.parkedTime > 0) {
 			return "waiting";
 		}
 		if (!this.dropped.isDropped()) {
 			return "held";
 		}
+		if (this.dropped.isCarried()) {
+			return "carried";
+		}
 		return this.dropped.isResting() ? "lying" : "falling";
+	}
+
+	/**
+	 * @return if the camera lies somewhere, to be pulled into a hand from afar
+	 */
+	public boolean canPull() {
+		// The other modes film the player from the front a lot, pointing at the camera happens there all the time.
+		// And their camera comes when called anyway
+		return this.engaged && this.mode == Mode.PHYSICS && this.pullHand == null && this.dropped.isDropped();
+	}
+
+	/**
+	 * the camera flies into the hand, and stays in it until {@link #endPull}
+	 */
+	public void startPull(InteractionHand hand) {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (!canPull() || player == null) {
+			return;
+		}
+		this.pullHand = hand;
+		this.dropped.pickUp();
+		this.pullGlide.reset(ClientDataHolderVR.getInstance().cameraTracker.getPosition());
+		CameraEffects.pullStart(player);
+	}
+
+	/**
+	 * the hand that pulled the camera let go of it
+	 */
+	public void endPull(InteractionHand hand) {
+		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
+		if (this.pullHand == hand) {
+			// still on its way, it falls from where it is
+			this.pullHand = null;
+		} else if (camera.isMoving() && camera.getMovingController() == hand.ordinal()) {
+			camera.stopMoving();
+		}
 	}
 
 	public void nextShot() {
@@ -584,11 +647,12 @@ public final class CameraController implements Tracker {
 	}
 
 	/**
-	 * @return where in the world the inventory or chest menu is that the player has open, null if there is none
+	 * @return where in the world the menu is that the player has open, null if there is none
 	 */
 	private static Vec3 openMenuPosition(VRData vr) {
-		if (GuiHandler.GUI_POS_ROOM == null ||
-				!(Minecraft.getInstance().gui.screen() instanceof AbstractContainerScreen<?>)) {
+		Screen screen = Minecraft.getInstance().gui.screen();
+		// chat is not looked at for long, and is typed into while doing other things
+		if (GuiHandler.GUI_POS_ROOM == null || screen == null || screen instanceof ChatScreen) {
 			return null;
 		}
 		return VRPlayer.roomToWorldPos(GuiHandler.GUI_POS_ROOM, vr);
@@ -606,6 +670,7 @@ public final class CameraController implements Tracker {
 		this.rig.reset();
 		this.wasGrabbed = false;
 		this.parkedTime = 0;
+		this.pullHand = null;
 	}
 
 	@Override
@@ -645,9 +710,9 @@ public final class CameraController implements Tracker {
 		double realDt = Math.max(0.0, (now - this.lastNanos) / 1.0E9);
 		double dt = Math.min(realDt, 0.1);
 		this.lastNanos = now;
-		if (Minecraft.getInstance().isPaused()) {
-			dt = 0;
-		}
+		// The camera keeps moving while the game is paused, to get to the pause menu. Only what belongs to the world
+		// stands still
+		double worldDt = Minecraft.getInstance().isPaused() ? 0 : dt;
 		if (realDt > RESUME_GAP) {
 			// VR was paused, the player can be anywhere by now
 			this.subject.reset();
@@ -659,12 +724,26 @@ public final class CameraController implements Tracker {
 		this.subject.update(player, vr, partialTick, dt, realDt, this.config);
 		this.subject.guiCenter = openMenuPosition(vr);
 
+		if (this.mode == Mode.PHYSICS) {
+			watchDeath(player, camera);
+			dh.vrSettings.handCameraFov = (float) CamMath.clamp(this.previousFov + this.dropped.fovOffset(), 1.0,
+				179.0);
+		}
+		if (this.pullHand != null) {
+			flyToHand(camera, vr, player, dt);
+			return;
+		}
 		if (camera.isMoving()) {
 			// the player holds the camera in their hand
 			this.wasGrabbed = true;
 			this.parkedTime = 0;
 			this.dropped.pickUp();
 			this.handThrow.sample(camera.getPosition());
+			if (this.mode == Mode.PHYSICS && this.config.physicsShake > 0) {
+				// Vivecraft sets the rotation from the hand again every frame, so this does not add up
+				camera.getRotation().mul(this.shake.update(worldDt, this.subject.speed, player.hurtTime > 0,
+					this.config.physicsShake));
+			}
 			return;
 		}
 		if (this.wasGrabbed) {
@@ -680,11 +759,11 @@ public final class CameraController implements Tracker {
 		}
 		if (this.parkedTime > 0) {
 			// waiting to be picked up, runs out if nobody does
-			this.parkedTime -= dt;
+			this.parkedTime -= worldDt;
 			return;
 		}
 		if (this.mode == Mode.PHYSICS) {
-			letFall(camera, vr, dt);
+			letFall(camera, vr, worldDt);
 			return;
 		}
 
@@ -725,9 +804,76 @@ public final class CameraController implements Tracker {
 			// nobody took it while it was waiting in front of the player
 			this.dropped.drop(camera.getPosition(), camera.getRotation(), Vec3.ZERO);
 		}
-		this.dropped.update(this.subject, dt, this.config);
+		this.dropped.update(this.subject, dt, this.config, restFocus());
 		camera.setPosition(this.dropped.position());
 		camera.setRotation(this.dropped.rotation());
+
+		DroppedCamera.Impact impact = this.dropped.pollImpact();
+		if (impact != null) {
+			Vec3 lens = new Vec3(this.dropped.rotation().transform(new Vector3f(0, 0, -1)));
+			CameraEffects.impact(this.subject.player.level(), impact, lens);
+		}
+	}
+
+	/**
+	 * @return what a camera on the ground turns its lens to
+	 */
+	private Vec3 restFocus() {
+		if (this.killer == null || !this.killer.isAlive()) {
+			return this.subject.center;
+		}
+		// between the body and who did it
+		Vec3 killerCenter = this.killer.getPosition(this.subject.partialTick)
+			.add(0, this.killer.getBbHeight() * 0.5, 0);
+		return this.subject.center.lerp(killerCenter, 0.5);
+	}
+
+	/**
+	 * a dead hand holds nothing: the camera drops, and films what is left and who did it
+	 */
+	private void watchDeath(LocalPlayer player, CameraTracker camera) {
+		boolean dead = player.isDeadOrDying();
+		if (dead && !this.wasDead) {
+			DamageSource source = player.getLastDamageSource();
+			Entity attacker = source == null ? null : source.getEntity();
+			this.killer = attacker == player ? null : attacker;
+			// a camera that already lies somewhere turns to it as well
+			this.dropped.settleAgain();
+		} else if (!dead) {
+			this.killer = null;
+		}
+		this.wasDead = dead;
+		if (dead) {
+			this.pullHand = null;
+			if (camera.isMoving()) {
+				camera.stopMoving();
+			}
+		}
+	}
+
+	/**
+	 * a pulled camera on its way to the hand that pulled it
+	 */
+	private void flyToHand(CameraTracker camera, VRData vr, LocalPlayer player, double dt) {
+		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition();
+		Vec3 position = this.pullGlide.update(hand, PULL_TIME, dt);
+		Quaternionf atPlayer = new Quaternionf();
+		if (CamMath.lookRotation(this.subject.head.subtract(position), atPlayer)) {
+			camera.getRotation().slerp(atPlayer, (float) (1.0 - Math.exp(-dt / 0.1)));
+		}
+		if (position.distanceTo(hand) > PULL_ARRIVED * vr.worldScale) {
+			camera.setPosition(position);
+			if (Math.random() < dt * PULL_SPARKS) {
+				CameraEffects.pullTrail(player.level(), position);
+			}
+			return;
+		}
+		// there. From here on it is held like a camera that was grabbed, until the button is let go of
+		camera.setPosition(hand);
+		camera.startMoving(this.pullHand.ordinal());
+		this.pullHand = null;
+		this.handThrow.clear();
+		CameraEffects.pullArrive(player, hand);
 	}
 
 	private Shot customShot() {

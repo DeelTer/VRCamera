@@ -137,7 +137,7 @@
 	"vrcamera.shot.pov": "Primera persona",
 	"vrcamera.shot.pov.tooltip": "Justo delante de la cara, mirando hacia donde mira el jugador. Se usa donde no hay sitio para una cámara alrededor del jugador. La distancia indica cuánto por delante de los ojos; los ángulos no se usan.",
 	"vrcamera.shot.menu": "Menú",
-	"vrcamera.shot.menu.tooltip": "De cerca sobre el hombro hacia un inventario o cofre abierto. Solo mientras está abierto. El ángulo alrededor se mide desde el menú.",
+	"vrcamera.shot.menu.tooltip": "De cerca sobre el hombro hacia un menú abierto: inventario, cofre, menú de pausa. Solo mientras está abierto. El ángulo alrededor se mide desde el menú; redúcelo para ver más por delante del hombro.",
 	"vrcamera.option.indicator": "Icono de cámara",
 	"vrcamera.option.indicator.tooltip": "Muestra en el visor un icono de cámara con la distancia, donde está la cámara, también a través de las paredes. Mientras la cámara no está a la vista, el icono se queda en el borde de la vista por ese lado. Nunca aparece en la grabación.",
 	"vrcamera.option.throwPower": "Fuerza de lanzamiento",
@@ -146,5 +146,9 @@
 	"vrcamera.option.physicsAim": "La cámara caída mira al jugador",
 	"vrcamera.option.physicsAim.tooltip": "En el modo de física: cuánto gira su objetivo hacia el jugador una cámara caída mientras se detiene. 0 la deja como cayó, 1 hace que mire directamente al jugador.",
 	"vrcamera.option.indicatorSize": "Tamaño del icono",
-	"vrcamera.option.indicatorSize.tooltip": "Tamaño del icono de cámara y de la distancia que aparece debajo."
+	"vrcamera.option.indicatorSize.tooltip": "Tamaño del icono de cámara y de la distancia que aparece debajo.",
+	"vrcamera.option.physicsShake": "Temblor en la mano",
+	"vrcamera.option.physicsShake.tooltip": "En el modo de física: cuánto se balancea una cámara sostenida en la mano con la respiración y los pasos, y cuánto se sacude al recibir daño. 0 la mantiene tan firme como la mano.",
+	"vrcamera.option.pullSeconds": "Atraer la cámara: tiempo de pulsación",
+	"vrcamera.option.pullSeconds.tooltip": "En el modo de física: mira una cámara caída, apunta la mano hacia ella y mantén el botón de interacción. El mando vibra cada vez más fuerte y, tras estos segundos, la cámara vuela a la mano. 0 desactiva la atracción."
 }

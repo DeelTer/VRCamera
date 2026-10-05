@@ -137,7 +137,7 @@
 	"vrcamera.shot.pov": "Première personne",
 	"vrcamera.shot.pov.tooltip": "Juste devant le visage, regarde là où regarde le joueur. Utilisée là où il n'y a pas de place pour une caméra autour du joueur. La distance indique à quel point devant les yeux, les angles ne servent pas.",
 	"vrcamera.shot.menu": "Menu",
-	"vrcamera.shot.menu.tooltip": "De près, par-dessus l'épaule, vers un inventaire ou un coffre ouvert. Uniquement tant qu'il est ouvert. L'angle autour est mesuré à partir du menu.",
+	"vrcamera.shot.menu.tooltip": "De près, par-dessus l'épaule, vers un menu ouvert : inventaire, coffre, menu pause. Uniquement tant qu'il est ouvert. L'angle autour est mesuré à partir du menu ; réduisez-le pour mieux voir au-delà de l'épaule.",
 	"vrcamera.option.indicator": "Icône de la caméra",
 	"vrcamera.option.indicator.tooltip": "Affiche dans le casque une icône de caméra avec la distance, là où se trouve la caméra, même à travers les murs. Tant que la caméra est hors de vue, l'icône reste au bord du champ de vision de son côté. Jamais visible dans l'enregistrement.",
 	"vrcamera.option.throwPower": "Force de lancer",
@@ -146,5 +146,9 @@
 	"vrcamera.option.physicsAim": "La caméra tombée regarde le joueur",
 	"vrcamera.option.physicsAim.tooltip": "En mode physique : à quel point une caméra tombée tourne son objectif vers le joueur en s'immobilisant. 0 la laisse comme elle est tombée, 1 la fait regarder droit vers le joueur.",
 	"vrcamera.option.indicatorSize": "Taille de l'icône",
-	"vrcamera.option.indicatorSize.tooltip": "Taille de l'icône de la caméra et de la distance affichée dessous."
+	"vrcamera.option.indicatorSize.tooltip": "Taille de l'icône de la caméra et de la distance affichée dessous.",
+	"vrcamera.option.physicsShake": "Tremblement en main",
+	"vrcamera.option.physicsShake.tooltip": "En mode physique : à quel point une caméra tenue en main oscille avec la respiration et les pas, et sursaute quand vous êtes touché. 0 la garde aussi stable que la main.",
+	"vrcamera.option.pullSeconds": "Attirer la caméra : durée d'appui",
+	"vrcamera.option.pullSeconds.tooltip": "En mode physique : regardez une caméra tombée, pointez la main vers elle et maintenez le bouton d'interaction. La manette vibre de plus en plus fort, puis après ce nombre de secondes la caméra vole dans la main. 0 désactive l'attraction."
 }
