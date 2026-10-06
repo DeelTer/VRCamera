@@ -10,6 +10,8 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
@@ -19,6 +21,7 @@ import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.photo.CameraFlashes;
 import ru.deelter.vrcamera.client.rig.DroppedCamera;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
+import ru.deelter.vrcamera.mixin.client.MobAccessor;
 import ru.deelter.vrcamera.sync.Protocol;
 
 import java.util.Random;
@@ -112,6 +115,17 @@ public final class CameraEffects {
 	public static void pinned(Level level, Vec3 position) {
 		level.playLocalSound(position.x, position.y, position.z, SoundEvents.ITEM_FRAME_PLACE, SoundSource.PLAYERS,
 				0.6F, 1.3F, false);
+	}
+
+	/**
+	 * the camera was put on that entity, or picked up by it: it has something to say about that
+	 */
+	public static void putOn(Level level, Entity host, Vec3 position) {
+		pinned(level, position);
+		SoundEvent voice = host instanceof Mob mob ? ((MobAccessor) mob).vrcamera$getAmbientSound() : null;
+		if (voice != null) {
+			level.playLocalSound(position.x, position.y, position.z, voice, host.getSoundSource(), 1.0F, 1.0F, false);
+		}
 	}
 
 	/**

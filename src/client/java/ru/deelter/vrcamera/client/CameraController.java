@@ -1087,8 +1087,8 @@ public final class CameraController implements Tracker {
 				Vec3 handVelocity = this.handThrow.velocity(this.subject.velocity);
 				if (!this.dropped.place(this.subject, start, camera.getPosition(), camera.getRotation(),
 						handVelocity)) {
-					this.dropped.drop(start, camera.getRotation(), handVelocity);
-				} else if (this.dropped.isMounted() || this.dropped.isAttached()) {
+					this.dropped.drop(start, camera.getRotation(), handVelocity.scale(this.config.throwPower));
+				} else if (this.dropped.isMounted()) {
 					CameraEffects.pinned(player.level(), this.dropped.position());
 				}
 				this.limbs.reset();
@@ -1166,6 +1166,10 @@ public final class CameraController implements Tracker {
 		}
 
 		Vec3 lens = new Vec3(this.dropped.rotation().transform(new Vector3f(0, 0, -1)));
+		Entity host = this.dropped.pollHost();
+		if (host != null) {
+			CameraEffects.putOn(this.subject.player.level(), host, this.dropped.position());
+		}
 		DroppedCamera.Impact impact = this.dropped.pollImpact();
 		if (impact != null) {
 			CameraEffects.impact(this.subject.player.level(), impact, lens);

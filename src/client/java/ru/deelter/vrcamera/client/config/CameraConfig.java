@@ -19,7 +19,7 @@ public class CameraConfig {
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
 	// number of the last change of defaults this file has seen, see migrate
-	private static final int VERSION = 5;
+	private static final int VERSION = 6;
 	public int version = VERSION;
 
 	/**
@@ -46,7 +46,7 @@ public class CameraConfig {
 	/**
 	 * how far a camera flies that is thrown by hand, 0 = it can't be thrown
 	 */
-	public double throwPower = 1.0;
+	public double throwPower = 1.3;
 	/**
 	 * How much a dropped camera turns its lens to the player while it comes to rest, in the physics mode.
 	 * 0 = it lies however it fell, 1 = it looks right at the player
@@ -324,6 +324,10 @@ public class CameraConfig {
 		}
 		if (from < 4 && this.marker == Marker.DOT) {
 			this.marker = Marker.MODEL;
+		}
+		if (from < 6 && this.throwPower == 1.0) {
+			// a thrown camera did not get far
+			this.throwPower = 1.3;
 		}
 		if (from < 5) {
 			// Shots changed too often to follow, and were too short to cut a video from. Only what is still as it

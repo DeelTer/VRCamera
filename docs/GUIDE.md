@@ -162,6 +162,9 @@ right against something and let go slowly:
 
 Take it off by grabbing it or by knocking it off.
 
+A camera that sinks onto a fish, a squid, a dolphin or an axolotl is taken along by it, on its head. Whatever
+the camera is put on makes its sound when that happens.
+
 The director, own angles and events do not run in this mode.
 
 ## Shots
@@ -432,7 +435,7 @@ and by `/vrcam reload`.
 | `markerSize` | `14` | size of the dot |
 | `indicator` | `true` | camera icon with the distance |
 | `indicatorSize` | `1.0` | size of the icon |
-| `throwPower` | `1.0` | throw range multiplier, 0 = no throwing |
+| `throwPower` | `1.3` | throw range multiplier in every mode, 0 = no throwing |
 | `handStabilize` | `0.6` | steadying of a held camera, 0 = off, 1 = most |
 | `selfieScreen` | `true` | a second screen on top of the camera while it is near you with its lens to you, in your hand or wherever you put it. Only in the headset, costs no FPS |
 | `selfieDistance` | `3.0` | blocks from your head to the camera up to which the selfie screen is shown |

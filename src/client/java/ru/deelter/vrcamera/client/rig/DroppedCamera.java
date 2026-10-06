@@ -5,6 +5,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -124,6 +125,7 @@ public final class DroppedCamera {
 	private boolean attached;
 	private boolean attachedToHead;
 	private boolean attachedToSelf;
+	private Entity newHost;
 	private final Vector3f attachedOffset = new Vector3f();
 	private final Quaternionf attachedRotation = new Quaternionf();
 
@@ -480,6 +482,10 @@ public final class DroppedCamera {
 			return;
 		}
 
+		if (hit.entity != null && this.sinking && swims(hit.entity)) {
+			putOnHead(hit.entity, subject);
+			return;
+		}
 		Vec3 normal = hit.normal;
 		this.position = hit.location.add(normal.scale(RADIUS));
 
@@ -576,8 +582,40 @@ public final class DroppedCamera {
 		return eyes.add(-Math.sin(bodyYaw) * forward, 0, Math.cos(bodyYaw) * forward);
 	}
 
+	private static boolean swims(Entity entity) {
+		MobCategory kind = entity.getType().getCategory();
+		return entity instanceof LivingEntity && (kind == MobCategory.WATER_CREATURE ||
+				kind == MobCategory.WATER_AMBIENT || kind == MobCategory.UNDERGROUND_WATER_CREATURE ||
+				kind == MobCategory.AXOLOTLS);
+	}
+
+	/**
+	 * A camera that sinks onto something that swims is taken along by it: on its head, filming where it swims
+	 */
+	private void putOnHead(Entity entity, Subject subject) {
+		Vec3 look = entity.getViewVector(subject.partialTick);
+		this.position = neck(entity, subject).add(look.scale(entity.getBbWidth() * 0.45))
+				.add(0, entity.getBbHeight() * 0.3, 0);
+		CamMath.lookRotation(look, this.rotation);
+		this.velocity = Vec3.ZERO;
+		this.falling = false;
+		this.resting = true;
+		this.settleTime = 0;
+		attach(entity, subject);
+	}
+
+	/**
+	 * @return what the camera was put on since this was asked the last time, null if nothing
+	 */
+	public Entity pollHost() {
+		Entity host = this.newHost;
+		this.newHost = null;
+		return host;
+	}
+
 	private void attach(Entity entity, Subject subject) {
 		this.carrier = entity;
+		this.newHost = entity;
 		this.attached = true;
 		this.attachedToSelf = entity == subject.player;
 		// near the eyes it goes with the head, anywhere else with the body
