@@ -7,10 +7,12 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -26,11 +28,7 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import org.vivecraft.common.utils.MathUtils;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.config.CameraConfig;
-import ru.deelter.vrcamera.client.config.PullStyle;
-import ru.deelter.vrcamera.client.config.Marker;
-import ru.deelter.vrcamera.client.config.PhotoGesture;
-import ru.deelter.vrcamera.client.config.ShotConfig;
+import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.Smooth;
@@ -42,8 +40,6 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.Locale;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.world.level.Level;
 
 /**
  * Drives the Vivecraft handheld camera. Runs as a Vivecraft tracker, once per frame before rendering.

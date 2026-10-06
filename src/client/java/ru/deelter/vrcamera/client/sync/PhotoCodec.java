@@ -1,15 +1,16 @@
 package ru.deelter.vrcamera.client.sync;
 
+import ru.deelter.vrcamera.sync.Jpeg;
 import ru.deelter.vrcamera.sync.Protocol;
 
-import javax.imageio.*;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Iterator;
-import ru.deelter.vrcamera.sync.Jpeg;
 
 /**
  * Packs the picture of a sheet for the network and unpacks what comes from it. Plain Java, safe to run off the

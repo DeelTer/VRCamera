@@ -77,6 +77,10 @@ public final class DroppedCamera {
 	private static final double HEAD_ZONE = 0.2;
 	// blocks around the head of an entity in which a camera is put on it, for one that is a block wide or less
 	private static final double HEAD_REACH = 0.35;
+	// how long a head is, in widths of its entity
+	private static final double HEAD_LENGTH = 0.8;
+	// wider than this part of its height an entity is taken to walk on four legs
+	private static final double FOUR_LEGS_SHAPE = 0.5;
 	private static final double STRIKE_BOUNCE = 0.6;
 
 	/**
@@ -348,8 +352,7 @@ public final class DroppedCamera {
 					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 			double distance = hit.getLocation().distanceToSqr(position);
 			if (hit.getType() != HitResult.Type.MISS && hit.getDirection() != Direction.UP &&
-					distance < nearestDistance)
-			{
+					distance < nearestDistance) {
 				nearest = hit;
 				nearestDistance = distance;
 			}
@@ -538,18 +541,39 @@ public final class DroppedCamera {
 	}
 
 	/**
-	 * @return if the camera is held to the head of that entity. The head of a sheep or a cow is in front of the
-	 * box that stands for them: looked for from the eyes along the way they look
+	 * @return if the camera is held to the head of that entity: around the way from its neck to where it looks
 	 */
 	private static boolean atHead(Entity entity, Subject subject, Vec3 position) {
 		if (!(entity instanceof LivingEntity)) {
 			return false;
 		}
+		Vec3 neck = neck(entity, subject);
+		Vec3 along = entity.getViewVector(subject.partialTick).scale(entity.getBbWidth() * HEAD_LENGTH);
+		double part = CamMath.clamp(position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
+		return position.distanceTo(neck.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
+	}
+
+	/**
+	 * @return if the head of that entity is in front of its body and not on top of it, like the one of a sheep.
+	 * Told by its shape: what walks on four legs is about as long as it is high
+	 */
+	private static boolean headInFront(Entity entity) {
+		return entity.getBbWidth() > entity.getBbHeight() * FOUR_LEGS_SHAPE;
+	}
+
+	/**
+	 * @return the point the head of that entity turns around. For one that walks upright that is between its
+	 * eyes. For one on four legs it is at the front of its body: turned around its middle, a camera on its head
+	 * would swing past the head
+	 */
+	private static Vec3 neck(Entity entity, Subject subject) {
 		Vec3 eyes = entity.getEyePosition(subject.partialTick);
-		Vec3 snout = eyes.add(entity.getViewVector(subject.partialTick).scale(entity.getBbWidth()));
-		Vec3 along = snout.subtract(eyes);
-		double part = CamMath.clamp(position.subtract(eyes).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
-		return position.distanceTo(eyes.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
+		if (!(entity instanceof LivingEntity living) || !headInFront(entity)) {
+			return eyes;
+		}
+		float bodyYaw = Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) * Mth.DEG_TO_RAD;
+		double forward = entity.getBbWidth() * 0.5;
+		return eyes.add(-Math.sin(bodyYaw) * forward, 0, Math.cos(bodyYaw) * forward);
 	}
 
 	private void attach(Entity entity, Subject subject) {
@@ -557,8 +581,10 @@ public final class DroppedCamera {
 		this.attached = true;
 		this.attachedToSelf = entity == subject.player;
 		// near the eyes it goes with the head, anywhere else with the body
+		// On four legs the back is as high as the head, there only what is at the head counts
 		this.attachedToHead = entity instanceof LivingEntity && (atHead(entity, subject, this.position) ||
-				this.position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight());
+				(!headInFront(entity) &&
+						this.position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight()));
 		Quaternionf inverse = frameRotation(entity, subject, this.attachedToHead).invert();
 		Vec3 offset = this.position.subtract(frameOrigin(entity, subject, this.attachedToHead));
 		inverse.transform(this.attachedOffset.set((float) offset.x, (float) offset.y, (float) offset.z));
@@ -570,7 +596,7 @@ public final class DroppedCamera {
 			return entity.getPosition(subject.partialTick);
 		}
 		// the head of the player in VR is where the headset is, not where the game has the eyes
-		return entity == subject.player ? subject.head : entity.getEyePosition(subject.partialTick);
+		return entity == subject.player ? subject.head : neck(entity, subject);
 	}
 
 	private static Quaternionf frameRotation(Entity entity, Subject subject, boolean head) {
