@@ -243,6 +243,14 @@ public final class CameraController implements Tracker {
 		return rightHand ? HumanoidArm.RIGHT : HumanoidArm.LEFT;
 	}
 
+	/**
+	 * @return if the head of the player should not be in the picture: the camera sits on it and films from inside
+	 */
+	public boolean hidesOwnHead() {
+		return this.engaged && this.mode == Mode.PHYSICS && this.dropped.isOnPlayer() &&
+				ClientDataHolderVR.getInstance().currentPass == RenderPass.CAMERA;
+	}
+
 	private boolean looksAtPlayer(Vec3 position, Quaternionf rotation) {
 		Vec3 lens = new Vec3(rotation.transform(new Vector3f(0, 0, -1)));
 		Vec3 toHead = this.subject.head.subtract(position);

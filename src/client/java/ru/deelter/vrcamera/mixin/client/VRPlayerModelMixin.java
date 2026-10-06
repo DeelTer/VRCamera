@@ -17,7 +17,8 @@ import ru.deelter.vrcamera.client.CameraController;
 @Mixin(value = VRPlayerModel.class, remap = false)
 public class VRPlayerModelMixin {
 
-	// keeps the arm that holds the camera out of the picture, it is right next to the lens
+	// keeps the arm that holds the camera out of the picture, it is right next to the lens. And the head, if
+	// the camera sits on it
 	@Inject(method = "animateVRModel", at = @At("RETURN"), require = 0)
 	private static void vrcamera$hideHoldingArm(
 			PlayerModel model, AvatarRenderState renderState, Vector3f tempV, Vector3f tempV2, Matrix3f tempM,
@@ -25,6 +26,10 @@ public class VRPlayerModelMixin {
 		VRPlayerRenderData data = ((EntityRenderStateExtension) renderState).vivecraft$getVRRenderData();
 		if (data == null || !data.isMainPlayer()) {
 			return;
+		}
+		if (CameraController.INSTANCE.hidesOwnHead()) {
+			model.head.visible = false;
+			model.hat.visible = false;
 		}
 		HumanoidArm arm = CameraController.INSTANCE.armToHide();
 		if (arm == null) {

@@ -78,6 +78,8 @@ public final class DroppedCamera {
 	private static final double HEAD_ZONE = 0.2;
 	// blocks around the head of an entity in which a camera is put on it, for one that is a block wide or less
 	private static final double HEAD_REACH = 0.35;
+	// further than this in one frame the carrier did not walk but was moved
+	private static final double MAX_LEAD = 0.5;
 	// how long a head is, in widths of its entity
 	private static final double HEAD_LENGTH = 0.8;
 	// wider than this part of its height an entity is taken to walk on four legs
@@ -126,6 +128,8 @@ public final class DroppedCamera {
 	private boolean attachedToHead;
 	private boolean attachedToSelf;
 	private Entity newHost;
+	// where the carrier was in the last frame
+	private Vec3 attachedOrigin;
 	private final Vector3f attachedOffset = new Vector3f();
 	private final Quaternionf attachedRotation = new Quaternionf();
 
@@ -403,7 +407,15 @@ public final class DroppedCamera {
 		if (this.attached) {
 			Quaternionf frame = frameRotation(this.carrier, subject, this.attachedToHead);
 			Vector3f offset = frame.transform(new Vector3f(this.attachedOffset));
-			this.position = frameOrigin(this.carrier, subject, this.attachedToHead).add(offset.x, offset.y, offset.z);
+			Vec3 origin = frameOrigin(this.carrier, subject, this.attachedToHead);
+			// Vivecraft films from where the camera was put a frame ago. On something that moves it would trail
+			// behind by that much and sink into what carries it: as far ahead as the carrier got in a frame
+			Vec3 ahead = this.attachedOrigin == null ? Vec3.ZERO : origin.subtract(this.attachedOrigin);
+			this.attachedOrigin = origin;
+			if (ahead.lengthSqr() > MAX_LEAD * MAX_LEAD) {
+				ahead = Vec3.ZERO;
+			}
+			this.position = origin.add(offset.x, offset.y, offset.z).add(ahead);
 			frame.mul(this.attachedRotation, this.rotation);
 			return;
 		}
@@ -617,6 +629,7 @@ public final class DroppedCamera {
 		this.carrier = entity;
 		this.newHost = entity;
 		this.attached = true;
+		this.attachedOrigin = null;
 		this.attachedToSelf = entity == subject.player;
 		// near the eyes it goes with the head, anywhere else with the body
 		// On four legs the back is as high as the head, there only what is at the head counts
