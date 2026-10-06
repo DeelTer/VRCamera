@@ -27,6 +27,7 @@ import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import org.vivecraft.common.utils.MathUtils;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
+import ru.deelter.vrcamera.client.config.PullStyle;
 import ru.deelter.vrcamera.client.config.Marker;
 import ru.deelter.vrcamera.client.config.PhotoGesture;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -41,6 +42,8 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.Locale;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 /**
  * Drives the Vivecraft handheld camera. Runs as a Vivecraft tracker, once per frame before rendering.
@@ -94,6 +97,16 @@ public final class CameraController implements Tracker {
 	// sparks it leaves behind per second
 	private static final double PULL_TIME = 0.12;
 	private static final double PULL_ARRIVED = 0.15;
+	// seconds between two looks for something to put the held camera up on, each is a handful of rays
+	private static final double PUT_UP_CHECK_TIME = 0.05;
+	// the part of the time a camera that is drawn to the hand only stirs, before it leaves its place
+	private static final double PULL_WINDUP = 0.14;
+	// blocks per second a camera keeps at most when it is let go of on its way
+	private static final double PULL_MAX_RELEASE_SPEED = 14.0;
+	// Blocks per second the hand has to move to fling a camera it is drawing in, and how much of that the camera
+	// gets. It is further away than a camera in the hand, a swing has to carry
+	private static final double PULL_FLING_SPEED = 1.5;
+	private static final double PULL_FLING_GAIN = 2.2;
 	private static final double PULL_SPARKS = 30.0;
 	private static final double SELFIE_COS = Math.cos(Math.toRadians(60));
 	// degrees the view widens under water, and seconds that takes
@@ -133,6 +146,9 @@ public final class CameraController implements Tracker {
 	private boolean wasGrabbed;
 	// if the held camera was where it can be put up on a wall or an entity, the last time that was looked at
 	private boolean couldPutUp;
+	private ResourceKey<Level> dimension;
+	private boolean changedDimension;
+	private double putUpCheck;
 	private final HandThrow handThrow = new HandThrow();
 	private final DroppedCamera dropped = new DroppedCamera();
 	private final HandheldShake shake = new HandheldShake();
@@ -150,6 +166,14 @@ public final class CameraController implements Tracker {
 	// hand the camera is flying to after it was pulled, null when it is not
 	private InteractionHand pullHand;
 	private final SmoothVec pullGlide = new SmoothVec();
+	// drawn to the hand over the whole time the button is held, and not sent there at the end of it
+	private boolean pullDrawn;
+	private boolean pullLifted;
+	private boolean pullArc;
+	private double pullElapsed;
+	private Vec3 pullStart = Vec3.ZERO;
+	private Vec3 pullLast = Vec3.ZERO;
+	private Vec3 pullVelocity = Vec3.ZERO;
 	private double frameDt;
 	private double shutter;
 	private final Smooth underwater = new Smooth();
@@ -299,7 +323,6 @@ public final class CameraController implements Tracker {
 		if (distance < INDICATOR_MIN_DISTANCE * worldScale) {
 			return;
 		}
-		// where the camera is, as seen by the player
 		double x = toCamera.dot(right);
 		double y = toCamera.dot(up);
 		double z = toCamera.dot(forward);
@@ -442,7 +465,6 @@ public final class CameraController implements Tracker {
 		Shot shot = customShot();
 		Shot previous = shot();
 		if (previous != null && previous.blends()) {
-			// swing over to it
 			this.rig.blend();
 		} else {
 			this.rig.snap(shot, this.subject);
@@ -515,7 +537,6 @@ public final class CameraController implements Tracker {
 			return;
 		}
 		if (this.shutterTaken) {
-			// one photo per press
 			return;
 		}
 		double seconds = this.config.photoHoldSeconds;
@@ -544,7 +565,6 @@ public final class CameraController implements Tracker {
 		Vec3 forward = new Vec3(look.x, 0, look.z);
 		forward = forward.length() < 1.0E-3 ? CamMath.forward(vr.hmd.getYawRad()) : forward.normalize();
 
-		// within reach, a bit below the eyes
 		Vec3 pos = head.add(forward.scale(0.45 * vr.worldScale)).add(0, -0.15 * vr.worldScale, 0);
 		Quaternionf rotation = new Quaternionf();
 		CamMath.lookRotation(head.subtract(pos), rotation);
@@ -647,9 +667,32 @@ public final class CameraController implements Tracker {
 		}
 		this.pullHand = hand;
 		this.parkedTime = 0;
-		this.dropped.pickUp();
-		this.pullGlide.reset(ClientDataHolderVR.getInstance().cameraTracker.getPosition());
+		this.pullDrawn = this.config.pullStyle == PullStyle.TELEKINESIS;
+		this.pullStart = ClientDataHolderVR.getInstance().cameraTracker.getPosition();
+		this.pullLast = this.pullStart;
+		this.pullVelocity = Vec3.ZERO;
+		this.pullElapsed = 0;
+		this.pullLifted = false;
+		// one that lies somewhere comes up in an arc, like something that is picked up and not dragged
+		this.pullArc = this.mode == Mode.PHYSICS && this.dropped.isResting() && !this.dropped.isMounted() &&
+				!this.dropped.isAttached();
+		this.pullGlide.reset(this.pullStart);
+		this.handThrow.clear();
+		if (!this.pullDrawn) {
+			this.dropped.pickUp();
+			this.pullLifted = true;
+		}
 		CameraEffects.pullStart(player);
+	}
+
+	/**
+	 * @return how far the camera is on its way to that hand, from 0 to 1. -1 if it is not being drawn to it
+	 */
+	public double pullProgress(InteractionHand hand) {
+		if (this.pullHand != hand || !this.pullDrawn) {
+			return -1;
+		}
+		return Math.min(1.0, this.pullElapsed / Math.max(0.05, this.config.pullSeconds));
 	}
 
 	/**
@@ -658,12 +701,35 @@ public final class CameraController implements Tracker {
 	public void endPull(InteractionHand hand) {
 		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
 		if (this.pullHand == hand) {
-			// Still on its way. A physical camera falls from where it is, the others swing back to their shot
 			this.pullHand = null;
-			Shot shot = shot();
-			if (this.mode != Mode.PHYSICS && shot != null && this.rig.ready() && this.subject.player != null) {
-				this.rig.adopt(camera.getPosition(), shot, this.subject);
-				this.rig.blend();
+			if (!this.pullLifted) {
+				// let go of before it left its place: nothing happened
+				return;
+			}
+			if (this.mode == Mode.PHYSICS) {
+				// Still on its way. A physical camera keeps the speed it had, flies on and falls
+				Vec3 speed = this.pullDrawn ? this.pullVelocity : Vec3.ZERO;
+				// Unless the hand swung as it let go: then the camera is flung the way the hand went, like
+				// something on a string
+				Vec3 swing = this.pullDrawn ? this.handThrow.velocity(this.subject.velocity) : Vec3.ZERO;
+				if (swing.length() > PULL_FLING_SPEED) {
+					speed = swing.scale(PULL_FLING_GAIN * this.config.throwPower).add(speed.scale(0.25));
+				}
+				if (speed.length() > PULL_MAX_RELEASE_SPEED) {
+					speed = speed.normalize().scale(PULL_MAX_RELEASE_SPEED);
+				}
+				this.dropped.drop(camera.getPosition(), camera.getRotation(), speed);
+				this.limbs.reset();
+			} else if (this.pullDrawn) {
+				// The others stay where they got to, like a camera that was put there by hand. Or thrown by it,
+				// if the hand swung
+				placedByHand(camera.getPosition());
+			} else {
+				Shot shot = shot();
+				if (shot != null && this.rig.ready() && this.subject.player != null) {
+					this.rig.adopt(camera.getPosition(), shot, this.subject);
+					this.rig.blend();
+				}
 			}
 		} else if (camera.isMoving() && camera.getMovingController() == hand.ordinal()) {
 			camera.stopMoving();
@@ -956,6 +1022,9 @@ public final class CameraController implements Tracker {
 		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		this.subject.update(player, vr, partialTick, dt, realDt, this.config);
 		this.subject.guiCenter = openMenuPosition(vr);
+		ResourceKey<Level> dimension = player.level().dimension();
+		this.changedDimension = this.dimension != null && !this.dimension.equals(dimension);
+		this.dimension = dimension;
 
 		if (this.mode == Mode.PHYSICS) {
 			watchDeath(player, camera);
@@ -989,7 +1058,9 @@ public final class CameraController implements Tracker {
 					this.config.handStabilize);
 			camera.setPosition(this.stabilizer.position().add(vr.origin));
 			camera.setRotation(new Quaternionf(this.stabilizer.rotation()));
-			if (this.mode == Mode.PHYSICS) {
+			this.putUpCheck -= worldDt;
+			if (this.mode == Mode.PHYSICS && this.putUpCheck <= 0) {
+				this.putUpCheck = PUT_UP_CHECK_TIME;
 				// a short buzz when the camera gets to where it would stay if it was let go
 				boolean canPutUp = this.dropped.canPutUp(this.subject,
 						WorldProbe.reach(player, this.subject.head, this.handPosition), this.handPosition);
@@ -1031,7 +1102,6 @@ public final class CameraController implements Tracker {
 			}
 		}
 		if (this.parkedTime > 0) {
-			// waiting to be picked up, runs out if nobody does
 			this.parkedTime -= worldDt;
 			return;
 		}
@@ -1066,6 +1136,13 @@ public final class CameraController implements Tracker {
 	 * the physics mode while the camera is not in the hand: it falls and stays where it lands
 	 */
 	private void letFall(CameraTracker camera, VRData vr, double dt) {
+		if (this.changedDimension && !this.dropped.isOnPlayer()) {
+			// It is where it was, but that is a place in another dimension now. There is only the one camera,
+			// it comes along
+			this.dropped.pickUp();
+			summon();
+			return;
+		}
 		// only by distance. Teleporting a few blocks away from it is how to get into the picture
 		if (camera.getPosition().distanceTo(this.subject.head) > PHYSICS_LEASH) {
 			// left behind, Vivecraft would hide a camera that far away. Back to the player with it
@@ -1114,7 +1191,6 @@ public final class CameraController implements Tracker {
 		if (this.killer == null || !this.killer.isAlive()) {
 			return this.subject.center;
 		}
-		// between the body and who did it
 		Vec3 killerCenter = this.killer.getPosition(this.subject.partialTick)
 				.add(0, this.killer.getBbHeight() * 0.5, 0);
 		return this.subject.center.lerp(killerCenter, 0.5);
@@ -1155,12 +1231,44 @@ public final class CameraController implements Tracker {
 		toRight = toRight.lengthSqr() < 1.0E-6 ? Vec3.ZERO : toRight.normalize();
 		Vec3 grip = toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale);
 		Vec3 hand = vr.getController(this.pullHand.ordinal()).getPosition().add(grip);
-		Vec3 position = this.pullGlide.update(hand, PULL_TIME, dt);
+		Vec3 position;
+		boolean arrived;
+		if (this.pullDrawn) {
+			this.pullElapsed += dt;
+			double progress = Math.min(1.0, this.pullElapsed / Math.max(0.05, this.config.pullSeconds));
+			if (progress < PULL_WINDUP) {
+				// It stirs before it comes. Let go of now, it was only pointed at, and stays what it was: lying,
+				// on a wall, on its shot
+				camera.setPosition(this.pullStart.add(0, Math.sin(this.pullElapsed * 45.0) * 0.012, 0));
+				return;
+			}
+			if (!this.pullLifted) {
+				this.pullLifted = true;
+				this.dropped.pickUp();
+			}
+			this.handThrow.sample(hand);
+			// Slow at first and faster and faster, to where the hand is right now: it follows the hand around.
+			// The whole way takes the same time from anywhere
+			double way = Math.pow((progress - PULL_WINDUP) / (1.0 - PULL_WINDUP), 1.8);
+			position = this.pullStart.lerp(hand, way);
+			if (this.pullArc) {
+				double height = CamMath.clamp(this.pullStart.distanceTo(hand) * 0.25, 0.4, 2.5);
+				position = position.add(0, Math.sin(Math.PI * way) * height, 0);
+			}
+			if (dt > 1.0E-4) {
+				this.pullVelocity = position.subtract(this.pullLast).scale(1.0 / dt);
+			}
+			this.pullLast = position;
+			arrived = progress >= 1.0;
+		} else {
+			position = this.pullGlide.update(hand, PULL_TIME, dt);
+			arrived = position.distanceTo(hand) <= PULL_ARRIVED * vr.worldScale;
+		}
 		Quaternionf atPlayer = new Quaternionf();
 		if (CamMath.lookRotation(this.subject.head.subtract(position), atPlayer)) {
 			camera.getRotation().slerp(atPlayer, (float) (1.0 - Math.exp(-dt / 0.1)));
 		}
-		if (position.distanceTo(hand) > PULL_ARRIVED * vr.worldScale) {
+		if (!arrived) {
 			camera.setPosition(position);
 			if (Math.random() < dt * PULL_SPARKS) {
 				CameraEffects.pullTrail(player.level(), position);
@@ -1201,7 +1309,6 @@ public final class CameraController implements Tracker {
 		ShotConfig preset = this.config.preset();
 		preset.azimuth = Math.toDegrees(CamMath.wrap(CamMath.azimuthOf(offset) - this.subject.facing));
 		preset.elevation = Math.toDegrees(CamMath.elevationOf(offset));
-		// not inside the player
 		preset.distance = Math.max(0.3, offset.length() / this.subject.unit);
 		this.config.save();
 

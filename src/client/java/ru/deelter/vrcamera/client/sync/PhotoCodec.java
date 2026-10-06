@@ -4,13 +4,12 @@ import ru.deelter.vrcamera.sync.Protocol;
 
 import javax.imageio.*;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
+import ru.deelter.vrcamera.sync.Jpeg;
 
 /**
  * Packs the picture of a sheet for the network and unpacks what comes from it. Plain Java, safe to run off the
@@ -49,7 +48,7 @@ public final class PhotoCodec {
 			}
 			BufferedImage scaled = scale(source, scaledWidth, height);
 			for (float quality : QUALITIES) {
-				byte[] packed = jpeg(scaled, quality);
+				byte[] packed = Jpeg.encode(scaled, quality);
 				if (packed.length <= maxBytes) {
 					return packed;
 				}
@@ -69,25 +68,6 @@ public final class PhotoCodec {
 		graphics.drawImage(source, 0, 0, width, height, null);
 		graphics.dispose();
 		return scaled;
-	}
-
-	private static byte[] jpeg(BufferedImage image, float quality) throws IOException {
-		Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
-		if (!writers.hasNext()) {
-			throw new IOException("this Java can't write JPEG");
-		}
-		ImageWriter writer = writers.next();
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream(16_384);
-		try (ImageOutputStream out = ImageIO.createImageOutputStream(bytes)) {
-			ImageWriteParam param = writer.getDefaultWriteParam();
-			param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-			param.setCompressionQuality(quality);
-			writer.setOutput(out);
-			writer.write(null, new IIOImage(image, null, null), param);
-		} finally {
-			writer.dispose();
-		}
-		return bytes.toByteArray();
 	}
 
 	/**

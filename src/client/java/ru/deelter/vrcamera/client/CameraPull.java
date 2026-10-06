@@ -10,6 +10,7 @@ import org.vivecraft.api.data.VRBodyPart;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.config.PullStyle;
 import ru.deelter.vrcamera.client.math.CamMath;
 
 /**
@@ -110,10 +111,22 @@ public final class CameraPull implements HeldInteractModule {
 		int index = hand.ordinal();
 		if (this.pulled[index]) {
 			// the camera is on its way or in the hand, it stays there for as long as the button is held
+			double drawn = this.controller.pullProgress(hand);
+			if (drawn >= 0) {
+				// stronger and higher the closer it gets
+				VRClientAPI.instance().triggerHapticPulse(VRBodyPart.fromInteractionHand(hand), 0.05F,
+						(float) CamMath.lerp(120.0, 320.0, drawn), (float) CamMath.lerp(0.15, 1.0, drawn), 0.0F);
+			}
 			return true;
 		}
 		if (!this.controller.canPull()) {
 			return false;
+		}
+		if (this.controller.config().pullStyle == PullStyle.TELEKINESIS) {
+			// it comes for as long as the button is held, from the first moment on
+			this.pulled[index] = true;
+			this.controller.startPull(hand);
+			return true;
 		}
 		double progress = ++this.heldTicks[index] / (this.controller.config().pullSeconds * 20.0);
 		// gets stronger and higher until the camera comes

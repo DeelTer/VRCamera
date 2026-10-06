@@ -78,6 +78,8 @@ public final class ConfigScreen {
 				"%.1f", value -> config.kickPower = value));
 		general.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
 				"%.2f", value -> config.handStabilize = value));
+		general.addEntry(screen.selector("pullStyle", PullStyle.values(), config.pullStyle, defaults.pullStyle,
+				value -> config.pullStyle = value));
 		general.addEntry(screen.slider("pullSeconds", config.pullSeconds, defaults.pullSeconds, 0, 5, 0.25,
 				"%.2f s", value -> config.pullSeconds = value));
 		general.addEntry(screen.toggle("pullAllModes", config.pullAllModes, defaults.pullAllModes,

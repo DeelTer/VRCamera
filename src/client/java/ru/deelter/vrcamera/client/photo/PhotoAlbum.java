@@ -608,6 +608,20 @@ public final class PhotoAlbum {
 	}
 
 	/**
+	 * @return the picture as the game wants it. A new one every time: each sheet owns its own
+	 */
+	public static NativeImage image(PhotoCodec.Picture picture) {
+		NativeImage image = new NativeImage(picture.width(), picture.height(), false);
+		int[] argb = picture.argb();
+		for (int y = 0, i = 0; y < picture.height(); y++) {
+			for (int x = 0; x < picture.width(); x++, i++) {
+				image.setPixel(x, y, argb[i] | 0xFF000000);
+			}
+		}
+		return image;
+	}
+
+	/**
 	 * Puts a picture from the internet on a sheet and drops it in front of the player. The address is opened
 	 * by this client alone.
 	 *
@@ -641,12 +655,7 @@ public final class PhotoAlbum {
 			if (player == null || this.level != level) {
 				return;
 			}
-			NativeImage pixels = new NativeImage(picture.width(), picture.height(), false);
-			for (int y = 0; y < picture.height(); y++) {
-				for (int x = 0; x < picture.width(); x++) {
-					pixels.setPixel(x, y, picture.argb()[y * picture.width() + x] | 0xFF000000);
-				}
-			}
+			NativeImage pixels = image(picture);
 			String file = "custom_" + System.currentTimeMillis() + ".png";
 			try {
 				PhotoStore.prepare(this.cache);
@@ -681,7 +690,6 @@ public final class PhotoAlbum {
 			Vec3 eyes = player.getEyePosition();
 			for (PhotoSheet sheet : this.sheets) {
 				if (sheet.placeholder && sheet.center().distanceToSqr(eyes) < LABEL_DISTANCE * LABEL_DISTANCE) {
-					// what it is, and below that where to turn it on
 					Gizmos.billboardText(Component.translatable("vrcamera.label.custom").getString(),
 							sheet.center().add(0, 0.02, 0),
 							TextGizmo.Style.forColorAndCentered(0xFFFFFFFF).withScale(0.045F));
@@ -755,7 +763,6 @@ public final class PhotoAlbum {
 			Vec3 look = now.getLookAngle();
 			Vec3 forward = new Vec3(look.x, 0, look.z);
 			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
-			// in front of the face, the picture towards the player
 			Quaternionf rotation = new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z));
 			sheet.toss(now.getEyePosition().add(forward.scale(0.7)), rotation, forward.scale(1.5));
 		}));

@@ -42,7 +42,6 @@ public final class DroppedCamera {
 	// speed lost per second in the air and in a fluid, as an exponent
 	private static final double AIR_DRAG = 0.2;
 	private static final double FLUID_DRAG = 3.0;
-	// it sinks, but slowly
 	private static final double FLUID_GRAVITY = 0.15;
 	// seconds it still turns to the player after it stopped moving
 	private static final double SETTLE_TIME = 1.5;
@@ -59,7 +58,6 @@ public final class DroppedCamera {
 
 	// something has to move this fast to kick the camera away, blocks per second
 	private static final double KICK_MIN_SPEED = 1.5;
-	// upwards speed of a kicked camera
 	private static final double KICK_LIFT = 2.2;
 	// seconds a kicked camera passes through what kicked it, or it would land on its head
 	private static final double KICK_IGNORE_TIME = 0.6;
@@ -77,6 +75,8 @@ public final class DroppedCamera {
 	private static final double SELF_ATTACH_REACH = 0.3;
 	// the part of an entity below its eyes that still counts as its head
 	private static final double HEAD_ZONE = 0.2;
+	// blocks around the head of an entity in which a camera is put on it, for one that is a block wide or less
+	private static final double HEAD_REACH = 0.35;
 	private static final double STRIKE_BOUNCE = 0.6;
 
 	/**
@@ -105,7 +105,6 @@ public final class DroppedCamera {
 	private Vec3 mountedOn;
 	private double settleTime;
 
-	// tumbling in the air
 	private final Vector3f spinAxis = new Vector3f(1, 0, 0);
 	private double spinSpeed;
 	// how it would lie on the ground if it did not care about the player, different on every drop
@@ -120,6 +119,7 @@ public final class DroppedCamera {
 	// turns with the head. Where and how it sits, seen from the body or the head of the carrier
 	private boolean attached;
 	private boolean attachedToHead;
+	private boolean attachedToSelf;
 	private final Vector3f attachedOffset = new Vector3f();
 	private final Quaternionf attachedRotation = new Quaternionf();
 
@@ -383,7 +383,15 @@ public final class DroppedCamera {
 	 * moves and turns the camera with the entity it is lying on
 	 */
 	private void ride(Subject subject) {
-		if (!this.carrier.isAlive() || this.carrier.level() != subject.player.level()) {
+		if (this.attached && this.attachedToSelf) {
+			if (subject.player.isDeadOrDying()) {
+				startFalling();
+				return;
+			}
+			// The game makes a new player for every dimension and every life. On the head of the player the
+			// camera goes along to the next dimension, a death it does not survive up there
+			this.carrier = subject.player;
+		} else if (!this.carrier.isAlive() || this.carrier.level() != subject.player.level()) {
 			startFalling();
 			return;
 		}
@@ -495,7 +503,6 @@ public final class DroppedCamera {
 
 	private void hit(Impact impact) {
 		this.impact = impact;
-		// zooms in first
 		this.fovKick = -Math.min(FOV_KICK * impact.speed, FOV_KICK_MAX);
 		this.fovKickAge = 0;
 	}
@@ -517,7 +524,8 @@ public final class DroppedCamera {
 				if (position.distanceTo(subject.head) > SELF_ATTACH_REACH) {
 					continue;
 				}
-			} else if (!entity.getBoundingBox().inflate(ATTACH_REACH).contains(position)) {
+			} else if (!entity.getBoundingBox().inflate(ATTACH_REACH).contains(position) &&
+					!atHead(entity, subject, position)) {
 				continue;
 			}
 			double distance = entity.getBoundingBox().getCenter().distanceToSqr(position);
@@ -529,12 +537,28 @@ public final class DroppedCamera {
 		return nearest;
 	}
 
+	/**
+	 * @return if the camera is held to the head of that entity. The head of a sheep or a cow is in front of the
+	 * box that stands for them: looked for from the eyes along the way they look
+	 */
+	private static boolean atHead(Entity entity, Subject subject, Vec3 position) {
+		if (!(entity instanceof LivingEntity)) {
+			return false;
+		}
+		Vec3 eyes = entity.getEyePosition(subject.partialTick);
+		Vec3 snout = eyes.add(entity.getViewVector(subject.partialTick).scale(entity.getBbWidth()));
+		Vec3 along = snout.subtract(eyes);
+		double part = CamMath.clamp(position.subtract(eyes).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
+		return position.distanceTo(eyes.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
+	}
+
 	private void attach(Entity entity, Subject subject) {
 		this.carrier = entity;
 		this.attached = true;
+		this.attachedToSelf = entity == subject.player;
 		// near the eyes it goes with the head, anywhere else with the body
-		this.attachedToHead = entity instanceof LivingEntity &&
-				this.position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight();
+		this.attachedToHead = entity instanceof LivingEntity && (atHead(entity, subject, this.position) ||
+				this.position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight());
 		Quaternionf inverse = frameRotation(entity, subject, this.attachedToHead).invert();
 		Vec3 offset = this.position.subtract(frameOrigin(entity, subject, this.attachedToHead));
 		inverse.transform(this.attachedOffset.set((float) offset.x, (float) offset.y, (float) offset.z));
@@ -578,6 +602,13 @@ public final class DroppedCamera {
 	 */
 	public boolean isAttached() {
 		return this.resting && this.attached && this.carrier != null;
+	}
+
+	/**
+	 * @return if the camera sits on the head of the player themselves
+	 */
+	public boolean isOnPlayer() {
+		return isAttached() && this.attachedToSelf;
 	}
 
 	private void landOn(Entity entity, Subject subject) {

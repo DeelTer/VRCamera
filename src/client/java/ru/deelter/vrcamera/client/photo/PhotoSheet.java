@@ -20,9 +20,8 @@ import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 import ru.deelter.vrcamera.client.math.CamMath;
+import ru.deelter.vrcamera.client.math.PoseTrail;
 
-import java.util.ArrayDeque;
-import java.util.Iterator;
 
 /**
  * A printed photo in the world. Slides out of the camera, hangs from it for a moment, then flutters to the ground.
@@ -40,7 +39,6 @@ public final class PhotoSheet {
 	// where the sheet comes out, from the point the camera films from: below it and a bit behind
 	private static final Vector3f SLOT = new Vector3f(0, -0.06F, 0.06F);
 	private static final double GRAVITY = 3.0;
-	// paper does not get fast
 	private static final double DRAG = 2.5;
 	private static final double GROUND_GAP = 0.01;
 	// blocks from the middle of a sheet to a block it is pinned to when let go of
@@ -62,7 +60,6 @@ public final class PhotoSheet {
 	private static final long GHOST_STEP_NANOS = 200_000_000L;
 	// not heard of for this long it lay still, and what comes next is where it starts to move from there
 	private static final long GHOST_REST_NANOS = 450_000_000L;
-	private static final int GHOST_SAMPLES = 8;
 	private static final double GHOST_JUMP = 6.0;
 	// seconds until the picture starts to show on a new sheet, and until it is all there
 	private static final double DEVELOP_DELAY = 0.8;
@@ -101,10 +98,8 @@ public final class PhotoSheet {
 	// what the server calls it while it is not pinned and shared with the others, 0 if it is not
 	private long looseId;
 
-	private record GhostSample(long nanos, Vec3 position, Quaternionf rotation) {
-	}
-
-	private final ArrayDeque<GhostSample> ghostSamples = new ArrayDeque<>();
+	private final PoseTrail ghostTrail = new PoseTrail(GHOST_DELAY_NANOS, GHOST_STEP_NANOS / 2, GHOST_STEP_NANOS,
+			GHOST_REST_NANOS, GHOST_STEP_NANOS);
 	private Vec3 sharedPosition;
 	private final Quaternionf sharedRotation = new Quaternionf();
 	// Set while a server knows this sheet, 0 for one that is only on this client
@@ -112,7 +107,6 @@ public final class PhotoSheet {
 	// sent to the server and not answered yet, it is not to be touched until then
 	private boolean awaitingServer;
 	private boolean removable = true;
-	// the block it is pinned to
 	private BlockPos support = BlockPos.ZERO;
 	/**
 	 * the picture as it went over the network, kept to pin the sheet again without packing it once more
@@ -129,7 +123,6 @@ public final class PhotoSheet {
 	public boolean placeholder;
 
 	private int hand = -1;
-	// where the hand has it, as the controller sees it
 	private final Vector3f gripOffset = new Vector3f();
 	private final Quaternionf gripRotation = new Quaternionf();
 
@@ -147,7 +140,6 @@ public final class PhotoSheet {
 		this.position = position;
 		this.rotation.set(rotation);
 		this.state = State.PINNED;
-		// long developed
 		this.age = DEVELOP_DELAY + DEVELOP_TIME;
 	}
 
@@ -436,54 +428,27 @@ public final class PhotoSheet {
 		this.looseId = looseId;
 		this.position = position;
 		this.rotation.set(rotation);
-		this.ghostSamples.clear();
+		this.ghostTrail.clear();
 		this.state = State.GHOST;
 		this.age = DEVELOP_DELAY + DEVELOP_TIME;
 	}
 
 	public void ghostTo(Vec3 position, Quaternionfc rotation) {
-		long now = System.nanoTime();
-		GhostSample last = this.ghostSamples.peekLast();
-		Vec3 from = last == null ? this.position : last.position;
-		if (from.distanceToSqr(position) > GHOST_JUMP * GHOST_JUMP) {
-			this.ghostSamples.clear();
+		Vec3 last = this.ghostTrail.last();
+		if ((last == null ? this.position : last).distanceToSqr(position) > GHOST_JUMP * GHOST_JUMP) {
+			this.ghostTrail.clear();
 			this.position = position;
 			this.rotation.set(rotation);
 			return;
 		}
-		if (last == null || now - last.nanos > GHOST_REST_NANOS) {
-			Quaternionf rested = last == null ? new Quaternionf(this.rotation) : last.rotation;
-			last = new GhostSample(now - GHOST_STEP_NANOS, from, rested);
-			this.ghostSamples.addLast(last);
-		}
-		// what arrives in a bunch was not sent in one
-		long nanos = Math.min(Math.max(now, last.nanos + GHOST_STEP_NANOS / 2), now + GHOST_STEP_NANOS);
-		this.ghostSamples.addLast(new GhostSample(nanos, position, new Quaternionf(rotation)));
-		if (this.ghostSamples.size() > GHOST_SAMPLES) {
-			this.ghostSamples.removeFirst();
-		}
+		this.ghostTrail.add(position, rotation, this.position, this.rotation);
 	}
 
 	private void followGhost() {
-		long shown = System.nanoTime() - GHOST_DELAY_NANOS;
-		while (this.ghostSamples.size() > 2 && secondGhost().nanos <= shown) {
-			this.ghostSamples.removeFirst();
+		Vec3 shown = this.ghostTrail.follow(this.rotation);
+		if (shown != null) {
+			this.position = shown;
 		}
-		GhostSample from = this.ghostSamples.peekFirst();
-		if (from == null || shown <= from.nanos) {
-			return;
-		}
-		GhostSample to = this.ghostSamples.size() > 1 ? secondGhost() : from;
-		float along = to.nanos <= from.nanos ? 1.0F :
-				(float) Math.min(1.0, (shown - from.nanos) / (double) (to.nanos - from.nanos));
-		this.position = from.position.lerp(to.position, along);
-		from.rotation.slerp(to.rotation, along, this.rotation);
-	}
-
-	private GhostSample secondGhost() {
-		Iterator<GhostSample> all = this.ghostSamples.iterator();
-		all.next();
-		return all.next();
 	}
 
 	/**
@@ -550,7 +515,6 @@ public final class PhotoSheet {
 	}
 
 	private void fall(Level level, double dt) {
-		// drifts from side to side on the way down
 		Vec3 drift = new Vec3(Math.sin(this.age * 3.1), 0, Math.cos(this.age * 2.3)).scale(0.6);
 		this.velocity = this.velocity.add(drift.x * dt, -GRAVITY * dt, drift.z * dt).scale(Math.exp(-DRAG * dt));
 

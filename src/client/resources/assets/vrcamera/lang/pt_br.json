@@ -210,5 +210,9 @@
 	"vrcamera.option.selfieScreen": "Tela de selfie",
 	"vrcamera.option.selfieScreen.tooltip": "Enquanto a câmera estiver perto de você com a lente para você, uma segunda tela em cima dela mostra a imagem, como um espelho. Na mão ou onde você a colocou. Só no headset, não na gravação, e não custa desempenho.",
 	"vrcamera.option.selfieDistance": "Tela de selfie: distância",
-	"vrcamera.option.selfieDistance.tooltip": "Até quantos blocos entre a sua cabeça e a câmera a tela de selfie aparece. Mais longe ela some."
+	"vrcamera.option.selfieDistance.tooltip": "Até quantos blocos entre a sua cabeça e a câmera a tela de selfie aparece. Mais longe ela some.",
+	"vrcamera.option.pullStyle": "Puxar: estilo",
+	"vrcamera.option.pullStyle.tooltip": "Telecinese: a câmera vem para a mão enquanto você segura o botão, segue a mão e fica onde chegou se você soltar. No modo físico ela continua voando e cai. Instantâneo: segure o botão o tempo todo, depois ela vem de uma vez.",
+	"vrcamera.option.pullStyle.telekinesis": "Telecinese",
+	"vrcamera.option.pullStyle.instant": "Instantâneo"
 }

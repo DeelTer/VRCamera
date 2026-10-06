@@ -210,5 +210,9 @@
 	"vrcamera.option.selfieScreen": "Écran selfie",
 	"vrcamera.option.selfieScreen.tooltip": "Tant que la caméra est près de vous, objectif vers vous, un second écran se dresse dessus et montre l'image, comme un miroir. Dans la main ou là où vous l'avez posée. Seulement dans le casque, pas dans l'enregistrement, et sans coût de performance.",
 	"vrcamera.option.selfieDistance": "Écran selfie : distance",
-	"vrcamera.option.selfieDistance.tooltip": "Jusqu'à combien de blocs entre votre tête et la caméra l'écran selfie est affiché. Au-delà, il disparaît."
+	"vrcamera.option.selfieDistance.tooltip": "Jusqu'à combien de blocs entre votre tête et la caméra l'écran selfie est affiché. Au-delà, il disparaît.",
+	"vrcamera.option.pullStyle": "Attraction : style",
+	"vrcamera.option.pullStyle.tooltip": "Télékinésie : la caméra vient vers la main tant que vous tenez le bouton, suit la main et reste où elle est arrivée si vous lâchez. En mode physique, elle continue alors sa course et tombe. Instantané : tenez le bouton tout le temps, puis elle arrive d'un coup.",
+	"vrcamera.option.pullStyle.telekinesis": "Télékinésie",
+	"vrcamera.option.pullStyle.instant": "Instantané"
 }

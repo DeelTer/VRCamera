@@ -69,6 +69,7 @@ public class CameraConfig {
 	 * 0 = it can't be pulled
 	 */
 	public double pullSeconds = 1.25;
+	public PullStyle pullStyle = PullStyle.TELEKINESIS;
 	/**
 	 * How much a camera held in the hand is steadied against trembling and twitching of that hand.
 	 * 0 = not at all, 1 = as much as it gets
@@ -284,6 +285,9 @@ public class CameraConfig {
 		}
 		if (this.pace == null) {
 			this.pace = Pace.DEFAULT;
+		}
+		if (this.pullStyle == null) {
+			this.pullStyle = PullStyle.TELEKINESIS;
 		}
 		if (this.marker == null) {
 			this.marker = Marker.DOT;

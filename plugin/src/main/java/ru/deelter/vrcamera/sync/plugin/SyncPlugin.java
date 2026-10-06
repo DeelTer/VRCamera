@@ -31,6 +31,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Level;
+import ru.deelter.vrcamera.sync.Jpeg;
 
 /**
  * Keeps the photos players pinned with the VRCamera mod, and tells the clients around about them.
@@ -285,20 +286,14 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH)) {
 			return;
 		}
-		byte[] message = null;
-		for (UUID other : this.clients.keySet()) {
-			Player watcher = other.equals(player.getUniqueId()) ? null : Bukkit.getPlayer(other);
-			if (watcher == null || watcher.getWorld() != player.getWorld() ||
-					watcher.getLocation().distanceSquared(at) > this.cameraRange * this.cameraRange) {
-				continue;
-			}
-			if (message == null) {
-				message = Protocol.camera(new Protocol.Camera(player.getUniqueId(), player.getName(), camera.x(),
-						camera.y(), camera.z(), camera.qx() / length, camera.qy() / length, camera.qz() / length,
-						camera.qw() / length));
-			}
-			send(watcher, message);
+		List<Player> watchers = watchers(player, at);
+		if (watchers.isEmpty()) {
+			return;
 		}
+		byte[] message = Protocol.camera(new Protocol.Camera(player.getUniqueId(), player.getName(), camera.x(),
+				camera.y(), camera.z(), camera.qx() / length, camera.qy() / length, camera.qz() / length,
+				camera.qw() / length));
+		watchers.forEach(watcher -> send(watcher, message));
 	}
 
 	/**
@@ -315,13 +310,22 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			return;
 		}
 		byte[] message = Protocol.cameraSound(type, x, y, z);
+		watchers(player, at).forEach(watcher -> send(watcher, message));
+	}
+
+	/**
+	 * @return the other players with the mod who are close enough to be told about the camera of this one
+	 */
+	private List<Player> watchers(Player player, Location at) {
+		List<Player> watchers = new ArrayList<>();
 		for (UUID other : this.clients.keySet()) {
 			Player watcher = other.equals(player.getUniqueId()) ? null : Bukkit.getPlayer(other);
 			if (watcher != null && watcher.getWorld() == player.getWorld() &&
 					watcher.getLocation().distanceSquared(at) <= this.cameraRange * this.cameraRange) {
-				send(watcher, message);
+				watchers.add(watcher);
 			}
 		}
+		return watchers;
 	}
 
 	/**
@@ -667,7 +671,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			BufferedImage plain = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_RGB);
 			plain.getGraphics().drawImage(read, 0, 0, null);
 			for (float quality : QUALITIES) {
-				byte[] jpeg = jpeg(plain, quality);
+				byte[] jpeg = Jpeg.encode(plain, quality);
 				if (jpeg.length <= maxBytes) {
 					return new CleanPicture(jpeg, plain.getHeight() / (float) plain.getWidth());
 				}
@@ -677,25 +681,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			// the readers of Java throw all kinds of things at broken files
 			return null;
 		}
-	}
-
-	private static byte[] jpeg(BufferedImage image, float quality) throws IOException {
-		Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
-		if (!writers.hasNext()) {
-			throw new IOException("this Java can't write JPEG");
-		}
-		ImageWriter writer = writers.next();
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream(16_384);
-		try (ImageOutputStream out = ImageIO.createImageOutputStream(bytes)) {
-			ImageWriteParam param = writer.getDefaultWriteParam();
-			param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
-			param.setCompressionQuality(quality);
-			writer.setOutput(out);
-			writer.write(null, new IIOImage(image, null, null), param);
-		} finally {
-			writer.dispose();
-		}
-		return bytes.toByteArray();
 	}
 
 	/**

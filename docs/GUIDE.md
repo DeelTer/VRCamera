@@ -86,8 +86,19 @@ swing goes further. A swing slower than 2.5 blocks per second does not count as 
 off. This also works on the plain Vivecraft camera while the mod is off.
 
 **Pull from afar.** Look at the camera and point a hand at it: the controller gives a short buzz. Hold the interact
-button. The buzz grows, and after `pullSeconds` (1.25 by default) the camera flies into your hand. It stays there
-until you let go. The hand takes it by the side, so it does not cover the lens. Works from 1.5 to 64 blocks.
+button and the camera comes to your hand like by telekinesis: it stirs, leaves its place and gets faster, following
+the hand wherever you move it. The buzz grows as it comes closer. The whole way takes `pullSeconds` (1.25 by
+default) from any distance. Held to the end, it lands in your hand and stays there until you let go. The hand
+takes it by the side, so it does not cover the lens. Works from 1.5 to 64 blocks.
+
+- Let go on the way in Physics and the camera flies on with the speed it had, falls and rolls.
+- Swing the hand as you let go and the camera is flung the way the hand went, in any mode. `throwPower` sets how
+  far.
+- Let go on the way in Director or Follow and it stays where it got to, like a camera you put there by hand.
+- Let go right away, before it left its place, and nothing happens.
+- A camera lying on the ground comes up in an arc.
+
+`pullStyle: "instant"` is the way it was before: hold the button for the whole time, then the camera comes at once.
 
 In Director and Follow the camera often hangs in front of you, and a hand may catch it by accident. If that
 happens, turn `pullAllModes` off: pulling then only works in Physics.
@@ -426,7 +437,8 @@ and by `/vrcam reload`.
 | `selfieScreen` | `true` | a second screen on top of the camera while it is near you with its lens to you, in your hand or wherever you put it. Only in the headset, costs no FPS |
 | `selfieDistance` | `3.0` | blocks from your head to the camera up to which the selfie screen is shown |
 | `hideHoldingArm` | `true` | keep the arm that holds the camera out of the picture, except in a selfie |
-| `pullSeconds` | `1.25` | seconds to hold the button to pull the camera, 0 = no pulling |
+| `pullStyle` | `"telekinesis"` | `"telekinesis"`: the camera comes to the hand for as long as the button is held, and stays where it got to if you let go. `"instant"`: hold the button, then it comes at once |
+| `pullSeconds` | `1.25` | seconds the camera takes to come to the hand, 0 = no pulling |
 | `pullAllModes` | `true` | `false` = pulling only in Physics |
 | `physicsAim` | `0.75` | Physics: how much a dropped camera turns to the player, 0 to 1 |
 | `physicsShake` | `1.0` | Physics: sway of a held camera, 0 = off |

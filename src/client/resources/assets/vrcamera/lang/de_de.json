@@ -210,5 +210,9 @@
 	"vrcamera.option.selfieScreen": "Selfie-Bildschirm",
 	"vrcamera.option.selfieScreen.tooltip": "Solange die Kamera nah bei dir ist und ihr Objektiv auf dich zeigt, steht ein zweiter Bildschirm auf ihr und zeigt das Bild, wie ein Spiegel. In der Hand oder wo du sie hingestellt hast. Nur im Headset, nicht in der Aufnahme, und es kostet keine Leistung.",
 	"vrcamera.option.selfieDistance": "Selfie-Bildschirm: Entfernung",
-	"vrcamera.option.selfieDistance.tooltip": "Bis zu wie vielen Blöcken zwischen deinem Kopf und der Kamera der Selfie-Bildschirm gezeigt wird. Weiter weg ist er fort."
+	"vrcamera.option.selfieDistance.tooltip": "Bis zu wie vielen Blöcken zwischen deinem Kopf und der Kamera der Selfie-Bildschirm gezeigt wird. Weiter weg ist er fort.",
+	"vrcamera.option.pullStyle": "Heranziehen: Art",
+	"vrcamera.option.pullStyle.tooltip": "Telekinese: Die Kamera kommt zur Hand, solange du die Taste hältst, folgt der Hand und bleibt, wo sie gerade ist, wenn du loslässt. Im Physik-Modus fliegt sie dann weiter und fällt. Sofort: Taste die ganze Zeit halten, dann kommt sie auf einmal.",
+	"vrcamera.option.pullStyle.telekinesis": "Telekinese",
+	"vrcamera.option.pullStyle.instant": "Sofort"
 }

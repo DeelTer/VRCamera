@@ -23,7 +23,6 @@ public final class SheetStore {
 
 	private final Logger logger;
 	private final Path listFile;
-	// the list as it was before the last save
 	private final Path backupFile;
 	private final Path imageDir;
 

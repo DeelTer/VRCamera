@@ -473,7 +473,6 @@ public final class PhotoSync {
 		}
 		for (Protocol.Sheet sheet : wanted) {
 			if (this.waiting.containsKey(sheet.imageHash())) {
-				// on its way already
 				continue;
 			}
 			if (!canFetch(sheet.imageHash())) {
@@ -579,7 +578,7 @@ public final class PhotoSync {
 					this.ghosts.add(loose.id())) {
 				Protocol.Pose at = loose.pose();
 				PhotoSheet ghost = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
-						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), pixels(picture), image);
+						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), PhotoAlbum.image(picture), image);
 				if (ghost != null) {
 					ghost.custom = loose.custom();
 				}
@@ -595,7 +594,7 @@ public final class PhotoSync {
 			PhotoSheet shown = PhotoAlbum.INSTANCE.addRemote(sheet.id(), sheet.removable(),
 					new Vec3(sheet.x(), sheet.y(), sheet.z()),
 					new Quaternionf(sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw()), sheet.aspect(),
-					pixels(picture), image);
+					PhotoAlbum.image(picture), image);
 			if (shown != null) {
 				shown.custom = sheet.custom();
 			}
@@ -611,16 +610,6 @@ public final class PhotoSync {
 		NativeImage pixels = new NativeImage(2, 2, false);
 		for (int i = 0; i < 4; i++) {
 			pixels.setPixel(i % 2, i / 2, 0xFF000000);
-		}
-		return pixels;
-	}
-
-	private static NativeImage pixels(PhotoCodec.Picture picture) {
-		NativeImage pixels = new NativeImage(picture.width(), picture.height(), false);
-		for (int y = 0; y < picture.height(); y++) {
-			for (int x = 0; x < picture.width(); x++) {
-				pixels.setPixel(x, y, picture.argb()[y * picture.width() + x] | 0xFF000000);
-			}
 		}
 		return pixels;
 	}

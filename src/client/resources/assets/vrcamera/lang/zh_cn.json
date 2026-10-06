@@ -210,5 +210,9 @@
 	"vrcamera.option.selfieScreen": "自拍屏幕",
 	"vrcamera.option.selfieScreen.tooltip": "当相机在你附近且镜头对着你时，相机上方会立起第二块屏幕显示画面，像镜子一样。无论拿在手里还是放在别处。仅在头显中显示，不会进入录像，也不消耗性能。",
 	"vrcamera.option.selfieDistance": "自拍屏幕：距离",
-	"vrcamera.option.selfieDistance.tooltip": "头部与相机之间在多少格以内显示自拍屏幕。更远则不显示。"
+	"vrcamera.option.selfieDistance.tooltip": "头部与相机之间在多少格以内显示自拍屏幕。更远则不显示。",
+	"vrcamera.option.pullStyle": "拉取：方式",
+	"vrcamera.option.pullStyle.tooltip": "念力：按住按钮期间相机飞向你的手并跟随手移动，松开则停在当前位置。在物理模式下它会继续飞行并落下。瞬间：全程按住按钮，然后相机一下子飞来。",
+	"vrcamera.option.pullStyle.telekinesis": "念力",
+	"vrcamera.option.pullStyle.instant": "瞬间"
 }
