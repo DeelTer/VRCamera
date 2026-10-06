@@ -17,9 +17,9 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.photo.CameraFlashes;
+import ru.deelter.vrcamera.client.rig.DroppedCamera;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 import ru.deelter.vrcamera.sync.Protocol;
-import ru.deelter.vrcamera.client.rig.DroppedCamera;
 
 import java.util.Random;
 

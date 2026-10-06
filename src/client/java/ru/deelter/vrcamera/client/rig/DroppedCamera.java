@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -16,6 +17,8 @@ import org.joml.Vector3f;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -64,6 +67,16 @@ public final class DroppedCamera {
 	// a camera let go of slower than this, with a block this close below, is put down and not dropped
 	private static final double PLACE_MAX_SPEED = 0.8;
 	private static final double PLACE_REACH = 0.3;
+	// blocks from the middle of the camera to a wall it is put up on
+	private static final double MOUNT_REACH = 0.16;
+	// blocks from a wall or a ceiling to the middle of a camera put up on it
+	private static final double WALL_GAP = 0.12;
+	private static final double CEILING_GAP = 0.2;
+	// blocks around an entity in which a camera is put on it, and around the own head
+	private static final double ATTACH_REACH = 0.1;
+	private static final double SELF_ATTACH_REACH = 0.3;
+	// the part of an entity below its eyes that still counts as its head
+	private static final double HEAD_ZONE = 0.2;
 	private static final double STRIKE_BOUNCE = 0.6;
 
 	/**
@@ -88,6 +101,8 @@ public final class DroppedCamera {
 	private final Quaternionf rotation = new Quaternionf();
 	private boolean falling;
 	private boolean resting;
+	// resting against a wall or under a ceiling, where the player put it. Pointing away from that block
+	private Vec3 mountedOn;
 	private double settleTime;
 
 	// tumbling in the air
@@ -101,6 +116,12 @@ public final class DroppedCamera {
 	private Vec3 carrierOffset = Vec3.ZERO;
 	private float carrierYaw;
 	private float carriedTurn;
+	// Put on the carrier by hand, not just lying on it: it stays where it was put, on the head it also nods and
+	// turns with the head. Where and how it sits, seen from the body or the head of the carrier
+	private boolean attached;
+	private boolean attachedToHead;
+	private final Vector3f attachedOffset = new Vector3f();
+	private final Quaternionf attachedRotation = new Quaternionf();
 
 	// what kicked the camera, it does not collide with that for a moment
 	private Entity kicker;
@@ -167,6 +188,7 @@ public final class DroppedCamera {
 	public void pickUp() {
 		this.falling = false;
 		this.resting = false;
+		this.mountedOn = null;
 		this.carrier = null;
 		this.fovKick = 0;
 	}
@@ -205,7 +227,8 @@ public final class DroppedCamera {
 				ride(subject);
 			} else if (!supported(subject)) {
 				startFalling();
-			} else {
+			} else if (this.mountedOn == null) {
+				// one that was put up on a wall is not knocked off by walking past it, only by a hit
 				getKicked(subject);
 			}
 		}
@@ -258,26 +281,100 @@ public final class DroppedCamera {
 	/**
 	 * Puts the camera down where the hand let go of it, the way it was held: it does not fall, tumble or turn.
 	 *
+	 * @param position where the camera is let go, out of any wall
+	 * @param heldAt   where the hand has it, which can be inside a wall it was pushed against
 	 * @return false if it was not put down but dropped or thrown, or there is nothing to put it on
 	 */
-	public boolean place(Subject subject, Vec3 position, Quaternionfc rotation, Vec3 handVelocity) {
+	public boolean place(Subject subject, Vec3 position, Vec3 heldAt, Quaternionfc rotation, Vec3 handVelocity) {
 		if (handVelocity.length() > PLACE_MAX_SPEED) {
 			return false;
 		}
+		Entity host = host(subject, position);
+		if (host != null) {
+			drop(position, rotation, Vec3.ZERO);
+			this.falling = false;
+			this.resting = true;
+			this.settleTime = 0;
+			attach(host, subject);
+			return true;
+		}
 		BlockHitResult below = subject.player.level().clip(new ClipContext(position,
 				position.add(0, -PLACE_REACH, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
-		if (below.getType() == HitResult.Type.MISS || below.getDirection() != Direction.UP) {
+		if (below.getType() != HitResult.Type.MISS && below.getDirection() == Direction.UP) {
+			drop(new Vec3(position.x, below.getLocation().y + RADIUS, position.z), rotation, Vec3.ZERO);
+			this.falling = false;
+			this.resting = true;
+			this.settleTime = 0;
+			return true;
+		}
+		// Held right against a wall or a ceiling: it stays up there, turned the way it was held
+		BlockHitResult wall = wall(subject, position, heldAt);
+		if (wall == null) {
 			return false;
 		}
-		drop(new Vec3(position.x, below.getLocation().y + RADIUS, position.z), rotation, Vec3.ZERO);
+		Direction face = wall.getDirection();
+		Vec3 out = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
+		// Far enough out for the whole camera to be in front of the block, whichever way it is turned. Under a
+		// ceiling there is the screen on top of it as well
+		drop(wall.getLocation().add(out.scale(face == Direction.DOWN ? CEILING_GAP : WALL_GAP)), rotation, Vec3.ZERO);
 		this.falling = false;
 		this.resting = true;
+		this.mountedOn = out;
 		this.settleTime = 0;
 		return true;
 	}
 
+	/**
+	 * @return the wall or ceiling the camera is held against, null if there is none that close
+	 */
+	private BlockHitResult wall(Subject subject, Vec3 position, Vec3 heldAt) {
+		BlockHitResult nearest = null;
+		double nearestDistance = Double.MAX_VALUE;
+		List<Vec3> ways = new ArrayList<>();
+		for (Direction direction : Direction.values()) {
+			if (direction != Direction.DOWN) {
+				ways.add(position.add(new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ())
+						.scale(MOUNT_REACH)));
+			}
+		}
+		// A hand pushes the camera into the wall, and it is let go a bit in front of that: the wall is then
+		// further away than it would be looked for, but it is where the hand is
+		Vec3 pushed = heldAt.subtract(position);
+		if (pushed.lengthSqr() > 1.0E-6) {
+			ways.add(heldAt.add(pushed.normalize().scale(MOUNT_REACH)));
+		}
+		for (Vec3 way : ways) {
+			BlockHitResult hit = subject.player.level().clip(new ClipContext(position, way,
+					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
+			double distance = hit.getLocation().distanceToSqr(position);
+			if (hit.getType() != HitResult.Type.MISS && hit.getDirection() != Direction.UP &&
+					distance < nearestDistance)
+			{
+				nearest = hit;
+				nearestDistance = distance;
+			}
+		}
+		return nearest;
+	}
+
+	/**
+	 * @return if the camera would stay up there if it was let go slowly right now: on a wall, a ceiling or an
+	 * entity. Not for the floor, where it is put down like anywhere
+	 */
+	public boolean canPutUp(Subject subject, Vec3 position, Vec3 heldAt) {
+		return host(subject, position) != null || wall(subject, position, heldAt) != null;
+	}
+
+	/**
+	 * @return if the camera was put up on a wall or a ceiling
+	 */
+	public boolean isMounted() {
+		return this.resting && this.mountedOn != null;
+	}
+
 	private void startFalling() {
 		this.resting = false;
+		this.mountedOn = null;
 		this.falling = true;
 		this.carrier = null;
 	}
@@ -288,6 +385,13 @@ public final class DroppedCamera {
 	private void ride(Subject subject) {
 		if (!this.carrier.isAlive() || this.carrier.level() != subject.player.level()) {
 			startFalling();
+			return;
+		}
+		if (this.attached) {
+			Quaternionf frame = frameRotation(this.carrier, subject, this.attachedToHead);
+			Vector3f offset = frame.transform(new Vector3f(this.attachedOffset));
+			this.position = frameOrigin(this.carrier, subject, this.attachedToHead).add(offset.x, offset.y, offset.z);
+			frame.mul(this.attachedRotation, this.rotation);
 			return;
 		}
 		float turn = Mth.wrapDegrees(this.carrier.getViewYRot(subject.partialTick) - this.carrierYaw);
@@ -399,8 +503,86 @@ public final class DroppedCamera {
 	/**
 	 * @param entity what the camera came to rest on, null for a block
 	 */
+	/**
+	 * @return what the camera is held against closely enough to be put on it, null if nothing
+	 */
+	private Entity host(Subject subject, Vec3 position) {
+		Entity nearest = null;
+		double nearestDistance = Double.MAX_VALUE;
+		AABB around = new AABB(position, position).inflate(1.5);
+		for (Entity entity : subject.player.level().getEntities((Entity) null, around, DroppedCamera::isSolid)) {
+			if (entity == subject.player) {
+				// Only on the head. A hand lets go of the camera near the own body all the time, and it is not
+				// meant to stick there every time
+				if (position.distanceTo(subject.head) > SELF_ATTACH_REACH) {
+					continue;
+				}
+			} else if (!entity.getBoundingBox().inflate(ATTACH_REACH).contains(position)) {
+				continue;
+			}
+			double distance = entity.getBoundingBox().getCenter().distanceToSqr(position);
+			if (distance < nearestDistance) {
+				nearest = entity;
+				nearestDistance = distance;
+			}
+		}
+		return nearest;
+	}
+
+	private void attach(Entity entity, Subject subject) {
+		this.carrier = entity;
+		this.attached = true;
+		// near the eyes it goes with the head, anywhere else with the body
+		this.attachedToHead = entity instanceof LivingEntity &&
+				this.position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight();
+		Quaternionf inverse = frameRotation(entity, subject, this.attachedToHead).invert();
+		Vec3 offset = this.position.subtract(frameOrigin(entity, subject, this.attachedToHead));
+		inverse.transform(this.attachedOffset.set((float) offset.x, (float) offset.y, (float) offset.z));
+		inverse.mul(this.rotation, this.attachedRotation);
+	}
+
+	private static Vec3 frameOrigin(Entity entity, Subject subject, boolean head) {
+		if (!head) {
+			return entity.getPosition(subject.partialTick);
+		}
+		// the head of the player in VR is where the headset is, not where the game has the eyes
+		return entity == subject.player ? subject.head : entity.getEyePosition(subject.partialTick);
+	}
+
+	private static Quaternionf frameRotation(Entity entity, Subject subject, boolean head) {
+		if (head && entity == subject.player) {
+			Quaternionf look = new Quaternionf();
+			CamMath.lookRotation(subject.headDir, look);
+			return look;
+		}
+		float yaw = entity instanceof LivingEntity living && !head ?
+				Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) :
+				entity.getViewYRot(subject.partialTick);
+		// yaw of entities goes the other way around than rotations around the y axis
+		Quaternionf frame = new Quaternionf().rotationY(-yaw * Mth.DEG_TO_RAD);
+		return head ? frame.rotateX(entity.getViewXRot(subject.partialTick) * Mth.DEG_TO_RAD) : frame;
+	}
+
+	/**
+	 * @return how fast what the camera was put on moves, in blocks per second. 0 if it is not on anything
+	 */
+	public double attachedSpeed() {
+		if (!isAttached()) {
+			return 0;
+		}
+		return new Vec3(this.carrier.getX() - this.carrier.xo, 0, this.carrier.getZ() - this.carrier.zo).length() * 20.0;
+	}
+
+	/**
+	 * @return if the camera was put on an entity by hand and goes along with it
+	 */
+	public boolean isAttached() {
+		return this.resting && this.attached && this.carrier != null;
+	}
+
 	private void landOn(Entity entity, Subject subject) {
 		this.carrier = entity;
+		this.attached = false;
 		if (entity != null) {
 			this.carrierOffset = this.position.subtract(entity.getPosition(subject.partialTick));
 			this.carrierYaw = entity.getViewYRot(subject.partialTick);
@@ -480,6 +662,11 @@ public final class DroppedCamera {
 	}
 
 	private boolean supported(Subject subject) {
+		if (this.mountedOn != null) {
+			Vec3 into = this.position.subtract(this.mountedOn.scale(CEILING_GAP + 0.15));
+			return subject.player.level().clip(new ClipContext(this.position, into, ClipContext.Block.COLLIDER,
+					ClipContext.Fluid.NONE, subject.player)).getType() != HitResult.Type.MISS;
+		}
 		Vec3 below = this.position.add(0, -(RADIUS + 0.15), 0);
 		return subject.player.level().clip(new ClipContext(this.position, below, ClipContext.Block.COLLIDER,
 				ClipContext.Fluid.NONE, subject.player)).getType() != HitResult.Type.MISS;

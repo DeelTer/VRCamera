@@ -79,6 +79,14 @@ public class CameraConfig {
 	 */
 	public boolean hideHoldingArm = true;
 	/**
+	 * a second screen on top of a camera that is near the player with its lens to them, to see the selfie
+	 */
+	public boolean selfieScreen = true;
+	/**
+	 * blocks from the head to the camera up to which the selfie screen is shown
+	 */
+	public double selfieDistance = 3.0;
+	/**
 	 * the camera can be pulled in every mode, not only in the physics mode
 	 */
 	public boolean pullAllModes = true;
@@ -108,6 +116,11 @@ public class CameraConfig {
 	 * how much the picture on a sheet is lifted, 0 = as it was taken, 1 = most. Only the sheet, not the file
 	 */
 	public double photoBrightness = 0.3;
+	/**
+	 * How much the picture on a sheet is turned into pixel art in the colours of a map: 0 = not at all, 1 = as
+	 * few pixels as it gets. Only the sheet, not the file
+	 */
+	public double photoPixels = 0.3;
 	/**
 	 * the click of a photo and the whirr of printing it, of this player and of the others. Off they are still
 	 * heard by the others

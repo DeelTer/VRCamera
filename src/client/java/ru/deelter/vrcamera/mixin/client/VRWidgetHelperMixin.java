@@ -15,6 +15,7 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.render.helpers.VRWidgetHelper;
 import org.vivecraft.client_vr.render.renderstates.CameraWidgetRenderState;
 import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.SelfieScreen;
 import ru.deelter.vrcamera.client.photo.CameraFlashes;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
@@ -58,6 +59,9 @@ public class VRWidgetHelperMixin {
 		PhotoAlbum.INSTANCE.render(output, cameraState.pos, poseStack);
 		RemoteCameras.INSTANCE.render(output, cameraState.pos, poseStack);
 		CameraFlashes.INSTANCE.render(output, cameraState.pos, poseStack);
+		if (widgetState.visible) {
+			SelfieScreen.render(output, cameraState.pos, widgetState.pos, widgetState.modelMatrix, poseStack);
+		}
 		if (ClientDataHolderVR.getInstance().currentPass == RenderPass.CAMERA &&
 				CameraController.INSTANCE.isEngaged()) {
 			ci.cancel();

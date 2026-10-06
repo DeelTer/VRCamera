@@ -33,7 +33,8 @@ public final class CameraFlashes {
 	// player who took one without a camera
 	private static final double TOO_CLOSE = 0.3;
 
-	private record Flash(Vec3 position, long nanos) {}
+	private record Flash(Vec3 position, long nanos) {
+	}
 
 	private final List<Flash> flashes = new ArrayList<>();
 

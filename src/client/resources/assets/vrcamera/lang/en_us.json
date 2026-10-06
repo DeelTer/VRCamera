@@ -204,5 +204,11 @@
 	"vrcamera.option.pace.alpha": "Alpha: short shots, many changes",
 	"vrcamera.option.pace.default": "Default: long steady shots",
 	"vrcamera.option.pace.faster": "Faster: for short videos",
-	"vrcamera.command.pace": "VR Camera: pace set to %s"
+	"vrcamera.command.pace": "VR Camera: pace set to %s",
+	"vrcamera.option.photoPixels": "Photo: pixel art",
+	"vrcamera.option.photoPixels.tooltip": "Turns the picture on a sheet into pixel art in the colours of a map of the game. 0 leaves it as taken, higher means fewer and larger pixels. Applies to new photos, the saved file is not changed.",
+	"vrcamera.option.selfieScreen": "Selfie screen",
+	"vrcamera.option.selfieScreen.tooltip": "While the camera is near you with its lens to you, a second screen stands on top of it and shows the picture, like a mirror. In your hand or wherever you put it. Only in the headset, not in the recording, and it costs no performance.",
+	"vrcamera.option.selfieDistance": "Selfie screen: distance",
+	"vrcamera.option.selfieDistance.tooltip": "Up to how many blocks between your head and the camera the selfie screen is shown. Further away it is gone."
 }

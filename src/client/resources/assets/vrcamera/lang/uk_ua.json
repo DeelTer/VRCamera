@@ -204,5 +204,11 @@
 	"vrcamera.option.pace.alpha": "Alpha: короткі плани, часті зміни",
 	"vrcamera.option.pace.default": "Default: довгі спокійні плани",
 	"vrcamera.option.pace.faster": "Faster: для коротких відео",
-	"vrcamera.command.pace": "VR-камера: темп — %s"
+	"vrcamera.command.pace": "VR-камера: темп — %s",
+	"vrcamera.option.photoPixels": "Фото: піксель-арт",
+	"vrcamera.option.photoPixels.tooltip": "Перетворює картинку на аркуші на піксель-арт у кольорах ігрової мапи. 0 — як знято, що вище, то менше й більші пікселі. Діє на нові фото, файл знімка не змінюється.",
+	"vrcamera.option.selfieScreen": "Екран для селфі",
+	"vrcamera.option.selfieScreen.tooltip": "Поки камера поруч і дивиться об'єктивом на вас, над нею стоїть другий екранчик із картинкою, як дзеркало. У руці або там, куди ви її поставили. Лише в шоломі, у запис не потрапляє і продуктивність не витрачає.",
+	"vrcamera.option.selfieDistance": "Екран для селфі: дистанція",
+	"vrcamera.option.selfieDistance.tooltip": "До скількох блоків між вашою головою і камерою показувати екран для селфі. Далі він зникає."
 }

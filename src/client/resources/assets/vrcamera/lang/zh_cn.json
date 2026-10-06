@@ -204,5 +204,11 @@
 	"vrcamera.option.pace.alpha": "Alpha：镜头短，切换多",
 	"vrcamera.option.pace.default": "Default：镜头长而稳",
 	"vrcamera.option.pace.faster": "Faster：适合短视频",
-	"vrcamera.command.pace": "VR 摄像机：节奏已设为 %s"
+	"vrcamera.command.pace": "VR 摄像机：节奏已设为 %s",
+	"vrcamera.option.photoPixels": "照片：像素画",
+	"vrcamera.option.photoPixels.tooltip": "把纸张上的图片变成游戏地图配色的像素画。0 为保持原样，数值越高像素越少越大。仅对新照片生效，保存的文件不变。",
+	"vrcamera.option.selfieScreen": "自拍屏幕",
+	"vrcamera.option.selfieScreen.tooltip": "当相机在你附近且镜头对着你时，相机上方会立起第二块屏幕显示画面，像镜子一样。无论拿在手里还是放在别处。仅在头显中显示，不会进入录像，也不消耗性能。",
+	"vrcamera.option.selfieDistance": "自拍屏幕：距离",
+	"vrcamera.option.selfieDistance.tooltip": "头部与相机之间在多少格以内显示自拍屏幕。更远则不显示。"
 }

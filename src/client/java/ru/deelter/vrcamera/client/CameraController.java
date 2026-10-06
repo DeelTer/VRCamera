@@ -131,6 +131,8 @@ public final class CameraController implements Tracker {
 	private boolean shownByUs;
 
 	private boolean wasGrabbed;
+	// if the held camera was where it can be put up on a wall or an entity, the last time that was looked at
+	private boolean couldPutUp;
 	private final HandThrow handThrow = new HandThrow();
 	private final DroppedCamera dropped = new DroppedCamera();
 	private final HandheldShake shake = new HandheldShake();
@@ -213,14 +215,33 @@ public final class CameraController implements Tracker {
 			return null;
 		}
 		CameraTracker camera = dh.cameraTracker;
-		Vec3 lens = new Vec3(camera.getRotation().transform(new Vector3f(0, 0, -1)));
-		Vec3 toHead = this.subject.head.subtract(camera.getPosition());
 		// in a selfie the arm that holds the camera belongs into the picture
-		if (toHead.lengthSqr() > 1.0E-6 && lens.dot(toHead.normalize()) > SELFIE_COS) {
+		if (looksAtPlayer(camera.getPosition(), camera.getRotation())) {
 			return null;
 		}
 		boolean rightHand = (camera.getMovingController() == 0) != dh.vrSettings.reverseHands;
 		return rightHand ? HumanoidArm.RIGHT : HumanoidArm.LEFT;
+	}
+
+	private boolean looksAtPlayer(Vec3 position, Quaternionf rotation) {
+		Vec3 lens = new Vec3(rotation.transform(new Vector3f(0, 0, -1)));
+		Vec3 toHead = this.subject.head.subtract(position);
+		return toHead.lengthSqr() > 1.0E-6 && lens.dot(toHead.normalize()) > SELFIE_COS;
+	}
+
+	/**
+	 * @return if the camera is near the player with its lens to them, who then can't see the screen on its back.
+	 * In the hand, or anywhere it was put
+	 */
+	public boolean showsSelfieScreen() {
+		if (!this.engaged || !this.config.selfieScreen || hidesModel()) {
+			return false;
+		}
+		CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
+		boolean held = camera.isMoving() && this.handPosition != null;
+		Vec3 position = held ? this.handPosition : camera.getPosition();
+		return position.distanceTo(this.subject.head) <= this.config.selfieDistance &&
+				looksAtPlayer(position, held ? this.handRotation : camera.getRotation());
 	}
 
 	/**
@@ -968,12 +989,23 @@ public final class CameraController implements Tracker {
 					this.config.handStabilize);
 			camera.setPosition(this.stabilizer.position().add(vr.origin));
 			camera.setRotation(new Quaternionf(this.stabilizer.rotation()));
+			if (this.mode == Mode.PHYSICS) {
+				// a short buzz when the camera gets to where it would stay if it was let go
+				boolean canPutUp = this.dropped.canPutUp(this.subject,
+						WorldProbe.reach(player, this.subject.head, this.handPosition), this.handPosition);
+				if (canPutUp && !this.couldPutUp) {
+					VRClientAPI.instance().triggerHapticPulse(camera.getMovingController() == 0 ?
+							VRBodyPart.MAIN_HAND : VRBodyPart.OFF_HAND, 0.06F, 180.0F, 0.7F, 0.0F);
+				}
+				this.couldPutUp = canPutUp;
+			}
 			if (this.mode == Mode.PHYSICS && this.config.physicsShake > 0) {
 				camera.getRotation().mul(this.shake.update(worldDt, this.subject.speed, player.hurtTime > 0,
 						this.config.physicsShake));
 			}
 			return;
 		}
+		this.couldPutUp = false;
 		if (this.wasGrabbed && this.offeredHand >= 0) {
 			// handed over: the first hand let go while the second one held on to the camera
 			camera.startMoving(this.offeredHand);
@@ -986,8 +1018,11 @@ public final class CameraController implements Tracker {
 				// a hand can reach into a wall, the camera should not start in there
 				Vec3 start = WorldProbe.reach(player, this.subject.head, camera.getPosition());
 				Vec3 handVelocity = this.handThrow.velocity(this.subject.velocity);
-				if (!this.dropped.place(this.subject, start, camera.getRotation(), handVelocity)) {
+				if (!this.dropped.place(this.subject, start, camera.getPosition(), camera.getRotation(),
+						handVelocity)) {
 					this.dropped.drop(start, camera.getRotation(), handVelocity);
+				} else if (this.dropped.isMounted() || this.dropped.isAttached()) {
+					CameraEffects.pinned(player.level(), this.dropped.position());
 				}
 				this.limbs.reset();
 				this.limbs.released(camera.getMovingController());
@@ -1049,7 +1084,13 @@ public final class CameraController implements Tracker {
 		this.limbs.update(vr, this.dropped, dt, this.config.kickPower);
 		this.dropped.update(this.subject, dt, this.config, restFocus());
 		camera.setPosition(this.dropped.position());
-		camera.setRotation(this.dropped.rotation());
+		if (this.dropped.isAttached() && this.config.physicsShake > 0) {
+			// on something that walks it sways like in a hand that walks
+			camera.setRotation(new Quaternionf(this.dropped.rotation()).mul(this.shake.update(dt,
+					this.dropped.attachedSpeed(), false, this.config.physicsShake)));
+		} else {
+			camera.setRotation(this.dropped.rotation());
+		}
 
 		Vec3 lens = new Vec3(this.dropped.rotation().transform(new Vector3f(0, 0, -1)));
 		DroppedCamera.Impact impact = this.dropped.pollImpact();

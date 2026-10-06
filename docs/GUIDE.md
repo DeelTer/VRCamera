@@ -140,6 +140,17 @@ For found footage and horror, this mode makes the camera an object you hold.
 - Further than 40 blocks away it comes back to you, Vivecraft hides a camera that far off.
 - Switching the mode on puts the camera in front of your face for 20 seconds. If you do not pick it up, it falls.
 
+**Putting the camera up.** In the physics mode the camera can not only be put down but put up as well. Hold it
+right against something and let go slowly:
+
+- **A wall or ceiling:** it stays there, turned the way you held it. It falls when the block breaks or it is hit.
+- **A mob or player:** it rides along and sways while they walk, like in a hand (`physicsShake`). Near the head it
+  turns and nods with the head, on the body with the body.
+- **Your own forehead:** hold it to your head. It does not stick to the rest of your own body, to not catch by
+  accident.
+
+Take it off by grabbing it or by knocking it off.
+
 The director, own angles and events do not run in this mode.
 
 ## Shots
@@ -412,6 +423,8 @@ and by `/vrcam reload`.
 | `indicatorSize` | `1.0` | size of the icon |
 | `throwPower` | `1.0` | throw range multiplier, 0 = no throwing |
 | `handStabilize` | `0.6` | steadying of a held camera, 0 = off, 1 = most |
+| `selfieScreen` | `true` | a second screen on top of the camera while it is near you with its lens to you, in your hand or wherever you put it. Only in the headset, costs no FPS |
+| `selfieDistance` | `3.0` | blocks from your head to the camera up to which the selfie screen is shown |
 | `hideHoldingArm` | `true` | keep the arm that holds the camera out of the picture, except in a selfie |
 | `pullSeconds` | `1.25` | seconds to hold the button to pull the camera, 0 = no pulling |
 | `pullAllModes` | `true` | `false` = pulling only in Physics |
@@ -427,6 +440,7 @@ and by `/vrcam reload`.
 | `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
 | `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |
 | `photoSounds` | `true` | the click of a photo and the whirr of printing it, yours and of others. `false` mutes them for you; the others still hear yours |
+| `photoPixels` | `0.3` | pixel art on the sheet, in the colours of a map: 0 = off, 1 = fewest pixels (128 down to 32 along the longer side). New photos only; the saved file is not changed |
 | `photoBrightness` | `0.3` | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed |
 | `debugOverlay` | `false` | debug overlay on the HUD |
 

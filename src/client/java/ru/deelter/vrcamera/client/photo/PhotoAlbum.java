@@ -194,6 +194,7 @@ public final class PhotoAlbum {
 			small.close();
 			throw e;
 		}
+		small = PixelArt.apply(small, CameraController.INSTANCE.config().photoPixels);
 		String file = name;
 		try {
 			PhotoStore.prepare(this.cache);

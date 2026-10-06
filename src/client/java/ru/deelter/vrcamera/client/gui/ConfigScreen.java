@@ -70,6 +70,10 @@ public final class ConfigScreen {
 				value -> config.underwaterLook = value));
 		general.addEntry(screen.toggle("hideHoldingArm", config.hideHoldingArm, defaults.hideHoldingArm,
 				value -> config.hideHoldingArm = value));
+		general.addEntry(screen.toggle("selfieScreen", config.selfieScreen, defaults.selfieScreen,
+				value -> config.selfieScreen = value));
+		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,
+				0.5, "%.1f", value -> config.selfieDistance = value));
 		general.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
 				"%.1f", value -> config.kickPower = value));
 		general.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
@@ -92,6 +96,8 @@ public final class ConfigScreen {
 				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
 		general.addEntry(screen.slider("photoBrightness", config.photoBrightness, defaults.photoBrightness, 0, 1,
 				0.05, "%.2f", value -> config.photoBrightness = value));
+		general.addEntry(screen.slider("photoPixels", config.photoPixels, defaults.photoPixels, 0, 1,
+				0.05, "%.2f", value -> config.photoPixels = value));
 		general.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
 				value -> config.photoSounds = value));
 		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,

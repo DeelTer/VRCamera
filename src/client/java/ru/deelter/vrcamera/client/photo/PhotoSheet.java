@@ -7,12 +7,14 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.AbstractSkullBlock;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
@@ -98,7 +100,9 @@ public final class PhotoSheet {
 
 	// what the server calls it while it is not pinned and shared with the others, 0 if it is not
 	private long looseId;
-	private record GhostSample(long nanos, Vec3 position, Quaternionf rotation) {}
+
+	private record GhostSample(long nanos, Vec3 position, Quaternionf rotation) {
+	}
 
 	private final ArrayDeque<GhostSample> ghostSamples = new ArrayDeque<>();
 	private Vec3 sharedPosition;
@@ -369,20 +373,35 @@ public final class PhotoSheet {
 	 * @return what a sheet can be pinned to on the way, null if there is nothing
 	 */
 	private static BlockHitResult surface(Level level, Vec3 from, Vec3 to) {
-		BlockHitResult solid = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
-				ClipContext.Fluid.NONE, CollisionContext.empty()));
-		if (solid.getType() != HitResult.Type.MISS) {
-			return solid;
-		}
-		// Signs and banners can be walked through, but are made to hang things on. Not every block with an
-		// outline though, or sheets would stick to grass
+		// By the shape that is seen, not the one that is walked into: a fence is higher to walk into than it
+		// looks, an anvil and a lectern are simpler boxes, and a sheet belongs on what the player sees
 		BlockHitResult outline = level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE,
 				ClipContext.Fluid.NONE, CollisionContext.empty()));
-		if (outline.getType() == HitResult.Type.MISS) {
+		if (outline.getType() != HitResult.Type.MISS && holds(level, outline.getBlockPos())) {
+			return outline;
+		}
+		// Something that holds nothing was in the way, like grass in front of a wall. What is behind it, but
+		// only where it can be seen as well
+		BlockHitResult solid = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, CollisionContext.empty()));
+		if (solid.getType() == HitResult.Type.MISS) {
 			return null;
 		}
-		BlockState state = level.getBlockState(outline.getBlockPos());
-		return state.is(BlockTags.ALL_SIGNS) || state.is(BlockTags.BANNERS) ? outline : null;
+		BlockPos block = solid.getBlockPos();
+		VoxelShape seen = level.getBlockState(block).getShape(level, block);
+		return !seen.isEmpty() && seen.bounds().move(block).inflate(0.02).contains(solid.getLocation()) ? solid : null;
+	}
+
+	/**
+	 * @return if sheets can be pinned to that block. Everything that is in the way of a player, and of what can
+	 * be walked through the things made to be on a wall. Not every block with an outline, or sheets would stick
+	 * to grass
+	 */
+	private static boolean holds(Level level, BlockPos block) {
+		BlockState state = level.getBlockState(block);
+		return !state.getCollisionShape(level, block).isEmpty() || state.is(BlockTags.ALL_SIGNS) ||
+				state.is(BlockTags.BANNERS) || state.is(BlockTags.BUTTONS) || state.is(Blocks.LEVER) ||
+				state.is(Blocks.TRIPWIRE_HOOK);
 	}
 
 	/**
