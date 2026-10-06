@@ -659,7 +659,7 @@ public final class CameraController implements Tracker {
 			if (!PhotoAlbum.INSTANCE.takeWithoutCamera(player, this.config.photoSheet)) {
 				return false;
 			}
-			CameraEffects.shutter(player);
+			CameraEffects.ownShutter(player);
 			return true;
 		}
 		if (!this.engaged || player == null) {
@@ -671,7 +671,7 @@ public final class CameraController implements Tracker {
 			return false;
 		}
 		this.shutter = SHUTTER_TIME;
-		CameraEffects.shutter(player);
+		CameraEffects.ownShutter(player);
 		return true;
 	}
 

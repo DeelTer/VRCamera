@@ -194,5 +194,7 @@
 	"vrcamera.message.pin.not_allowed": "Cámara VR: este servidor no te lo permite",
 	"vrcamera.option.photoBrightness": "Foto: brillo de la hoja",
 	"vrcamera.option.photoBrightness.tooltip": "Cuánto se aclara la imagen en una hoja. La hoja la ilumina el mundo y se ve más oscura que la pantalla. 0 la deja tal cual. Se aplica a fotos nuevas, el archivo guardado no cambia.",
-	"vrcamera.label.custom.hint": "Ajustes de Cámara VR → Mostrar imágenes de Internet de otros"
+	"vrcamera.label.custom.hint": "Ajustes de Cámara VR → Mostrar imágenes de Internet de otros",
+	"vrcamera.option.photoSounds": "Foto: sonidos de la cámara",
+	"vrcamera.option.photoSounds.tooltip": "El clic del obturador y el zumbido al imprimir una hoja, de tu cámara y de las de otros. Desactivado: no los oyes. Los demás siguen oyendo tu cámara."
 }

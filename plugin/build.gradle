@@ -7,7 +7,7 @@ version = rootProject.mod_version
 group = rootProject.maven_group
 
 base {
-    archivesName = 'vrcamera-sync'
+    archivesName = 'vrcamera-paper-plugin'
 }
 
 repositories {
@@ -51,6 +51,6 @@ jar {
     // next to the jars of the mod
     destinationDirectory = rootProject.layout.buildDirectory.dir('libs')
     from(rootProject.file('LICENSE')) {
-        rename { "${it}_vrcamera-sync" }
+        rename { "${it}_vrcamera-paper-plugin" }
     }
 }

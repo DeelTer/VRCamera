@@ -131,7 +131,7 @@ See the [guide](docs/GUIDE.md#known-limits) for the remaining limitations.
 ```
 
 These build the default Minecraft version, 26.3, and all supported versions respectively. Every build also
-produces `vrcamera-sync-<version>.jar`, an optional Paper plugin that shares pinned photos between players with
+produces `vrcamera-paper-plugin-<version>.jar`, an optional Paper plugin that shares pinned photos between players with
 the mod. See the [guide](docs/GUIDE.md#sharing-photos-on-a-server).
 Jars are written to `build/libs/`. The default version is set by `mc` in [`gradle.properties`](gradle.properties);
 Minecraft and dependency versions are defined in [`versions/`](versions/).

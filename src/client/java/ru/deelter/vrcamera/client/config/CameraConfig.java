@@ -109,6 +109,11 @@ public class CameraConfig {
 	 */
 	public double photoBrightness = 0.3;
 	/**
+	 * the click of a photo and the whirr of printing it, of this player and of the others. Off they are still
+	 * heard by the others
+	 */
+	public boolean photoSounds = true;
+	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory
 	 */
 	public boolean menuShotChat = true;

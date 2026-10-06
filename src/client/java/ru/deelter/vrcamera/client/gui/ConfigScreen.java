@@ -85,6 +85,8 @@ public final class ConfigScreen {
 				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
 		general.addEntry(screen.slider("photoBrightness", config.photoBrightness, defaults.photoBrightness, 0, 1,
 				0.05, "%.2f", value -> config.photoBrightness = value));
+		general.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
+				value -> config.photoSounds = value));
 		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
 				value -> config.menuShotChat = value));
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,

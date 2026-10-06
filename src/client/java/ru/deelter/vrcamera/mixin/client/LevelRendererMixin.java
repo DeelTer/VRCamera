@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
+import ru.deelter.vrcamera.client.photo.CameraFlashes;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
@@ -28,5 +29,6 @@ public class LevelRendererMixin {
 		}
 		PhotoAlbum.INSTANCE.render(output, levelRenderState.cameraRenderState.pos, poseStack);
 		RemoteCameras.INSTANCE.render(output, levelRenderState.cameraRenderState.pos, poseStack);
+		CameraFlashes.INSTANCE.render(output, levelRenderState.cameraRenderState.pos, poseStack);
 	}
 }

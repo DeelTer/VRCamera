@@ -149,6 +149,10 @@ public final class PhotoAlbum {
 		if (printSheet && this.level != null && this.level == Minecraft.getInstance().level) {
 			try {
 				sheet = print(image, file.getFileName().toString());
+				LocalPlayer player = Minecraft.getInstance().player;
+				if (player != null) {
+					CameraEffects.ownPrinting(player);
+				}
 			} catch (RuntimeException e) {
 				// the photo itself is still worth saving
 				Vrcamera.LOGGER.error("VRCamera: could not print the photo", e);
@@ -470,6 +474,7 @@ public final class PhotoAlbum {
 			// off the wall it is a loose sheet again, the others see it in the hand
 			PhotoSync.INSTANCE.shareLoose(sheet, sheet.packed == null ? pixels(sheet) : null);
 		} else if (wasPinned) {
+			CameraEffects.takenOff(this.level, sheet.center());
 			save();
 		}
 	}
@@ -494,7 +499,7 @@ public final class PhotoAlbum {
 		}
 		sheet.release(this.level);
 		if (sheet.isPinned()) {
-			CameraEffects.pinned(this.level, sheet.center());
+			// The sounds of pinned sheets come from the server if it keeps them: once, for everyone around
 			if (PhotoSync.INSTANCE.isConnected()) {
 				if (sheet.looseId() != 0) {
 					PhotoSync.INSTANCE.dropLoose(sheet.looseId());
@@ -502,6 +507,7 @@ public final class PhotoAlbum {
 				}
 				PhotoSync.INSTANCE.pin(sheet, sheet.packed == null ? pixels(sheet) : null);
 			} else {
+				CameraEffects.pinned(this.level, sheet.center());
 				save();
 			}
 		}
@@ -531,6 +537,7 @@ public final class PhotoAlbum {
 			sheet.update(level, dt);
 			if (wasPinned && !sheet.isPinned()) {
 				// what it was pinned to is gone. It is loose now, and forgotten like any sheet left lying
+				CameraEffects.tornOff(level, sheet.center());
 				save();
 			}
 			if (sheet.isPrinting()) {
@@ -571,7 +578,10 @@ public final class PhotoAlbum {
 			double force = BLAST_SPEED * (1.0 - distance / reach) * (0.6 + Math.random() * 0.8);
 			Vec3 direction = distance < 1.0E-3 ? new Vec3(0, 1, 0) : away.scale(1.0 / distance);
 			Vec3 scatter = new Vec3(Math.random() - 0.5, Math.random() * 0.8, Math.random() - 0.5);
-			unpinned |= sheet.isPinned();
+			if (sheet.isPinned()) {
+				unpinned = true;
+				CameraEffects.tornOff(this.level, sheet.center());
+			}
 			sheet.blowOff(direction.add(scatter).scale(force));
 		}
 		if (unpinned) {

@@ -280,7 +280,7 @@ pinned custom picture.
 ### Sharing photos on a server
 
 On a server that runs the **VRCameraSync** plugin (Paper), pinned sheets are shared: everyone with the mod sees
-them, and they stay when you log off. The plugin jar is built together with the mod, `vrcamera-sync-<version>.jar`
+them, and they stay when you log off. The plugin jar is built together with the mod, `vrcamera-paper-plugin-<version>.jar`
 in `build/libs/`. Put it into the server's `plugins` folder. Players without the mod see nothing and are not
 affected.
 
@@ -321,6 +321,7 @@ Server settings, `plugins/VRCameraSync/config.yml`:
 | `limits.pin-cooldown-ms` | `1500` | wait between two pins of a player |
 | `anyone-takes-off` | `false` | `true` lets everyone take off anyone's sheets |
 | `custom-pictures` | `true` | `false`: nobody may put up pictures from the internet |
+| `worlds.mode`, `worlds.list` | `deny`, empty | the worlds photos can be pinned and shared in. `deny`: everywhere but in the listed worlds. `allow`: only in the listed ones. Photos already hanging there stay |
 | `photos-protect-blocks` | `false` | `true`: a block with a photo on it is not blown up, burned, pushed by a piston or decayed. Players still break it. Lets anyone make a block blast-proof with a photo |
 | `range.send`, `range.forget` | `32`, `48` | blocks in which clients are told about sheets, and after which they forget them |
 | `network.images-per-second` | `4` | pictures sent to one player per second |
@@ -414,6 +415,7 @@ and by `/vrcam reload`.
 | `shareCamera` | `true` | let players around see your camera, on servers that share that |
 | `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
 | `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |
+| `photoSounds` | `true` | the click of a photo and the whirr of printing it, yours and of others. `false` mutes them for you; the others still hear yours |
 | `photoBrightness` | `0.3` | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed |
 | `debugOverlay` | `false` | debug overlay on the HUD |
 

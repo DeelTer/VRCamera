@@ -194,5 +194,7 @@
 	"vrcamera.message.pin.not_allowed": "Caméra VR : ce serveur ne vous le permet pas",
 	"vrcamera.option.photoBrightness": "Photo : luminosité de la feuille",
 	"vrcamera.option.photoBrightness.tooltip": "À quel point l'image sur une feuille est éclaircie. Une feuille est éclairée par le monde et paraît plus sombre que l'écran. 0 la laisse telle quelle. S'applique aux nouvelles photos, le fichier enregistré n'est pas modifié.",
-	"vrcamera.label.custom.hint": "Paramètres Caméra VR → Afficher les images Internet des autres"
+	"vrcamera.label.custom.hint": "Paramètres Caméra VR → Afficher les images Internet des autres",
+	"vrcamera.option.photoSounds": "Photo : sons de la caméra",
+	"vrcamera.option.photoSounds.tooltip": "Le déclic de l'obturateur et le bruit d'impression d'une feuille, de votre caméra et de celles des autres. Désactivé : vous ne les entendez plus. Les autres entendent toujours votre caméra."
 }

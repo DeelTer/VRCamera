@@ -26,6 +26,17 @@ anyone-takes-off: false
 # as well, which everyone has unless you take it away. false: nobody may
 custom-pictures: true
 
+# The worlds photos can be pinned and shared in, by the name of their folder.
+#   mode: deny   everywhere but in the listed worlds. With an empty list: everywhere
+#   mode: allow  only in the listed worlds
+# Photos that hang in a world already stay there and can be taken off.
+worlds:
+  mode: deny
+  list: []
+#  list:
+#    - world
+#    - world_nether
+
 # true: a block with a photo pinned to it is not blown up, burned, pushed by a piston or decayed. A player can
 # still break it, and the photo falls. Careful: it lets anyone make a block blast-proof and unmovable by
 # pinning a photo to it

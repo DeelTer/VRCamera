@@ -1,0 +1,12 @@
+{
+	"shutter": {
+		"sounds": [
+			"vrcamera:shutter"
+		]
+	},
+	"print": {
+		"sounds": [
+			"vrcamera:print"
+		]
+	}
+}

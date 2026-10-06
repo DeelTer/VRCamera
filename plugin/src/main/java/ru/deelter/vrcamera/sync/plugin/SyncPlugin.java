@@ -1,7 +1,6 @@
 package ru.deelter.vrcamera.sync.plugin;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -16,6 +15,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRegisterChannelEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
+import org.jspecify.annotations.NonNull;
 import ru.deelter.vrcamera.sync.Protocol;
 
 import javax.imageio.*;
@@ -52,6 +52,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	// blocks a sheet a player threw or dropped can be from them while they still move it
 	private static final double LOOSE_LEASH = 64.0;
 	private static final long LOOSE_COOLDOWN = 700;
+	private static final long SHUTTER_COOLDOWN = 500;
 	// after this many messages over that, the client is not listened to for a while
 	private static final int DROPPED_BEFORE_IGNORED = 200;
 	private static final long IGNORED_MILLIS = 60_000;
@@ -69,6 +70,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		final Set<Long> knownLoose = new HashSet<>();
 		boolean sharingLoose;
 		long lastLoose;
+		long lastShutter;
+		long lastPrint;
 		final ArrayDeque<Long> wantedImages = new ArrayDeque<>();
 		long lastPin;
 		// one pin at a time is looked at, the rest of them wait in the client
@@ -98,6 +101,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private int maxLoose;
 	private boolean allowCustom;
 	private boolean protectBlocks;
+	private boolean worldsListed;
+	private final Set<String> worlds = new HashSet<>();
 	private long looseLifetime;
 
 	@Override
@@ -115,7 +120,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		getServer().getMessenger().registerOutgoingPluginChannel(this, Protocol.CHANNEL);
 		getServer().getPluginManager().registerEvents(this, this);
 
-		int imagesPerSecond = Math.max(1, Math.min(20, getConfig().getInt("network.images-per-second", 4)));
+		int imagesPerSecond = Math.clamp(getConfig().getInt("network.images-per-second", 4), 1, 20);
 		Bukkit.getScheduler().runTaskTimer(this, this::updateRanges, RANGE_INTERVAL_TICKS, RANGE_INTERVAL_TICKS);
 		Bukkit.getScheduler().runTaskTimer(this, this::sendImages, 1, Math.max(1, 20 / imagesPerSecond));
 		Bukkit.getScheduler().runTaskTimer(this, this::saveIfChanged, SAVE_INTERVAL_TICKS, SAVE_INTERVAL_TICKS);
@@ -134,8 +139,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		this.maxPerPlayer = Math.max(0, getConfig().getInt("limits.per-player", 64));
 		this.maxPerChunk = Math.max(0, getConfig().getInt("limits.per-chunk", 16));
 		this.maxTotal = Math.max(0, getConfig().getInt("limits.total", 20000));
-		this.maxImageBytes = Math.max(1024, Math.min(Protocol.MAX_IMAGE_BYTES,
-				getConfig().getInt("limits.image-bytes", 20000)));
+		this.maxImageBytes = Math.clamp(
+				getConfig().getInt("limits.image-bytes", 20000), 1024, Protocol.MAX_IMAGE_BYTES);
 		this.pinCooldown = Math.max(0, getConfig().getLong("limits.pin-cooldown-ms", 1500));
 		this.sendRange = Math.max(8.0, getConfig().getDouble("range.send", 32));
 		this.forgetRange = Math.max(this.sendRange + 8.0, getConfig().getDouble("range.forget", 48));
@@ -146,6 +151,11 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		this.maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
 		this.allowCustom = getConfig().getBoolean("custom-pictures", true);
 		this.protectBlocks = getConfig().getBoolean("photos-protect-blocks", false);
+		this.worldsListed = "allow".equalsIgnoreCase(getConfig().getString("worlds.mode", "deny"));
+		this.worlds.clear();
+		for (String world : getConfig().getStringList("worlds.list")) {
+			this.worlds.add(world.toLowerCase(Locale.ROOT));
+		}
 		this.looseLifetime = Math.max(1, getConfig().getLong("limits.loose-minutes", 10)) * 60_000L;
 	}
 
@@ -163,7 +173,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	@Override
-	public void onPluginMessageReceived(String channel, Player player, byte[] message) {
+	public void onPluginMessageReceived(@NonNull String channel, @NonNull Player player, byte[] message) {
 		if (!Protocol.CHANNEL.equals(channel) || message.length == 0 || message.length > MAX_MESSAGE_BYTES) {
 			return;
 		}
@@ -209,6 +219,20 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				case Protocol.C_CAMERA -> {
 					if (client != null) {
 						camera(player, Protocol.readCamera(in, false));
+					}
+				}
+				case Protocol.C_SHUTTER -> {
+					if (client != null) {
+						if (System.currentTimeMillis() - client.lastShutter >= SHUTTER_COOLDOWN) {
+							client.lastShutter = System.currentTimeMillis();
+							cameraSound(player, Protocol.S_SHUTTER, in.readDouble(), in.readDouble(), in.readDouble());
+						}
+					}
+				}
+				case Protocol.C_PRINT -> {
+					if (client != null && System.currentTimeMillis() - client.lastPrint >= SHUTTER_COOLDOWN) {
+						client.lastPrint = System.currentTimeMillis();
+						cameraSound(player, Protocol.S_PRINT, in.readDouble(), in.readDouble(), in.readDouble());
 					}
 				}
 				case Protocol.C_IMAGE -> {
@@ -278,6 +302,29 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	/**
+	 * passes what a camera does on to the players around who have the mod: the click and flash of a photo, the
+	 * whirr of printing it
+	 */
+	private void cameraSound(Player player, byte type, double x, double y, double z) {
+		Location at = player.getLocation();
+		double dx = x - at.getX();
+		double dy = y - at.getY();
+		double dz = z - at.getZ();
+		// like the camera it comes from, it stays near its player
+		if (!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH)) {
+			return;
+		}
+		byte[] message = Protocol.cameraSound(type, x, y, z);
+		for (UUID other : this.clients.keySet()) {
+			Player watcher = other.equals(player.getUniqueId()) ? null : Bukkit.getPlayer(other);
+			if (watcher != null && watcher.getWorld() == player.getWorld() &&
+					watcher.getLocation().distanceSquared(at) <= this.cameraRange * this.cameraRange) {
+				send(watcher, message);
+			}
+		}
+	}
+
+	/**
 	 * A player made a photo and its sheet is out in the world, not pinned to anything yet. Kept so the others see
 	 * it and can pick it up. The player can't be told no in a way that matters: refused, the sheet is only theirs
 	 */
@@ -290,7 +337,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		// it comes out of the camera, which is somewhere around its player
 		boolean refused = this.maxLoose == 0 || client.sharingLoose || now - client.lastLoose < LOOSE_COOLDOWN ||
 				!player.hasPermission("vrcamera.pin") || (sheet.custom() && !mayCustom(player)) ||
-				!sheet.pose().isSane() ||
+				!worldAllowed(player.getWorld()) || !sheet.pose().isSane() ||
 				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH) ||
 				sheet.image().length < 4 || sheet.image().length > this.maxImageBytes;
 		if (refused) {
@@ -398,6 +445,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				}
 			}
 		}
+	}
+
+	/**
+	 * @return if photos can be pinned and shared in that world. What hangs there already stays
+	 */
+	private boolean worldAllowed(World world) {
+		return this.worlds.contains(world.getName().toLowerCase(Locale.ROOT)) == this.worldsListed;
 	}
 
 	/**
@@ -518,6 +572,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		getLogger().info(ownerName + " pinned photo " + sheet.id() + " at " + pin.blockX() + " " + pin.blockY() + " " +
 				pin.blockZ());
 		this.store.cacheImage(imageHash, clean.jpeg);
+		// heard by everyone around, with the mod or without
+		sound(sheet, Sound.ENTITY_ITEM_FRAME_PLACE);
 		// The one who pinned it has it already. The others get it with the next look at who is near what
 		client.known.add(sheet.id());
 		send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), Protocol.PIN_OK, sheet.id(),
@@ -528,7 +584,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * @return why the player can't pin this, {@link Protocol#PIN_OK} if they can
 	 */
 	private byte refusal(Player player, Client client, Protocol.Pin pin) {
-		if (!player.hasPermission("vrcamera.pin") || (pin.custom() && !mayCustom(player))) {
+		if (!player.hasPermission("vrcamera.pin") || (pin.custom() && !mayCustom(player)) ||
+				!worldAllowed(player.getWorld())) {
 			return Protocol.PIN_NOT_ALLOWED;
 		}
 		if (client.pinning || System.currentTimeMillis() - client.lastPin < this.pinCooldown) {
@@ -685,7 +742,16 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		if (sheet.owner().equals(player.getUniqueId()) || this.anyoneTakesOff ||
 				player.hasPermission("vrcamera.remove.others")) {
+			sound(sheet, Sound.ENTITY_ITEM_FRAME_REMOVE_ITEM);
 			remove(sheet, Protocol.REMOVED_TAKEN);
+		}
+	}
+
+	private static void sound(StoredSheet sheet, Sound sound) {
+		World world = Bukkit.getWorld(sheet.world());
+		if (world != null) {
+			world.playSound(new Location(world, sheet.x(), sheet.y(), sheet.z()), sound, SoundCategory.PLAYERS, 0.6F,
+					1.3F);
 		}
 	}
 
@@ -820,6 +886,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				block.getX(), block.getY(), block.getZ()));
 		if (!pinned.isEmpty()) {
 			for (StoredSheet sheet : new ArrayList<>(pinned)) {
+				sound(sheet, Sound.ENTITY_ITEM_FRAME_BREAK);
 				remove(sheet, Protocol.REMOVED_FELL);
 			}
 		}
@@ -877,42 +944,42 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBreak(BlockBreakEvent event) {
+	public void onBreak(@NonNull BlockBreakEvent event) {
 		blockGone(event.getBlock());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBurn(BlockBurnEvent event) {
+	public void onBurn(@NonNull BlockBurnEvent event) {
 		blockGone(event.getBlock());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onDecay(LeavesDecayEvent event) {
+	public void onDecay(@NonNull LeavesDecayEvent event) {
 		blockGone(event.getBlock());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockExplode(BlockExplodeEvent event) {
+	public void onBlockExplode(@NonNull BlockExplodeEvent event) {
 		event.blockList().forEach(this::blockGone);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onEntityExplode(EntityExplodeEvent event) {
+	public void onEntityExplode(@NonNull EntityExplodeEvent event) {
 		event.blockList().forEach(this::blockGone);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onPistonExtend(BlockPistonExtendEvent event) {
+	public void onPistonExtend(@NonNull BlockPistonExtendEvent event) {
 		event.getBlocks().forEach(this::blockGone);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onPistonRetract(BlockPistonRetractEvent event) {
+	public void onPistonRetract(@NonNull BlockPistonRetractEvent event) {
 		event.getBlocks().forEach(this::blockGone);
 	}
 
 	@Override
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+	public boolean onCommand(CommandSender sender, Command command, String label, String @NonNull [] args) {
 		if (args.length == 1 && args[0].equalsIgnoreCase("stats")) {
 			sender.sendMessage("VRCameraSync: " + this.store.size() + " pinned photos, " + this.clients.size() +
 					" players with the mod online");

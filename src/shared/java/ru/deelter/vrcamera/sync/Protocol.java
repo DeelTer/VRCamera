@@ -36,6 +36,8 @@ public final class Protocol {
 	public static final byte C_LOOSE_POSE = 7;
 	public static final byte C_LOOSE_DROP = 8;
 	public static final byte C_LOOSE_TAKE = 9;
+	public static final byte C_SHUTTER = 10;
+	public static final byte C_PRINT = 11;
 
 	/** to the client */
 	public static final byte S_HELLO = 1;
@@ -48,6 +50,8 @@ public final class Protocol {
 	public static final byte S_CAMERA = 8;
 	public static final byte S_LOOSE = 9;
 	public static final byte S_LOOSE_POSE = 10;
+	public static final byte S_SHUTTER = 13;
+	public static final byte S_PRINT = 14;
 	public static final byte S_LOOSE_GONE = 11;
 	public static final byte S_LOOSE_RESULT = 12;
 
@@ -313,6 +317,20 @@ public final class Protocol {
 			ids.add(in.readLong());
 		}
 		return ids;
+	}
+
+	/**
+	 * A photo was taken at this place, or a camera there started to print one: what that sounds and looks like
+	 * is for the players around as well
+	 *
+	 * @param type {@link #C_SHUTTER}, {@link #S_SHUTTER}, {@link #C_PRINT} or {@link #S_PRINT}
+	 */
+	public static byte[] cameraSound(byte type, double x, double y, double z) {
+		return message(type, out -> {
+			out.writeDouble(x);
+			out.writeDouble(y);
+			out.writeDouble(z);
+		});
 	}
 
 	/**

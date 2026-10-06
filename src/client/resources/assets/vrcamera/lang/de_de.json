@@ -194,5 +194,7 @@
 	"vrcamera.message.pin.not_allowed": "VR-Kamera: dieser Server erlaubt dir das nicht",
 	"vrcamera.option.photoBrightness": "Foto: Helligkeit des Blatts",
 	"vrcamera.option.photoBrightness.tooltip": "Wie stark das Bild auf einem Blatt aufgehellt wird. Ein Blatt wird von der Welt beleuchtet und wirkt dunkler als der Bildschirm. 0 lässt es wie aufgenommen. Gilt für neue Fotos, die gespeicherte Datei bleibt unverändert.",
-	"vrcamera.label.custom.hint": "VR-Kamera-Einstellungen → Fremde Bilder aus dem Internet zeigen"
+	"vrcamera.label.custom.hint": "VR-Kamera-Einstellungen → Fremde Bilder aus dem Internet zeigen",
+	"vrcamera.option.photoSounds": "Foto: Kamerageräusche",
+	"vrcamera.option.photoSounds.tooltip": "Das Klicken des Auslösers und das Surren beim Drucken eines Blatts, von deiner Kamera und von fremden. Aus: du hörst sie nicht. Die anderen hören deine Kamera trotzdem."
 }

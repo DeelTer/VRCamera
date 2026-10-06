@@ -11,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.CameraEffects;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoSheet;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
@@ -143,6 +144,15 @@ public final class PhotoSync {
 	}
 
 	/**
+	 * @param type {@link Protocol#C_SHUTTER} or {@link Protocol#C_PRINT}
+	 */
+	public void shareCameraSound(byte type, Vec3 position) {
+		if (this.connected) {
+			send(Protocol.cameraSound(type, position.x, position.y, position.z));
+		}
+	}
+
+	/**
 	 * tells the players around where this player's camera is
 	 */
 	public void shareCamera(Vec3 position, Quaternionf rotation) {
@@ -217,6 +227,18 @@ public final class PhotoSync {
 				}
 				case Protocol.S_PIN_RESULT -> pinned(Protocol.readPinResult(in));
 				case Protocol.S_CAMERA -> RemoteCameras.INSTANCE.heard(Protocol.readCamera(in, true));
+				case Protocol.S_SHUTTER, Protocol.S_PRINT -> {
+					Vec3 at = new Vec3(in.readDouble(), in.readDouble(), in.readDouble());
+					LocalPlayer player = Minecraft.getInstance().player;
+					// only from around here: a server does not get to click and flash anywhere it likes
+					if (player != null && Double.isFinite(at.lengthSqr()) && at.distanceTo(player.position()) < 64) {
+						if (message[0] == Protocol.S_SHUTTER) {
+							CameraEffects.shutter(player.level(), at);
+						} else {
+							CameraEffects.printing(player.level(), at);
+						}
+					}
+				}
 				default -> {
 				}
 			}
