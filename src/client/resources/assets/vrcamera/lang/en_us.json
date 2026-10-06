@@ -196,5 +196,13 @@
 	"vrcamera.option.photoBrightness.tooltip": "How much the picture on a sheet is brightened. A sheet is lit by the world around it and looks darker than the screen. 0 leaves it as taken. Applies to new photos, the saved file is not changed.",
 	"vrcamera.label.custom.hint": "VR Camera settings → Show custom pictures of others",
 	"vrcamera.option.photoSounds": "Photo: camera sounds",
-	"vrcamera.option.photoSounds.tooltip": "The click of the shutter and the whirr of a sheet being printed, from your camera and from the cameras of others. Off mutes them for you. The others still hear your camera."
+	"vrcamera.option.photoSounds.tooltip": "The click of the shutter and the whirr of a sheet being printed, from your camera and from the cameras of others. Off mutes them for you. The others still hear your camera.",
+	"key.vrcamera.settings": "Open settings",
+	"key.vrcamera.menu": "Open VR Camera menu",
+	"vrcamera.option.pace": "Pace",
+	"vrcamera.option.pace.tooltip": "A ready-made set of shot lengths and camera calmness. Picking another one overwrites the lengths of the shots, the shortest shot time, the orbit speed and the turn settings, here and in the other tabs. They can be changed one by one after that.",
+	"vrcamera.option.pace.alpha": "Alpha: short shots, many changes",
+	"vrcamera.option.pace.default": "Default: long steady shots",
+	"vrcamera.option.pace.faster": "Faster: for short videos",
+	"vrcamera.command.pace": "VR Camera: pace set to %s"
 }

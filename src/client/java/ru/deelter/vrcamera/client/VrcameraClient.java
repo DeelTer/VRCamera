@@ -24,6 +24,7 @@ import org.vivecraft.api.client.VRClientAPI;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.gui.CameraMenuScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
+import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
@@ -62,6 +63,19 @@ public class VrcameraClient implements ClientModInitializer {
 		key("preset.new", UNBOUND, this.controller::newPreset);
 		key("summon", UNBOUND, this.controller::summon);
 		key("debug", UNBOUND, this.controller::toggleDebug);
+		// the screen with everything on it: one place in the radial menu of Vivecraft is enough for the whole mod
+		key("menu", UNBOUND, () -> {
+			Minecraft mc = Minecraft.getInstance();
+			if (mc.gui.screen() == null) {
+				mc.gui.setScreen(new CameraMenuScreen(null));
+			}
+		});
+		key("settings", UNBOUND, () -> {
+			Minecraft mc = Minecraft.getInstance();
+			if (ConfigScreen.isAvailable()) {
+				mc.gui.setScreen(ConfigScreen.create(mc.gui.screen()));
+			}
+		});
 
 		ClientCommandRegistrationCallback.EVENT.register(
 				(dispatcher, buildContext) -> VrcamCommand.register(dispatcher));

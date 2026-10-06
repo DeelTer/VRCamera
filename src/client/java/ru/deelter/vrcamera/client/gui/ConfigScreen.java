@@ -33,11 +33,18 @@ public final class ConfigScreen {
 		// the config the camera is using right now, changes apply as soon as they are saved
 		CameraConfig config = CameraController.INSTANCE.config();
 		CameraConfig defaults = new CameraConfig();
+		Pace pace = config.pace;
 
 		ConfigBuilder builder = ConfigBuilder.create()
 				.setParentScreen(parent)
 				.setTitle(Component.translatable("vrcamera.config.title"))
-				.setSavingRunnable(config::save);
+				.setSavingRunnable(() -> {
+					// After everything else was written: a new pace sets values that have entries of their own here
+					if (config.pace != pace) {
+						config.pace.apply(config);
+					}
+					config.save();
+				});
 		ConfigScreen screen = new ConfigScreen(builder.entryBuilder());
 
 		ConfigCategory general = builder.getOrCreateCategory(Component.translatable("vrcamera.config.general"));
@@ -127,6 +134,8 @@ public final class ConfigScreen {
 				0.1, 5, 0.1, "%.1f s", value -> config.occlusionCutTime = value));
 
 		ConfigCategory director = builder.getOrCreateCategory(Component.translatable("vrcamera.config.director"));
+		director.addEntry(screen.selector("pace", Pace.values(), config.pace, defaults.pace,
+				value -> config.pace = value));
 		director.addEntry(screen.selector("transition", Transition.values(), config.transition, defaults.transition,
 				value -> config.transition = value));
 		director.addEntry(screen.slider("blendChance", config.blendChance, defaults.blendChance, 0, 1, 0.05, "%.2f",

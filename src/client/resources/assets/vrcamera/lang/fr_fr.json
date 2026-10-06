@@ -196,5 +196,13 @@
 	"vrcamera.option.photoBrightness.tooltip": "À quel point l'image sur une feuille est éclaircie. Une feuille est éclairée par le monde et paraît plus sombre que l'écran. 0 la laisse telle quelle. S'applique aux nouvelles photos, le fichier enregistré n'est pas modifié.",
 	"vrcamera.label.custom.hint": "Paramètres Caméra VR → Afficher les images Internet des autres",
 	"vrcamera.option.photoSounds": "Photo : sons de la caméra",
-	"vrcamera.option.photoSounds.tooltip": "Le déclic de l'obturateur et le bruit d'impression d'une feuille, de votre caméra et de celles des autres. Désactivé : vous ne les entendez plus. Les autres entendent toujours votre caméra."
+	"vrcamera.option.photoSounds.tooltip": "Le déclic de l'obturateur et le bruit d'impression d'une feuille, de votre caméra et de celles des autres. Désactivé : vous ne les entendez plus. Les autres entendent toujours votre caméra.",
+	"key.vrcamera.settings": "Ouvrir les paramètres",
+	"key.vrcamera.menu": "Ouvrir le menu Caméra VR",
+	"vrcamera.option.pace": "Rythme",
+	"vrcamera.option.pace.tooltip": "Un ensemble prêt à l'emploi de durées de plans et de calme de la caméra. En choisir un autre écrase les durées des plans, la durée minimale, la vitesse d'orbite et les réglages de rotation, ici et dans les autres onglets. Ils restent modifiables un par un ensuite.",
+	"vrcamera.option.pace.alpha": "Alpha : plans courts, beaucoup de changements",
+	"vrcamera.option.pace.default": "Default : longs plans stables",
+	"vrcamera.option.pace.faster": "Faster : pour les vidéos courtes",
+	"vrcamera.command.pace": "Caméra VR : rythme réglé sur %s"
 }

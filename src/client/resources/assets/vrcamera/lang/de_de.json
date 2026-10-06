@@ -196,5 +196,13 @@
 	"vrcamera.option.photoBrightness.tooltip": "Wie stark das Bild auf einem Blatt aufgehellt wird. Ein Blatt wird von der Welt beleuchtet und wirkt dunkler als der Bildschirm. 0 lässt es wie aufgenommen. Gilt für neue Fotos, die gespeicherte Datei bleibt unverändert.",
 	"vrcamera.label.custom.hint": "VR-Kamera-Einstellungen → Fremde Bilder aus dem Internet zeigen",
 	"vrcamera.option.photoSounds": "Foto: Kamerageräusche",
-	"vrcamera.option.photoSounds.tooltip": "Das Klicken des Auslösers und das Surren beim Drucken eines Blatts, von deiner Kamera und von fremden. Aus: du hörst sie nicht. Die anderen hören deine Kamera trotzdem."
+	"vrcamera.option.photoSounds.tooltip": "Das Klicken des Auslösers und das Surren beim Drucken eines Blatts, von deiner Kamera und von fremden. Aus: du hörst sie nicht. Die anderen hören deine Kamera trotzdem.",
+	"key.vrcamera.settings": "Einstellungen öffnen",
+	"key.vrcamera.menu": "VR-Kamera-Menü öffnen",
+	"vrcamera.option.pace": "Tempo",
+	"vrcamera.option.pace.tooltip": "Ein fertiger Satz aus Einstellungslängen und Kameraruhe. Ein anderes Tempo überschreibt die Längen der Einstellungen, die Mindestdauer, die Umkreisgeschwindigkeit und die Dreh-Einstellungen, hier und in den anderen Reitern. Danach lassen sie sich einzeln ändern.",
+	"vrcamera.option.pace.alpha": "Alpha: kurze Einstellungen, viele Wechsel",
+	"vrcamera.option.pace.default": "Default: lange ruhige Einstellungen",
+	"vrcamera.option.pace.faster": "Faster: für kurze Videos",
+	"vrcamera.command.pace": "VR-Kamera: Tempo ist %s"
 }

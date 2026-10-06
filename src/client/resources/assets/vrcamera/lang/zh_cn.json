@@ -196,5 +196,13 @@
 	"vrcamera.option.photoBrightness.tooltip": "纸张上的图片提亮多少。纸张受周围世界的光照，看起来比屏幕暗。0 为保持原样。仅对新照片生效，保存的文件不变。",
 	"vrcamera.label.custom.hint": "VR 摄像机设置 → 显示其他玩家的网络图片",
 	"vrcamera.option.photoSounds": "照片：相机音效",
-	"vrcamera.option.photoSounds.tooltip": "快门声和纸张打印声，来自你和其他玩家的相机。关闭后你听不到这些声音，其他玩家仍能听到你的相机。"
+	"vrcamera.option.photoSounds.tooltip": "快门声和纸张打印声，来自你和其他玩家的相机。关闭后你听不到这些声音，其他玩家仍能听到你的相机。",
+	"key.vrcamera.settings": "打开设置",
+	"key.vrcamera.menu": "打开 VR 摄像机菜单",
+	"vrcamera.option.pace": "节奏",
+	"vrcamera.option.pace.tooltip": "一组现成的镜头时长和镜头稳定度。选择另一种节奏会覆盖各镜头时长、最短镜头时间、环绕速度和转向设置（包括其他标签页中的）。之后仍可逐项修改。",
+	"vrcamera.option.pace.alpha": "Alpha：镜头短，切换多",
+	"vrcamera.option.pace.default": "Default：镜头长而稳",
+	"vrcamera.option.pace.faster": "Faster：适合短视频",
+	"vrcamera.command.pace": "VR 摄像机：节奏已设为 %s"
 }

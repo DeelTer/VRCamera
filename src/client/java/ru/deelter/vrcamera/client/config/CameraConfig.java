@@ -19,7 +19,7 @@ public class CameraConfig {
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
 	// number of the last change of defaults this file has seen, see migrate
-	private static final int VERSION = 4;
+	private static final int VERSION = 5;
 	public int version = VERSION;
 
 	/**
@@ -73,7 +73,7 @@ public class CameraConfig {
 	 * How much a camera held in the hand is steadied against trembling and twitching of that hand.
 	 * 0 = not at all, 1 = as much as it gets
 	 */
-	public double handStabilize = 0.5;
+	public double handStabilize = 0.6;
 	/**
 	 * the arm that holds the camera is not drawn in the picture, unless the camera looks at the player
 	 */
@@ -142,11 +142,11 @@ public class CameraConfig {
 	/**
 	 * seconds the camera needs to swing around when the player turns
 	 */
-	public double turnLag = 0.9;
+	public double turnLag = 1.1;
 	/**
 	 * degrees the player can turn before the camera starts to swing around
 	 */
-	public double turnDeadzone = 12;
+	public double turnDeadzone = 16;
 	/**
 	 * widen the fov at high speeds
 	 */
@@ -178,6 +178,11 @@ public class CameraConfig {
 	 */
 	public double occlusionCutTime = 0.6;
 
+	/**
+	 * the pace that was picked last. Picking one sets the lengths of the shots and how readily the camera moves,
+	 * which can all be changed after that: this only says where they came from
+	 */
+	public Pace pace = Pace.DEFAULT;
 	public Transition transition = Transition.AUTO;
 	/**
 	 * chance for a smooth swing instead of a hard cut, when transition is "auto"
@@ -186,15 +191,15 @@ public class CameraConfig {
 	/**
 	 * seconds a shot stays at least, before the director may replace it because the situation changed
 	 */
-	public double minShotTime = 2.5;
+	public double minShotTime = 4.0;
 	/**
 	 * seconds the director keeps a hand placed camera, before it takes over again
 	 */
-	public double manualHoldSeconds = 20;
+	public double manualHoldSeconds = 30;
 	/**
 	 * degrees per second
 	 */
-	public double orbitSpeed = 14;
+	public double orbitSpeed = 10;
 	/**
 	 * special shots for dying and for long falls
 	 */
@@ -264,6 +269,9 @@ public class CameraConfig {
 		if (this.transition == null) {
 			this.transition = Transition.AUTO;
 		}
+		if (this.pace == null) {
+			this.pace = Pace.DEFAULT;
+		}
 		if (this.marker == null) {
 			this.marker = Marker.DOT;
 		}
@@ -300,7 +308,50 @@ public class CameraConfig {
 		if (from < 4 && this.marker == Marker.DOT) {
 			this.marker = Marker.MODEL;
 		}
+		if (from < 5) {
+			// Shots changed too often to follow, and were too short to cut a video from. Only what is still as it
+			// came: what the player set stays
+			if (this.minShotTime == 2.5) {
+				this.minShotTime = 4.0;
+			}
+			if (this.orbitSpeed == 14) {
+				this.orbitSpeed = 10;
+			}
+			if (this.manualHoldSeconds == 20) {
+				this.manualHoldSeconds = 30;
+			}
+			if (this.turnLag == 0.9) {
+				this.turnLag = 1.1;
+			}
+			if (this.turnDeadzone == 12) {
+				this.turnDeadzone = 16;
+			}
+			if (this.handStabilize == 0.5) {
+				this.handStabilize = 0.6;
+			}
+			longer(ShotType.SHOULDER, 6, 11);
+			longer(ShotType.FRONT, 5, 9);
+			longer(ShotType.ORBIT, 8, 14);
+			longer(ShotType.FLYBY, 4, 8);
+			longer(ShotType.CRANE, 6, 10);
+			longer(ShotType.LOW, 4, 7);
+			longer(ShotType.HANDS, 4, 7);
+			longer(ShotType.DUEL, 4, 8);
+			longer(ShotType.POV, 5, 10);
+			longer(ShotType.MENU, 6, 10);
+		}
 		this.version = VERSION;
+	}
+
+	/**
+	 * gives a shot the length it has by default now, if it still has the one it had before
+	 */
+	private void longer(ShotType type, double oldMin, double oldMax) {
+		ShotConfig shot = shot(type);
+		if (shot.minDuration == oldMin && shot.maxDuration == oldMax) {
+			shot.minDuration = type.defaults().minDuration;
+			shot.maxDuration = type.defaults().maxDuration;
+		}
 	}
 
 	public static CameraConfig load() {

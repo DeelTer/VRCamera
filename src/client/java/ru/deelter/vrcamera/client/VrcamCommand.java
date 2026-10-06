@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import ru.deelter.vrcamera.client.config.Pace;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
@@ -67,6 +68,18 @@ public final class VrcamCommand {
 			controller.toggleDebug();
 			return DONE;
 		}));
+		LiteralArgumentBuilder<FabricClientCommandSource> pace = ClientCommands.literal("pace");
+		for (Pace value : Pace.values()) {
+			String name = value.name().toLowerCase(Locale.ROOT);
+			pace.then(ClientCommands.literal(name).executes(context -> {
+				value.apply(controller.config());
+				controller.config().save();
+				context.getSource().sendFeedback(Component.translatable("vrcamera.command.pace",
+						Component.translatable("vrcamera.option.pace." + name)));
+				return DONE;
+			}));
+		}
+		root.then(pace);
 		root.then(ClientCommands.literal("reload").executes(context -> {
 			controller.reloadConfig();
 			context.getSource().sendFeedback(Component.translatable("vrcamera.command.reloaded"));

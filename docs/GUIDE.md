@@ -24,7 +24,8 @@ Brazilian Portuguese and Simplified Chinese.
 | New own angle | unbound | "VR Camera..." screen |
 | Delete own angle | — | "VR Camera..." screen |
 | Debug overlay | unbound | "VR Camera..." screen |
-| Settings | — | "VR Camera..." screen, needs Cloth Config |
+| VR Camera menu | unbound | radial menu or a controller button |
+| Settings | unbound | "VR Camera..." screen, needs Cloth Config |
 
 Keys are regular Minecraft key bindings. Rebind them in the controls settings, or bind them to controller buttons
 in SteamVR. They work while the game window has focus and no menu is open, so someone at the computer can run the
@@ -49,12 +50,22 @@ You can also use `/vrcam`, which supports tab completion. The command runs on th
 | `/vrcam preset <number>` | picks an own angle, counted from 1 |
 | `/vrcam debug` | debug overlay |
 | `/vrcam settings` | settings screen, needs Cloth Config |
+| `/vrcam pace alpha`, `default`, `faster` | sets the pace of the director, see Settings |
 | `/vrcam reload` | reads the settings file again |
 
 `/vrcam shot` shows a shot even if it is disabled or does not fit the situation. It lasts as long as usual, then
 the director carries on. To keep that shot, follow it with `/vrcam hold`.
 
-In the headset, put the commands into Vivecraft's Quick Commands. They then show up under **Commands** in the pause
+In the headset there is no keyboard. Two ways to reach all of this from VR:
+
+- **Radial menu.** Every key above can be put into Vivecraft's radial menu: VR Settings → Radial Menu..., click a
+  slot and pick the key from the "VR Camera" group. Keys without a keyboard key work there as well. Good ones to
+  have at hand: Hold current shot, Next shot, Switch camera mode, Bring camera to me, Take a photo. Or just one:
+  **Open VR Camera menu**, the screen with all of them.
+- **Controller buttons.** The same keys show up in the SteamVR controller bindings of Vivecraft and can be bound
+  to a button directly.
+
+Vivecraft's Quick Commands take the `/vrcam` commands too. They then show up under **Commands** in the pause
 menu, and each can be bound to a controller button in SteamVR.
 
 ## Camera in your hands
@@ -400,7 +411,7 @@ and by `/vrcam reload`.
 | `indicator` | `true` | camera icon with the distance |
 | `indicatorSize` | `1.0` | size of the icon |
 | `throwPower` | `1.0` | throw range multiplier, 0 = no throwing |
-| `handStabilize` | `0.5` | steadying of a held camera, 0 = off, 1 = most |
+| `handStabilize` | `0.6` | steadying of a held camera, 0 = off, 1 = most |
 | `hideHoldingArm` | `true` | keep the arm that holds the camera out of the picture, except in a selfie |
 | `pullSeconds` | `1.25` | seconds to hold the button to pull the camera, 0 = no pulling |
 | `pullAllModes` | `true` | `false` = pulling only in Physics |
@@ -427,8 +438,8 @@ and by `/vrcam reload`.
 | `faceDistance` | `1.25` | blocks; a camera closer than this aims at the face, twice as far at the body, 0 = always the body |
 | `positionLag` | `0.35` | seconds to catch up with the wanted position |
 | `lookLag` | `0.12` | seconds for the aim to catch up with the player |
-| `turnLag` | `0.9` | seconds to swing around when the player turns |
-| `turnDeadzone` | `12` | degrees you can turn without moving the camera |
+| `turnLag` | `1.1` | seconds to swing around when the player turns |
+| `turnDeadzone` | `16` | degrees you can turn without moving the camera |
 | `speedFov` | `true` | wider field of view at high speed |
 | `leadRoom` | `0.25` | seconds of movement the camera aims ahead, 0 = off |
 | `leadRoomMax` | `0.8` | limit of that offset, in player sizes |
@@ -447,14 +458,28 @@ and by `/vrcam reload`.
 
 | Field | Default | Meaning |
 |---|---|---|
+| `pace` | `"default"` | the pace picked last: `"alpha"`, `"default"` or `"faster"`. See below |
 | `transition` | `"auto"` | `"auto"`, `"cut"` or `"blend"` (fly-overs only) |
 | `blendChance` | `0.6` | chance of a fly-over with `"auto"` |
-| `minShotTime` | `2.5` | least seconds before a change because the situation changed |
-| `manualHoldSeconds` | `20` | how long the director keeps a hand-placed angle |
-| `orbitSpeed` | `14` | circling speed, degrees per second |
+| `minShotTime` | `4.0` | least seconds before a change because the situation changed |
+| `manualHoldSeconds` | `30` | how long the director keeps a hand-placed angle |
+| `orbitSpeed` | `10` | circling speed, degrees per second |
 | `events` | `true` | special shots for death and falling |
 | `activePreset` | `0` | number of the active own angle, counted from 0 |
 | `customInRotation` | `false` | own angles take part in the director's rotation |
+
+**Pace.** Three ready-made sets of values for how long shots last and how readily the camera moves. Pick one in
+the settings ("Pace") or with `/vrcam pace <name>`:
+
+| Pace | For | Shots |
+|---|---|---|
+| `default` | YouTube, long videos: easy to follow, long pieces to cut from | 5–18 s, at least 4 s before a change |
+| `faster` | TikTok, shorts: more changes, less to cut from | 4–16 s, at least 3 s |
+| `alpha` | the way the mod first came: short shots, many changes | 4–14 s, at least 2.5 s |
+
+Picking a pace writes `minShotTime`, `orbitSpeed`, `manualHoldSeconds`, `turnLag`, `turnDeadzone`,
+`handStabilize` and the `minDuration`/`maxDuration` of the shots, and overwrites what you set there by hand. After
+that each of them can be changed on its own again.
 
 ### Per shot
 
