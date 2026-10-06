@@ -23,6 +23,8 @@ public final class SheetStore {
 
 	private final Logger logger;
 	private final Path listFile;
+	// the list as it was before the last save
+	private final Path backupFile;
 	private final Path imageDir;
 
 	private final Map<Long, StoredSheet> byId = new HashMap<>();
@@ -42,6 +44,7 @@ public final class SheetStore {
 	public SheetStore(Path dataDir, Logger logger) {
 		this.logger = logger;
 		this.listFile = dataDir.resolve("sheets.dat");
+		this.backupFile = dataDir.resolve("sheets.dat.bak");
 		this.imageDir = dataDir.resolve("images");
 	}
 
@@ -170,24 +173,72 @@ public final class SheetStore {
 		}
 	}
 
+	/**
+	 * Reads the list. One that can't be read is never written over: it is put aside under another name, and the
+	 * copy of the save before it is tried instead.
+	 */
 	public void load() {
-		if (!Files.isRegularFile(this.listFile)) {
+		if (!Files.isRegularFile(this.listFile) && !Files.isRegularFile(this.backupFile)) {
 			return;
 		}
-		try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(this.listFile)))) {
+		if (Files.isRegularFile(this.listFile)) {
+			try {
+				read(this.listFile);
+				return;
+			} catch (IOException e) {
+				this.logger.log(Level.SEVERE, "Can't read " + this.listFile, e);
+				putAside();
+			}
+		}
+		if (!Files.isRegularFile(this.backupFile)) {
+			this.logger.severe("Starting without pinned photos");
+			return;
+		}
+		try {
+			read(this.backupFile);
+			// written out as the list again with the next save
+			this.dirty = true;
+			this.logger.warning("Loaded " + size() + " pinned photos from the copy " + this.backupFile.getFileName() +
+					", what was pinned after it was written is lost");
+		} catch (IOException e) {
+			this.logger.log(Level.SEVERE, "Can't read " + this.backupFile + " either, starting without pinned photos",
+					e);
+		}
+	}
+
+	private void putAside() {
+		Path aside = this.listFile.resolveSibling("sheets.dat.broken-" + System.currentTimeMillis());
+		try {
+			Files.move(this.listFile, aside);
+			this.logger.severe("It was kept as " + aside.getFileName());
+		} catch (IOException e) {
+			this.logger.log(Level.SEVERE, "Can't put it aside, it will be written over", e);
+		}
+	}
+
+	private void read(Path file) throws IOException {
+		try (DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(file)))) {
 			int version = in.readInt();
 			if (version < 1 || version > FILE_VERSION) {
 				throw new IOException("unknown file version " + version);
 			}
-			this.nextId = in.readLong();
+			long nextId = in.readLong();
 			int count = in.readInt();
-			int missing = 0;
+			if (count < 0) {
+				throw new IOException("a list of " + count + " photos");
+			}
+			// all of it or nothing: half a list is not what was saved
+			List<StoredSheet> sheets = new ArrayList<>();
 			for (int i = 0; i < count; i++) {
-				StoredSheet sheet = new StoredSheet(in.readLong(), new UUID(in.readLong(), in.readLong()),
+				sheets.add(new StoredSheet(in.readLong(), new UUID(in.readLong(), in.readLong()),
 						new UUID(in.readLong(), in.readLong()), in.readUTF(), in.readInt(), in.readInt(), in.readInt(),
 						in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
 						in.readFloat(), in.readFloat(), in.readFloat(), in.readLong(),
-						version >= 2 && in.readBoolean());
+						version >= 2 && in.readBoolean()));
+			}
+			this.nextId = nextId;
+			int missing = 0;
+			for (StoredSheet sheet : sheets) {
 				// a photo without its picture is nothing to show
 				if (Files.isRegularFile(imageFile(sheet.imageHash()))) {
 					index(sheet);
@@ -199,8 +250,6 @@ public final class SheetStore {
 				this.logger.warning(missing + " pinned photos were dropped, their pictures are gone");
 				this.dirty = true;
 			}
-		} catch (IOException e) {
-			this.logger.log(Level.SEVERE, "Can't read " + this.listFile + ", starting without pinned photos", e);
 		}
 	}
 
@@ -249,6 +298,9 @@ public final class SheetStore {
 					out.writeLong(sheet.imageHash());
 					out.writeBoolean(sheet.custom());
 				}
+			}
+			if (Files.isRegularFile(this.listFile)) {
+				Files.copy(this.listFile, this.backupFile, StandardCopyOption.REPLACE_EXISTING);
 			}
 			Files.move(temp, this.listFile, StandardCopyOption.REPLACE_EXISTING);
 		} catch (IOException e) {
