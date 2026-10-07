@@ -73,6 +73,21 @@ public final class Subject {
 	private final SmoothAngle facingSmooth = new SmoothAngle();
 	private boolean first = true;
 
+	// blocks a jump takes the feet up at most
+	private static final double JUMP_HEIGHT = 1.3;
+	// Staying at a height is going up or down slower than this, in blocks per second, for longer than this. The
+	// camera then takes about that many seconds to come along
+	private static final double SETTLED_SPEED = 0.5;
+	private static final double SETTLE_AFTER = 0.15;
+	private static final double GROUND_LAG = 0.25;
+	// The height a player at a screen is filmed from while they jump: where it belongs, where it is on its way
+	// there and how fast it goes. How far above it they are, and for how long they stayed at one height
+	private double rest;
+	private double ground;
+	private double groundSpeed;
+	private double hop;
+	private double settled;
+
 	public void reset() {
 		this.first = true;
 		this.target = null;
@@ -87,8 +102,12 @@ public final class Subject {
 	 * @param realDt actual seconds since the last update
 	 */
 	public void updateWithoutVR(Player player, float partialTick, double dt, double realDt, CameraConfig config) {
+		// the feet where they really were: how fast they go is counted from there
+		this.feet = this.feet.add(0, this.hop, 0);
 		move(player, partialTick, dt, realDt);
-		this.head = player.getEyePosition(partialTick);
+		this.hop = hop(player, dt);
+		this.feet = this.feet.subtract(0, this.hop, 0);
+		this.head = player.getEyePosition(partialTick).subtract(0, this.hop, 0);
 		this.headDir = player.getViewVector(partialTick);
 		this.center = this.feet.lerp(this.head, config.aimHeight);
 		this.hands = this.center;
@@ -96,6 +115,45 @@ public final class Subject {
 		// a menu on a screen is nowhere in the world
 		this.guiCenter = null;
 		turn(player, partialTick, Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD, dt);
+	}
+
+	/**
+	 * A player at a screen gets around in jumps, and a camera that goes up and down with every one of them is hard
+	 * to watch. The camera films them from the height they jump off: they jump in its picture. It goes to another
+	 * height once they stay on it, and where no jump goes: further up, or down. Never in a jolt, it has a weight.
+	 *
+	 * @return how far above the height they are filmed from the feet are right now, 0 for whoever does not jump
+	 * but flies, swims, climbs or rides
+	 */
+	private double hop(Player player, double dt) {
+		double y = this.feet.y;
+		if (this.teleported || player.isFallFlying() || player.isPassenger() || player.isInWater() ||
+				player.onClimbable() || player.getAbilities().flying) {
+			this.rest = y;
+			this.ground = y;
+			this.groundSpeed = 0;
+			this.settled = 0;
+			return 0;
+		}
+		double reach = JUMP_HEIGHT * this.unit;
+		this.settled = Math.abs(this.velocity.y) < SETTLED_SPEED ? this.settled + dt : 0;
+		// where the height to film from belongs: it turns corners, which the camera must not
+		this.rest = this.settled > SETTLE_AFTER ? y : Math.clamp(this.rest, y - reach, y);
+		if (dt > 0) {
+			// comes after it like something heavy does, without a jolt at either end of the way
+			double pull = 2.0 / GROUND_LAG;
+			double step = pull * dt;
+			double fade = 1.0 / (1.0 + step + 0.48 * step * step + 0.235 * step * step * step);
+			double off = this.ground - this.rest;
+			double carried = (this.groundSpeed + pull * off) * dt;
+			this.groundSpeed = (this.groundSpeed - pull * carried) * fade;
+			this.ground = this.rest + (off + carried) * fade;
+		}
+		// in a long fall it does not stay behind by more than the picture has room for
+		this.ground = Math.clamp(this.ground, y - reach, y + reach);
+		// the camera is told how fast the height it films from moves, not how fast the feet do
+		this.velocity = new Vec3(this.velocity.x, this.groundSpeed, this.velocity.z);
+		return y - this.ground;
 	}
 
 	Vec3 move(Player player, float partialTick, double dt, double realDt) {

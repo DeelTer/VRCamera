@@ -125,17 +125,22 @@ public final class DirectorPass {
 				OutputWindow.show(mc, own, false, false);
 				return;
 			}
+			CameraConfig config = CameraConfig.current();
+			boolean ownSize = config.hasOutputSize();
+			int width = ownSize ? config.outputWidth : own.width;
+			int height = ownSize ? config.outputHeight : own.height;
 			if (target == null) {
-				target = new MainTarget(own.width, own.height);
-			} else if (target.width != own.width || target.height != own.height) {
-				target.resize(own.width, own.height);
+				target = new MainTarget(width, height);
+			} else if (target.width != width || target.height != height) {
+				target.resize(width, height);
 			}
 			long started = System.nanoTime();
-			shape = OutputWindow.size();
+			// a picture with a size of its own has the shape of that, whatever shape its window is pulled to
+			shape = ownSize ? new int[]{width, height} : OutputWindow.size();
 			DesktopGui.draw(mc, deltaTracker, own);
 			draw(mc, deltaTracker, own);
 			long drawn = System.nanoTime();
-			OutputWindow.show(mc, target, camera.showsGrid(), shape != null);
+			OutputWindow.show(mc, target, camera.showsGrid(), shape != null && !ownSize);
 			measure(started, drawn, System.nanoTime());
 		} catch (RuntimeException | LinkageError e) {
 			Vrcamera.LOGGER.error("VRCamera: the picture of the camera could not be drawn, it was turned off", e);

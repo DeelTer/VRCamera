@@ -11,7 +11,9 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
@@ -87,6 +89,8 @@ public final class DesktopCamera {
 	private static final double INSIDE_OUT = 0.8;
 	// further than this in one step the camera cut to another shot, it did not fly there
 	private static final double MARKER_JUMP = 1.5;
+	// blocks a free camera may be away from an entity to be put onto it
+	private static final double STICK_REACH = 0.5;
 	// how large the letter of a free camera is, next to the camera icon
 	private static final double NAME_SIZE = 0.75;
 	// up to this many blocks away an icon has its full size, and however far away it is not smaller than this part
@@ -746,6 +750,10 @@ public final class DesktopCamera {
 				this.free.show(this.grab.aimedAt());
 				this.pose = this.free.pose(0);
 			}
+			if (several) {
+				// in the hand it is off whatever it sat on
+				this.free.unstick();
+			}
 			this.grab.take(this.pose, eyes);
 		}
 	}
@@ -760,6 +768,12 @@ public final class DesktopCamera {
 		float fov = this.pose == null ? DEFAULT_FOV : this.pose.fov();
 		if (this.mode == Mode.FREE) {
 			this.free.place(held, this.grab.forward(), fov);
+			Entity touched = touched(held);
+			if (touched != null) {
+				this.free.stick(touched, partialTick());
+				say("vrcamera.message.free.stuck", this.free.name(this.free.active()), touched.getName());
+				return;
+			}
 			Vec3 swing = this.grab.swing(this.subject.velocity);
 			if (swing.length() > THROW_SPEED) {
 				this.free.fling(swing.scale(config.throwPower));
@@ -775,13 +789,38 @@ public final class DesktopCamera {
 		}
 		Shot shot = shotFrom(landing, fov, 0);
 		this.rig.adopt(held, shot, this.subject);
+		// held close it looked at the face, and goes on looking there
+		this.rig.lookFrom(this.grab.aim());
 		if (wasThrown) {
 			this.rig.blend();
 		}
 		handOver(shot);
 	}
 
+	/**
+	 * @return the entity a camera that is let go of there is put onto: the nearest one it touches, null for none.
+	 * Never the player themselves, a camera that goes with them is what following is for
+	 */
+	private static Entity touched(Vec3 at) {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null) {
+			return null;
+		}
+		Entity nearest = null;
+		double closest = STICK_REACH * STICK_REACH;
+		for (Entity entity : player.level().getEntities(player, new AABB(at, at).inflate(STICK_REACH),
+				entity -> entity.isAlive() && !entity.isSpectator() && entity.isPickable())) {
+			double away = entity.getBoundingBox().distanceToSqr(at);
+			if (away < closest) {
+				closest = away;
+				nearest = entity;
+			}
+		}
+		return nearest;
+	}
+
 	private Pose filmFree(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
+		this.free.ride(partialTick, dt);
 		if (this.flying) {
 			this.free.fly(new Vec3(held(mc.options.keyRight) - held(mc.options.keyLeft),
 					held(mc.options.keyJump) - held(mc.options.keyShift),

@@ -229,6 +229,15 @@ public final class OutputWindow {
 	}
 
 	/**
+	 * makes the window as large as the picture was asked to be, also if no monitor is
+	 */
+	public static void setSize(int width, int height) {
+		if (window != 0) {
+			place.resize(width, height);
+		}
+	}
+
+	/**
 	 * fills the monitor the window is on, without a frame, or goes back to the window it was
 	 */
 	public static void toggleFullscreen() {

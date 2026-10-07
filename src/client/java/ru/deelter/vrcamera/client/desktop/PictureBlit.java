@@ -90,6 +90,20 @@ final class PictureBlit {
 			strip(x, y, thickness, height);
 			strip(x + width - thickness, y, thickness, height);
 		}
+		// a curve is dots, one next to the other
+		double[] before = null;
+		for (double[] point : guide.curve()) {
+			double x = shown.x() + shown.width() * point[0];
+			double y = shown.y() + shown.height() * point[1];
+			if (before != null) {
+				int dots = Math.max(1, (int) Math.ceil(Math.hypot(x - before[0], y - before[1]) / thickness));
+				for (int dot = 1; dot <= dots; dot++) {
+					strip((int) (before[0] + (x - before[0]) * dot / dots), (int) (before[1] + (y - before[1]) * dot / dots),
+							thickness, thickness);
+				}
+			}
+			before = new double[]{x, y};
+		}
 		GL11.glDisable(GL11.GL_SCISSOR_TEST);
 	}
 

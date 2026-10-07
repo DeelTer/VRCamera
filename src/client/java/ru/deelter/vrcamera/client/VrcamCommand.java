@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.client;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
@@ -90,6 +91,14 @@ public final class VrcamCommand {
 			OutputWindow.resetPlace();
 			return DONE;
 		}));
+		// how many pixels the picture has: a window can only be recorded as large as it is
+		screen.then(ClientCommands.literal("size")
+				.then(ClientCommands.literal("auto").executes(context -> outputSize(context.getSource(), 0, 0)))
+				.then(ClientCommands.argument("width", IntegerArgumentType.integer(320, 7680))
+						.then(ClientCommands.argument("height", IntegerArgumentType.integer(180, 4320))
+								.executes(context -> outputSize(context.getSource(),
+										IntegerArgumentType.getInteger(context, "width"),
+										IntegerArgumentType.getInteger(context, "height"))))));
 		screen.then(ClientCommands.literal("fullscreen").executes(context -> {
 			OutputWindow.toggleFullscreen();
 			return DONE;
@@ -194,6 +203,20 @@ public final class VrcamCommand {
 		boolean onScreen = !Vr.INSTALLED || DesktopCamera.INSTANCE.isOn();
 		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
 			source.sendFeedback(Component.literal(line));
+		}
+		return DONE;
+	}
+
+	private static int outputSize(FabricClientCommandSource source, int width, int height) {
+		CameraConfig config = CameraConfig.current();
+		config.outputWidth = width;
+		config.outputHeight = height;
+		config.save();
+		if (config.hasOutputSize()) {
+			OutputWindow.setSize(width, height);
+			source.sendFeedback(Component.translatable("vrcamera.command.screen.size", width, height));
+		} else {
+			source.sendFeedback(Component.translatable("vrcamera.command.screen.size.auto"));
 		}
 		return DONE;
 	}

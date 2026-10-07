@@ -3,6 +3,8 @@ package ru.deelter.vrcamera.client.desktop;
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
@@ -47,6 +49,8 @@ final class FreeCamera {
 	private static final double FLIGHT_SPEED = 6.0;
 	private static final double FLIGHT_SHORTEST = 1.5;
 	private static final double FLIGHT_LONGEST = 8.0;
+	// how fast a camera on an entity comes after the turns of it, per second: a mob jerks its body around
+	private static final double CARRY_EASE = 6.0;
 	private static final Gson GSON = new Gson();
 
 	/**
@@ -61,6 +65,11 @@ final class FreeCamera {
 		double yaw;
 		double pitch;
 		double fov;
+		// What the camera sits on, where on it, and which way that faced when it was looked at last. Not kept
+		// with the world: an entity is not the same one the next time
+		transient Entity carrier;
+		transient Vec3 seat;
+		transient double carrierYaw;
 
 		Vec3 position() {
 			return new Vec3(this.x, this.y, this.z);
@@ -263,6 +272,66 @@ final class FreeCamera {
 	}
 
 	/**
+	 * Puts the camera that films onto an entity: from now on it goes where that goes and turns with it, the way
+	 * one that is strapped to it would
+	 */
+	void stick(Entity entity, float partialTick) {
+		settle();
+		Spot spot = this.spots.get(this.active);
+		spot.carrier = entity;
+		spot.seat = spot.position().subtract(entity.getPosition(partialTick));
+		spot.carrierYaw = bodyYaw(entity, partialTick);
+		this.glide = Vec3.ZERO;
+	}
+
+	/**
+	 * takes the camera that films off what it sits on, it stays where it is
+	 */
+	void unstick() {
+		if (!this.spots.isEmpty()) {
+			this.spots.get(this.active).carrier = null;
+		}
+	}
+
+	/**
+	 * moves every camera that sits on an entity along with it, also the ones that do not film
+	 */
+	void ride(float partialTick, double dt) {
+		for (int camera = 0; camera < this.spots.size(); camera++) {
+			Spot spot = this.spots.get(camera);
+			Entity carrier = spot.carrier;
+			if (carrier == null) {
+				continue;
+			}
+			if (!carrier.isAlive() || carrier.isRemoved()) {
+				// gone, or too far away to be known of: the camera stays where it was last
+				spot.carrier = null;
+				continue;
+			}
+			double turn = Mth.wrapDegrees(bodyYaw(carrier, partialTick) - spot.carrierYaw) * ease(CARRY_EASE, dt);
+			double sin = Math.sin(Math.toRadians(turn));
+			double cos = Math.cos(Math.toRadians(turn));
+			spot.carrierYaw += turn;
+			spot.seat = new Vec3(spot.seat.x * cos - spot.seat.z * sin, spot.seat.y,
+					spot.seat.x * sin + spot.seat.z * cos);
+			spot.yaw += turn;
+			Vec3 position = carrier.getPosition(partialTick).add(spot.seat);
+			spot.x = position.x;
+			spot.y = position.y;
+			spot.z = position.z;
+			if (camera == this.active && !isInFlight()) {
+				this.position = position;
+				this.yaw += turn;
+			}
+		}
+	}
+
+	private static double bodyYaw(Entity entity, float partialTick) {
+		return entity instanceof LivingEntity living ?
+				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
+	}
+
+	/**
 	 * @return if the camera that films was thrown too far to be kept
 	 */
 	boolean isGone() {
@@ -291,6 +360,8 @@ final class FreeCamera {
 		this.push = way.lengthSqr() < 1.0E-6 ? Vec3.ZERO : way.normalize().scale(SPEED * (fast ? FAST : 1.0));
 		if (this.push.lengthSqr() > 0) {
 			this.glide = Vec3.ZERO;
+			// flown, it leaves what it sat on
+			unstick();
 		}
 	}
 

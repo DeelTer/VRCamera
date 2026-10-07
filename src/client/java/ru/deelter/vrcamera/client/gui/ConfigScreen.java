@@ -10,8 +10,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.config.*;
+import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -21,6 +25,9 @@ import java.util.function.Supplier;
  * Settings screen, built with Cloth Config. Only load this class when Cloth Config is installed.
  */
 public final class ConfigScreen {
+	// the sizes a picture is recorded in, wide and upright. Any other one is set with /vrcam screen size
+	private static final int[][] OUTPUT_SIZES = {
+			{1280, 720}, {1920, 1080}, {2560, 1440}, {3840, 2160}, {1080, 1920}, {1440, 2560}};
 	private final ConfigEntryBuilder entries;
 
 	private ConfigScreen(ConfigEntryBuilder entries) {
@@ -112,6 +119,7 @@ public final class ConfigScreen {
 				defaults.freeAutoSwitchSeconds, 0, 1.5, 0.05, "%.2f s", value -> config.freeAutoSwitchSeconds = value));
 		general.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
 				value -> config.outputFps = value));
+		general.addEntry(screen.outputSize(config));
 		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,
 				0.5, "%.1f", value -> config.selfieDistance = value));
 		general.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
@@ -285,6 +293,36 @@ public final class ConfigScreen {
 				.setNameProvider(option -> Component.translatable(key + "." + option.name().toLowerCase(Locale.ROOT)))
 				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(save)
+				.build();
+	}
+
+	private AbstractConfigListEntry<?> outputSize(CameraConfig config) {
+		String key = "vrcamera.option.outputSize";
+		List<int[]> sizes = new ArrayList<>();
+		sizes.add(new int[]{0, 0});
+		sizes.addAll(Arrays.asList(OUTPUT_SIZES));
+		int width = config.hasOutputSize() ? config.outputWidth : 0;
+		int height = config.hasOutputSize() ? config.outputHeight : 0;
+		int[] current = sizes.stream().filter(size -> size[0] == width && size[1] == height).findFirst().orElse(null);
+		if (current == null) {
+			// one that was set with the command
+			current = new int[]{width, height};
+			sizes.add(current);
+		}
+		return this.entries.startSelector(Component.translatable(key), sizes.toArray(new int[0][]), current)
+				.setDefaultValue(sizes.getFirst())
+				.setNameProvider(size -> size[0] > 0 ? Component.literal(size[0] + "×" + size[1]) :
+						Component.translatable(key + ".auto"))
+				.setTooltipSupplier(help(key + ".tooltip"))
+				.setSaveConsumer(size -> {
+					boolean changed = size[0] != width || size[1] != height;
+					config.outputWidth = size[0];
+					config.outputHeight = size[1];
+					// only when it was changed: a window the player pulled to another size stays as it is
+					if (changed && size[0] > 0) {
+						OutputWindow.setSize(size[0], size[1]);
+					}
+				})
 				.build();
 	}
 

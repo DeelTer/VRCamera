@@ -118,6 +118,14 @@ public final class Rig {
 		this.distance.reset(offset.length());
 	}
 
+	/**
+	 * @param point what the camera looked at before the rig had it: it goes on from there, and does not start
+	 *              over from the middle of the player
+	 */
+	public void lookFrom(Vec3 point) {
+		this.look.reset(point);
+	}
+
 	public void update(Shot shot, Subject subject, double dt, CameraConfig config) {
 		this.sinceTransition += dt;
 		// take it slow right after a blend started, so the swing is a visible move and not a jerk
