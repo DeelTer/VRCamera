@@ -274,6 +274,7 @@
 	"vrcamera.message.free.removed": "Kamera: Kamera %s entfernt",
 	"vrcamera.message.free.stuck": "Kamera: Kamera %s sitzt auf %s",
 	"vrcamera.message.manual": "Regie von Hand · %s — Einstellung · %s — meine Sicht",
+	"vrcamera.message.ownview": "Kamera: deine eigene Sicht",
 	"vrcamera.command.manual.on": "Kamera: die Regie wechselt nur noch auf dein Kommando",
 	"vrcamera.command.manual.off": "Kamera: die Regie wechselt wieder von selbst",
 	"vrcamera.hint.idle": "%s — Kamera steuern",

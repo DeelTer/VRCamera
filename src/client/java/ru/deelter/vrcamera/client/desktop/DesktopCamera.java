@@ -104,6 +104,8 @@ public final class DesktopCamera {
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
 	private Mode mode = Mode.OFF;
+	// if the window of the camera shows the view of the player for now, because they asked for that
+	private boolean ownView;
 	// what it is turned back on to
 	private Mode lastMode = Mode.DIRECTOR;
 	// a shot that was asked for before there was a director to show it
@@ -168,6 +170,7 @@ public final class DesktopCamera {
 		this.steered = null;
 		this.flying = false;
 		this.inside = false;
+		this.ownView = false;
 		this.steeredFromWindow = false;
 		this.grab.reset();
 		keepView(mc);
@@ -177,21 +180,35 @@ public final class DesktopCamera {
 		this.director = null;
 		this.pose = null;
 		this.lastNanos = 0;
-		if (mode == Mode.DIRECTOR && CameraConfig.current().directorManual) {
+		sayMode();
+	}
+
+	/**
+	 * The one key between the view of the player and the picture of the camera. A camera with a window of its own
+	 * shows the view of the player in it, and stays what it is: the window is what is recorded. One that films into
+	 * the game window is turned off, and back on to what it was doing
+	 */
+	public void toggle() {
+		if (!hasOwnWindow()) {
+			setMode(this.mode == Mode.OFF ? this.lastMode : Mode.OFF);
+			return;
+		}
+		this.ownView = !this.ownView;
+		if (this.ownView) {
+			say("vrcamera.message.ownview");
+		} else {
+			sayMode();
+		}
+	}
+
+	private void sayMode() {
+		if (this.mode == Mode.DIRECTOR && CameraConfig.current().directorManual) {
 			// the two keys that are all there is to it
 			say("vrcamera.message.manual", CameraHints.keyName("next"), CameraHints.keyName("toggle"));
 		} else {
 			say("vrcamera.message.mode",
-					Component.translatable("vrcamera.mode." + mode.name().toLowerCase(Locale.ROOT)));
+					Component.translatable("vrcamera.mode." + this.mode.name().toLowerCase(Locale.ROOT)));
 		}
-	}
-
-	/**
-	 * turns the camera off, or back on to what it was doing: the one key between the view of the player and the
-	 * picture of the camera
-	 */
-	public void toggle() {
-		setMode(this.mode == Mode.OFF ? this.lastMode : Mode.OFF);
 	}
 
 	/**
@@ -206,6 +223,7 @@ public final class DesktopCamera {
 				return;
 			}
 		}
+		this.ownView = false;
 		if (type == null) {
 			nextShot();
 		} else if (this.director == null) {
@@ -225,6 +243,8 @@ public final class DesktopCamera {
 	}
 
 	public void nextShot() {
+		// asked for a shot, the player wants to see it
+		this.ownView = false;
 		if (this.mode == Mode.DIRECTOR && this.director != null) {
 			this.director.next();
 			say("vrcamera.message.next");
@@ -1090,8 +1110,9 @@ public final class DesktopCamera {
 	 * their menus in it
 	 */
 	public boolean showsOwnView() {
-		return this.filmsSelf && this.steered == null && this.mode == Mode.DIRECTOR && this.director != null &&
-				this.director.current() != null && (this.director.current().type == ShotType.POV || this.inside);
+		return this.ownView || (this.filmsSelf && this.steered == null && this.mode == Mode.DIRECTOR &&
+				this.director != null && this.director.current() != null &&
+				(this.director.current().type == ShotType.POV || this.inside));
 	}
 
 	/**
