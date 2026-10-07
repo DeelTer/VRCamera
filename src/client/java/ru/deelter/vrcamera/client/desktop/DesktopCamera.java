@@ -531,8 +531,13 @@ public final class DesktopCamera {
 			this.grabOffset = this.grabOffset.lerp(look.scale(this.grabHeld), 1.0 - Math.exp(-GRAB_EASE * dt));
 			// not into a wall the player looks at
 			this.grabbedAt = WorldProbe.reach(player, eyes, eyes.add(this.grabOffset));
+			// like a shot does: this close only part of the player fits, and the face is the part worth showing
+			double near = CameraController.INSTANCE.config().faceDistance * this.subject.unit;
+			double closeness = near <= 0 ? 0 :
+					1.0 - CamMath.smoothstep((this.grabbedAt.distanceTo(this.subject.center) - near) / near);
+			Vec3 aim = this.subject.center.lerp(this.subject.head, closeness);
 			Quaternionf wanted = new Quaternionf(this.grabRotation);
-			if (CamMath.lookRotation(this.subject.center.subtract(this.grabbedAt), wanted)) {
+			if (CamMath.lookRotation(aim.subtract(this.grabbedAt), wanted)) {
 				this.grabRotation.slerp(wanted, (float) (1.0 - Math.exp(-GRAB_EASE * dt)));
 			}
 			this.handThrow.sample(this.grabbedAt);
