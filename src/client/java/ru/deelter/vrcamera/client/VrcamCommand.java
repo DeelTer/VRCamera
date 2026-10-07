@@ -179,8 +179,20 @@ public final class VrcamCommand {
 				})));
 
 		dispatcher.register(root);
-		// short, for the one thing that is typed in the middle of a recording: which free camera films
+		// short, for what is typed in the middle of a recording: the free cameras
 		dispatcher.register(ClientCommands.literal("cam")
+				.then(ClientCommands.literal("add").executes(context -> {
+					DesktopCamera.INSTANCE.addCamera();
+					return DONE;
+				}))
+				.then(ClientCommands.literal("next").executes(context -> {
+					DesktopCamera.INSTANCE.nextPoint();
+					return DONE;
+				}))
+				.then(ClientCommands.literal("clear").executes(context -> {
+					DesktopCamera.INSTANCE.clearCameras();
+					return DONE;
+				}))
 				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
 					DesktopCamera.INSTANCE.cameraNames().forEach(builder::suggest);
 					return builder.buildFuture();

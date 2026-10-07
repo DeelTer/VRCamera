@@ -434,7 +434,8 @@ films; with none within 64 blocks a new one is put at your eyes. It films what y
 to 26 of them, with the key for a new shot of your own (`N`) or `/vrcam screen free` once more. They are called A,
 B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in the world with their letter over them, the one that films with the camera
 icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time: the
-attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter. Take one with the use key and it
+attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter. `/cam add` puts up one more, `/cam next` goes to the next one within 64 blocks of you, like the key does, `/cam clear`
+takes them all away. Take one with the use key and it
 films and goes where you look; let go and it stays as you held it, let go in a swing and it glides on and slows
 down; one that got 48 blocks away like that is gone. The last one is not. The key that calls the camera puts the one that films at your eyes again. They are
 kept with the world, for each dimension; `/vrcam screen clear` takes them all away. The keys of the mod work in

@@ -234,10 +234,23 @@ public final class DesktopCamera {
 		this.grabbed = false;
 	}
 
+	/**
+	 * Cuts to the next free camera of the place the player is at, in the order of the alphabet. The ones they left
+	 * somewhere else are passed over: by their name they can still be cut to
+	 */
 	public void nextPoint() {
-		if (this.mode == Mode.FREE && !this.free.isEmpty()) {
-			this.grabbed = false;
-			say("vrcamera.message.free.point", name(this.free.next() - 1), this.free.count());
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (this.mode != Mode.FREE || this.free.isEmpty() || player == null) {
+			return;
+		}
+		for (int step = 1; step < this.free.count(); step++) {
+			int camera = (this.free.active() + step) % this.free.count();
+			if (this.free.position(camera).distanceToSqr(player.getEyePosition()) < FREE_AROUND * FREE_AROUND) {
+				this.grabbed = false;
+				this.free.show(camera);
+				say("vrcamera.message.free.point", name(camera), this.free.count());
+				return;
+			}
 		}
 	}
 

@@ -232,14 +232,6 @@ final class FreeCamera {
 	}
 
 	/**
-	 * @return the number of the camera that films now, starting at 1
-	 */
-	int next() {
-		show((this.active + 1) % this.spots.size());
-		return this.active + 1;
-	}
-
-	/**
 	 * takes the camera that films away, the one before it films then
 	 */
 	void remove() {
