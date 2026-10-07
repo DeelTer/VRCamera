@@ -48,7 +48,15 @@ public class MinecraftMixin {
 	@Inject(method = "startAttack", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$attackKeyPicksCamera(CallbackInfoReturnable<Boolean> cir) {
 		if (DesktopCamera.INSTANCE.select()) {
-			cir.setReturnValue(false);
+			cir.setReturnValue(true);
+		}
+	}
+
+	// and held on a camera, it does not start on the block behind it either: no arm that swings
+	@Inject(method = "continueAttack", at = @At("HEAD"), cancellable = true, require = 0)
+	private void vrcamera$attackKeyStaysOnCamera(boolean leftClick, CallbackInfo ci) {
+		if (leftClick && DesktopCamera.INSTANCE.pointsAtFreeCamera()) {
+			ci.cancel();
 		}
 	}
 }

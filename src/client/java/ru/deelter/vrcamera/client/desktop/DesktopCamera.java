@@ -283,7 +283,7 @@ public final class DesktopCamera {
 	 * @return false if the key is for the game
 	 */
 	public boolean select() {
-		if (this.mode != Mode.FREE || !this.aimed || this.grabbed) {
+		if (!pointsAtFreeCamera()) {
 			return false;
 		}
 		if (this.aimedAt != this.free.active()) {
@@ -291,6 +291,13 @@ public final class DesktopCamera {
 			say("vrcamera.message.free.point", name(this.aimedAt), this.free.count());
 		}
 		return true;
+	}
+
+	/**
+	 * @return if the attack key is for a free camera right now, and not for what is behind it
+	 */
+	public boolean pointsAtFreeCamera() {
+		return this.mode == Mode.FREE && this.aimed && !this.grabbed;
 	}
 
 	private static double ownFov() {
