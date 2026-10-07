@@ -78,7 +78,7 @@ final class CameraHints {
 	/**
 	 * @return what the player has a key of the mod on
 	 */
-	private static Component keyName(String name) {
+	static Component keyName(String name) {
 		for (KeyMapping key : Minecraft.getInstance().options.keyMappings) {
 			if (key.getName().equals("key.vrcamera." + name)) {
 				return key.getTranslatedKeyMessage();

@@ -37,6 +37,9 @@ import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import ru.deelter.vrcamera.client.shot.ShotType;
+import java.util.List;
+import java.util.Locale;
 
 public class VrcameraClient implements ClientModInitializer {
 	private static final int PAUSE_BUTTON = 150;
@@ -66,6 +69,13 @@ public class VrcameraClient implements ClientModInitializer {
 		key("mode", InputConstants.KEY_F8, desktop::cycleMode, () -> CameraController.INSTANCE.cycleMode());
 		key("next", InputConstants.KEY_F9, desktop::nextShot, () -> CameraController.INSTANCE.nextShot());
 		key("hold", InputConstants.KEY_F10, desktop::toggleHold, () -> CameraController.INSTANCE.toggleHold());
+		// the one key between the view of the player and the picture of the camera. In VR that is the mode key
+		key("toggle", InputConstants.KEY_F4, desktop::toggle, () -> CameraController.INSTANCE.cycleMode());
+		// straight to a shot, for a moment that will not wait for the right one to come around
+		for (ShotType shot : List.of(ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY)) {
+			key("shot." + shot.name().toLowerCase(Locale.ROOT), UNBOUND, () -> desktop.showShot(shot),
+					() -> CameraController.INSTANCE.showShot(shot));
+		}
 		key("preset", InputConstants.KEY_F7, desktop::nextPoint, () -> CameraController.INSTANCE.nextPreset());
 		key("photo", InputConstants.KEY_F6, VrcameraClient::takePhoto);
 		key("preset.new", InputConstants.KEY_N, desktop::addCamera, () -> CameraController.INSTANCE.newPreset());

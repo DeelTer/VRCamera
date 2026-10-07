@@ -120,6 +120,9 @@ public final class OutputWindow {
 	}
 
 	private static long window;
+	// The window of the last time, hidden and not shown. It is never thrown away: a program that records it has
+	// it by what the system calls that very window, and would have to be shown a new one every time
+	private static long kept;
 	// what the events of the window are told apart by, and if one of them asked for it to be closed. Events can come
 	// from another thread
 	private static volatile int windowId;
@@ -149,6 +152,12 @@ public final class OutputWindow {
 			}
 			return true;
 		}
+		if (kept != 0) {
+			window = kept;
+			kept = 0;
+			SDLHints.SDL_SetHint(SDLHints.SDL_HINT_WINDOW_ACTIVATE_WHEN_SHOWN, "0");
+			return ready();
+		}
 		if (SDLVideo.SDL_GL_GetCurrentContext() == 0) {
 			Vrcamera.LOGGER.error("VRCamera: the camera window needs the OpenGL renderer of the game");
 			unsupported = true;
@@ -165,9 +174,18 @@ public final class OutputWindow {
 			unsupported = true;
 			return false;
 		}
+		return ready();
+	}
+
+	/**
+	 * puts the window that is there where it was the last time, and shows it
+	 */
+	private static boolean ready() {
 		windowId = SDLVideo.SDL_GetWindowID(window);
 		closeRequested = false;
-		keepEventsFromGame();
+		if (filter == null) {
+			keepEventsFromGame();
+		}
 		Handle handle = new Handle();
 		place = new WindowPlace(handle, WIDTH, HEIGHT);
 		input = new WindowInput(handle);
@@ -203,15 +221,14 @@ public final class OutputWindow {
 			return;
 		}
 		place.remember();
-		SDLEvents.nSDL_SetEventFilter(0, 0);
-		filter.free();
-		filter = null;
+		new Handle().setMouseCaptured(false);
 		if (frameBuffer != 0) {
 			GL30.glDeleteFramebuffers(frameBuffer);
 		}
-		SDLVideo.SDL_DestroyWindow(window);
+		SDLVideo.SDL_HideWindow(window);
+		// what happens to it while it is hidden is still kept from the game: being hidden is the first of that
+		kept = window;
 		window = 0;
-		windowId = 0;
 		closeRequested = false;
 		place = null;
 		input = null;

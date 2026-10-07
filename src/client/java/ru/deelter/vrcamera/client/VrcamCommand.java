@@ -17,6 +17,7 @@ import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
+import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
 import java.util.function.Predicate;
@@ -158,6 +159,12 @@ public final class VrcamCommand {
 					DesktopCamera.INSTANCE.clearCameras();
 					return DONE;
 				}))
+				.then(ClientCommands.literal("toggle").executes(context -> {
+					DesktopCamera.INSTANCE.toggle();
+					return DONE;
+				}))
+				.then(shots())
+				.then(ClientCommands.literal("manual").executes(context -> manual(context.getSource())))
 				.then(player("follow", DesktopCamera.INSTANCE::film))
 				.then(player("with", DesktopCamera.INSTANCE::filmWith))
 				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
@@ -204,6 +211,32 @@ public final class VrcamCommand {
 		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
 			source.sendFeedback(Component.literal(line));
 		}
+		return DONE;
+	}
+
+	/**
+	 * the shots of the director by name, and the next one of its own choice without one
+	 */
+	private static LiteralArgumentBuilder<FabricClientCommandSource> shots() {
+		LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot").executes(context -> {
+			DesktopCamera.INSTANCE.showShot(null);
+			return DONE;
+		});
+		for (ShotType type : ShotType.values()) {
+			shot.then(ClientCommands.literal(name(type)).executes(context -> {
+				DesktopCamera.INSTANCE.showShot(type);
+				return DONE;
+			}));
+		}
+		return shot;
+	}
+
+	private static int manual(FabricClientCommandSource source) {
+		CameraConfig config = CameraConfig.current();
+		config.directorManual = !config.directorManual;
+		config.save();
+		source.sendFeedback(Component.translatable(
+				config.directorManual ? "vrcamera.command.manual.on" : "vrcamera.command.manual.off"));
 		return DONE;
 	}
 

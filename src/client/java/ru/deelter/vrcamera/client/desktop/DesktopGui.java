@@ -58,6 +58,8 @@ public final class DesktopGui {
 	private static final int FRAME_MARGIN = 8;
 	// an inventory has more around its window than it says: the tabs of the creative one, above and below
 	private static final int CONTAINER_MARGIN = 34;
+	// a menu whose widgets take up less of the height of the game window than this is shown whole
+	private static final double WIDGETS_PART = 0.4;
 	// see-through: where the menu draws nothing, the world shows
 	private static final Vector4fc BACKGROUND = new Vector4f(0.0F, 0.0F, 0.0F, 0.0F);
 	private static final int FULL_LIGHT = 0xF000F0;
@@ -154,8 +156,12 @@ public final class DesktopGui {
 			right = Math.max(right, window.vrcamera$left() + window.vrcamera$width());
 			bottom = Math.max(bottom, window.vrcamera$top() + window.vrcamera$height());
 		}
-		// chat is its lines, which are nothing that can be clicked
-		if (right <= left || bottom <= top || screen instanceof ChatScreen || screen.width < 1 || screen.height < 1) {
+		// Chat is its lines, which are nothing that can be clicked. And a menu like the one of the advancements is
+		// a picture with a button below it: what can be clicked there is a small part of it, and says nothing about
+		// where the menu is
+		boolean drawn = !(screen instanceof AbstractContainerScreen<?>) && bottom - top < screen.height * WIDGETS_PART;
+		if (right <= left || bottom <= top || screen instanceof ChatScreen || drawn || screen.width < 1 ||
+				screen.height < 1) {
 			frameLeft = 0;
 			frameRight = 1;
 			frameBottom = 0;

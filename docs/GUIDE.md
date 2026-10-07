@@ -429,6 +429,28 @@ the world, weather, particles, block entities, vignette and entity shadows are h
 the range (default 32 blocks, 0 means unlimited). Only the camera output is affected; your game or headset view
 stays normal. Shaders and Fabulous graphics are not supported.
 
+## Director by hand
+
+Play in first person and cut to the camera yourself, shot by shot, like a live director.
+
+1. Settings → **Without VR** → where the picture goes: **game window**.
+2. Settings → **Director** → **Director: shots by hand only**: on.
+3. `F4` — your view ↔ the camera. `F9` — next shot.
+
+The director then never changes the shot by itself. It only leaves a shot the camera can't see you from.
+
+Straight to a shot, without going around: bind the keys **Shot: over the shoulder / front / orbit / fly-by** in
+Controls, or type `/cam shot front`. Every shot is offered after `/cam shot `.
+
+| Command | What it does |
+|---|---|
+| `/cam toggle` | your view ↔ the camera |
+| `/cam shot` | next shot |
+| `/cam shot <name>` | that shot, turning the director on if it is off |
+| `/cam manual` | by hand on/off |
+
+Commands are what a stream tool like Streamer.bot can send for you.
+
 ## Figura avatars
 
 Optional. With [NoFigura](https://modrinth.com/mod/nofigura) installed, the eyes of your avatar can look into the PC camera: for 2.5 seconds after a cut

@@ -3,7 +3,6 @@ package ru.deelter.vrcamera.client.desktop;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
@@ -104,6 +103,9 @@ public final class OutputWindow {
 	}
 
 	private static long window;
+	// The window of the last time, hidden and not shown. It is never thrown away: a program that records it has
+	// it by what the system calls that very window, and would have to be shown a new one every time
+	private static long kept;
 	private static boolean unsupported;
 	private static WindowPlace place;
 	private static WindowInput input;
@@ -132,6 +134,12 @@ public final class OutputWindow {
 				DesktopCamera.INSTANCE.setMode(DesktopCamera.Mode.OFF);
 			}
 			return true;
+		}
+		if (kept != 0) {
+			window = kept;
+			kept = 0;
+			GLFW.glfwSetWindowShouldClose(window, false);
+			return ready();
 		}
 		long game = mc.getWindow().handle();
 		if (GLFW.glfwGetWindowAttrib(game, GLFW.GLFW_CLIENT_API) != GLFW.GLFW_OPENGL_API) {
@@ -167,11 +175,18 @@ public final class OutputWindow {
 			return false;
 		}
 		GLFW.glfwSetScrollCallback(window, (handle, x, y) -> scrolled += y);
+		capabilities = null;
+		frameBuffer = 0;
+		return ready();
+	}
+
+	/**
+	 * puts the window that is there where it was the last time, and shows it
+	 */
+	private static boolean ready() {
 		Handle handle = new Handle();
 		place = new WindowPlace(handle, WIDTH, HEIGHT);
 		input = new WindowInput(handle);
-		capabilities = null;
-		frameBuffer = 0;
 		place.putBack();
 		GLFW.glfwShowWindow(window);
 		return true;
@@ -182,23 +197,12 @@ public final class OutputWindow {
 			return;
 		}
 		place.remember();
-		Callbacks.glfwFreeCallbacks(window);
-		if (frameBuffer != 0 && capabilities != null) {
-			// it belongs to the context of the window, and goes with it
-			long game = Minecraft.getInstance().getWindow().handle();
-			GLCapabilities gameCapabilities = GL.getCapabilities();
-			GLFW.glfwMakeContextCurrent(window);
-			GL.setCapabilities(capabilities);
-			GL30.glDeleteFramebuffers(frameBuffer);
-			GLFW.glfwMakeContextCurrent(game);
-			GL.setCapabilities(gameCapabilities);
-		}
-		GLFW.glfwDestroyWindow(window);
+		new Handle().setMouseCaptured(false);
+		GLFW.glfwHideWindow(window);
+		kept = window;
 		window = 0;
 		place = null;
 		input = null;
-		capabilities = null;
-		frameBuffer = 0;
 		scrolled = 0;
 		moving = false;
 	}

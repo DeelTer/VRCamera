@@ -198,7 +198,9 @@ public final class Director {
 	public void update(Subject subject, Rig rig, double dt) {
 		updateContext(subject, dt);
 
-		Event detected = this.hold ? Event.NONE : detectEvent(subject, dt);
+		// by hand the player decides on every shot, like on one they asked to keep
+		boolean held = this.hold || this.config.directorManual;
+		Event detected = held ? Event.NONE : detectEvent(subject, dt);
 		if (detected != this.dismissed) {
 			// what was dismissed is over
 			this.dismissed = Event.NONE;
@@ -252,7 +254,7 @@ public final class Director {
 				reason = this.forceType != null ? "asked for " + this.forceType : "key";
 			} else if (eventOver) {
 				reason = "event over";
-			} else if (this.hold) {
+			} else if (held) {
 				// a camera that stays behind can't be held forever
 				if (this.current.isWorld() && (blocked || finished)) {
 					reason = "held shot ended";

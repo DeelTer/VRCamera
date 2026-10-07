@@ -20,7 +20,9 @@
 		"MobAccessor",
 		"MouseHandlerMixin",
 		"ScreenMixin",
-		"SkyRendererAccessor"
+		"SkyRendererAccessor",
+		"SodiumCameraTimingMixin",
+		"SodiumSectionManagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
