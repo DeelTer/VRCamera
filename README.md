@@ -117,6 +117,37 @@ The optional **VRCamera** plugin runs on **Paper 1.21.4+ / Java 21** and shares 
 Other plugins can listen to `PhotoPinEvent` (cancellable) and `PhotoTakeEvent` in `ru.deelter.vrcamera.sync.plugin.event`. Add `depend: [VRCamera]` or `softdepend: [VRCamera]` to `plugin.yml`.
 `/vrcamsync list <player>` lists a player's pinned photos. See [server setup](docs/GUIDE.md#sharing-photos-on-a-server).
 
+### Cameras from a plugin
+
+A plugin can give players free cameras at places worth filming from: an arena, a stage, a finish line. The camera
+becomes the player's own. They can move it or throw it away, and one they threw away does not come back.
+
+```java
+CameraApi cameras = CameraApi.get();
+cameras.placeCamera(player, CameraView.builder("arena:north")
+        .location(new Location(world, 120.5, 72, -40.5))
+        .lookAt(arenaCenter)
+        .fov(50)
+        .build());
+cameras.removeCameras(player, "arena:");   // every camera whose id starts with that
+```
+
+- The id is what the camera is known by. Sending the same id again changes nothing, so it is safe on every join;
+  `replace(true)` puts it there anyway, for a map that changed.
+- `yaw(..)` and `pitch(..)` instead of `lookAt(..)`, or neither: the camera then looks the way the location does.
+- `placeCamera(player, view, true)` and `showCamera(player, id)` also have it film, for a player in the free mode.
+- `showCamera(player, id, 5, TimeUnit.SECONDS)` lends the picture to that camera for five seconds, whatever mode
+  the camera of the player is in, and then gives back what they had. A player who changes something in the
+  meantime keeps that. Never for a camera that is off.
+- `CameraSwitchEvent` is called when a player goes over to another of their free cameras, with its letter, its id
+  if a plugin gave it, and where it is.
+- Players at a screen only, a few cameras per world, and a player can turn them off in the settings: every call
+  is a wish. All of them return `false` for a player without the mod.
+- By hand: `/vrcamsync camera place <player> <id>` puts one where you stand and look, `remove`, `clear` and `show`
+  do the rest.
+
+Classes are in `ru.deelter.vrcamera.sync.plugin.api` and `...plugin.event`.
+
 ## Build
 
 ```bash

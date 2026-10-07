@@ -168,6 +168,8 @@ public final class ConfigScreen {
 				value -> config.showCustomPhotos = value));
 		photo.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
 				value -> config.shareCamera = value));
+		photo.addEntry(screen.toggle("serverCameras", config.serverCameras, defaults.serverCameras,
+				value -> config.serverCameras = value));
 		photo.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
 				"%.0f", value -> config.othersCameras = value));
 

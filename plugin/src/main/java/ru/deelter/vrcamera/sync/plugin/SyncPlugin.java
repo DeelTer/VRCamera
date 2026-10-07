@@ -13,11 +13,15 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRegisterChannelEvent;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jspecify.annotations.NonNull;
 import ru.deelter.vrcamera.sync.Jpeg;
 import ru.deelter.vrcamera.sync.Protocol;
+import ru.deelter.vrcamera.sync.plugin.api.CameraApi;
+import ru.deelter.vrcamera.sync.plugin.api.CameraView;
+import ru.deelter.vrcamera.sync.plugin.event.CameraSwitchEvent;
 import ru.deelter.vrcamera.sync.plugin.event.PhotoPinEvent;
 import ru.deelter.vrcamera.sync.plugin.event.PhotoTakeEvent;
 
@@ -32,6 +36,7 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
@@ -41,7 +46,7 @@ import java.util.logging.Level;
  * itself only when it is close enough to see it. Pictures are small, checked before they are kept, limited per
  * player and per chunk, and sent a few per second at most.
  */
-public final class SyncPlugin extends JavaPlugin implements PluginMessageListener, Listener {
+public final class SyncPlugin extends JavaPlugin implements PluginMessageListener, Listener, CameraApi {
 	private static final double PIN_REACH = 8.0;
 	// how many photos /vrcamsync list writes out at most, chat is not endless
 	private static final int LIST_MOST = 30;
@@ -57,6 +62,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private static final double LOOSE_LEASH = 64.0;
 	private static final long LOOSE_COOLDOWN = 700;
 	private static final long SHUTTER_COOLDOWN = 500;
+	private static final long SWITCH_COOLDOWN = 200;
 	// after this many messages over that, the client is not listened to for a while
 	private static final int DROPPED_BEFORE_IGNORED = 200;
 	private static final long IGNORED_MILLIS = 60_000;
@@ -75,6 +81,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		boolean sharingLoose;
 		long lastLoose;
 		long lastShutter;
+		long lastSwitch;
 		long lastPrint;
 		final ArrayDeque<Long> wantedImages = new ArrayDeque<>();
 		long lastPin;
@@ -102,6 +109,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private boolean anyoneTakesOff;
 	private boolean shareCameras;
 	private double cameraRange;
+	private int cameraWatchers;
 	private int maxLoose;
 	private boolean allowCustom;
 	private boolean protectBlocks;
@@ -123,6 +131,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		getServer().getMessenger().registerIncomingPluginChannel(this, Protocol.CHANNEL, this);
 		getServer().getMessenger().registerOutgoingPluginChannel(this, Protocol.CHANNEL);
 		getServer().getPluginManager().registerEvents(this, this);
+		getServer().getServicesManager().register(CameraApi.class, this, this, ServicePriority.Normal);
 
 		int imagesPerSecond = Math.clamp(getConfig().getInt("network.images-per-second", 4), 1, 20);
 		Bukkit.getScheduler().runTaskTimer(this, this::updateRanges, RANGE_INTERVAL_TICKS, RANGE_INTERVAL_TICKS);
@@ -152,6 +161,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		this.anyoneTakesOff = getConfig().getBoolean("anyone-takes-off", false);
 		this.shareCameras = getConfig().getBoolean("cameras.share", true);
 		this.cameraRange = Math.max(4.0, getConfig().getDouble("cameras.range", 32));
+		this.cameraWatchers = Math.max(1, getConfig().getInt("cameras.max-watchers", 24));
 		this.maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
 		this.allowCustom = getConfig().getBoolean("custom-pictures", true);
 		this.protectBlocks = getConfig().getBoolean("photos-protect-blocks", false);
@@ -243,6 +253,16 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					if (client != null && System.currentTimeMillis() - client.lastPrint >= SHUTTER_COOLDOWN) {
 						client.lastPrint = System.currentTimeMillis();
 						cameraSound(player, Protocol.S_PRINT, in.readDouble(), in.readDouble(), in.readDouble());
+					}
+				}
+				case Protocol.C_SWITCH -> {
+					Protocol.Switched camera = Protocol.readSwitched(in);
+					long now = System.currentTimeMillis();
+					if (client != null && camera.isSane() && now - client.lastSwitch >= SWITCH_COOLDOWN) {
+						client.lastSwitch = now;
+						Bukkit.getPluginManager().callEvent(new CameraSwitchEvent(player, camera.name(),
+								camera.id().isEmpty() ? null : camera.id(),
+								new Location(player.getWorld(), camera.x(), camera.y(), camera.z())));
 					}
 				}
 				case Protocol.C_IMAGE -> {
@@ -338,7 +358,105 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				watchers.add(watcher);
 			}
 		}
+		// In a crowd everyone would be told about every camera of everyone, many times per second. The nearest
+		// ones are, who are the ones to see it
+		if (watchers.size() > this.cameraWatchers) {
+			watchers.sort(Comparator.comparingDouble(watcher -> watcher.getLocation().distanceSquared(at)));
+			return watchers.subList(0, this.cameraWatchers);
+		}
 		return watchers;
+	}
+
+	// ---- free cameras other plugins give players
+
+	@Override
+	public boolean hasMod(@NonNull Player player) {
+		return this.clients.containsKey(player.getUniqueId());
+	}
+
+	@Override
+	public boolean placeCamera(@NonNull Player player, @NonNull CameraView view, boolean show) {
+		Location at = view.location();
+		if (!hasMod(player) || at.getWorld() != player.getWorld()) {
+			return false;
+		}
+		send(player, Protocol.place(new Protocol.Placed(view.id(), at.getX(), at.getY(), at.getZ(), at.getYaw(),
+				at.getPitch(), view.fov(), view.replace(), show)));
+		return true;
+	}
+
+	@Override
+	public boolean removeCamera(@NonNull Player player, @NonNull String id) {
+		return take(player, id, true);
+	}
+
+	@Override
+	public boolean removeCameras(@NonNull Player player, @NonNull String prefix) {
+		return take(player, prefix, false);
+	}
+
+	private boolean take(Player player, String id, boolean exact) {
+		if (!hasMod(player) || id.length() > Protocol.MAX_CAMERA_ID) {
+			return false;
+		}
+		send(player, Protocol.take(id, exact));
+		return true;
+	}
+
+	@Override
+	public boolean showCamera(@NonNull Player player, @NonNull String id) {
+		return show(player, id, 0);
+	}
+
+	@Override
+	public boolean showCamera(@NonNull Player player, @NonNull String id, long duration, @NonNull TimeUnit unit) {
+		return duration > 0 && show(player, id, unit.toMillis(duration) / 1000.0F);
+	}
+
+	private boolean show(Player player, String id, float seconds) {
+		if (!hasMod(player) || id.isEmpty() || id.length() > Protocol.MAX_CAMERA_ID) {
+			return false;
+		}
+		send(player, Protocol.show(id, seconds));
+		return true;
+	}
+
+	/**
+	 * /vrcamsync camera place|remove|clear|show: the same for an admin by hand
+	 */
+	private boolean cameraCommand(CommandSender sender, String[] args) {
+		Player target = args.length >= 3 ? Bukkit.getPlayerExact(args[2]) : null;
+		if (target == null) {
+			return false;
+		}
+		String id = args.length >= 4 ? args[3] : "";
+		boolean done;
+		switch (args[1].toLowerCase(Locale.ROOT)) {
+			case "place" -> {
+				if (!(sender instanceof Player admin) || id.isBlank() || id.length() > Protocol.MAX_CAMERA_ID) {
+					return false;
+				}
+				// where the admin stands and looks is where the camera goes
+				done = placeCamera(target, CameraView.builder(id).location(admin.getEyeLocation()).replace(true).build());
+			}
+			case "remove" -> done = !id.isEmpty() && removeCamera(target, id);
+			case "clear" -> done = removeCameras(target, id);
+			case "show" -> {
+				float seconds = 0;
+				try {
+					seconds = args.length >= 5 ? Float.parseFloat(args[4]) : 0;
+				} catch (NumberFormatException e) {
+					return false;
+				}
+				done = show(target, id, Math.max(0, seconds));
+			}
+			default -> {
+				return false;
+			}
+		}
+		sender.sendMessage(done ? "VRCameraSync: told the mod of " + target.getName() :
+				"VRCameraSync: " + target.getName() + " has no mod that listens, or is in another world");
+		return true;
 	}
 
 	/**
@@ -989,6 +1107,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			sender.sendMessage("VRCameraSync: " + this.store.size() + " pinned photos, " + this.clients.size() +
 					" players with the mod online");
 			return true;
+		}
+		if (args.length >= 3 && args[0].equalsIgnoreCase("camera")) {
+			return cameraCommand(sender, args);
 		}
 		if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
 			readConfig();

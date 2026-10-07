@@ -157,6 +157,10 @@ public class CameraConfig {
 	 * let the players around see where the camera is, on servers that share that
 	 */
 	public boolean shareCamera = true;
+	/**
+	 * if a server may give the player free cameras
+	 */
+	public boolean serverCameras = true;
 	public double othersCameras = 3;
 	public PhotoGesture photoGesture = PhotoGesture.SAME_HAND;
 	/**

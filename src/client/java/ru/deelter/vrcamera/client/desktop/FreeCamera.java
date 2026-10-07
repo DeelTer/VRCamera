@@ -1,7 +1,9 @@
 package ru.deelter.vrcamera.client.desktop;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,7 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -51,6 +56,8 @@ final class FreeCamera {
 	private static final double FLIGHT_LONGEST = 8.0;
 	// how fast a camera on an entity comes after the turns of it, per second: a mob jerks its body around
 	private static final double CARRY_EASE = 6.0;
+	// how many cameras of a world a server may have given
+	private static final int FROM_SERVER_MOST = 8;
 	private static final Gson GSON = new Gson();
 
 	/**
@@ -65,6 +72,8 @@ final class FreeCamera {
 		double yaw;
 		double pitch;
 		double fov;
+		// what a server that gave the camera calls it, null for one the player made
+		String id;
 		// What the camera sits on, where on it, and which way that faced when it was looked at last. Not kept
 		// with the world: an entity is not the same one the next time
 		transient Entity carrier;
@@ -80,7 +89,17 @@ final class FreeCamera {
 		}
 	}
 
+	/**
+	 * what is written down of a world, where there is more to it than the cameras
+	 */
+	private static final class Kept {
+		Spot[] cameras;
+		String[] declined;
+	}
+
 	private final List<Spot> spots = new ArrayList<>();
+	// cameras of a server the player threw away: not to be given again
+	private final Set<String> declined = new LinkedHashSet<>();
 	private int active;
 	private Path file;
 	// the one that films, on its way to where its spot says
@@ -174,6 +193,7 @@ final class FreeCamera {
 	 * takes all cameras of the world away, those of its other dimensions as well
 	 */
 	void clear() {
+		this.spots.forEach(this::decline);
 		this.spots.clear();
 		this.active = 0;
 		if (this.file == null) {
@@ -188,6 +208,114 @@ final class FreeCamera {
 		} catch (IOException e) {
 			Vrcamera.LOGGER.warn("VRCamera: can't remove the cameras next to {}", this.file, e);
 		}
+		if (!this.declined.isEmpty()) {
+			save();
+		}
+	}
+
+	/**
+	 * the player took a camera away themselves: one a server gave is not given again
+	 */
+	private void decline(Spot spot) {
+		if (spot.id != null) {
+			this.declined.add(spot.id);
+		}
+	}
+
+	/**
+	 * @return which camera a server calls that, -1 if none
+	 */
+	int indexOf(String id) {
+		for (int camera = 0; camera < this.spots.size(); camera++) {
+			if (id.equals(this.spots.get(camera).id)) {
+				return camera;
+			}
+		}
+		return -1;
+	}
+
+	/**
+	 * @return what a server calls the camera, null for one the player made
+	 */
+	String id(int camera) {
+		return this.spots.get(camera).id;
+	}
+
+	/**
+	 * Puts up a camera a server gives the player, without cutting to it. One they already have stays as they have
+	 * it, one they threw away stays gone.
+	 *
+	 * @param anyway to put it there all the same: the server has it at another place now
+	 * @return which camera that is, -1 if it was not put up
+	 */
+	int place(String id, Vec3 position, double yaw, double pitch, double fov, boolean anyway) {
+		if (anyway) {
+			this.declined.remove(id);
+		}
+		int there = indexOf(id);
+		if (there >= 0 && !anyway) {
+			return there;
+		}
+		if (there < 0 && (this.declined.contains(id) || this.spots.size() >= MOST ||
+				this.spots.stream().filter(spot -> spot.id != null).count() >= FROM_SERVER_MOST)) {
+			return -1;
+		}
+		settle();
+		Spot filming = this.spots.isEmpty() ? null : this.spots.get(this.active);
+		Spot spot = there >= 0 ? this.spots.get(there) : new Spot();
+		spot.id = id;
+		spot.x = position.x;
+		spot.y = position.y;
+		spot.z = position.z;
+		spot.yaw = yaw;
+		spot.pitch = CamMath.clamp(pitch, -MAX_PITCH, MAX_PITCH);
+		spot.fov = CamMath.clamp(fov, MIN_FOV, MAX_FOV);
+		spot.carrier = null;
+		if (there < 0) {
+			spot.name = freeName();
+			there = 0;
+			while (there < this.spots.size() && this.spots.get(there).name.compareTo(spot.name) < 0) {
+				there++;
+			}
+			this.spots.add(there, spot);
+		}
+		if (filming == null || filming == spot) {
+			this.active = -1;
+			show(there);
+		} else {
+			this.active = this.spots.indexOf(filming);
+		}
+		save();
+		return there;
+	}
+
+	/**
+	 * A server takes cameras back that it gave. What the player threw away of them is forgotten with that: the
+	 * server may give them again.
+	 *
+	 * @param exact true for the one with that id, false for all whose id starts with it
+	 */
+	void takeBack(String id, boolean exact) {
+		Predicate<String> meant = given -> given != null && (exact ? given.equals(id) : given.startsWith(id));
+		boolean forgotten = this.declined.removeIf(meant);
+		settle();
+		Spot filming = this.spots.isEmpty() ? null : this.spots.get(this.active);
+		if (!this.spots.removeIf(spot -> meant.test(spot.id))) {
+			if (forgotten) {
+				save();
+			}
+			return;
+		}
+		int kept = this.spots.indexOf(filming);
+		if (this.spots.isEmpty()) {
+			this.active = 0;
+		} else if (kept >= 0) {
+			this.active = kept;
+		} else {
+			this.active = -1;
+			show(0);
+		}
+		save();
 	}
 
 	/**
@@ -343,7 +471,7 @@ final class FreeCamera {
 	 */
 	void remove() {
 		int before = Math.max(0, this.active - 1);
-		this.spots.remove(this.active);
+		decline(this.spots.remove(this.active));
 		this.active = -1;
 		show(before);
 		save();
@@ -428,10 +556,22 @@ final class FreeCamera {
 		save();
 		this.file = file;
 		this.spots.clear();
+		this.declined.clear();
 		this.active = 0;
 		if (Files.isRegularFile(file)) {
 			try {
-				Spot[] kept = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), Spot[].class);
+				// a list of cameras, or with more than cameras to it what is written down in save
+				JsonElement written = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
+				Spot[] kept;
+				if (written.isJsonObject()) {
+					Kept all = GSON.fromJson(written, Kept.class);
+					kept = all.cameras;
+					if (all.declined != null) {
+						this.declined.addAll(List.of(all.declined));
+					}
+				} else {
+					kept = GSON.fromJson(written, Spot[].class);
+				}
 				if (kept != null) {
 					for (Spot spot : List.of(kept).subList(0, Math.min(kept.length, MOST))) {
 						if (spot.name == null) {
@@ -460,7 +600,14 @@ final class FreeCamera {
 		settle();
 		try {
 			Files.createDirectories(this.file.getParent());
-			Files.writeString(this.file, GSON.toJson(this.spots), StandardCharsets.UTF_8);
+			Object written = this.spots;
+			if (!this.declined.isEmpty()) {
+				Kept all = new Kept();
+				all.cameras = this.spots.toArray(new Spot[0]);
+				all.declined = this.declined.toArray(new String[0]);
+				written = all;
+			}
+			Files.writeString(this.file, GSON.toJson(written), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			Vrcamera.LOGGER.warn("VRCamera: can't write the cameras to {}", this.file, e);
 		}

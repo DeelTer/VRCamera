@@ -36,6 +36,7 @@ public final class Protocol {
 	public static final byte C_LOOSE_TAKE = 9;
 	public static final byte C_SHUTTER = 10;
 	public static final byte C_PRINT = 11;
+	public static final byte C_SWITCH = 12;
 
 	/**
 	 * to the client
@@ -54,6 +55,12 @@ public final class Protocol {
 	public static final byte S_PRINT = 14;
 	public static final byte S_LOOSE_GONE = 11;
 	public static final byte S_LOOSE_RESULT = 12;
+	public static final byte S_PLACE = 15;
+	public static final byte S_TAKE = 16;
+	public static final byte S_SHOW = 17;
+
+	// what a server calls a camera it gives a player is not longer than this
+	public static final int MAX_CAMERA_ID = 64;
 
 	/**
 	 * why a sheet is gone: someone took it off, or what it was pinned to is gone and it falls
@@ -141,6 +148,34 @@ public final class Protocol {
 	 */
 	public record Camera(UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
 	                     float qw) {
+	}
+
+	/**
+	 * a free camera a server gives a player: where it stands, where it looks in degrees as the game counts them,
+	 * and how far it is zoomed in
+	 *
+	 * @param anyway also if the player has moved or thrown away the one with this id
+	 * @param show   if it films right away
+	 */
+	public record Placed(String id, double x, double y, double z, float yaw, float pitch, float fov, boolean anyway,
+	                     boolean show) {
+		public boolean isSane() {
+			return !id.isEmpty() && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) && Double.isFinite(y) &&
+					Double.isFinite(z) && Float.isFinite(yaw) && Float.isFinite(pitch) && Float.isFinite(fov);
+		}
+	}
+
+	/**
+	 * the free camera a player went over to
+	 *
+	 * @param name the letter the player knows it by
+	 * @param id   what a server called it, empty for one the player made
+	 */
+	public record Switched(String name, String id, double x, double y, double z) {
+		public boolean isSane() {
+			return !name.isEmpty() && name.length() <= 16 && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) &&
+					Double.isFinite(y) && Double.isFinite(z);
+		}
 	}
 
 	private Protocol() {
@@ -452,6 +487,62 @@ public final class Protocol {
 
 	public static LooseResult readLooseResult(DataInputStream in) throws IOException {
 		return new LooseResult(in.readLong(), in.readLong(), in.readLong());
+	}
+
+	public static byte[] place(Placed camera) {
+		return message(S_PLACE, out -> {
+			out.writeUTF(camera.id);
+			out.writeDouble(camera.x);
+			out.writeDouble(camera.y);
+			out.writeDouble(camera.z);
+			out.writeFloat(camera.yaw);
+			out.writeFloat(camera.pitch);
+			out.writeFloat(camera.fov);
+			out.writeBoolean(camera.anyway);
+			out.writeBoolean(camera.show);
+		});
+	}
+
+	public static Placed readPlaced(DataInputStream in) throws IOException {
+		return new Placed(in.readUTF(), in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(),
+				in.readFloat(), in.readFloat(), in.readBoolean(), in.readBoolean());
+	}
+
+	/**
+	 * takes cameras a server gave back
+	 *
+	 * @param exact true for the one with that id, false for all whose id starts with it
+	 */
+	public static byte[] take(String id, boolean exact) {
+		return message(S_TAKE, out -> {
+			out.writeUTF(id);
+			out.writeBoolean(exact);
+		});
+	}
+
+	/**
+	 * @param seconds how long the camera films before the player has back what they had, 0 for until they change
+	 *                it themselves
+	 */
+	public static byte[] show(String id, float seconds) {
+		return message(S_SHOW, out -> {
+			out.writeUTF(id);
+			out.writeFloat(seconds);
+		});
+	}
+
+	public static byte[] cameraSwitch(Switched camera) {
+		return message(C_SWITCH, out -> {
+			out.writeUTF(camera.name);
+			out.writeUTF(camera.id);
+			out.writeDouble(camera.x);
+			out.writeDouble(camera.y);
+			out.writeDouble(camera.z);
+		});
+	}
+
+	public static Switched readSwitched(DataInputStream in) throws IOException {
+		return new Switched(in.readUTF(), in.readUTF(), in.readDouble(), in.readDouble(), in.readDouble());
 	}
 
 	public static byte[] reset() {

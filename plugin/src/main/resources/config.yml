@@ -54,6 +54,8 @@ cameras:
   share: true
   # blocks around a camera's owner in which it is shown
   range: 32
+  # how many players at most are told where one camera is, the nearest ones. Keeps a crowd from flooding everyone
+  max-watchers: 24
 
 network:
   # pictures sent to one player per second. The channel is shared with everything else the server sends
