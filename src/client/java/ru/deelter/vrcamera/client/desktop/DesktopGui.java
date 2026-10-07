@@ -54,6 +54,8 @@ public final class DesktopGui {
 	private static final Vector4fc BACKGROUND = new Vector4f(0.0F, 0.0F, 0.0F, 0.0F);
 	private static final int FULL_LIGHT = 0xF000F0;
 
+	private static final java.util.Set<GuiEventListener> LEFT_OUT =
+			java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
 	private static RenderTarget target;
 	private static boolean drawing;
 	private static boolean broken;
@@ -111,6 +113,13 @@ public final class DesktopGui {
 	}
 
 	/**
+	 * @param widget something in a menu that is not part of it, and has no say in where the menu is
+	 */
+	public static void leaveOut(GuiEventListener widget) {
+		LEFT_OUT.add(widget);
+	}
+
+	/**
 	 * Finds the part of the game window the menu is in: around everything that can be clicked, and the window of
 	 * an inventory. The rest of the game window is empty, and is left off the screen in the world
 	 */
@@ -121,7 +130,7 @@ public final class DesktopGui {
 		int bottom = 0;
 		for (GuiEventListener part : screen.children()) {
 			ScreenRectangle box = part.getRectangle();
-			if (box.width() > 0 && box.height() > 0) {
+			if (box.width() > 0 && box.height() > 0 && !LEFT_OUT.contains(part)) {
 				left = Math.min(left, box.left());
 				top = Math.min(top, box.top());
 				right = Math.max(right, box.right());

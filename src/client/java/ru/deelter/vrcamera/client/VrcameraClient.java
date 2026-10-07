@@ -38,8 +38,11 @@ import java.util.Locale;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
+import ru.deelter.vrcamera.client.desktop.DesktopGui;
 
 public class VrcameraClient implements ClientModInitializer {
+	private static final int PAUSE_BUTTON = 150;
+	private static final int PAUSE_BUTTON_MIN = 90;
 	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
 			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "main"));
 
@@ -177,29 +180,36 @@ public class VrcameraClient implements ClientModInitializer {
 		// Without VR the buttons work the camera on the screen. Not while the camera of VR is still on though,
 		// to be able to turn that one off after VR went away
 		if (onScreen()) {
+			int before = widgets.size();
+			int slot = 0;
+			int[] at = pauseSlot(pauseMenu, slot++);
 			widgets.add(Button.builder(screenModeLabel(), button -> {
 				DesktopCamera.INSTANCE.cycleMode();
 				button.setMessage(screenModeLabel());
-			}).bounds(4, 4, 150, 20).build());
+			}).bounds(at[0], at[1], at[2], 20).build());
+			at = pauseSlot(pauseMenu, slot++);
 			widgets.add(Button.builder(screenOutputLabel(), button -> {
 				CameraConfig config = this.controller.config();
 				config.screenOutput = config.screenOutput == ScreenOutput.WINDOW ? ScreenOutput.SCREEN :
 						ScreenOutput.WINDOW;
 				config.save();
 				button.setMessage(screenOutputLabel());
-			}).bounds(4, 26, 150, 20).build());
+			}).bounds(at[0], at[1], at[2], 20).build());
 			if (ConfigScreen.isAvailable()) {
+				at = pauseSlot(pauseMenu, slot++);
 				widgets.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
 								button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu)))
-						.bounds(4, 48, 150, 20).build());
+						.bounds(at[0], at[1], at[2], 20).build());
 			}
-			addChromaButton(widgets, 70, 150, true);
+			at = pauseSlot(pauseMenu, slot);
+			addChromaButton(widgets, at[0], at[1], at[2]);
+			// the menu on the screen in the world is the pause menu, not these
+			widgets.stream().skip(before).forEach(DesktopGui::leaveOut);
 			return;
 		}
 		if (!CameraController.isVRRunning() && this.controller.mode() == CameraController.Mode.OFF) {
 			return;
 		}
-		// only two buttons here, a full column of them does not fit next to the pause menu on every gui scale
 		widgets.add(Button.builder(modeLabel(), button -> {
 			this.controller.cycleMode();
 			button.setMessage(modeLabel());
@@ -207,18 +217,31 @@ public class VrcameraClient implements ClientModInitializer {
 		widgets.add(Button.builder(Component.translatable("vrcamera.gui.menu"),
 						button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
 				.bounds(4, 26, 120, 20).build());
-		addChromaButton(widgets, 48, 120, false);
+		addChromaButton(widgets, 4, 48, 120);
 	}
 
 	/**
-	 * A button that goes through the colours of the green screen, and off after the last one.
+	 * Where a button of the camera goes in the pause menu without VR: in a column to the left of the menu while
+	 * there is room for one, and into the four corners of the screen on a large gui scale.
 	 *
-	 * @param always false to only have it while the green screen is on
+	 * @return x, y and width
 	 */
-	private static void addChromaButton(List<AbstractWidget> widgets, int y, int width, boolean always) {
-		if (!always && !ChromaKey.isOn()) {
-			return;
+	private static int[] pauseSlot(Screen pauseMenu, int index) {
+		// the buttons of the pause menu are 204 wide, in the middle
+		int beside = pauseMenu.width / 2 - 102 - 8;
+		if (beside >= PAUSE_BUTTON_MIN) {
+			return new int[]{4, 4 + 22 * index, Math.min(PAUSE_BUTTON, beside)};
 		}
+		// one row at the top and one at the bottom: the menu is as wide as the screen then, and between them
+		int width = Math.min(PAUSE_BUTTON, (pauseMenu.width - 8 - 60) / 2);
+		return new int[]{index % 2 == 0 ? 4 : pauseMenu.width - 4 - width, index < 2 ? 4 : pauseMenu.height - 24,
+				width};
+	}
+
+	/**
+	 * a button that goes through the colours of the green screen, and off after the last one
+	 */
+	private static void addChromaButton(List<AbstractWidget> widgets, int x, int y, int width) {
 		widgets.add(Button.builder(chromaLabel(), button -> {
 			ChromaKey.Preset[] presets = ChromaKey.Preset.values();
 			if (!ChromaKey.isOn()) {
@@ -226,13 +249,13 @@ public class VrcameraClient implements ClientModInitializer {
 					ChromaKey.nextPreset();
 				}
 				ChromaKey.set(true);
-			} else if (always && ChromaKey.preset() == presets[presets.length - 1]) {
+			} else if (ChromaKey.preset() == presets[presets.length - 1]) {
 				ChromaKey.set(false);
 			} else {
 				ChromaKey.nextPreset();
 			}
 			button.setMessage(chromaLabel());
-		}).bounds(4, y, width, 20).build());
+		}).bounds(x, y, width, 20).build());
 	}
 
 	private static Component chromaLabel() {
