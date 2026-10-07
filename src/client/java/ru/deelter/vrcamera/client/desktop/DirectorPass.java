@@ -127,6 +127,7 @@ public final class DirectorPass {
 			}
 			long started = System.nanoTime();
 			shape = OutputWindow.size();
+			DesktopGui.draw(mc, deltaTracker, own);
 			draw(mc, deltaTracker, own, partialTick);
 			long drawn = System.nanoTime();
 			OutputWindow.show(mc, target, camera.showsGrid(), shape != null);

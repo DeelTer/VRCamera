@@ -5,6 +5,8 @@
 	"compatibilityLevel": "JAVA_21",
 	"plugin": "ru.deelter.vrcamera.mixin.VivecraftMixins",
 	"client": [
+		"VRPlayerModelMixin",
+		"VRWidgetHelperMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

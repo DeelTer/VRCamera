@@ -8,6 +8,7 @@
 		"ClientPacketListenerMixin",
 		"ContainerScreenAccessor",
 		"EntityMixin",
+		"EntityRenderDispatcherMixin",
 		"EntityRendererMixin",
 		"FramerateLimitTrackerMixin",
 		"GameRendererMixin",
@@ -16,7 +17,8 @@
 		"MinecraftAccessor",
 		"MinecraftMixin",
 		"MobAccessor",
-		"MouseHandlerMixin"
+		"MouseHandlerMixin",
+		"ScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

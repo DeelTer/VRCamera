@@ -20,6 +20,9 @@
 		],
 		"frex_flawless_frames": [
 			"ru.deelter.vrcamera.client.desktop.FlawlessFrames"
+		],
+		"figura_api": [
+			"ru.deelter.vrcamera.client.figura.FiguraEyes"
 		]
 	},
 	"mixins": [
@@ -42,6 +45,7 @@
 	},
 	"suggests": {
 		"cloth-config": "*",
+		"figura": "*",
 		"modmenu": "*"
 	}
 }

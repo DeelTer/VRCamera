@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.Vive;
 import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
@@ -24,24 +25,31 @@ public final class WorldDrawing {
 	}
 
 	public static void register() {
+		// The green screen. See ChromaKey for why it is done with two clears
+		WorldRenderEvents.BEFORE_ENTITIES.register(context -> ChromaKey.paintOver());
 		WorldRenderEvents.AFTER_ENTITIES.register(WorldDrawing::drawThings);
 		WorldRenderEvents.LAST.register(WorldDrawing::drawTexts);
 	}
 
 	private static void drawThings(WorldRenderContext context) {
-		// in a picture of VR Vivecraft has the mod draw, to not draw everything twice
-		if (!Vr.isVanillaPass() || context.consumers() == null || context.matrixStack() == null) {
-			return;
+		if (context.consumers() != null && context.matrixStack() != null) {
+			SubmitNodeCollector output = new SubmitNodeCollector(context.consumers());
+			Vec3 from = context.camera().getPosition();
+			PoseStack poseStack = context.matrixStack();
+			PhotoAlbum.INSTANCE.render(output, from, poseStack);
+			RemoteCameras.INSTANCE.render(output, from, poseStack);
+			CameraFlashes.INSTANCE.render(output, from, poseStack);
+			if (Vr.isVanillaPass()) {
+				DesktopCamera.INSTANCE.renderModel(output, from, poseStack);
+				if (DirectorPass.isActive()) {
+					DesktopGui.render(output, from, poseStack);
+				}
+			}
 		}
-		SubmitNodeCollector output = new SubmitNodeCollector(context.consumers());
-		Vec3 from = context.camera().getPosition();
-		PoseStack poseStack = context.matrixStack();
-		PhotoAlbum.INSTANCE.render(output, from, poseStack);
-		RemoteCameras.INSTANCE.render(output, from, poseStack);
-		CameraFlashes.INSTANCE.render(output, from, poseStack);
-		DesktopCamera.INSTANCE.renderModel(output, from, poseStack);
-		if (DirectorPass.isActive()) {
-			DesktopGui.render(output, from, poseStack);
+		if (ChromaKey.applies()) {
+			// the entities are only collected so far: they are drawn before the picture is shut for the rest
+			Minecraft.getInstance().renderBuffers().bufferSource().endBatch();
+			ChromaKey.shutOut();
 		}
 	}
 
