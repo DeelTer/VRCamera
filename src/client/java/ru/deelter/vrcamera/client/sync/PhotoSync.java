@@ -16,6 +16,7 @@ import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoSheet;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.sync.Protocol;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -57,7 +58,13 @@ public final class PhotoSync {
 	private static final int MAX_KNOWN = 4096;
 	private static final float MIN_ASPECT = 0.25F;
 
+	// a camera that is not heard of for a second and a half is gone for the others
+	private static final long CAMERA_KEEP_ALIVE_NANOS = 1_000_000_000L;
 	private boolean connected;
+	// where and how the camera was when the server was told last, and when that was
+	private Vec3 sharedAt;
+	private final Quaternionf sharedTurn = new Quaternionf();
+	private long sharedNanos;
 	private Protocol.Limits limits;
 	// every sheet the server told about and did not take back
 	private final Map<Long, Protocol.Sheet> known = new HashMap<>();
@@ -112,6 +119,7 @@ public final class PhotoSync {
 	}
 
 	private void reset() {
+		DesktopCamera.INSTANCE.serverGone();
 		this.connected = false;
 		this.limits = null;
 		this.known.clear();
@@ -156,9 +164,32 @@ public final class PhotoSync {
 	 * tells the players around where this player's camera is
 	 */
 	public void shareCamera(Vec3 position, Quaternionf rotation) {
+		if (!this.connected) {
+			return;
+		}
+		// A camera that stands still is not told about ten times a second, only often enough to not be taken for
+		// gone: on a server full of players every word of every camera goes to everyone around
+		long now = System.nanoTime();
+		boolean still = this.sharedAt != null && position.distanceToSqr(this.sharedAt) < 1.0E-6 &&
+				Math.abs(rotation.dot(this.sharedTurn)) > 0.99999F;
+		if (still && now - this.sharedNanos < CAMERA_KEEP_ALIVE_NANOS) {
+			return;
+		}
+		this.sharedAt = position;
+		this.sharedTurn.set(rotation);
+		this.sharedNanos = now;
+		send(Protocol.camera(position.x, position.y, position.z, rotation.x, rotation.y, rotation.z, rotation.w));
+	}
+
+	/**
+	 * tells the server which of the free cameras films now
+	 *
+	 * @param id what a server that gave the camera calls it, null for one the player made
+	 */
+	public void shareSwitch(String name, String id, Vec3 position) {
 		if (this.connected) {
-			send(Protocol.camera(position.x, position.y, position.z, rotation.x, rotation.y, rotation.z,
-					rotation.w));
+			send(Protocol.cameraSwitch(
+					new Protocol.Switched(name, id == null ? "" : id, position.x, position.y, position.z)));
 		}
 	}
 
@@ -227,6 +258,20 @@ public final class PhotoSync {
 				}
 				case Protocol.S_PIN_RESULT -> pinned(Protocol.readPinResult(in));
 				case Protocol.S_CAMERA -> RemoteCameras.INSTANCE.heard(Protocol.readCamera(in, true));
+				case Protocol.S_PLACE -> {
+					Protocol.Placed camera = Protocol.readPlaced(in);
+					if (camera.isSane()) {
+						DesktopCamera.INSTANCE.serverPlace(camera.id(), new Vec3(camera.x(), camera.y(), camera.z()),
+								camera.yaw(), camera.pitch(), camera.fov(), camera.anyway(), camera.show());
+					}
+				}
+				case Protocol.S_TAKE -> {
+					String id = in.readUTF();
+					if (id.length() <= Protocol.MAX_CAMERA_ID) {
+						DesktopCamera.INSTANCE.serverTake(id, in.readBoolean());
+					}
+				}
+				case Protocol.S_SHOW -> DesktopCamera.INSTANCE.serverShow(in.readUTF(), in.readFloat());
 				case Protocol.S_SHUTTER, Protocol.S_PRINT -> {
 					Vec3 at = new Vec3(in.readDouble(), in.readDouble(), in.readDouble());
 					LocalPlayer player = Minecraft.getInstance().player;

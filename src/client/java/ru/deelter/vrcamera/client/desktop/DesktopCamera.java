@@ -89,6 +89,10 @@ public final class DesktopCamera {
 	private static final double INSIDE_OUT = 0.8;
 	// further than this in one step the camera cut to another shot, it did not fly there
 	private static final double MARKER_JUMP = 1.5;
+	// what a server may have waiting for the free cameras to be opened
+	private static final int FROM_SERVER_WAITING = 64;
+	// seconds a server can have a camera film at most, before the player has theirs back
+	private static final double LENT_LONGEST = 600.0;
 	// blocks a free camera may be away from an entity to be put onto it
 	private static final double STICK_REACH = 0.5;
 	// how large the letter of a free camera is, next to the camera icon
@@ -106,6 +110,19 @@ public final class DesktopCamera {
 	private Mode mode = Mode.OFF;
 	// if the window of the camera shows the view of the player for now, because they asked for that
 	private boolean ownView;
+	// What a server did with the cameras it gives, while those of the world were not open: done when they are. And
+	// the world that was meant for
+	private final List<Runnable> fromServer = new ArrayList<>();
+	private ClientLevel fromServerLevel;
+	// A camera a server has film for a while: what the server calls it, until when, if it got to film at all, and
+	// the mode and the camera the player had before
+	private String lentId;
+	private long lentUntil;
+	private boolean lentShown;
+	private Mode lentFrom;
+	private String lentBefore;
+	// the free camera the server was told films
+	private String toldFilming;
 	// what it is turned back on to
 	private Mode lastMode = Mode.DIRECTOR;
 	// a shot that was asked for before there was a director to show it
@@ -481,6 +498,17 @@ public final class DesktopCamera {
 			Vrcamera.LOGGER.warn("VRCamera: can't make {}", cache, e);
 		}
 		this.free.open(cache.resolve(FreeCamera.fileName(mc.level.dimension().identifier().toDebugFileName())));
+		// what a server gave while the cameras of this world were not open
+		if (this.fromServerLevel == mc.level) {
+			this.fromServer.forEach(Runnable::run);
+		}
+		this.fromServer.clear();
+		if (this.lentId != null && !this.free.isEmpty()) {
+			// A server has one of them film for a while, and the mode was turned on for that alone: no camera is
+			// made at the eyes of the player, who did not ask for one
+			showLent();
+			return;
+		}
 		// The one nearest to the player films. With none around a new one is put at their eyes: the ones they left
 		// at another place are not what they turned the mode on for, and are a long flight away
 		Vec3 eyes = player.getEyePosition(partialTick);
@@ -497,6 +525,159 @@ public final class DesktopCamera {
 			this.free.show(nearest);
 		} else {
 			addAtEyes(player, partialTick);
+		}
+		if (this.lentId != null) {
+			showLent();
+		}
+	}
+
+	// ---- cameras a server gives the player
+
+	/**
+	 * A server puts up a free camera for the player. It is theirs from then on.
+	 *
+	 * @param id     what the server calls it
+	 * @param anyway also if the player has moved or thrown away the one with that id
+	 * @param show   if it films right away, for a player who is in the free mode
+	 */
+	public void serverPlace(
+			String id, Vec3 position, float yaw, float pitch, float fov, boolean anyway, boolean show) {
+		withCameras(() -> {
+			boolean known = this.free.indexOf(id) >= 0;
+			int camera = this.free.place(id, position, yaw, pitch, fov, anyway);
+			if (camera < 0) {
+				return;
+			}
+			if (!known) {
+				say("vrcamera.message.server.added", this.free.name(camera));
+			}
+			if (show && this.mode == Mode.FREE && camera != this.free.active()) {
+				this.grab.reset();
+				this.free.show(camera);
+			}
+		});
+	}
+
+	/**
+	 * a server takes cameras back that it gave
+	 *
+	 * @param exact true for the one with that id, false for all whose id starts with it
+	 */
+	public void serverTake(String id, boolean exact) {
+		withCameras(() -> {
+			this.grab.reset();
+			this.free.takeBack(id, exact);
+			LocalPlayer player = Minecraft.getInstance().player;
+			if (this.mode == Mode.FREE && this.free.isEmpty() && player != null) {
+				// the mode has nothing to film with otherwise
+				addAtEyes(player, partialTick());
+			}
+		});
+	}
+
+	/**
+	 * A server has one of the cameras it gave film.
+	 *
+	 * @param seconds 0 to cut to it, for a player in the free mode, who goes on from there as they like. More to
+	 *                lend it for that long: whatever the camera of the player was doing, it shows that camera, and
+	 *                then goes back to what it did. Never for a camera that is off, a server does not turn it on
+	 */
+	public void serverShow(String id, double seconds) {
+		if (!CameraConfig.current().serverCameras || this.mode == Mode.OFF || Vr.isRunning()) {
+			return;
+		}
+		boolean open = this.mode == Mode.FREE && this.freeLevel != null && !this.free.isEmpty();
+		if (!(seconds > 0)) {
+			int camera = open ? this.free.indexOf(id) : -1;
+			if (camera >= 0 && camera != this.free.active()) {
+				this.grab.reset();
+				this.free.show(camera);
+			}
+			return;
+		}
+		if (this.lentId == null) {
+			// what to go back to. Lent again while it is lent, that is still what was there before the first time
+			this.lentFrom = this.mode;
+			this.lentBefore = open ? this.free.name(this.free.active()) : null;
+			this.lentShown = false;
+		}
+		this.lentId = id;
+		this.lentUntil = System.nanoTime() + (long) (Math.min(seconds, LENT_LONGEST) * 1.0E9);
+		if (open) {
+			showLent();
+		} else if (this.mode != Mode.FREE) {
+			// shown once the cameras of this world are open, which is in the next frame
+			setMode(Mode.FREE);
+		}
+	}
+
+	private void showLent() {
+		int camera = this.free.indexOf(this.lentId);
+		if (camera < 0) {
+			// the player does not have it: back at once
+			this.lentUntil = 0;
+			return;
+		}
+		this.lentShown = true;
+		if (camera != this.free.active()) {
+			this.grab.reset();
+			this.free.show(camera);
+		}
+	}
+
+	/**
+	 * the time a camera was lent for is over: back to what the player had. Not if they went on by themselves in
+	 * the meantime, then that is what they have
+	 */
+	private void endLent() {
+		String id = this.lentId;
+		this.lentId = null;
+		boolean untouched = this.mode == Mode.FREE && this.freeLevel != null && !this.free.isEmpty() &&
+				id.equals(this.free.id(this.free.active()));
+		if (this.lentShown && !untouched) {
+			return;
+		}
+		if (this.lentFrom != Mode.FREE) {
+			if (this.mode == Mode.FREE) {
+				setMode(this.lentFrom);
+			}
+			return;
+		}
+		int before = this.lentBefore == null ? -1 : this.free.names().indexOf(this.lentBefore);
+		if (before >= 0 && untouched) {
+			this.grab.reset();
+			this.free.show(before);
+		}
+	}
+
+	/**
+	 * the server is gone, and what it wanted with it
+	 */
+	public void serverGone() {
+		this.fromServer.clear();
+		this.fromServerLevel = null;
+		this.lentId = null;
+	}
+
+	/**
+	 * does something with the free cameras for a server: right away while they are open, and when they are opened
+	 * the next time otherwise. Not at all for a player who wants no cameras from servers
+	 */
+	private void withCameras(Runnable change) {
+		Minecraft mc = Minecraft.getInstance();
+		if (!CameraConfig.current().serverCameras || mc.level == null) {
+			return;
+		}
+		if (this.mode == Mode.FREE && this.freeLevel == mc.level) {
+			change.run();
+			return;
+		}
+		if (this.fromServerLevel != mc.level) {
+			this.fromServer.clear();
+			this.fromServerLevel = mc.level;
+		}
+		if (this.fromServer.size() < FROM_SERVER_WAITING) {
+			this.fromServer.add(change);
 		}
 	}
 
@@ -915,7 +1096,8 @@ public final class DesktopCamera {
 	 * until they look at another one.
 	 */
 	private void followGaze(LocalPlayer player, float partialTick, double dt, CameraConfig config) {
-		if (!config.freeAutoSwitch || this.flying || this.free.count() < 2) {
+		// a camera a server has film for a while is not looked away from
+		if (!config.freeAutoSwitch || this.flying || this.free.count() < 2 || this.lentId != null) {
 			this.gazeAt = -1;
 			return;
 		}
@@ -1018,9 +1200,29 @@ public final class DesktopCamera {
 		if (hint != null && player != null) {
 			player.sendOverlayMessage(hint);
 		}
+		if (this.lentId != null && System.nanoTime() > this.lentUntil) {
+			endLent();
+		}
+		tellFilming();
 		Pose filming = lens();
 		if (filming != null && ++this.shareTicks % 2 == 0 && CameraConfig.current().shareCamera) {
 			PhotoSync.INSTANCE.shareCamera(filming.position(), filming.rotation());
+		}
+	}
+
+	/**
+	 * tells the server which free camera films, when that is another one than before
+	 */
+	private void tellFilming() {
+		if (this.mode != Mode.FREE || this.freeLevel == null || this.free.isEmpty()) {
+			this.toldFilming = null;
+			return;
+		}
+		int camera = this.free.active();
+		String filming = this.free.name(camera);
+		if (!filming.equals(this.toldFilming)) {
+			this.toldFilming = filming;
+			PhotoSync.INSTANCE.shareSwitch(filming, this.free.id(camera), this.free.position(camera));
 		}
 	}
 
