@@ -104,6 +104,10 @@ public final class DesktopCamera {
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
 	private Mode mode = Mode.OFF;
+	// what it is turned back on to
+	private Mode lastMode = Mode.DIRECTOR;
+	// a shot that was asked for before there was a director to show it
+	private ShotType askedFor;
 	private CameraConfig config;
 	private Director director;
 	private Shot followShot;
@@ -158,6 +162,9 @@ public final class DesktopCamera {
 		this.free.save();
 		this.freeLevel = null;
 		this.mode = mode;
+		if (mode != Mode.OFF) {
+			this.lastMode = mode;
+		}
 		this.steered = null;
 		this.flying = false;
 		this.inside = false;
@@ -170,7 +177,43 @@ public final class DesktopCamera {
 		this.director = null;
 		this.pose = null;
 		this.lastNanos = 0;
-		say("vrcamera.message.mode", Component.translatable("vrcamera.mode." + mode.name().toLowerCase(Locale.ROOT)));
+		if (mode == Mode.DIRECTOR && CameraConfig.current().directorManual) {
+			// the two keys that are all there is to it
+			say("vrcamera.message.manual", CameraHints.keyName("next"), CameraHints.keyName("toggle"));
+		} else {
+			say("vrcamera.message.mode",
+					Component.translatable("vrcamera.mode." + mode.name().toLowerCase(Locale.ROOT)));
+		}
+	}
+
+	/**
+	 * turns the camera off, or back on to what it was doing: the one key between the view of the player and the
+	 * picture of the camera
+	 */
+	public void toggle() {
+		setMode(this.mode == Mode.OFF ? this.lastMode : Mode.OFF);
+	}
+
+	/**
+	 * Has the director show a shot, and turns the director on for that if it is not.
+	 *
+	 * @param type the shot, null for the next one of its own choice
+	 */
+	public void showShot(ShotType type) {
+		if (this.mode != Mode.DIRECTOR) {
+			setMode(Mode.DIRECTOR);
+			if (this.mode != Mode.DIRECTOR) {
+				return;
+			}
+		}
+		if (type == null) {
+			nextShot();
+		} else if (this.director == null) {
+			this.askedFor = type;
+		} else {
+			this.director.force(type);
+			say("vrcamera.message.shot", Component.translatable("vrcamera.shot." + type.name().toLowerCase(Locale.ROOT)));
+		}
 	}
 
 	/**
@@ -646,6 +689,10 @@ public final class DesktopCamera {
 			this.config = config;
 			this.director = new Director(config);
 			this.followShot = null;
+			if (this.askedFor != null) {
+				this.director.force(this.askedFor);
+				this.askedFor = null;
+			}
 		}
 		// like in VR the camera keeps moving while the game is paused, to get to the pause menu
 		double dt = frameTime();

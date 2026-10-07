@@ -18,7 +18,9 @@
 		"MinecraftMixin",
 		"MobAccessor",
 		"MouseHandlerMixin",
-		"ScreenMixin"
+		"ScreenMixin",
+		"SodiumCameraTimingMixin",
+		"SodiumSectionManagerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -206,6 +206,8 @@ public final class ConfigScreen {
 				0.1, 5, 0.1, "%.1f s", value -> config.occlusionCutTime = value));
 
 		ConfigCategory director = builder.getOrCreateCategory(Component.translatable("vrcamera.config.director"));
+		director.addEntry(screen.toggle("directorManual", config.directorManual, defaults.directorManual,
+				value -> config.directorManual = value));
 		director.addEntry(screen.selector("pace", Pace.values(), config.pace, defaults.pace,
 				value -> config.pace = value));
 		director.addEntry(screen.selector("transition", Transition.values(), config.transition, defaults.transition,

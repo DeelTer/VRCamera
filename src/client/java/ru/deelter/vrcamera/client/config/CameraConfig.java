@@ -258,6 +258,10 @@ public class CameraConfig {
 	 */
 	public double minShotTime = 4.0;
 	/**
+	 * if the director leaves it to the player when the shot changes
+	 */
+	public boolean directorManual = false;
+	/**
 	 * seconds the director keeps a hand placed camera, before it takes over again
 	 */
 	public double manualHoldSeconds = 30;
