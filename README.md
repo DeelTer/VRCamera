@@ -2,148 +2,100 @@
 
 [Русская версия](README_RU.md) · [User guide](docs/GUIDE.md)
 
-A [Vivecraft](https://modrinth.com/mod/vivecraft) addon that moves its handheld camera for you and films
-the player in third person. Made for Minecraft VR streams and recordings with OBS.
+A cinematic camera mod for Minecraft VR and PC streams, recordings and screenshots.
+Use the [Vivecraft](https://modrinth.com/mod/vivecraft) handheld camera in VR, or film through a separate camera window on PC. Vivecraft is optional for PC use.
 
-Choose how you want to film:
+- **Director** chooses angles and switches shots automatically.
+- **Follow** keeps your chosen angle relative to the player.
+- **Free (PC)** gives you up to 26 saved cameras, smooth flight and gaze-based switching.
+- **Physics (VR)** lets you carry, drop, throw, kick and attach the camera.
 
-- **Director** picks camera angles and switches between them, like the cinematic camera in GTA.
-- **Follow** keeps a hand-placed angle relative to the player.
-- **Physics** lets you carry, drop, throw and kick the camera. Good for found footage and horror.
-- **Off** leaves the Vivecraft camera alone.
-
-In Director and Follow, the camera keeps you in view and stays out of blocks.
-In Physics, a held camera films where your hand points; a dropped one falls, bounces and comes to rest.
+Director and Follow keep the player in frame and avoid blocks. On PC you can also film another player or include a friend in your shots.
 
 ## Install
 
-Supported Minecraft versions: **26.2 and 26.3**, with a separate jar for each. Requires **Java 25**.
-The mod runs on the client, so there is nothing to install on the server.
+Supports **Minecraft 26.2 and 26.3**, with a separate jar for each. Requires **Java 25**, **Fabric Loader** and **Fabric API**. Put the matching VRCamera jar in `mods`.
 
-Use Fabric Loader and put these files in your `mods` folder:
+For VR, install Vivecraft for the same Minecraft version and use **standing mode**. Its handheld camera is disabled in seated mode.
+Optional: **Cloth Config** adds settings; **Mod Menu** adds a settings button in the mod list. Build dependency versions are in [`versions/`](versions/).
 
-- VRCamera for your Minecraft version.
-- Vivecraft for the same Minecraft version (Fabric), for VR. Without it the mod works for a player at a
-  screen: the director, the follow camera, the free cameras, the camera window and the green screen.
-- Fabric API.
-
-Optional: **Cloth Config** adds the settings screen; **Mod Menu** adds a settings button in the mod list.
-Exact dependency versions for each build are listed in [`versions/`](versions/).
-
-You need **standing VR**. Vivecraft disables the handheld camera in seated mode.
+The mod runs on the client. A server plugin is only needed to share photos and camera positions between players.
 
 ## Quick start
 
-1. Start Minecraft, turn VR on and enter a world.
-2. Press `F8` or the **VR Camera** button in the pause menu. Modes cycle: Off → Director → Follow → Physics.
-3. Capture the Minecraft window in OBS.
+**PC:** enter a world, press `F8` to choose a mode, then run `/vrcam screen window` for a separate VRCamera window. Capture it in OBS with Window Capture. `/vrcam screen here` uses the Minecraft window instead.
 
-While the camera is on, the game window shows its picture. In your headset you see the Vivecraft camera model
-where the camera is; it does not appear in the recording.
+**VR:** enable VR, enter a world and press `F8` or the **VR Camera** button in the pause menu. Capture the Minecraft window in OBS. The camera model is visible in the headset and hidden from the recording.
+
+Use `/vrcam chroma` for a green screen. On PC, a tall camera window gives a portrait view; `F11` in that window toggles fullscreen.
 
 ## Vivecraft and OBS setup
 
-| Vivecraft setting        | Recommended value                                                                                                 |
-|--------------------------|-------------------------------------------------------------------------------------------------------------------|
-| Play mode                | Standing                                                                                                          |
-| Show Playermodel         | **ON, required.** In VR Settings → Playermodel Settings. Off, your character is missing from the camera's picture |
-| Desktop Mirror           | anything but OFF, otherwise the game window is black                                                              |
-| Camera Resolution        | 1.0 for 1920×1080; higher values cost more FPS                                                                    |
-| GUI On Mirror            | OFF to keep the HUD out of streams                                                                                |
-| Hotswitching             | OFF to keep filming when you take the headset off                                                                 |
-| Camera as Desktop Mirror | leave it; the mod enables it while filming and restores it afterwards                                             |
+For VR, check these Vivecraft settings:
 
-Set the Minecraft window to 16:9, for example 1920×1080, and add a Game Capture or Window Capture source in OBS.
-Other aspect ratios produce black bars. Keep the game window open and do not minimize it.
+| Setting | Recommended value |
+| --- | --- |
+| Show Playermodel | **ON** in VR Settings → Playermodel Settings, or your character will be missing |
+| Desktop Mirror | Anything except OFF |
+| Camera Resolution | 1.0 for 1920×1080; higher values cost more FPS |
+| GUI On Mirror | OFF for a clean stream |
+| Hotswitching | OFF to keep filming when you take the headset off |
+| Camera as Desktop Mirror | Managed by the mod and restored when it stops |
 
-The camera adds another full render of the world on top of the two eye views.
-Expect the same FPS drop as with Vivecraft's ordinary camera.
+For a 16:9 recording, use a matching window size, such as 1920×1080. The camera renders another view of the world, so expect extra GPU load. On PC, lower `outputFps` if needed; render resolution follows the Minecraft window size.
 
 ## Controls
 
-| Action                           | Key   |
-|----------------------------------|-------|
-| Switch mode                      | `F8`  |
-| Next shot                        | `F9`  |
-| Hold or release the current shot | `F10` |
-| Next own angle                   | `F7`  |
-| Take a photo                     | `F6`  |
+| Action | Key |
+| --- | --- |
+| Switch mode | `F8` |
+| Next shot | `F9` |
+| Hold/release the shot | `F10` |
+| Next saved angle or nearby free camera | `F7` |
+| Take a photo | `F6` |
+| New saved angle / free camera | `N` |
+| Steer the PC camera | `G` |
 
-You can also use the "VR Camera..." screen in the pause menu to bring the camera to you, manage your own angles
-and open settings. Settings require Cloth Config.
+Rebind keys in Minecraft's controls; in VR you can also use Vivecraft's radial menu or SteamVR bindings. Client commands support Tab completion and need no server permissions. See the [full command list](docs/GUIDE.md#commands).
 
-Rebind keys in Minecraft's controls or bind them to controller buttons in SteamVR.
-Keyboard controls work while the game window has focus and no menu is open.
-Client commands are available through `/vrcam`, with tab completion and no permissions required.
-See the [full command list](docs/GUIDE.md#commands).
+Free-camera shortcuts: `/cam add`, `/cam B`, `/cam next`, `/cam fly`, `/cam clear`.
+Film another player with `/cam follow Name`, or add a partner with `/cam with Name`.
 
 ## Camera in your hands
 
-**Grab and place.** Reach for the camera and hold the interact button. Let go to keep that angle in Follow,
-hold it temporarily in Director, or drop the camera in Physics.
+**VR:** hold interact near the camera to grab it; release to place or drop it. Swing and release to throw. To pull it from afar, look at it, point a hand and hold interact after the controller buzzes.
 
-**Throw.** Swing your hand and let go. A faster swing throws the camera further.
-You can also throw the ordinary Vivecraft camera while the mod is off.
+**PC, with a separate window:** aim at a camera and hold right-click to grab it. Move it with your look, adjust its distance with the wheel and release to place it. Click its window or press `G` to steer with movement keys.
 
-**Pull from afar.** Look at the camera and point a hand at it. When the controller buzzes, hold the interact
-button until the camera flies into your hand. It stays there until you let go.
-
-**Bring camera to me.** Use this button to put the camera within reach, in front of your face.
-To save a new angle: New angle → Bring camera to me → grab, place, let go.
+Use **Bring camera to me** to put it within reach. In VR, save an angle with New angle → Bring camera to me → grab, place, release.
 
 ## Settings and help
 
-With Cloth Config installed, open settings from the "VR Camera..." screen. The settings use sliders,
-so you do not have to type numbers in VR. Save to apply changes.
+Open settings from the pause menu with Cloth Config, or edit `config/vrcamera.json` and run `/vrcam reload`.
+Photos are saved in `screenshots/vrcamera` and copied to the clipboard on Windows.
 
-You can also edit `config/vrcamera.json`, created on first start, and apply it with `/vrcam reload`.
+- Missing character in VR: enable **Show Playermodel**.
+- Black VR mirror: check **Desktop Mirror**.
+- Missing settings: install **Cloth Config**.
+- Unresponsive keys: focus the appropriate window and close menus.
+- Camera error: check `logs/latest.log`.
 
-| Problem                                       | What to check                                                             |
-|-----------------------------------------------|---------------------------------------------------------------------------|
-| VR is not running or seated mode is reported  | enable VR and use standing mode in Vivecraft                              |
-| The game window is black                      | Desktop Mirror must not be OFF                                            |
-| Your character is not in the camera's picture | turn on Show Playermodel in Vivecraft: VR Settings → Playermodel Settings |
-| The window shows first person                 | check that VR is running and `forceMirror` is enabled                     |
-| You cannot reach the camera                   | use Bring camera to me or pull it                                         |
-| There is no Settings button                   | install Cloth Config                                                      |
-| Keys do nothing                               | focus the game window and close menus                                     |
-| The camera turns off with an internal error   | check `logs/latest.log`                                                   |
-
-The [user guide](docs/GUIDE.md) covers all shots, Physics mode, commands, markers,
-configuration fields and tuning suggestions.
+The [user guide](docs/GUIDE.md) covers camera modes, photos, commands, configuration and troubleshooting.
 
 ## Known limits
 
-- Vivecraft updates can break compatibility because the mod uses its internal classes.
-- Without VR, there is no handheld camera. The mod restores Vivecraft's settings and waits;
-  when VR returns, filming resumes with a new shot.
-- Pulling uses that hand's interact button, and the pulled camera flies through walls.
-- The mod temporarily changes Vivecraft's camera FOV and mirror setting. If Vivecraft saves its settings
-  while filming and the game crashes, those temporary values can remain in its file.
+- Vivecraft updates can break compatibility with its internal classes.
+- The separate PC window needs OpenGL; shaders are unsupported. Green screen also does not support Fabulous graphics.
+- Pulling the VR camera uses that hand's interact button and ignores walls.
+- A crash during filming can leave temporary camera values in Vivecraft's saved settings.
 
-See the [guide](docs/GUIDE.md#known-limits) for the remaining limitations.
+See the [guide](docs/GUIDE.md#known-limits) for details.
 
 ## Server plugin API
 
-The Paper plugin runs on Paper 1.21.4 and newer, on Java 21. Other plugins can listen to two events, both in
-`ru.deelter.vrcamera.sync.plugin.event`:
-
-- `PhotoPinEvent` — a player is about to pin a photo to a block. Cancellable: cancelled, nothing is pinned and the
-  player is told the server does not allow it. Has the player, the location, the block and whether it is a custom
-  picture.
-- `PhotoTakeEvent` — a player took a photo. Has the player and where their camera was.
-
-```java
-@EventHandler
-public void onPin(PhotoPinEvent event) {
-    if (isProtected(event.getBlock())) {
-        event.setCancelled(true);
-    }
-}
-```
-
-Add `depend: [VRCamera]` or `softdepend: [VRCamera]` to your `plugin.yml`. `/vrcamsync list <player>` shows where a
-player has photos pinned.
+The optional **VRCamera** plugin runs on **Paper 1.21.4+ / Java 21** and shares photos and camera positions.
+Other plugins can listen to `PhotoPinEvent` (cancellable) and `PhotoTakeEvent` in `ru.deelter.vrcamera.sync.plugin.event`. Add `depend: [VRCamera]` or `softdepend: [VRCamera]` to `plugin.yml`.
+`/vrcamsync list <player>` lists a player's pinned photos. See [server setup](docs/GUIDE.md#sharing-photos-on-a-server).
 
 ## Build
 
@@ -153,8 +105,5 @@ player has photos pinned.
 ./gradlew buildAll
 ```
 
-These build the default Minecraft version, 26.3, and all supported versions respectively. Every build also
-produces `vrcamera-paper-plugin-<version>.jar`, an optional Paper plugin that shares pinned photos between players with
-the mod. See the [guide](docs/GUIDE.md#sharing-photos-on-a-server).
-Jars are written to `build/libs/`. The default version is set by `mc` in [`gradle.properties`](gradle.properties);
-Minecraft and dependency versions are defined in [`versions/`](versions/).
+Builds the default version, 26.3, or all supported versions. Mod and optional `vrcamera-paper-plugin-<version>.jar` files go to `build/libs/`.
+The default Minecraft version is set in [`gradle.properties`](gradle.properties); dependencies are in [`versions/`](versions/).

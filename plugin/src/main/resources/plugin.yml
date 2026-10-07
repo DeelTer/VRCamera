@@ -1,7 +1,7 @@
 name: VRCamera
 version: '${version}'
 main: ru.deelter.vrcamera.sync.plugin.SyncPlugin
-api-version: '1.21'
+api-version: '1.21.4'
 author: DeelTer
 description: Lets players with the VRCamera mod see each other's pinned photos
 commands:

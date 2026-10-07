@@ -217,7 +217,11 @@ public final class DesktopCamera {
 		CameraConfig config = CameraConfig.current();
 		config.filmPlayer = name == null ? "" : name;
 		config.save();
-		say(name == null ? "vrcamera.message.film.self" : "vrcamera.message.film.other", name);
+		if (name == null) {
+			say("vrcamera.message.film.self");
+		} else {
+			say("vrcamera.message.film.other", name);
+		}
 		return true;
 	}
 
@@ -234,7 +238,11 @@ public final class DesktopCamera {
 		CameraConfig config = CameraConfig.current();
 		config.filmWith = name == null ? "" : name;
 		config.save();
-		say(name == null ? "vrcamera.message.with.off" : "vrcamera.message.with.on", name);
+		if (name == null) {
+			say("vrcamera.message.with.off");
+		} else {
+			say("vrcamera.message.with.on", name);
+		}
 		return true;
 	}
 
