@@ -128,6 +128,7 @@ public final class DroppedCamera {
 	private boolean attachedToHead;
 	private boolean attachedToSelf;
 	private Entity newHost;
+	private boolean selfAllowed = true;
 	// where the carrier was in the last frame
 	private Vec3 attachedOrigin;
 	private final Vector3f attachedOffset = new Vector3f();
@@ -532,6 +533,13 @@ public final class DroppedCamera {
 	 * @param entity what the camera came to rest on, null for a block
 	 */
 	/**
+	 * @param allowed if the camera can be put on the head of the player themselves
+	 */
+	public void allowSelf(boolean allowed) {
+		this.selfAllowed = allowed;
+	}
+
+	/**
 	 * @return what the camera is held against closely enough to be put on it, null if nothing
 	 */
 	private Entity host(Subject subject, Vec3 position) {
@@ -540,6 +548,9 @@ public final class DroppedCamera {
 		AABB around = new AABB(position, position).inflate(1.5);
 		for (Entity entity : subject.player.level().getEntities((Entity) null, around, DroppedCamera::isSolid)) {
 			if (entity == subject.player) {
+				if (!this.selfAllowed) {
+					continue;
+				}
 				// Only on the head. A hand lets go of the camera near the own body all the time, and it is not
 				// meant to stick there every time
 				if (position.distanceTo(subject.head) > SELF_ATTACH_REACH) {

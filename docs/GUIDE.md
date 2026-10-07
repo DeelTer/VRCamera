@@ -51,6 +51,9 @@ You can also use `/vrcam`, which supports tab completion. The command runs on th
 | `/vrcam debug` | debug overlay |
 | `/vrcam settings` | settings screen, needs Cloth Config |
 | `/vrcam pace alpha`, `default`, `faster` | sets the pace of the director, see Settings |
+| `/vrcam screen director`, `follow`, `off` | the camera without VR, in the game window |
+| `/vrcam screen steer` | take the camera over with the keys you walk with, or give it back |
+| `/vrcam chroma` | green screen on or off |
 | `/vrcam reload` | reads the settings file again |
 
 `/vrcam shot` shows a shot even if it is disabled or does not fit the situation. It lasts as long as usual, then
@@ -379,6 +382,58 @@ What protects the server and the other players:
 What it does not do: judge what is in a picture. A player can pin any screenshot of the game. For that there are
 the commands above, the limits and `showOthersPhotos`.
 
+## Without VR
+
+The director and the follow camera also work for a player at a screen, with Vivecraft installed and VR off. This
+is a first step: the camera films into the game window in place of your own view. A second picture next to your
+own view, for OBS, is not there yet.
+
+- `/vrcam screen director`, `follow` or `off`, or the mode key (`F8`): it cycles through the three while VR is off.
+- Next shot (`F9`) and Hold (`F10`) work as in VR. Pace, shots and all the director settings are the same ones.
+- You keep playing as before: you move and look around as yourself, only the picture comes from the camera.
+- The shots for hands and for an open menu are left out, they need tracked hands and a menu in the world.
+- Physics, grabbing, pulling and putting the camera up need hands and stay in VR.
+
+**Steering it yourself.** Click into the window of the camera and it is yours for as long as that window has the
+keyboard; click back into the game to give it back. The game does not pause for that. Without a window of its
+own, or to stay in the game, press `G` (or `/vrcam screen steer`) to take the camera over. The keys you walk with move
+it then, and you stand still: forward and back bring it closer and take it away, left and right fly it around
+you, jump and sneak raise and lower it. Press `G` again to give it back. The director keeps the angle you found for
+`manualHoldSeconds` and then goes on; the follow camera keeps it for good.
+
+**A window of its own, for OBS.** `/vrcam screen window` gives the camera a second window, "VRCamera". You keep
+your own view in the game window, with your hand, hotbar and menus; the window shows what the camera films and
+nothing else. Capture it in OBS with a Window Capture source. `/vrcam screen here` goes back to filming into the
+game window. Also in the settings ("Without VR: picture goes to").
+
+- The world is drawn twice for this, expect a third to a half fewer FPS. `outputFps` (60 by default) limits how
+  often the camera's picture is drawn: at 30 it costs about half as much.
+- The picture is as large as the game window, the camera window only shows it scaled. Keep the game window at
+  the size you want to record.
+- Closing the camera window turns the camera off.
+- In your own view the camera is shown where it is: the model of the Vivecraft camera with the camera icon over
+  it. `indicator` turns the icon off.
+- With a menu open (inventory, chest, pause menu, settings), a screen with that menu stands in front of your
+  character, and the director films it over the shoulder like in VR. Only the camera sees that screen. Chat counts
+  with `menuShotChat`.
+- With no room for a camera around you, the picture is your own first person view, with your hand, hotbar and
+  menus. In VR the camera films from your face instead.
+- Needs the OpenGL renderer of the game. Shaders are not supported.
+- Minecraft 26.2 only for now. 26.3 makes its windows another way, there the camera can only film into the game
+  window.
+- With the green screen on, only the camera window is keyed, your own view stays as it is.
+
+**Taking it with the mouse.** With a window of its own the camera is something in your world. Point at its model
+(the icon over it grows and beats when you have it), hold the use key (right mouse button) and it hangs in front of you: it goes where you look, and the wheel takes it
+further away and brings it back. It comes after both softly, for a shot that flows. Let go and it stays there, like a camera put down by hand in VR. Let go while
+you swing the view and it is thrown that way; `throwPower` sets how far. While you point at the camera or hold it,
+the use key does nothing else.
+
+**Green screen.** `/vrcam chroma` films only entities, on one plain colour, to cut them out later: green `#00B140`, or what `chromaColor` says. They are all lit the same, as in full daylight, wherever they stand. The
+world, the sky, clouds, weather, particles, chests and signs are left out, and the round shadows under entities
+are off. In VR only the picture of the camera turns green, your eyes see the world as it is. The same command
+turns it off again. It does not work with shaders or with the "Fabulous!" graphics setting.
+
 ## Marker, icon and debug overlay
 
 **Marker.** The Vivecraft camera model with its screen shows where the camera is in the headset. It is not in the
@@ -437,6 +492,12 @@ and by `/vrcam reload`.
 | `indicatorSize` | `1.0` | size of the icon |
 | `throwPower` | `1.3` | throw range multiplier in every mode, 0 = no throwing |
 | `handStabilize` | `0.6` | steadying of a held camera, 0 = off, 1 = most |
+| `attachToSelf` | `true` | the camera can be put on your own head by holding it there |
+| `screenOutput` | `"screen"` | without VR: `"screen"` films into the game window, `"window"` into a window of its own |
+| `menuSize` | `1.0` | size of the screen with an open menu that stands in front of your character for the camera |
+| `chromaDistance` | `32` | blocks around you in which entities are filmed with the green screen on, 0 = all of them |
+| `outputFps` | `60` | pictures per second in the window of the camera, 0 = as many as the game draws |
+| `chromaColor` | `"#00B140"` | colour behind the entities with the green screen on |
 | `selfieScreen` | `true` | a second screen on top of the camera while it is near you with its lens to you, in your hand or wherever you put it. Only in the headset, costs no FPS |
 | `selfieDistance` | `3.0` | blocks from your head to the camera up to which the selfie screen is shown |
 | `hideHoldingArm` | `true` | keep the arm that holds the camera out of the picture, except in a selfie |

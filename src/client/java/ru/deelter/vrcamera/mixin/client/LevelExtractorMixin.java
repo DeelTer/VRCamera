@@ -10,6 +10,11 @@ import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.llamalad7.mixinextras.sugar.Local;
+import net.minecraft.world.entity.Entity;
+import ru.deelter.vrcamera.client.desktop.ChromaKey;
 
 @Mixin(LevelExtractor.class)
 public class LevelExtractorMixin {
@@ -24,6 +29,7 @@ public class LevelExtractorMixin {
 		// names over the cameras of other players, for whoever looks: also without VR, also in the recording
 		RemoteCameras.INSTANCE.drawLabels();
 		PhotoAlbum.INSTANCE.drawLabels();
+		DesktopCamera.INSTANCE.drawLabel();
 		if (!CameraController.isVRRunning()) {
 			return;
 		}
@@ -31,5 +37,11 @@ public class LevelExtractorMixin {
 		if (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT) {
 			controller.drawHeadsetAids(dh.vrPlayer.vrdata_world_render);
 		}
+	}
+
+	// in front of the green screen only what the player could see is filmed
+	@ModifyReturnValue(method = "isEntityVisible", at = @At("RETURN"), require = 0)
+	private boolean vrcamera$onlySeenEntities(boolean visible, @Local(argsOnly = true) Entity entity) {
+		return visible && (!ChromaKey.applies() || ChromaKey.shows(entity));
 	}
 }

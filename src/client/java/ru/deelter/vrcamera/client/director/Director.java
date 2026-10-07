@@ -380,7 +380,8 @@ public final class Director {
 			for (ShotType type : ShotType.values()) {
 				ShotConfig shotConfig = this.config.shot(type);
 				if (type == ShotType.CUSTOM || !shotConfig.enabled ||
-						(type == ShotType.DUEL && subject.targetCenter == null)) {
+						(type == ShotType.DUEL && subject.targetCenter == null) ||
+						(type == ShotType.HANDS && !subject.tracksHands)) {
 					continue;
 				}
 				double weight = shotConfig.weight * fit(type) * (type == this.boost ? BOOST : 1.0);

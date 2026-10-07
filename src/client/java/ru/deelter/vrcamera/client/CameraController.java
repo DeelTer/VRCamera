@@ -316,11 +316,23 @@ public final class CameraController implements Tracker {
 	 * walls. While the camera is out of sight the icon sticks to the edge of the view on the side the camera is on.
 	 */
 	private void drawIndicator(String icon, Vec3 camera, VRData vr, boolean alsoOutOfSight) {
-		Vec3 head = vr.hmd.getPosition();
-		Vec3 forward = new Vec3(vr.hmd.getDirection());
-		Vec3 up = new Vec3(vr.hmd.getCustomVector(MathUtils.UP));
+		drawIndicator(icon, camera, vr.hmd.getPosition(), new Vec3(vr.hmd.getDirection()),
+				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0);
+	}
+
+	/**
+	 * the same for a player without VR
+	 *
+	 * @param head where the game looks from, and which way and how it is turned
+	 */
+	public void drawIndicatorWithoutVR(Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale, double grow) {
+		drawIndicator(INDICATOR_ICON, camera, head, forward, up, scale, true, grow);
+	}
+
+	private void drawIndicator(
+			String icon, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float worldScale, boolean alsoOutOfSight,
+			double grow) {
 		Vec3 right = forward.cross(up);
-		float worldScale = vr.worldScale;
 
 		Vec3 toCamera = camera.subtract(head);
 		double distance = toCamera.length();
@@ -345,7 +357,7 @@ public final class CameraController implements Tracker {
 			anchor = head.add(forward.scale(depth)).add(side.scale(depth * Math.tan(INDICATOR_PINNED_ANGLE)));
 		}
 
-		double size = this.config.indicatorSize * anchor.distanceTo(head);
+		double size = this.config.indicatorSize * anchor.distanceTo(head) * grow;
 		float iconScale = (float) (INDICATOR_ICON_SCALE * size);
 		// text is drawn downwards from its position: the icon stands on the anchor, the distance hangs below it
 		Vec3 iconTop = anchor.add(up.scale(iconScale / 2.0));
@@ -1026,6 +1038,7 @@ public final class CameraController implements Tracker {
 		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		this.subject.update(player, vr, partialTick, dt, realDt, this.config);
 		this.subject.guiCenter = openMenuPosition(vr);
+		this.dropped.allowSelf(this.config.attachToSelf);
 		ResourceKey<Level> dimension = player.level().dimension();
 		this.changedDimension = this.dimension != null && !this.dimension.equals(dimension);
 		this.dimension = dimension;

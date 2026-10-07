@@ -84,6 +84,30 @@ public class CameraConfig {
 	 */
 	public boolean selfieScreen = true;
 	/**
+	 * the camera of the physics mode can be put on the own head by holding it there
+	 */
+	public boolean attachToSelf = true;
+	/**
+	 * the colour behind the entities with the green screen on, as #RRGGBB
+	 */
+	public String chromaColor = "#00B140";
+	/**
+	 * where the camera films to without VR: into the game window, or into a window of its own for OBS
+	 */
+	public ScreenOutput screenOutput = ScreenOutput.SCREEN;
+	/**
+	 * pictures per second in the window of the camera, 0 = as many as the game draws
+	 */
+	public double outputFps = 60;
+	/**
+	 * how large the screen with an open menu is that stands in front of the player for the camera, 1 = as it comes
+	 */
+	public double menuSize = 1.0;
+	/**
+	 * blocks around the player in which entities are filmed with the green screen on, 0 = all of them
+	 */
+	public double chromaDistance = 32;
+	/**
 	 * blocks from the head to the camera up to which the selfie screen is shown
 	 */
 	public double selfieDistance = 3.0;
@@ -285,6 +309,9 @@ public class CameraConfig {
 		}
 		if (this.pace == null) {
 			this.pace = Pace.DEFAULT;
+		}
+		if (this.screenOutput == null) {
+			this.screenOutput = ScreenOutput.SCREEN;
 		}
 		if (this.pullStyle == null) {
 			this.pullStyle = PullStyle.TELEKINESIS;

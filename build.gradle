@@ -44,6 +44,16 @@ loom {
     }
 }
 
+// The few classes that can't be the same for every Minecraft version, like the ones that open a window: the game
+// went from GLFW to SDL. One folder per version, next to what they all share
+sourceSets {
+    client {
+        java {
+            srcDir "src/client/java-${project.mc}"
+        }
+    }
+}
+
 repositories {
     exclusiveContent {
         forRepository {

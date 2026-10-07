@@ -15,6 +15,9 @@ import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import ru.deelter.vrcamera.client.desktop.ChromaKey;
+import ru.deelter.vrcamera.client.config.ScreenOutput;
 
 /**
  * The {@code /vrcam} command. Runs on the client only, the server never sees it.
@@ -80,6 +83,39 @@ public final class VrcamCommand {
 			}));
 		}
 		root.then(pace);
+		// the camera for a player without VR, in the game window
+		LiteralArgumentBuilder<FabricClientCommandSource> screen = ClientCommands.literal("screen");
+		for (DesktopCamera.Mode mode : DesktopCamera.Mode.values()) {
+			screen.then(ClientCommands.literal(mode.name().toLowerCase(Locale.ROOT)).executes(context -> {
+				if (mode != DesktopCamera.Mode.OFF && CameraController.isVRRunning()) {
+					context.getSource().sendError(Component.translatable("vrcamera.command.screen.vr"));
+					return 0;
+				}
+				DesktopCamera.INSTANCE.setMode(mode);
+				return DONE;
+			}));
+		}
+		for (ScreenOutput output : ScreenOutput.values()) {
+			// where it films to: "window" gives it a window of its own and leaves the view of the player alone
+			screen.then(ClientCommands.literal(output == ScreenOutput.WINDOW ? "window" : "here").executes(context -> {
+				controller.config().screenOutput = output;
+				controller.config().save();
+				context.getSource().sendFeedback(Component.translatable("vrcamera.command.screen." +
+						output.name().toLowerCase(Locale.ROOT)));
+				return DONE;
+			}));
+		}
+		screen.then(ClientCommands.literal("steer").executes(context -> {
+			DesktopCamera.INSTANCE.toggleSteering();
+			return DONE;
+		}));
+		root.then(screen);
+		root.then(ClientCommands.literal("chroma").executes(context -> {
+			ChromaKey.set(!ChromaKey.isOn());
+			context.getSource().sendFeedback(Component.translatable(
+					ChromaKey.isOn() ? "vrcamera.command.chroma.on" : "vrcamera.command.chroma.off"));
+			return DONE;
+		}));
 		root.then(ClientCommands.literal("reload").executes(context -> {
 			controller.reloadConfig();
 			context.getSource().sendFeedback(Component.translatable("vrcamera.command.reloaded"));

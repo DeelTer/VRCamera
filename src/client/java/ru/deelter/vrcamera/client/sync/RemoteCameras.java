@@ -123,29 +123,51 @@ public final class RemoteCameras {
 			update();
 			Minecraft mc = Minecraft.getInstance();
 			for (Camera camera : this.cameras.values()) {
-				this.model.clear();
-				mc.getModelManager().getItemModel(CameraTracker.CAMERA_MODEL).update(this.model, ItemStack.EMPTY,
-						mc.getItemModelResolver(), ItemDisplayContext.GROUND, null, null, 0);
-				if (this.model.isEmpty()) {
-					continue;
-				}
-				BlockPos block = BlockPos.containing(camera.position);
-				int light = LightCoordsUtil.pack(level.getBrightness(LightLayer.BLOCK, block),
-						level.getBrightness(LightLayer.SKY, block));
-				poseStack.pushPose();
-				poseStack.translate(camera.position.x - viewPosition.x, camera.position.y - viewPosition.y,
-						camera.position.z - viewPosition.z);
-				poseStack.mulPose(new Matrix4f().rotation(camera.rotation));
-				poseStack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
-				poseStack.translate(0.0F, MODEL_UP, MODEL_BACK);
-				this.model.submit(poseStack, output, light, OverlayTexture.NO_OVERLAY, 0);
-				poseStack.popPose();
+				submitModel(mc, level, output, viewPosition, poseStack, camera.position, camera.rotation);
 			}
 		} catch (RuntimeException e) {
 			this.broken = true;
 			Vrcamera.LOGGER.error("VRCamera: drawing other players' cameras failed, they are off until the game restarts",
 					e);
 		}
+	}
+
+	/**
+	 * draws the model of a camera that is not one of another player: the own one of a player without VR
+	 */
+	public void drawModel(
+			SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack, Vec3 position, Quaternionf rotation) {
+		Minecraft mc = Minecraft.getInstance();
+		if (this.broken || mc.level == null) {
+			return;
+		}
+		try {
+			submitModel(mc, mc.level, output, viewPosition, poseStack, position, rotation);
+		} catch (RuntimeException e) {
+			this.broken = true;
+			Vrcamera.LOGGER.error("VRCamera: drawing the camera failed, it is off until the game restarts", e);
+		}
+	}
+
+	private void submitModel(
+			Minecraft mc, ClientLevel level, SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack,
+			Vec3 position, Quaternionf rotation) {
+		this.model.clear();
+		mc.getModelManager().getItemModel(CameraTracker.CAMERA_MODEL).update(this.model, ItemStack.EMPTY,
+				mc.getItemModelResolver(), ItemDisplayContext.GROUND, null, null, 0);
+		if (this.model.isEmpty()) {
+			return;
+		}
+		BlockPos block = BlockPos.containing(position);
+		int light = LightCoordsUtil.pack(level.getBrightness(LightLayer.BLOCK, block),
+				level.getBrightness(LightLayer.SKY, block));
+		poseStack.pushPose();
+		poseStack.translate(position.x - viewPosition.x, position.y - viewPosition.y, position.z - viewPosition.z);
+		poseStack.mulPose(new Matrix4f().rotation(rotation));
+		poseStack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
+		poseStack.translate(0.0F, MODEL_UP, MODEL_BACK);
+		this.model.submit(poseStack, output, light, OverlayTexture.NO_OVERLAY, 0);
+		poseStack.popPose();
 	}
 
 	/**

@@ -12,6 +12,7 @@ import ru.deelter.vrcamera.client.shot.Shot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 /**
  * Text on the hud about what the camera is doing and why, to tune the settings with.
@@ -24,11 +25,16 @@ public final class DebugOverlay {
 	public static void extract(GuiGraphicsExtractor graphics) {
 		Minecraft mc = Minecraft.getInstance();
 		CameraController controller = CameraController.INSTANCE;
-		if (!controller.debugEnabled() || controller.mode() == Mode.OFF || mc.player == null) {
+		if (!controller.debugEnabled() || mc.player == null) {
+			return;
+		}
+		// without VR the camera on the screen is the one to tell about
+		boolean onScreen = DesktopCamera.INSTANCE.isOn();
+		if (!onScreen && controller.mode() == Mode.OFF) {
 			return;
 		}
 		int y = 4;
-		for (String line : lines(controller)) {
+		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : lines(controller)) {
 			graphics.fill(2, y - 1, 6 + mc.font.width(line), y + LINE_HEIGHT - 1, BACKGROUND_COLOR);
 			graphics.text(mc.font, line, 4, y, TEXT_COLOR, false);
 			y += LINE_HEIGHT;

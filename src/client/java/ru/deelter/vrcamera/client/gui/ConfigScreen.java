@@ -14,6 +14,9 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.Optional;
+import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
 
 /**
  * Settings screen, built with Cloth Config. Only load this class when Cloth Config is installed.
@@ -72,6 +75,24 @@ public final class ConfigScreen {
 				value -> config.hideHoldingArm = value));
 		general.addEntry(screen.toggle("selfieScreen", config.selfieScreen, defaults.selfieScreen,
 				value -> config.selfieScreen = value));
+		general.addEntry(screen.toggle("attachToSelf", config.attachToSelf, defaults.attachToSelf,
+				value -> config.attachToSelf = value));
+		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.chromaColor"),
+						config.chromaColor)
+				.setDefaultValue(defaults.chromaColor)
+				.setTooltipSupplier(help("vrcamera.option.chromaColor.tooltip"))
+				.setErrorSupplier(value -> value.trim().matches("#?[0-9a-fA-F]{6}") ? java.util.Optional.empty() :
+						java.util.Optional.of(Component.translatable("vrcamera.option.chromaColor.invalid")))
+				.setSaveConsumer(value -> config.chromaColor = value.trim())
+				.build());
+		general.addEntry(screen.selector("screenOutput", ScreenOutput.values(), config.screenOutput,
+				defaults.screenOutput, value -> config.screenOutput = value));
+		general.addEntry(screen.slider("menuSize", config.menuSize, defaults.menuSize, 0.5, 3, 0.25, "%.2fx",
+				value -> config.menuSize = value));
+		general.addEntry(screen.slider("chromaDistance", config.chromaDistance, defaults.chromaDistance, 0, 128, 8,
+				"%.0f", value -> config.chromaDistance = value));
+		general.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
+				value -> config.outputFps = value));
 		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,
 				0.5, "%.1f", value -> config.selfieDistance = value));
 		general.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
@@ -205,6 +226,15 @@ public final class ConfigScreen {
 				value -> shot.maxDuration = value));
 	}
 
+	/**
+	 * What an option does, shown next to the mouse. Only while Shift is held: these are whole sentences, and over
+	 * a slider they would cover the value that is being set
+	 */
+	private static Supplier<Optional<Component[]>> help(String key) {
+		return () -> Optional.of(new Component[]{Component.translatable(
+				Minecraft.getInstance().hasShiftDown() ? key : "vrcamera.config.help")});
+	}
+
 	private AbstractConfigListEntry<?> toggle(String field, boolean value, boolean def, Consumer<Boolean> save) {
 		return toggleEntry("vrcamera.option." + field, value, def, save);
 	}
@@ -216,7 +246,7 @@ public final class ConfigScreen {
 	private AbstractConfigListEntry<?> toggleEntry(String key, boolean value, boolean def, Consumer<Boolean> save) {
 		return this.entries.startBooleanToggle(Component.translatable(key), value)
 				.setDefaultValue(def)
-				.setTooltip(Component.translatable(key + ".tooltip"))
+				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(save)
 				.build();
 	}
@@ -227,7 +257,7 @@ public final class ConfigScreen {
 		return this.entries.startSelector(Component.translatable(key), values, value)
 				.setDefaultValue(def)
 				.setNameProvider(option -> Component.translatable(key + "." + option.name().toLowerCase(Locale.ROOT)))
-				.setTooltip(Component.translatable(key + ".tooltip"))
+				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(save)
 				.build();
 	}
@@ -255,7 +285,7 @@ public final class ConfigScreen {
 		return this.entries.startIntSlider(Component.translatable(key), toStep(value, min, step, steps), 0, steps)
 				.setDefaultValue(toStep(def, min, step, steps))
 				.setTextGetter(index -> Component.literal(String.format(Locale.ROOT, format, min + index * step)))
-				.setTooltip(Component.translatable(key + ".tooltip"))
+				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(index -> save.accept(min + index * step))
 				.build();
 	}

@@ -7,6 +7,7 @@ import org.vivecraft.client_vr.VRData;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.SmoothAngle;
 import ru.deelter.vrcamera.client.math.SmoothVec;
+import net.minecraft.util.Mth;
 
 /**
  * per frame snapshot of the player the camera films
@@ -28,6 +29,10 @@ public final class Subject {
 	 * middle between both hands
 	 */
 	public Vec3 hands = Vec3.ZERO;
+	/**
+	 * if it is known where the hands are. Without VR it is not, and nothing is filmed for them
+	 */
+	public boolean tracksHands = true;
 	/**
 	 * size of the player, 1 is a regular player. All camera distances are multiplied by this
 	 */
@@ -74,6 +79,37 @@ public final class Subject {
 	 */
 	public void update(
 			LocalPlayer player, VRData vr, float partialTick, double dt, double realDt, CameraConfig config) {
+		Vec3 newFeet = move(player, partialTick, dt, realDt);
+
+		this.head = vr.hmd.getPosition();
+		this.headDir = new Vec3(vr.hmd.getDirection());
+		// the headset should be right above the player, if it isn't, something is off and the entity is the safer bet
+		if (this.head.distanceTo(newFeet) > 4.0 * this.unit + 2.0) {
+			this.head = player.getEyePosition(partialTick);
+		}
+		this.center = this.feet.lerp(this.head, config.aimHeight);
+		this.hands = vr.getController(0).getPosition().lerp(vr.getController(1).getPosition(), 0.5);
+		this.tracksHands = true;
+
+		turn(player, partialTick, vr.getBodyYawRad(), dt);
+	}
+
+	/**
+	 * the same for a player at a screen, from what the game knows of them
+	 */
+	public void updateWithoutVR(LocalPlayer player, float partialTick, double dt, double realDt, CameraConfig config) {
+		move(player, partialTick, dt, realDt);
+		this.head = player.getEyePosition(partialTick);
+		this.headDir = player.getViewVector(partialTick);
+		this.center = this.feet.lerp(this.head, config.aimHeight);
+		this.hands = this.center;
+		this.tracksHands = false;
+		// a menu on a screen is nowhere in the world
+		this.guiCenter = null;
+		turn(player, partialTick, Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD, dt);
+	}
+
+	private Vec3 move(LocalPlayer player, float partialTick, double dt, double realDt) {
 		this.player = player;
 		this.partialTick = partialTick;
 		Vec3 newFeet = player.getPosition(partialTick);
@@ -89,17 +125,10 @@ public final class Subject {
 		}
 		this.speed = this.velocity.length();
 		this.feet = newFeet;
+		return newFeet;
+	}
 
-		this.head = vr.hmd.getPosition();
-		this.headDir = new Vec3(vr.hmd.getDirection());
-		// the headset should be right above the player, if it isn't, something is off and the entity is the safer bet
-		if (this.head.distanceTo(newFeet) > 4.0 * this.unit + 2.0) {
-			this.head = player.getEyePosition(partialTick);
-		}
-		this.center = this.feet.lerp(this.head, config.aimHeight);
-		this.hands = vr.getController(0).getPosition().lerp(vr.getController(1).getPosition(), 0.5);
-
-		double bodyYaw = vr.getBodyYawRad();
+	private void turn(LocalPlayer player, float partialTick, double bodyYaw, double dt) {
 		if (this.teleported) {
 			this.facingSmooth.reset(bodyYaw);
 		} else {
