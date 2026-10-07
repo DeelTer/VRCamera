@@ -40,6 +40,14 @@ public class CameraConfig {
 	 */
 	public boolean indicator = true;
 	/**
+	 * a few words over the hotbar on what to press to work the camera of a player at a screen
+	 */
+	public boolean hints = true;
+	/**
+	 * if the camera of a player at a screen holds still while they jump
+	 */
+	public JumpSteady jumpSteady = JumpSteady.SERIES;
+	/**
 	 * size of the camera icon
 	 */
 	public double indicatorSize = 1.0;
@@ -99,6 +107,12 @@ public class CameraConfig {
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */
 	public double outputFps = 60;
+	/**
+	 * pixels the picture of a camera with a window of its own has, 0 = as many as the game window. Set with
+	 * /vrcam screen size
+	 */
+	public int outputWidth = 0;
+	public int outputHeight = 0;
 	// where the window of the camera was the last time: x, y, width and height. Kept by the mod, not a setting
 	public int[] outputWindowPlace = {};
 	public boolean outputWindowFull = false;
@@ -422,6 +436,13 @@ public class CameraConfig {
 	/**
 	 * @return the settings in use
 	 */
+	/**
+	 * @return if the picture of the camera has a size of its own, and not the one of the game window
+	 */
+	public boolean hasOutputSize() {
+		return this.outputWidth > 0 && this.outputHeight > 0;
+	}
+
 	public static CameraConfig current() {
 		if (current == null) {
 			current = load();

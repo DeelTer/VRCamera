@@ -374,6 +374,8 @@ the game window. Both options are also in the pause menu and settings.
   For a full 1080p capture, make both windows large enough. A tall, narrow camera window gives a portrait view.
 - `F11` in the camera window toggles borderless fullscreen. Its monitor, position and size are remembered.
   `/vrcam screen resetwindow` brings it back to the game monitor if it goes out of reach.
+  `/vrcam screen size 2560 1440` gives the picture and the window exactly that many pixels, also on a smaller
+  monitor: a recording program gets as many pixels as the window has. `/vrcam screen size auto` undoes it.
 - Closing the camera window or leaving the world turns the PC camera off.
 - The camera keeps rendering when Minecraft loses focus or is minimized, including with Dynamic FPS.
 - Open menus appear on a screen in front of your character, filmed over the shoulder. `menuSize` sets its size;
@@ -400,12 +402,12 @@ at your eyes if none is nearby.
 | Bring the active camera to your eyes | the unbound summon key |
 | Remove all saved cameras in the world | `/cam clear` or `/vrcam screen clear` |
 
-Grab and place free cameras with right-click. Thrown ones glide and slow down; after travelling 48 blocks they
+Grab and place free cameras with right-click. Let one go while it touches a mob, a boat, a minecart or another player and it rides on that, turning with it, until you grab or fly it again. Thrown ones glide and slow down; after travelling 48 blocks they
 are removed, unless it is the last camera. `cameraLabelDistance` controls label visibility; 0 hides labels.
 
 When steering a free camera, movement keys fly it, sprint speeds it up and the mouse turns it. `Esc` releases
 the mouse in the camera window; click to capture it again. Mod key bindings work in both windows. Press `H` in
-the camera window to cycle framing guides: thirds, golden ratio, halves, a 9:16 crop, 90%/80% safe frames and
+the camera window to cycle framing guides: thirds, golden ratio, golden spiral, halves, a 9:16 crop, 90%/80% safe frames and
 off. Guides appear while steering and disappear when you release the camera.
 
 **Smart switching.** With several free cameras, look towards one briefly to make it active. Configure this with

@@ -46,6 +46,7 @@ final class CameraGrab {
 	private double distance;
 	private Vec3 offset = Vec3.ZERO;
 	private Vec3 position = Vec3.ZERO;
+	private Vec3 aim = Vec3.ZERO;
 
 	boolean isHolding() {
 		return this.holding;
@@ -71,6 +72,13 @@ final class CameraGrab {
 
 	Vec3 position() {
 		return this.position;
+	}
+
+	/**
+	 * @return what the held camera looks at
+	 */
+	Vec3 aim() {
+		return this.aim;
 	}
 
 	Quaternionf rotation() {
@@ -123,6 +131,7 @@ final class CameraGrab {
 		this.distance = this.offset.length();
 		this.wanted = CamMath.clamp(this.distance, NEAR, FAR);
 		this.position = camera.position();
+		this.aim = eyes;
 		this.rotation.set(camera.rotation());
 		this.handThrow.clear();
 	}
@@ -141,8 +150,9 @@ final class CameraGrab {
 		double near = config.faceDistance * subject.unit;
 		double closeness = near <= 0 ? 0 :
 				1.0 - CamMath.smoothstep((this.position.distanceTo(subject.center) - near) / near);
+		this.aim = subject.center.lerp(subject.head, closeness);
 		Quaternionf facing = new Quaternionf(this.rotation);
-		if (CamMath.lookRotation(subject.center.lerp(subject.head, closeness).subtract(this.position), facing)) {
+		if (CamMath.lookRotation(this.aim.subtract(this.position), facing)) {
 			this.rotation.slerp(facing, (float) ease);
 		}
 		this.handThrow.sample(this.position);

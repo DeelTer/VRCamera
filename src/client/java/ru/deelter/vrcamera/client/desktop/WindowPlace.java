@@ -56,14 +56,29 @@ final class WindowPlace {
 	void putBack() {
 		CameraConfig config = CameraConfig.current();
 		Box place = Box.of(config.outputWindowPlace);
-		if (place == null || this.window.monitorOf(place) == null) {
-			return;
+		if (place != null && this.window.monitorOf(place) != null) {
+			this.window.move(place);
+			keepReachable();
+			if (config.outputWindowFull) {
+				toggleFullscreen();
+			}
 		}
-		this.window.move(place);
-		keepReachable();
-		if (config.outputWindowFull) {
+		if (config.hasOutputSize() && this.windowed == null) {
+			resize(config.outputWidth, config.outputHeight);
+		}
+	}
+
+	/**
+	 * Makes the window that large, where it is. A program that records a window gets as many pixels as the window
+	 * has: for a picture larger than the monitor, the window has to be larger than the monitor
+	 */
+	void resize(int width, int height) {
+		if (this.windowed != null) {
 			toggleFullscreen();
 		}
+		Box place = this.window.place();
+		this.window.move(new Box(place.x(), place.y(), width, height));
+		keepReachable();
 	}
 
 	void remember() {
@@ -120,6 +135,13 @@ final class WindowPlace {
 			return;
 		}
 		int bar = this.window.barHeight();
+		if (CameraConfig.current().hasOutputSize()) {
+			// as large as it was asked to be: only its bar is brought back
+			if (place.y() < monitor.y() + bar) {
+				this.window.move(new Box(place.x(), monitor.y() + bar, place.width(), place.height()));
+			}
+			return;
+		}
 		int fitWidth = Math.min(place.width(), monitor.width());
 		int fitHeight = Math.min(place.height(), monitor.height() - bar);
 		Box fitted = new Box(Math.clamp(place.x(), monitor.x(), monitor.x() + monitor.width() - fitWidth),
