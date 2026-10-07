@@ -7,7 +7,7 @@ description: Lets players with the VRCamera mod see each other's pinned photos
 commands:
   vrcamsync:
     description: Manage the pinned photos of the VRCamera mod
-    usage: /vrcamsync <stats|purge <player>|purgenear <blocks>|purgecustom|reload>
+    usage: /vrcamsync <stats|list <player>|purge <player>|purgenear <blocks>|purgecustom|reload>
     permission: vrcamera.admin
 permissions:
   vrcamera.pin:

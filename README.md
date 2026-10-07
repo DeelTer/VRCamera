@@ -43,15 +43,15 @@ where the camera is; it does not appear in the recording.
 
 ## Vivecraft and OBS setup
 
-| Vivecraft setting | Recommended value |
-|---|---|
-| Play mode | Standing |
-| Show Playermodel | **ON, required.** In VR Settings → Playermodel Settings. Off, your character is missing from the camera's picture |
-| Desktop Mirror | anything but OFF, otherwise the game window is black |
-| Camera Resolution | 1.0 for 1920×1080; higher values cost more FPS |
-| GUI On Mirror | OFF to keep the HUD out of streams |
-| Hotswitching | OFF to keep filming when you take the headset off |
-| Camera as Desktop Mirror | leave it; the mod enables it while filming and restores it afterwards |
+| Vivecraft setting        | Recommended value                                                                                                 |
+|--------------------------|-------------------------------------------------------------------------------------------------------------------|
+| Play mode                | Standing                                                                                                          |
+| Show Playermodel         | **ON, required.** In VR Settings → Playermodel Settings. Off, your character is missing from the camera's picture |
+| Desktop Mirror           | anything but OFF, otherwise the game window is black                                                              |
+| Camera Resolution        | 1.0 for 1920×1080; higher values cost more FPS                                                                    |
+| GUI On Mirror            | OFF to keep the HUD out of streams                                                                                |
+| Hotswitching             | OFF to keep filming when you take the headset off                                                                 |
+| Camera as Desktop Mirror | leave it; the mod enables it while filming and restores it afterwards                                             |
 
 Set the Minecraft window to 16:9, for example 1920×1080, and add a Game Capture or Window Capture source in OBS.
 Other aspect ratios produce black bars. Keep the game window open and do not minimize it.
@@ -61,13 +61,13 @@ Expect the same FPS drop as with Vivecraft's ordinary camera.
 
 ## Controls
 
-| Action | Key |
-|---|---|
-| Switch mode | `F8` |
-| Next shot | `F9` |
+| Action                           | Key   |
+|----------------------------------|-------|
+| Switch mode                      | `F8`  |
+| Next shot                        | `F9`  |
 | Hold or release the current shot | `F10` |
-| Next own angle | `F7` |
-| Take a photo | `F6` |
+| Next own angle                   | `F7`  |
+| Take a photo                     | `F6`  |
 
 You can also use the "VR Camera..." screen in the pause menu to bring the camera to you, manage your own angles
 and open settings. Settings require Cloth Config.
@@ -98,16 +98,16 @@ so you do not have to type numbers in VR. Save to apply changes.
 
 You can also edit `config/vrcamera.json`, created on first start, and apply it with `/vrcam reload`.
 
-| Problem | What to check |
-|---|---|
-| VR is not running or seated mode is reported | enable VR and use standing mode in Vivecraft |
-| The game window is black | Desktop Mirror must not be OFF |
+| Problem                                       | What to check                                                             |
+|-----------------------------------------------|---------------------------------------------------------------------------|
+| VR is not running or seated mode is reported  | enable VR and use standing mode in Vivecraft                              |
+| The game window is black                      | Desktop Mirror must not be OFF                                            |
 | Your character is not in the camera's picture | turn on Show Playermodel in Vivecraft: VR Settings → Playermodel Settings |
-| The window shows first person | check that VR is running and `forceMirror` is enabled |
-| You cannot reach the camera | use Bring camera to me or pull it |
-| There is no Settings button | install Cloth Config |
-| Keys do nothing | focus the game window and close menus |
-| The camera turns off with an internal error | check `logs/latest.log` |
+| The window shows first person                 | check that VR is running and `forceMirror` is enabled                     |
+| You cannot reach the camera                   | use Bring camera to me or pull it                                         |
+| There is no Settings button                   | install Cloth Config                                                      |
+| Keys do nothing                               | focus the game window and close menus                                     |
+| The camera turns off with an internal error   | check `logs/latest.log`                                                   |
 
 The [user guide](docs/GUIDE.md) covers all shots, Physics mode, commands, markers,
 configuration fields and tuning suggestions.
@@ -122,6 +122,28 @@ configuration fields and tuning suggestions.
   while filming and the game crashes, those temporary values can remain in its file.
 
 See the [guide](docs/GUIDE.md#known-limits) for the remaining limitations.
+
+## Server plugin API
+
+The Paper plugin runs on Paper 1.21.4 and newer, on Java 21. Other plugins can listen to two events, both in
+`ru.deelter.vrcamera.sync.plugin.event`:
+
+- `PhotoPinEvent` — a player is about to pin a photo to a block. Cancellable: cancelled, nothing is pinned and the
+  player is told the server does not allow it. Has the player, the location, the block and whether it is a custom
+  picture.
+- `PhotoTakeEvent` — a player took a photo. Has the player and where their camera was.
+
+```java
+@EventHandler
+public void onPin(PhotoPinEvent event) {
+    if (isProtected(event.getBlock())) {
+        event.setCancelled(true);
+    }
+}
+```
+
+Add `depend: [VRCamera]` or `softdepend: [VRCamera]` to your `plugin.yml`. `/vrcamsync list <player>` shows where a
+player has photos pinned.
 
 ## Build
 

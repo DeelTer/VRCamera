@@ -13,19 +13,19 @@ Brazilian Portuguese and Simplified Chinese.
 
 ## Controls
 
-| Action | Key | In the headset |
-|---|---|---|
-| Switch mode | `F8` | button in the pause menu |
-| Next shot | `F9` | "VR Camera..." screen |
-| Hold the current shot | `F10` | "VR Camera..." screen |
-| Next own angle | `F7` | "VR Camera..." screen |
-| Take a photo | `F6` | bind it to a controller button, or `/vrcam photo` |
-| Bring camera to me | unbound | "VR Camera..." screen |
-| New own angle | unbound | "VR Camera..." screen |
-| Delete own angle | — | "VR Camera..." screen |
-| Debug overlay | unbound | "VR Camera..." screen |
-| VR Camera menu | unbound | radial menu or a controller button |
-| Settings | unbound | "VR Camera..." screen, needs Cloth Config |
+| Action                | Key     | In the headset                                    |
+|-----------------------|---------|---------------------------------------------------|
+| Switch mode           | `F8`    | button in the pause menu                          |
+| Next shot             | `F9`    | "VR Camera..." screen                             |
+| Hold the current shot | `F10`   | "VR Camera..." screen                             |
+| Next own angle        | `F7`    | "VR Camera..." screen                             |
+| Take a photo          | `F6`    | bind it to a controller button, or `/vrcam photo` |
+| Bring camera to me    | unbound | "VR Camera..." screen                             |
+| New own angle         | unbound | "VR Camera..." screen                             |
+| Delete own angle      | —       | "VR Camera..." screen                             |
+| Debug overlay         | unbound | "VR Camera..." screen                             |
+| VR Camera menu        | unbound | radial menu or a controller button                |
+| Settings              | unbound | "VR Camera..." screen, needs Cloth Config         |
 
 Keys are regular Minecraft key bindings. Rebind them in the controls settings, or bind them to controller buttons
 in SteamVR. They work while the game window has focus and no menu is open, so someone at the computer can run the
@@ -35,26 +35,26 @@ camera for the player in the headset.
 
 You can also use `/vrcam`, which supports tab completion. The command runs on the client and needs no permissions.
 
-| Command | What it does |
-|---|---|
-| `/vrcam`, `/vrcam status` | prints what the debug overlay shows |
-| `/vrcam off`, `director`, `follow`, `physics` | switches to that mode |
-| `/vrcam mode` | next mode |
-| `/vrcam next` | next shot |
-| `/vrcam hold` | holds or releases the current shot |
-| `/vrcam shot <name>` | shows a shot: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Turns the director on if needed |
-| `/vrcam summon` | brings the camera to you |
-| `/vrcam photo` | takes a photo |
-| `/vrcam load <address>` | puts a picture from the internet on a sheet |
-| `/vrcam preset next`, `new`, `delete` | own angles |
-| `/vrcam preset <number>` | picks an own angle, counted from 1 |
-| `/vrcam debug` | debug overlay |
-| `/vrcam settings` | settings screen, needs Cloth Config |
-| `/vrcam pace alpha`, `default`, `faster` | sets the pace of the director, see Settings |
-| `/vrcam screen director`, `follow`, `off` | the camera without VR, in the game window |
-| `/vrcam screen steer` | take the camera over with the keys you walk with, or give it back |
-| `/vrcam chroma` | green screen on or off |
-| `/vrcam reload` | reads the settings file again |
+| Command                                       | What it does                                                                                                                                                    |
+|-----------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/vrcam`, `/vrcam status`                     | prints what the debug overlay shows                                                                                                                             |
+| `/vrcam off`, `director`, `follow`, `physics` | switches to that mode                                                                                                                                           |
+| `/vrcam mode`                                 | next mode                                                                                                                                                       |
+| `/vrcam next`                                 | next shot                                                                                                                                                       |
+| `/vrcam hold`                                 | holds or releases the current shot                                                                                                                              |
+| `/vrcam shot <name>`                          | shows a shot: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Turns the director on if needed |
+| `/vrcam summon`                               | brings the camera to you                                                                                                                                        |
+| `/vrcam photo`                                | takes a photo                                                                                                                                                   |
+| `/vrcam load <address>`                       | puts a picture from the internet on a sheet                                                                                                                     |
+| `/vrcam preset next`, `new`, `delete`         | own angles                                                                                                                                                      |
+| `/vrcam preset <number>`                      | picks an own angle, counted from 1                                                                                                                              |
+| `/vrcam debug`                                | debug overlay                                                                                                                                                   |
+| `/vrcam settings`                             | settings screen, needs Cloth Config                                                                                                                             |
+| `/vrcam pace alpha`, `default`, `faster`      | sets the pace of the director, see Settings                                                                                                                     |
+| `/vrcam screen director`, `follow`, `off`     | the camera without VR, in the game window                                                                                                                       |
+| `/vrcam screen steer`                         | take the camera over with the keys you walk with, or give it back                                                                                               |
+| `/vrcam chroma`                               | green screen on or off                                                                                                                                          |
+| `/vrcam reload`                               | reads the settings file again                                                                                                                                   |
 
 `/vrcam shot` shows a shot even if it is disabled or does not fit the situation. It lasts as long as usual, then
 the director carries on. To keep that shot, follow it with `/vrcam hold`.
@@ -85,7 +85,8 @@ you let go:
 Only the position is remembered. The camera still looks at the player.
 
 **Throw.** Swing and let go. The camera flies in that direction, stops at walls and stays where it lands. A faster
-swing goes further. A swing slower than 2.5 blocks per second does not count as a throw. `throwPower` sets the range, 0 turns throwing
+swing goes further. A swing slower than 2.5 blocks per second does not count as a throw. `throwPower` sets the range, 0
+turns throwing
 off. This also works on the plain Vivecraft camera while the mod is off.
 
 **Pull from afar.** Look at the camera and point a hand at it: the controller gives a short buzz. Hold the interact
@@ -109,7 +110,8 @@ happens, turn `pullAllModes` off: pulling then only works in Physics.
 **Bring camera to me.** A following camera backs away when you walk up to it. This button puts it at arm's length
 in front of your face for 20 seconds.
 
-**Stabilization.** Your hand can tremble or twitch when the other hand breaks a block. The mod smooths those movements out while
+**Stabilization.** Your hand can tremble or twitch when the other hand breaks a block. The mod smooths those movements
+out while
 letting deliberate movements through. Only the picture is steadied: in the headset the camera stays right in your
 hand. Adjust the strength with `handStabilize`; 0 turns it off.
 
@@ -172,21 +174,21 @@ The director, own angles and events do not run in this mode.
 
 ## Shots
 
-| Key | What it does | Picked more often |
-|---|---|---|
-| `shoulder` | from behind, over the shoulder | moving, flying, tight places |
-| `front` | from the front, backing away; moves in while you stand | idle, walking |
-| `orbit` | slowly circles the player | idle, combat |
-| `flyby` | stands ahead on your path and pans as you pass, zoomed | running, flying, riding |
-| `crane` | rises high behind the player | open places, flying |
-| `low` | from the ground, looking up | combat, running |
-| `hands` | close-up of the hands | mining, idle |
-| `duel` | over your shoulder at the opponent, both in frame | combat with a target |
-| `death` | circles the dead player and pulls back | on death only |
-| `fall` | almost straight from above | on a long fall only |
-| `pov` | first person: right in front of the face | where there is no room for anything else |
-| `menu` | close over the shoulder at an open menu | while a menu is open |
-| own | an angle placed by hand | Follow mode |
+| Key        | What it does                                           | Picked more often                        |
+|------------|--------------------------------------------------------|------------------------------------------|
+| `shoulder` | from behind, over the shoulder                         | moving, flying, tight places             |
+| `front`    | from the front, backing away; moves in while you stand | idle, walking                            |
+| `orbit`    | slowly circles the player                              | idle, combat                             |
+| `flyby`    | stands ahead on your path and pans as you pass, zoomed | running, flying, riding                  |
+| `crane`    | rises high behind the player                           | open places, flying                      |
+| `low`      | from the ground, looking up                            | combat, running                          |
+| `hands`    | close-up of the hands                                  | mining, idle                             |
+| `duel`     | over your shoulder at the opponent, both in frame      | combat with a target                     |
+| `death`    | circles the dead player and pulls back                 | on death only                            |
+| `fall`     | almost straight from above                             | on a long fall only                      |
+| `pov`      | first person: right in front of the face               | where there is no room for anything else |
+| `menu`     | close over the shoulder at an open menu                | while a menu is open                     |
+| own        | an angle placed by hand                                | Follow mode                              |
 
 ## How the director works
 
@@ -209,7 +211,8 @@ On a teleport the camera jumps with you and keeps the angle. Only `flyby` is rep
 
 Use Hold (`F10`) to stop shot changes and events until you release it.
 
-**Combat.** A fight starts when you hit a living thing, including with a controller swing, or when one hurts you. That entity
+**Combat.** A fight starts when you hit a living thing, including with a controller swing, or when one hurts you. That
+entity
 becomes the target. Fall and fire damage do not count. The target is dropped after 5 seconds without fighting, when
 it dies or when it is far away.
 
@@ -239,7 +242,8 @@ lower is more to the side. The default is 138.
 - It stays out of lava and powder snow unless you are in them.
 - Pushed too close for longer than `occlusionCutTime`, the director switches the angle.
 
-The camera does not search for a route around obstacles. Instead, the director picks an angle from which you can be seen.
+The camera does not search for a route around obstacles. Instead, the director picks an angle from which you can be
+seen.
 
 With no room for any angle, like in a one-block tunnel, `pov` takes over. The camera stands a third of a block in
 front of the face, not in the eyes: there it would see the head of the player model from inside. `distance` of
@@ -253,11 +257,11 @@ while you hold it with the trigger. The controller buzzes harder and harder, and
 
 `photoGesture` picks the gesture:
 
-| Value | Gesture |
-|---|---|
-| `"same_hand"` | the other button of the hand that holds the camera. Needs SteamVR; found by what else that button is bound to, so it has to be bound to something |
-| `"other_hand"` | bring the other hand to the camera and hold its interact button. To pass the camera over, hold on with the second hand and let go with the first |
-| `"off"` | key and command only |
+| Value          | Gesture                                                                                                                                           |
+|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `"same_hand"`  | the other button of the hand that holds the camera. Needs SteamVR; found by what else that button is bound to, so it has to be bound to something |
+| `"other_hand"` | bring the other hand to the camera and hold its interact button. To pass the camera over, hold on with the second hand and let go with the first  |
+| `"off"`        | key and command only                                                                                                                              |
 
 Without a free hand, or when the camera is not held: `F6`, a controller button you bound to it, or
 `/vrcam photo`. Photos work in every mode while the camera is on.
@@ -304,7 +308,8 @@ sheet like any other: pick it up, pin it.
 - Only your own game opens the address, and the site sees your IP address, like in a browser. Other players never
   get the address, only the small picture the server made of it.
 
-On a server such a sheet is marked as custom. Other players see a black sheet labelled "Picture hidden by your settings", with the setting to turn on below it, in
+On a server such a sheet is marked as custom. Other players see a black sheet labelled "Picture hidden by your
+settings", with the setting to turn on below it, in
 its place, and their game does not download the picture, unless they turned `showCustomPhotos` on. It is off by
 default: custom pictures are not photos of the game and can show anything.
 
@@ -319,7 +324,8 @@ pinned custom picture.
 ### Sharing photos on a server
 
 On a server that runs the **VRCameraSync** plugin (Paper), pinned sheets are shared: everyone with the mod sees
-them, and they stay when you log off. The plugin jar is built together with the mod, `vrcamera-paper-plugin-<version>.jar`
+them, and they stay when you log off. The plugin jar is built together with the mod,
+`vrcamera-paper-plugin-<version>.jar`
 in `build/libs/`. Put it into the server's `plugins` folder. Players without the mod see nothing and are not
 affected.
 
@@ -334,7 +340,8 @@ affected.
 - The server may refuse a pin: too many of your own, too many in that spot, or too fast. The sheet then comes off
   again and a message says why.
 - `showOthersPhotos: false` shows only your own. Yours are still shared.
-- Players within 32 blocks see your camera where it is, in your hand or flying, with a camera icon and your name over it.
+- Players within 32 blocks see your camera where it is, in your hand or flying, with a camera icon and your name over
+  it.
   `shareCamera: false` hides it from them.
 - A player with the mod who is not in VR sees the pinned sheets and the cameras too, but can't pick anything up.
 
@@ -349,22 +356,22 @@ What keeps it light:
 
 Server settings, `plugins/VRCameraSync/config.yml`:
 
-| Setting | Default | Meaning |
-|---|---|---|
-| `limits.per-player` | `64` | sheets one player may have pinned |
-| `limits.per-chunk` | `16` | sheets in one chunk, of all players together |
-| `limits.loose-per-player` | `8` | loose sheets of one player the others see; `0` keeps them to their owner |
-| `limits.loose-minutes` | `10` | minutes after which an untouched loose sheet is gone |
-| `limits.total` | `20000` | sheets on the whole server |
-| `limits.image-bytes` | `20000` | largest picture a client may send |
-| `limits.pin-cooldown-ms` | `1500` | wait between two pins of a player |
-| `anyone-takes-off` | `false` | `true` lets everyone take off anyone's sheets |
-| `custom-pictures` | `true` | `false`: nobody may put up pictures from the internet |
-| `worlds.mode`, `worlds.list` | `deny`, empty | the worlds photos can be pinned and shared in. `deny`: everywhere but in the listed worlds. `allow`: only in the listed ones. Photos already hanging there stay |
-| `photos-protect-blocks` | `false` | `true`: a block with a photo on it is not blown up, burned, pushed by a piston or decayed. Players still break it. Lets anyone make a block blast-proof with a photo |
-| `range.send`, `range.forget` | `32`, `48` | blocks in which clients are told about sheets, and after which they forget them |
-| `network.images-per-second` | `4` | pictures sent to one player per second |
-| `cameras.share`, `cameras.range` | `true`, `32` | show players' cameras to the others, and within how many blocks |
+| Setting                          | Default       | Meaning                                                                                                                                                              |
+|----------------------------------|---------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `limits.per-player`              | `64`          | sheets one player may have pinned                                                                                                                                    |
+| `limits.per-chunk`               | `16`          | sheets in one chunk, of all players together                                                                                                                         |
+| `limits.loose-per-player`        | `8`           | loose sheets of one player the others see; `0` keeps them to their owner                                                                                             |
+| `limits.loose-minutes`           | `10`          | minutes after which an untouched loose sheet is gone                                                                                                                 |
+| `limits.total`                   | `20000`       | sheets on the whole server                                                                                                                                           |
+| `limits.image-bytes`             | `20000`       | largest picture a client may send                                                                                                                                    |
+| `limits.pin-cooldown-ms`         | `1500`        | wait between two pins of a player                                                                                                                                    |
+| `anyone-takes-off`               | `false`       | `true` lets everyone take off anyone's sheets                                                                                                                        |
+| `custom-pictures`                | `true`        | `false`: nobody may put up pictures from the internet                                                                                                                |
+| `worlds.mode`, `worlds.list`     | `deny`, empty | the worlds photos can be pinned and shared in. `deny`: everywhere but in the listed worlds. `allow`: only in the listed ones. Photos already hanging there stay      |
+| `photos-protect-blocks`          | `false`       | `true`: a block with a photo on it is not blown up, burned, pushed by a piston or decayed. Players still break it. Lets anyone make a block blast-proof with a photo |
+| `range.send`, `range.forget`     | `32`, `48`    | blocks in which clients are told about sheets, and after which they forget them                                                                                      |
+| `network.images-per-second`      | `4`           | pictures sent to one player per second                                                                                                                               |
+| `cameras.share`, `cameras.range` | `true`, `32`  | show players' cameras to the others, and within how many blocks                                                                                                      |
 
 Permissions: `vrcamera.pin` (everyone), `vrcamera.remove.others` (operators), `vrcamera.admin` (operators).
 Commands: `/vrcamsync stats`, `/vrcamsync purge <player>`, `/vrcamsync purgenear <blocks>`, `/vrcamsync reload`.
@@ -424,31 +431,48 @@ game window. Also in the settings ("Without VR: picture goes to").
 - With the green screen on, only the camera window is keyed, your own view stays as it is.
 
 **Taking it with the mouse.** With a window of its own the camera is something in your world. Point at its model
-(the icon over it grows and beats when you have it), hold the use key (right mouse button) and it hangs in front of you: it goes where you look, and the wheel takes it
-further away and brings it back. It comes after both softly, for a shot that flows. Let go and it stays there, like a camera put down by hand in VR. Let go while
+(the icon over it grows and beats when you have it), hold the use key (right mouse button) and it hangs in front of you:
+it goes where you look, and the wheel takes it
+further away and brings it back. It comes after both softly, for a shot that flows. Let go and it stays there, like a
+camera put down by hand in VR. Let go while
 you swing the view and it is thrown that way; `throwPower` sets how far. While you point at the camera or hold it,
 the use key does nothing else.
 
 **Free cameras.** The third mode without VR, `/vrcam screen free` or the mode key. Turned on, the camera nearest to you
-films; with none within 64 blocks a new one is put at your eyes. It films what you look at, and stays there whatever you do: it does not follow you and does not look for you. Put up
+films; with none within 64 blocks a new one is put at your eyes. It films what you look at, and stays there whatever you
+do: it does not follow you and does not look for you. Put up
 to 26 of them, with the key for a new shot of your own (`N`) or `/vrcam screen free` once more. They are called A,
-B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in the world with their letter over them, the one that films with the camera
-icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time: the
-attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter. In the window of the camera the keys `1` to `9` cut to A to I. `/cam add` puts up one more, `/cam next` goes to the next one within 64 blocks of you, like the key does, `/cam fly` and the key for a flight
+B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in
+the world with their letter over them, the one that films with the camera
+icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time:
+the
+attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter.
+In the window of the camera the keys `1` to `9` cut to A to I. `/cam add` puts up one more, `/cam next` goes to the next
+one within 64 blocks of you, like the key does, `/cam fly` and the key for a flight
 to the next camera (not bound to start with) fly there instead of cutting, filming on the way, `/cam clear`
 takes them all away. Take one with the use key and it
 films and goes where you look; let go and it stays as you held it, let go in a swing and it glides on and slows
-down; one that got 48 blocks away like that is gone. The last one is not. The key that calls the camera puts the one that films at your eyes again. They are
+down; one that got 48 blocks away like that is gone. The last one is not. The key that calls the camera puts the one
+that films at your eyes again. They are
 kept with the world, for each dimension; `/vrcam screen clear` takes them all away. The keys of the mod work in
 the window of the camera as well as in the game.
 
 Take the camera over (click into its window, or `G`) and you fly it: the keys to walk move it, jump and sneak take
-it up and down, sprint makes it fast, and the mouse turns it — its window takes the mouse for that, `Esc` lets it go, to move the window or
-leave it, and a click into the window takes it again; from the game window it turns it as it turns you. It comes after all of that softly. The wheel zooms, also for a shot of the director that
+it up and down, sprint makes it fast, and the mouse turns it — its window takes the mouse for that, `Esc` lets it go, to
+move the window or
+leave it, and a click into the window takes it again; from the game window it turns it as it turns you. It comes after
+all of that softly. The wheel zooms, also for a shot of the director that
 you steer. While you have the camera, lines that split the picture into thirds are on its window; they go when
 you give it back, and are never in what you record after that. `H` in the window of the camera goes through
-thirds, the golden ratio, halves, the part of the picture an upright 9:16 video keeps, safe frames at 90% and 80% of the picture, and no lines at
+thirds, the golden ratio, halves, the part of the picture an upright 9:16 video keeps, safe frames at 90% and 80% of the
+picture, and no lines at
 all.
+
+**Filming a friend.** `/cam follow Name` has the director and the follow camera film that player in place of you,
+for as long as they are around; `/cam follow` films you again. `/cam with Name` keeps you as the one who is filmed
+and has the director show the two of you together in between its other shots, with the shot it has for a fight;
+`/cam with` ends that. Both names are kept in the settings (`filmPlayer`, `filmWith`) and
+can be written there as well. The free cameras film what they are pointed at either way.
 
 **Seen by others.** On a server with the plugin, players with the mod see the camera that films, with your name
 over it, like the camera of a player in VR. Only that one, and not further than 48 blocks from you;
@@ -456,16 +480,19 @@ over it, like the camera of a player in VR. Only that one, and not further than 
 you say otherwise, 0 for none.
 
 **The camera you turn to.** With several free cameras, the one you turn to films: look its way for a moment and it
-is live (`freeAutoSwitchSeconds` says how long a moment), like a host who turns to the camera. `freeAutoSwitch` turns that off, `freeAutoSwitchAngle` says how
+is live (`freeAutoSwitchSeconds` says how long a moment), like a host who turns to the camera. `freeAutoSwitch` turns
+that off, `freeAutoSwitchAngle` says how
 close to it you have to look. A camera you picked yourself stays until you look at another.
 
-**Photos.** The photo is also put on the clipboard on Windows, `photoClipboard` turns that off. The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
+**Photos.** The photo is also put on the clipboard on Windows, `photoClipboard` turns that off. The photo key takes what
+the camera films, and the sheet comes out of the camera: of the free one that
 films, if there are several. With the camera off it is a photo of what you see.
 
 **The whole monitor.** `F11` in the window of the camera, or `/vrcam screen fullscreen`, lets it fill the monitor it is
 on, without a frame; once more and it is a window again. The window comes back where it was, on the same monitor and as
 large, the next time the camera is turned on. `/vrcam screen resetwindow` puts it back in the middle of the monitor
-the game is on, at its usual size, should it ever end up where you can't get hold of it. The picture is drawn as large as the game window and shown
+the game is on, at its usual size, should it ever end up where you can't get hold of it. The picture is drawn as large
+as the game window and shown
 as large as the window of the camera: for a full 1080p picture in OBS both have to be that large. Mods that draw
 fewer frames while the game is not looked at, like Dynamic FPS, leave the camera alone while it has its window, and
 so does the game itself when it is minimized.
@@ -473,7 +500,9 @@ so does the game itself when it is minimized.
 **Upright pictures.** The picture has the shape of the window of the camera. Make that window tall and narrow and
 the camera films upright, with no bars at the sides.
 
-**Green screen.** `/vrcam chroma` films only entities, on one plain colour, to cut them out later: green `#00B140`, or what `chromaColor` says. They are all lit the same, as in full daylight, wherever they stand. The
+**Green screen.** The dark corners the game draws over its picture are left off while it is on. `/vrcam chroma` films
+only entities, on one plain colour, to cut them out later: green `#00B140`, or what `chromaColor` says. They are all lit
+the same, as in full daylight, wherever they stand. The
 world, the sky, clouds, weather, particles, chests and signs are left out, and the round shadows under entities
 are off. In VR only the picture of the camera turns green, your eyes see the world as it is. The same command
 turns it off again. It does not work with shaders or with the "Fabulous!" graphics setting.
@@ -490,31 +519,31 @@ it, `indicatorSize` sets the size.
 
 **Debug overlay.** Shows what the camera is doing, right on the HUD.
 
-| Line | Meaning |
-|---|---|
-| `VRCamera DIRECTOR` | mode; `(waiting for VR)` VR is not running; `(parked 12s)` waiting to be picked up |
-| `shot: ORBIT left 3.2/9.5s` | shot, side, how long it runs and will run; `HOLD` when held |
-| `why: time, blend` | why this shot was picked and how the camera got there |
-| `context: RUN tight` | situation; `tight` place; `event FALL` |
-| `blocked: 0.4s` | how long walls have been pushing the camera in |
-| `arm: 100%` | how much of its distance the camera has; `(looking past)` a thin obstacle |
-| `fov`, `speed`, `scale` | field of view, your speed, your size |
-| `target: Zombie` | combat target |
+| Line                        | Meaning                                                                            |
+|-----------------------------|------------------------------------------------------------------------------------|
+| `VRCamera DIRECTOR`         | mode; `(waiting for VR)` VR is not running; `(parked 12s)` waiting to be picked up |
+| `shot: ORBIT left 3.2/9.5s` | shot, side, how long it runs and will run; `HOLD` when held                        |
+| `why: time, blend`          | why this shot was picked and how the camera got there                              |
+| `context: RUN tight`        | situation; `tight` place; `event FALL`                                             |
+| `blocked: 0.4s`             | how long walls have been pushing the camera in                                     |
+| `arm: 100%`                 | how much of its distance the camera has; `(looking past)` a thin obstacle          |
+| `fov`, `speed`, `scale`     | field of view, your speed, your size                                               |
+| `target: Zombie`            | combat target                                                                      |
 
 Reasons in `why`:
 
-| Reason | When |
-|---|---|
-| `start` | first shot after turning on or VR coming back |
-| `time` | time was up |
-| `blocked` | walls pushed the camera in |
-| `finished` | the shot ended on its own: `flyby` you left, `duel` the target is gone |
-| `now COMBAT` | something new started |
-| `unfit for SWIM` | the shot does not fit the new situation |
-| `key` | Next shot was pressed |
-| `teleport` | teleport during `flyby` |
-| `event FALL`, `event over` | an event started or ended |
-| `manual` | placed by hand or an own angle was picked |
+| Reason                     | When                                                                   |
+|----------------------------|------------------------------------------------------------------------|
+| `start`                    | first shot after turning on or VR coming back                          |
+| `time`                     | time was up                                                            |
+| `blocked`                  | walls pushed the camera in                                             |
+| `finished`                 | the shot ended on its own: `flyby` you left, `duel` the target is gone |
+| `now COMBAT`               | something new started                                                  |
+| `unfit for SWIM`           | the shot does not fit the new situation                                |
+| `key`                      | Next shot was pressed                                                  |
+| `teleport`                 | teleport during `flyby`                                                |
+| `event FALL`, `event over` | an event started or ended                                              |
+| `manual`                   | placed by hand or an own angle was picked                              |
 
 ## Settings
 
@@ -526,90 +555,90 @@ and by `/vrcam reload`.
 
 ### General
 
-| Field | Default | Meaning |
-|---|---|---|
-| `forceMirror` | `true` | show the camera picture in the game window while the camera is on |
-| `marker` | `"model"` | `"model"`, `"dot"` or `"none"` |
-| `markerLabel` | `true` | name of the shot next to the dot |
-| `markerSize` | `14` | size of the dot |
-| `indicator` | `true` | camera icon with the distance |
-| `indicatorSize` | `1.0` | size of the icon |
-| `throwPower` | `1.3` | throw range multiplier in every mode, 0 = no throwing |
-| `handStabilize` | `0.6` | steadying of a held camera, 0 = off, 1 = most |
-| `attachToSelf` | `true` | the camera can be put on your own head by holding it there |
-| `screenOutput` | `"screen"` | without VR: `"screen"` films into the game window, `"window"` into a window of its own |
-| `menuSize` | `1.0` | size of the screen with an open menu that stands in front of your character for the camera |
-| `chromaDistance` | `32` | blocks around you in which entities are filmed with the green screen on, 0 = all of them |
-| `outputFps` | `60` | pictures per second in the window of the camera, 0 = as many as the game draws |
-| `chromaColor` | `"#00B140"` | colour behind the entities with the green screen on |
-| `selfieScreen` | `true` | a second screen on top of the camera while it is near you with its lens to you, in your hand or wherever you put it. Only in the headset, costs no FPS |
-| `selfieDistance` | `3.0` | blocks from your head to the camera up to which the selfie screen is shown |
-| `hideHoldingArm` | `true` | keep the arm that holds the camera out of the picture, except in a selfie |
-| `pullStyle` | `"telekinesis"` | `"telekinesis"`: the camera comes to the hand for as long as the button is held, and stays where it got to if you let go. `"instant"`: hold the button, then it comes at once |
-| `pullSeconds` | `1.25` | seconds the camera takes to come to the hand, 0 = no pulling |
-| `pullAllModes` | `true` | `false` = pulling only in Physics |
-| `physicsAim` | `0.75` | Physics: how much a dropped camera turns to the player, 0 to 1 |
-| `physicsShake` | `1.0` | Physics: sway of a held camera, 0 = off |
-| `kickPower` | `1.0` | Physics: how hard hands and feet hit a dropped camera, 0 = they pass through |
-| `underwaterLook` | `true` | Physics: wider angle, slow roll and bubbles under water |
-| `menuShotChat` | `true` | the `menu` shot for chat as well |
-| `photoSheet` | `true` | a taken photo comes out of the camera as a sheet; `false` only saves it |
-| `showOthersPhotos` | `true` | show the photos other players pinned, on servers that share them |
-| `showCustomPhotos` | `false` | show the pictures other players loaded from the internet |
-| `shareCamera` | `true` | let players around see your camera, on servers that share that |
-| `photoGesture` | `"same_hand"` | `"same_hand"`, `"other_hand"` or `"off"` |
-| `photoHoldSeconds` | `1.0` | seconds the button of the photo gesture is held, 0 = at once |
-| `photoSounds` | `true` | the click of a photo and the whirr of printing it, yours and of others. `false` mutes them for you; the others still hear yours |
-| `photoPixels` | `0.3` | pixel art on the sheet, in the colours of a map: 0 = off, 1 = fewest pixels (128 down to 32 along the longer side). New photos only; the saved file is not changed |
-| `photoBrightness` | `0.3` | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed |
-| `debugOverlay` | `false` | debug overlay on the HUD |
+| Field              | Default         | Meaning                                                                                                                                                                       |
+|--------------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `forceMirror`      | `true`          | show the camera picture in the game window while the camera is on                                                                                                             |
+| `marker`           | `"model"`       | `"model"`, `"dot"` or `"none"`                                                                                                                                                |
+| `markerLabel`      | `true`          | name of the shot next to the dot                                                                                                                                              |
+| `markerSize`       | `14`            | size of the dot                                                                                                                                                               |
+| `indicator`        | `true`          | camera icon with the distance                                                                                                                                                 |
+| `indicatorSize`    | `1.0`           | size of the icon                                                                                                                                                              |
+| `throwPower`       | `1.3`           | throw range multiplier in every mode, 0 = no throwing                                                                                                                         |
+| `handStabilize`    | `0.6`           | steadying of a held camera, 0 = off, 1 = most                                                                                                                                 |
+| `attachToSelf`     | `true`          | the camera can be put on your own head by holding it there                                                                                                                    |
+| `screenOutput`     | `"screen"`      | without VR: `"screen"` films into the game window, `"window"` into a window of its own                                                                                        |
+| `menuSize`         | `1.0`           | size of the screen with an open menu that stands in front of your character for the camera                                                                                    |
+| `chromaDistance`   | `32`            | blocks around you in which entities are filmed with the green screen on, 0 = all of them                                                                                      |
+| `outputFps`        | `60`            | pictures per second in the window of the camera, 0 = as many as the game draws                                                                                                |
+| `chromaColor`      | `"#00B140"`     | colour behind the entities with the green screen on                                                                                                                           |
+| `selfieScreen`     | `true`          | a second screen on top of the camera while it is near you with its lens to you, in your hand or wherever you put it. Only in the headset, costs no FPS                        |
+| `selfieDistance`   | `3.0`           | blocks from your head to the camera up to which the selfie screen is shown                                                                                                    |
+| `hideHoldingArm`   | `true`          | keep the arm that holds the camera out of the picture, except in a selfie                                                                                                     |
+| `pullStyle`        | `"telekinesis"` | `"telekinesis"`: the camera comes to the hand for as long as the button is held, and stays where it got to if you let go. `"instant"`: hold the button, then it comes at once |
+| `pullSeconds`      | `1.25`          | seconds the camera takes to come to the hand, 0 = no pulling                                                                                                                  |
+| `pullAllModes`     | `true`          | `false` = pulling only in Physics                                                                                                                                             |
+| `physicsAim`       | `0.75`          | Physics: how much a dropped camera turns to the player, 0 to 1                                                                                                                |
+| `physicsShake`     | `1.0`           | Physics: sway of a held camera, 0 = off                                                                                                                                       |
+| `kickPower`        | `1.0`           | Physics: how hard hands and feet hit a dropped camera, 0 = they pass through                                                                                                  |
+| `underwaterLook`   | `true`          | Physics: wider angle, slow roll and bubbles under water                                                                                                                       |
+| `menuShotChat`     | `true`          | the `menu` shot for chat as well                                                                                                                                              |
+| `photoSheet`       | `true`          | a taken photo comes out of the camera as a sheet; `false` only saves it                                                                                                       |
+| `showOthersPhotos` | `true`          | show the photos other players pinned, on servers that share them                                                                                                              |
+| `showCustomPhotos` | `false`         | show the pictures other players loaded from the internet                                                                                                                      |
+| `shareCamera`      | `true`          | let players around see your camera, on servers that share that                                                                                                                |
+| `photoGesture`     | `"same_hand"`   | `"same_hand"`, `"other_hand"` or `"off"`                                                                                                                                      |
+| `photoHoldSeconds` | `1.0`           | seconds the button of the photo gesture is held, 0 = at once                                                                                                                  |
+| `photoSounds`      | `true`          | the click of a photo and the whirr of printing it, yours and of others. `false` mutes them for you; the others still hear yours                                               |
+| `photoPixels`      | `0.3`           | pixel art on the sheet, in the colours of a map: 0 = off, 1 = fewest pixels (128 down to 32 along the longer side). New photos only; the saved file is not changed            |
+| `photoBrightness`  | `0.3`           | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed                                                         |
+| `debugOverlay`     | `false`         | debug overlay on the HUD                                                                                                                                                      |
 
 ### Motion
 
-| Field | Default | Meaning |
-|---|---|---|
-| `aimHeight` | `0.6` | where to aim: 0 = feet, 1 = head |
-| `faceDistance` | `1.25` | blocks; a camera closer than this aims at the face, twice as far at the body, 0 = always the body |
-| `positionLag` | `0.35` | seconds to catch up with the wanted position |
-| `lookLag` | `0.12` | seconds for the aim to catch up with the player |
-| `turnLag` | `1.1` | seconds to swing around when the player turns |
-| `turnDeadzone` | `16` | degrees you can turn without moving the camera |
-| `speedFov` | `true` | wider field of view at high speed |
-| `leadRoom` | `0.25` | seconds of movement the camera aims ahead, 0 = off |
-| `leadRoomMax` | `0.8` | limit of that offset, in player sizes |
+| Field          | Default | Meaning                                                                                           |
+|----------------|---------|---------------------------------------------------------------------------------------------------|
+| `aimHeight`    | `0.6`   | where to aim: 0 = feet, 1 = head                                                                  |
+| `faceDistance` | `1.25`  | blocks; a camera closer than this aims at the face, twice as far at the body, 0 = always the body |
+| `positionLag`  | `0.35`  | seconds to catch up with the wanted position                                                      |
+| `lookLag`      | `0.12`  | seconds for the aim to catch up with the player                                                   |
+| `turnLag`      | `1.1`   | seconds to swing around when the player turns                                                     |
+| `turnDeadzone` | `16`    | degrees you can turn without moving the camera                                                    |
+| `speedFov`     | `true`  | wider field of view at high speed                                                                 |
+| `leadRoom`     | `0.25`  | seconds of movement the camera aims ahead, 0 = off                                                |
+| `leadRoomMax`  | `0.8`   | limit of that offset, in player sizes                                                             |
 
 ### Collision
 
-| Field | Default | Meaning |
-|---|---|---|
-| `collisionRadius` | `0.15` | gap between camera and walls, in blocks |
-| `collisionMargin` | `0.12` | extra gap to a block in the way |
-| `softOcclusionTime` | `0.35` | seconds a thin obstacle is ignored, 0 = off |
-| `occlusionRatio` | `0.45` | part of the distance below which the camera counts as pushed in |
-| `occlusionCutTime` | `0.6` | seconds pushed in before the angle changes |
+| Field               | Default | Meaning                                                         |
+|---------------------|---------|-----------------------------------------------------------------|
+| `collisionRadius`   | `0.15`  | gap between camera and walls, in blocks                         |
+| `collisionMargin`   | `0.12`  | extra gap to a block in the way                                 |
+| `softOcclusionTime` | `0.35`  | seconds a thin obstacle is ignored, 0 = off                     |
+| `occlusionRatio`    | `0.45`  | part of the distance below which the camera counts as pushed in |
+| `occlusionCutTime`  | `0.6`   | seconds pushed in before the angle changes                      |
 
 ### Director
 
-| Field | Default | Meaning |
-|---|---|---|
-| `pace` | `"default"` | the pace picked last: `"alpha"`, `"default"` or `"faster"`. See below |
-| `transition` | `"auto"` | `"auto"`, `"cut"` or `"blend"` (fly-overs only) |
-| `blendChance` | `0.6` | chance of a fly-over with `"auto"` |
-| `minShotTime` | `4.0` | least seconds before a change because the situation changed |
-| `manualHoldSeconds` | `30` | how long the director keeps a hand-placed angle |
-| `orbitSpeed` | `10` | circling speed, degrees per second |
-| `events` | `true` | special shots for death and falling |
-| `activePreset` | `0` | number of the active own angle, counted from 0 |
-| `customInRotation` | `false` | own angles take part in the director's rotation |
+| Field               | Default     | Meaning                                                               |
+|---------------------|-------------|-----------------------------------------------------------------------|
+| `pace`              | `"default"` | the pace picked last: `"alpha"`, `"default"` or `"faster"`. See below |
+| `transition`        | `"auto"`    | `"auto"`, `"cut"` or `"blend"` (fly-overs only)                       |
+| `blendChance`       | `0.6`       | chance of a fly-over with `"auto"`                                    |
+| `minShotTime`       | `4.0`       | least seconds before a change because the situation changed           |
+| `manualHoldSeconds` | `30`        | how long the director keeps a hand-placed angle                       |
+| `orbitSpeed`        | `10`        | circling speed, degrees per second                                    |
+| `events`            | `true`      | special shots for death and falling                                   |
+| `activePreset`      | `0`         | number of the active own angle, counted from 0                        |
+| `customInRotation`  | `false`     | own angles take part in the director's rotation                       |
 
 **Pace.** Three ready-made sets of values for how long shots last and how readily the camera moves. Pick one in
 the settings ("Pace") or with `/vrcam pace <name>`:
 
-| Pace | For | Shots |
-|---|---|---|
+| Pace      | For                                                           | Shots                                |
+|-----------|---------------------------------------------------------------|--------------------------------------|
 | `default` | YouTube, long videos: easy to follow, long pieces to cut from | 5–18 s, at least 4 s before a change |
-| `faster` | TikTok, shorts: more changes, less to cut from | 4–16 s, at least 3 s |
-| `alpha` | the way the mod first came: short shots, many changes | 4–14 s, at least 2.5 s |
+| `faster`  | TikTok, shorts: more changes, less to cut from                | 4–16 s, at least 3 s                 |
+| `alpha`   | the way the mod first came: short shots, many changes         | 4–14 s, at least 2.5 s               |
 
 Picking a pace writes `minShotTime`, `orbitSpeed`, `manualHoldSeconds`, `turnLag`, `turnDeadzone`,
 `handStabilize` and the `minDuration`/`maxDuration` of the shots, and overwrites what you set there by hand. After
@@ -619,15 +648,15 @@ that each of them can be changed on its own again.
 
 `shots` has one entry per shot, `presets` lists the hand-placed angles.
 
-| Field | Meaning |
-|---|---|
-| `enabled` | use the shot or not |
-| `weight` | relative odds |
-| `azimuth` | degrees around the player: 0 in front, 180 behind. Left or right is random |
-| `elevation` | degrees above the horizon |
-| `distance` | blocks, for a player of regular size |
-| `fov` | field of view |
-| `minDuration`, `maxDuration` | length of the shot in seconds |
+| Field                        | Meaning                                                                    |
+|------------------------------|----------------------------------------------------------------------------|
+| `enabled`                    | use the shot or not                                                        |
+| `weight`                     | relative odds                                                              |
+| `azimuth`                    | degrees around the player: 0 in front, 180 behind. Left or right is random |
+| `elevation`                  | degrees above the horizon                                                  |
+| `distance`                   | blocks, for a player of regular size                                       |
+| `fov`                        | field of view                                                              |
+| `minDuration`, `maxDuration` | length of the shot in seconds                                              |
 
 Exceptions:
 
@@ -637,19 +666,19 @@ Exceptions:
 
 ### What to change
 
-| You see | Change |
-|---|---|
-| The camera swings when you turn your head | raise `turnDeadzone` and `turnLag` |
-| The camera is sluggish | lower `positionLag` |
-| Too many changes in tight places | raise `occlusionCutTime`, lower `occlusionRatio` |
-| The camera twitches near trees and posts | raise `softOcclusionTime` |
-| You disappear behind trees | lower `softOcclusionTime` or set 0 |
-| Shots are too short or too long | `minDuration`, `maxDuration` of the shot |
-| You want only cuts or only fly-overs | `transition` |
-| You are off-center when running | `leadRoom: 0` |
-| The held camera shakes | raise `handStabilize`, lower `physicsShake` |
-| The hand catches the camera by accident | `pullAllModes: false` |
-| You don't like a shot | `enabled: false` on it |
+| You see                                   | Change                                           |
+|-------------------------------------------|--------------------------------------------------|
+| The camera swings when you turn your head | raise `turnDeadzone` and `turnLag`               |
+| The camera is sluggish                    | lower `positionLag`                              |
+| Too many changes in tight places          | raise `occlusionCutTime`, lower `occlusionRatio` |
+| The camera twitches near trees and posts  | raise `softOcclusionTime`                        |
+| You disappear behind trees                | lower `softOcclusionTime` or set 0               |
+| Shots are too short or too long           | `minDuration`, `maxDuration` of the shot         |
+| You want only cuts or only fly-overs      | `transition`                                     |
+| You are off-center when running           | `leadRoom: 0`                                    |
+| The held camera shakes                    | raise `handStabilize`, lower `physicsShake`      |
+| The hand catches the camera by accident   | `pullAllModes: false`                            |
+| You don't like a shot                     | `enabled: false` on it                           |
 
 ## Headset off, VR gone
 
@@ -665,19 +694,19 @@ For streams, turn Hotswitching off so the game stays in VR and the camera keeps 
 
 ## Troubleshooting
 
-| Symptom | Cause and fix |
-|---|---|
-| "VR is not running" | VR is off in Vivecraft or the headset was not picked up |
-| "not available in seated mode" | switch Vivecraft to standing |
-| The game window is black | Desktop Mirror is OFF |
-| Your character is not in the camera's picture | turn on Show Playermodel in Vivecraft: VR Settings → Playermodel Settings |
-| The window shows first person | `forceMirror` is off, or VR is not running right now |
-| No camera model in the headset | check `marker`: `"model"` shows the Vivecraft camera, `"dot"` a red dot |
-| The camera is behind you in `front` | a bug, please report it |
-| You can't reach the camera | Bring camera to me, or pull it |
-| "internal error, camera turned off" | the mod caught its own error and stopped, to not throw you out of VR. See `logs/latest.log` |
-| No Settings button | Cloth Config is missing |
-| Keys do nothing | the game window has no focus, or a menu is open |
+| Symptom                                       | Cause and fix                                                                               |
+|-----------------------------------------------|---------------------------------------------------------------------------------------------|
+| "VR is not running"                           | VR is off in Vivecraft or the headset was not picked up                                     |
+| "not available in seated mode"                | switch Vivecraft to standing                                                                |
+| The game window is black                      | Desktop Mirror is OFF                                                                       |
+| Your character is not in the camera's picture | turn on Show Playermodel in Vivecraft: VR Settings → Playermodel Settings                   |
+| The window shows first person                 | `forceMirror` is off, or VR is not running right now                                        |
+| No camera model in the headset                | check `marker`: `"model"` shows the Vivecraft camera, `"dot"` a red dot                     |
+| The camera is behind you in `front`           | a bug, please report it                                                                     |
+| You can't reach the camera                    | Bring camera to me, or pull it                                                              |
+| "internal error, camera turned off"           | the mod caught its own error and stopped, to not throw you out of VR. See `logs/latest.log` |
+| No Settings button                            | Cloth Config is missing                                                                     |
+| Keys do nothing                               | the game window has no focus, or a menu is open                                             |
 
 ## Known limits
 

@@ -92,6 +92,18 @@ public final class ConfigScreen {
 				"%.0f", value -> config.chromaDistance = value));
 		general.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
 				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
+		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmPlayer"),
+						config.filmPlayer)
+				.setDefaultValue(defaults.filmPlayer)
+				.setTooltipSupplier(help("vrcamera.option.filmPlayer.tooltip"))
+				.setSaveConsumer(value -> config.filmPlayer = value.trim())
+				.build());
+		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmWith"),
+						config.filmWith)
+				.setDefaultValue(defaults.filmWith)
+				.setTooltipSupplier(help("vrcamera.option.filmWith.tooltip"))
+				.setSaveConsumer(value -> config.filmWith = value.trim())
+				.build());
 		general.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
 				value -> config.freeAutoSwitch = value));
 		general.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,

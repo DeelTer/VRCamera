@@ -269,5 +269,14 @@
 	"vrcamera.option.freeAutoSwitchAngle.tooltip": "Cuántos grados puede desviarse tu mirada de una cámara libre para contar como girado hacia ella. Más grande cambia antes, sin mirarla de frente.",
 	"key.vrcamera.preset.fly": "Vuelo a la cámara siguiente",
 	"vrcamera.option.freeAutoSwitchSeconds": "Cámaras libres: duración de la mirada",
-	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Cuántos segundos debe quedarse tu mirada hacia una cámara libre antes de que filme. Más pequeño reacciona antes, 0 al instante."
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Cuántos segundos debe quedarse tu mirada hacia una cámara libre antes de que filme. Más pequeño reacciona antes, 0 al instante.",
+	"vrcamera.message.film.other": "Cámara: filma a %s",
+	"vrcamera.message.film.self": "Cámara: te filma a ti",
+	"vrcamera.message.with.on": "Cámara: tú y %s juntos",
+	"vrcamera.message.with.off": "Cámara: solo tú",
+	"vrcamera.command.noplayer": "No hay ningún jugador %s cerca",
+	"vrcamera.option.filmPlayer": "Sin VR: filmar a este jugador",
+	"vrcamera.option.filmPlayer.tooltip": "El nombre de un jugador al que el director y la cámara de seguimiento filman en tu lugar, mientras esté cerca. Vacío te filma a ti. Igual que /cam follow.",
+	"vrcamera.option.filmWith": "Sin VR: amigo en el plano",
+	"vrcamera.option.filmWith.tooltip": "El nombre de un jugador al que el director muestra junto a ti entre sus otros planos, mientras esté a menos de 24 bloques. Vacío para nadie. Igual que /cam with."
 }

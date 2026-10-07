@@ -269,5 +269,14 @@
 	"vrcamera.option.freeAutoSwitchAngle.tooltip": "Wie viele Grad dein Blick von einer freien Kamera abweichen darf, um als zugewandt zu gelten. Größer schaltet früher um, noch bevor du sie direkt ansiehst.",
 	"key.vrcamera.preset.fly": "Flug zur nächsten Kamera",
 	"vrcamera.option.freeAutoSwitchSeconds": "Freie Kameras: Dauer des Blicks",
-	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Wie viele Sekunden dein Blick bei einer freien Kamera bleiben muss, bevor sie filmt. Kleiner reagiert schneller, 0 sofort."
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Wie viele Sekunden dein Blick bei einer freien Kamera bleiben muss, bevor sie filmt. Kleiner reagiert schneller, 0 sofort.",
+	"vrcamera.message.film.other": "Kamera: filmt %s",
+	"vrcamera.message.film.self": "Kamera: filmt dich",
+	"vrcamera.message.with.on": "Kamera: du und %s zusammen",
+	"vrcamera.message.with.off": "Kamera: nur du",
+	"vrcamera.command.noplayer": "Kein Spieler %s in der Nähe",
+	"vrcamera.option.filmPlayer": "Ohne VR: diesen Spieler filmen",
+	"vrcamera.option.filmPlayer.tooltip": "Der Name eines Spielers, den Regisseur und Folgekamera statt dir filmen, solange er in der Nähe ist. Leer filmt dich. Dasselbe wie /cam follow.",
+	"vrcamera.option.filmWith": "Ohne VR: Freund im Bild",
+	"vrcamera.option.filmWith.tooltip": "Der Name eines Spielers, den der Regisseur zwischen seinen anderen Einstellungen zusammen mit dir zeigt, solange er höchstens 24 Blöcke entfernt ist. Leer für niemanden. Dasselbe wie /cam with."
 }

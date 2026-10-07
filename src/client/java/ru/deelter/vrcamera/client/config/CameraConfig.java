@@ -111,6 +111,10 @@ public class CameraConfig {
 	 */
 	public double chromaDistance = 32;
 	public double cameraLabelDistance = 48;
+	// Players by name, empty for no one: who the camera on the screen films in place of the player, and who it has
+	// in the picture with them
+	public String filmPlayer = "";
+	public String filmWith = "";
 	public boolean freeAutoSwitch = true;
 	public double freeAutoSwitchAngle = 35;
 	public double freeAutoSwitchSeconds = 0.2;

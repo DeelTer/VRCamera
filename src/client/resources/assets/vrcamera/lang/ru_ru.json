@@ -269,5 +269,14 @@
 	"vrcamera.option.freeAutoSwitchAngle.tooltip": "На сколько градусов взгляд может отклоняться от свободной камеры, чтобы считалось, что вы к ней повернулись. Больше — переключение раньше, ещё до прямого взгляда на неё.",
 	"key.vrcamera.preset.fly": "Пролёт к следующей камере",
 	"vrcamera.option.freeAutoSwitchSeconds": "Свободные камеры: задержка взгляда",
-	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Сколько секунд нужно смотреть в сторону свободной камеры, чтобы она начала снимать. Меньше — ловит быстрее, 0 — сразу."
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Сколько секунд нужно смотреть в сторону свободной камеры, чтобы она начала снимать. Меньше — ловит быстрее, 0 — сразу.",
+	"vrcamera.message.film.other": "Камера: снимает %s",
+	"vrcamera.message.film.self": "Камера: снимает вас",
+	"vrcamera.message.with.on": "Камера: вы и %s вместе",
+	"vrcamera.message.with.off": "Камера: только вы",
+	"vrcamera.command.noplayer": "Игрока %s рядом нет",
+	"vrcamera.option.filmPlayer": "Без VR: снимать этого игрока",
+	"vrcamera.option.filmPlayer.tooltip": "Ник игрока, которого режиссёр и следование снимают вместо вас, пока он рядом. Пусто — снимают вас. То же, что /cam follow.",
+	"vrcamera.option.filmWith": "Без VR: друг в кадре",
+	"vrcamera.option.filmWith.tooltip": "Ник игрока, которого режиссёр между обычными планами показывает вместе с вами, пока он не дальше 24 блоков. Пусто — никого. То же, что /cam with."
 }

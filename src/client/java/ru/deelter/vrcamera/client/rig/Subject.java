@@ -1,8 +1,8 @@
 package ru.deelter.vrcamera.client.rig;
 
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.SmoothAngle;
@@ -12,7 +12,7 @@ import ru.deelter.vrcamera.client.math.SmoothVec;
  * per frame snapshot of the player the camera films
  */
 public final class Subject {
-	public LocalPlayer player;
+	public Player player;
 	/**
 	 * how far the current frame is between two game ticks, to get where entities are drawn
 	 */
@@ -57,9 +57,17 @@ public final class Subject {
 
 	public Entity target;
 	/**
+	 * someone to have in the picture next to the player while there is no fight: a friend they film with. Null for
+	 * no one
+	 */
+	public Entity partner;
+	/**
 	 * middle of the {@link #target}, null without one
 	 */
 	public Vec3 targetCenter;
+
+	// further away than this a partner is not in the picture anymore
+	private static final double PARTNER_REACH = 24.0;
 
 	private final SmoothVec velocitySmooth = new SmoothVec();
 	private final SmoothAngle facingSmooth = new SmoothAngle();
@@ -78,7 +86,7 @@ public final class Subject {
 	 * @param dt     seconds since the last update, limited to a sane step size
 	 * @param realDt actual seconds since the last update
 	 */
-	public void updateWithoutVR(LocalPlayer player, float partialTick, double dt, double realDt, CameraConfig config) {
+	public void updateWithoutVR(Player player, float partialTick, double dt, double realDt, CameraConfig config) {
 		move(player, partialTick, dt, realDt);
 		this.head = player.getEyePosition(partialTick);
 		this.headDir = player.getViewVector(partialTick);
@@ -90,7 +98,7 @@ public final class Subject {
 		turn(player, partialTick, Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD, dt);
 	}
 
-	Vec3 move(LocalPlayer player, float partialTick, double dt, double realDt) {
+	Vec3 move(Player player, float partialTick, double dt, double realDt) {
 		this.player = player;
 		this.partialTick = partialTick;
 		Vec3 newFeet = player.getPosition(partialTick);
@@ -109,7 +117,7 @@ public final class Subject {
 		return newFeet;
 	}
 
-	void turn(LocalPlayer player, float partialTick, double bodyYaw, double dt) {
+	void turn(Player player, float partialTick, double bodyYaw, double dt) {
 		if (this.teleported) {
 			this.facingSmooth.reset(bodyYaw);
 		} else {
@@ -120,8 +128,14 @@ public final class Subject {
 		if (this.target != null && (!this.target.isAlive() || this.target.level() != player.level())) {
 			this.target = null;
 		}
-		this.targetCenter = this.target == null ? null :
-				this.target.getPosition(partialTick).add(0, this.target.getBbHeight() * 0.5, 0);
+		// whoever they fight comes first, a partner is for the quiet moments
+		Entity framed = this.target;
+		if (framed == null && this.partner != null && this.partner.isAlive() &&
+				this.partner.level() == player.level() && this.partner.distanceTo(player) <= PARTNER_REACH) {
+			framed = this.partner;
+		}
+		this.targetCenter = framed == null ? null :
+				framed.getPosition(partialTick).add(0, framed.getBbHeight() * 0.5, 0);
 		this.first = false;
 	}
 }

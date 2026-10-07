@@ -1,10 +1,10 @@
 package ru.deelter.vrcamera.client.director;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -35,6 +35,8 @@ public final class Director {
 	// how well first person fits where it is tight, it does not fit anywhere else
 	private static final double TIGHT_POV_FIT = 0.6;
 	private static final double SCREEN_POV_FIT = 0.2;
+	// how well the shot of two fits while the player films with a friend: it is what they asked for
+	private static final double PARTNER_FIT = 3.0;
 	// shots between two stays in first person, this many or one more
 	private static final int HOME_ASIDES = 2;
 	// fights are cut faster
@@ -88,6 +90,7 @@ public final class Director {
 	private ShotType boost;
 	private boolean tight;
 	private boolean atScreen;
+	private boolean partnered;
 	// other shots left to show before first person is come back to
 	private int asides;
 	private double tightTimer;
@@ -293,7 +296,7 @@ public final class Director {
 		if (!this.config.events) {
 			return Event.NONE;
 		}
-		LocalPlayer player = subject.player;
+		Player player = subject.player;
 		if (player.isDeadOrDying()) {
 			return Event.DEATH;
 		}
@@ -464,6 +467,10 @@ public final class Director {
 			// a cut now and then. In VR it is the shaking view of a headset, for where nothing else fits
 			return this.tight ? TIGHT_POV_FIT : this.atScreen ? SCREEN_POV_FIT : 0.0;
 		}
+		if (type == ShotType.DUEL && this.partnered) {
+			// the shot that has two in the picture, for the friend the player films with
+			return PARTNER_FIT;
+		}
 		return type.weight(this.context) * (this.tight ? type.tightFactor : 1.0);
 	}
 
@@ -601,7 +608,8 @@ public final class Director {
 
 	private void updateContext(Subject subject, double dt) {
 		Minecraft mc = Minecraft.getInstance();
-		LocalPlayer player = subject.player;
+		Player player = subject.player;
+		this.partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
 
 		this.combatTimer -= dt;
 		Entity attacked = this.attacked;

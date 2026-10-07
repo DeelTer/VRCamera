@@ -269,5 +269,14 @@
 	"vrcamera.option.freeAutoSwitchAngle.tooltip": "How many degrees off a free camera your look may be for it to count as turned to. Larger switches sooner, before you look straight at it.",
 	"key.vrcamera.preset.fly": "Fly to the next camera",
 	"vrcamera.option.freeAutoSwitchSeconds": "Free cameras: how long to look",
-	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "How many seconds your look has to stay towards a free camera before it starts to film. Smaller catches faster, 0 at once."
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "How many seconds your look has to stay towards a free camera before it starts to film. Smaller catches faster, 0 at once.",
+	"vrcamera.message.film.other": "Camera: films %s",
+	"vrcamera.message.film.self": "Camera: films you",
+	"vrcamera.message.with.on": "Camera: you and %s together",
+	"vrcamera.message.with.off": "Camera: you alone",
+	"vrcamera.command.noplayer": "No player %s around",
+	"vrcamera.option.filmPlayer": "No VR: film this player",
+	"vrcamera.option.filmPlayer.tooltip": "The name of a player the director and the follow camera film in place of you, while that player is around. Empty films you. The same as /cam follow.",
+	"vrcamera.option.filmWith": "No VR: friend in the picture",
+	"vrcamera.option.filmWith.tooltip": "The name of a player the director shows together with you in between its other shots, while they are within 24 blocks. Empty for no one. The same as /cam with."
 }

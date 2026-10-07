@@ -269,5 +269,14 @@
 	"vrcamera.option.freeAutoSwitchAngle.tooltip": "视线与自由摄像机偏离多少度以内算作转向它。数值越大切换越早，不必正对着它。",
 	"key.vrcamera.preset.fly": "飞向下一台摄像机",
 	"vrcamera.option.freeAutoSwitchSeconds": "自由摄像机：注视时长",
-	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "视线朝向自由摄像机多少秒后它开始拍摄。数值越小切换越快，0 为立即。"
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "视线朝向自由摄像机多少秒后它开始拍摄。数值越小切换越快，0 为立即。",
+	"vrcamera.message.film.other": "摄像机：拍摄 %s",
+	"vrcamera.message.film.self": "摄像机：拍摄你",
+	"vrcamera.message.with.on": "摄像机：你和 %s 同框",
+	"vrcamera.message.with.off": "摄像机：只拍你",
+	"vrcamera.command.noplayer": "附近没有玩家 %s",
+	"vrcamera.option.filmPlayer": "无 VR：拍摄此玩家",
+	"vrcamera.option.filmPlayer.tooltip": "导演和跟随镜头将拍摄这个玩家而不是你，只要他在附近。留空则拍摄你。等同于 /cam follow。",
+	"vrcamera.option.filmWith": "无 VR：同框的朋友",
+	"vrcamera.option.filmWith.tooltip": "导演会在其他镜头之间把这个玩家和你拍在一起，只要他在 24 格以内。留空为无。等同于 /cam with。"
 }

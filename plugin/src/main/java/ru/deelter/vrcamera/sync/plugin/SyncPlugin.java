@@ -18,6 +18,8 @@ import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jspecify.annotations.NonNull;
 import ru.deelter.vrcamera.sync.Jpeg;
 import ru.deelter.vrcamera.sync.Protocol;
+import ru.deelter.vrcamera.sync.plugin.event.PhotoPinEvent;
+import ru.deelter.vrcamera.sync.plugin.event.PhotoTakeEvent;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -41,6 +43,8 @@ import java.util.logging.Level;
  */
 public final class SyncPlugin extends JavaPlugin implements PluginMessageListener, Listener {
 	private static final double PIN_REACH = 8.0;
+	// how many photos /vrcamsync list writes out at most, chat is not endless
+	private static final int LIST_MOST = 30;
 	private static final int RANGE_INTERVAL_TICKS = 10;
 	private static final int SAVE_INTERVAL_TICKS = 200;
 	// What a client may send: this many messages per second, and this many at once. An honest one sends a
@@ -225,7 +229,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					if (client != null) {
 						if (System.currentTimeMillis() - client.lastShutter >= SHUTTER_COOLDOWN) {
 							client.lastShutter = System.currentTimeMillis();
-							cameraSound(player, Protocol.S_SHUTTER, in.readDouble(), in.readDouble(), in.readDouble());
+							double x = in.readDouble();
+							double y = in.readDouble();
+							double z = in.readDouble();
+							if (cameraSound(player, Protocol.S_SHUTTER, x, y, z)) {
+								Bukkit.getPluginManager().callEvent(
+										new PhotoTakeEvent(player, new Location(player.getWorld(), x, y, z)));
+							}
 						}
 					}
 				}
@@ -299,17 +309,21 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * passes what a camera does on to the players around who have the mod: the click and flash of a photo, the
 	 * whirr of printing it
 	 */
-	private void cameraSound(Player player, byte type, double x, double y, double z) {
+	/**
+	 * @return false if the camera is too far from its player to be theirs, and nobody was told
+	 */
+	private boolean cameraSound(Player player, byte type, double x, double y, double z) {
 		Location at = player.getLocation();
 		double dx = x - at.getX();
 		double dy = y - at.getY();
 		double dz = z - at.getZ();
 		// like the camera it comes from, it stays near its player
 		if (!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH)) {
-			return;
+			return false;
 		}
 		byte[] message = Protocol.cameraSound(type, x, y, z);
 		watchers(player, at).forEach(watcher -> send(watcher, message));
+		return true;
 	}
 
 	/**
@@ -509,6 +523,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		if (refusal != Protocol.PIN_OK) {
 			getLogger().info("Photo of " + player.getName() + " not pinned, reason " + refusal);
 			send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), refusal, 0, 0)));
+			return;
+		}
+		PhotoPinEvent event = new PhotoPinEvent(player, new Location(player.getWorld(), pin.x(), pin.y(), pin.z()),
+				player.getWorld().getBlockAt(pin.blockX(), pin.blockY(), pin.blockZ()), pin.custom());
+		if (!event.callEvent()) {
+			// another plugin has a say: a region that is protected, a player who is muted
+			send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), Protocol.PIN_NOT_ALLOWED, 0, 0)));
 			return;
 		}
 		client.lastPin = System.currentTimeMillis();
@@ -978,6 +999,23 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			UUID owner = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
 			sender.sendMessage("VRCameraSync: removed " + purge(sheet -> sheet.owner().equals(owner) ||
 					sheet.ownerName().equalsIgnoreCase(args[1])) + " photos of " + args[1]);
+			return true;
+		}
+		if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
+			UUID owner = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+			int found = 0;
+			for (StoredSheet sheet : this.store.all()) {
+				if (!sheet.owner().equals(owner) && !sheet.ownerName().equalsIgnoreCase(args[1])) {
+					continue;
+				}
+				World world = Bukkit.getWorld(sheet.world());
+				if (++found <= LIST_MOST) {
+					sender.sendMessage("  " + (world == null ? sheet.world() : world.getName()) + " " + sheet.blockX() +
+							" " + sheet.blockY() + " " + sheet.blockZ() + (sheet.custom() ? " (custom picture)" : ""));
+				}
+			}
+			sender.sendMessage("VRCameraSync: " + found + " photos of " + args[1] +
+					(found > LIST_MOST ? ", the first " + LIST_MOST + " shown" : ""));
 			return true;
 		}
 		if (args.length == 1 && args[0].equalsIgnoreCase("purgecustom")) {

@@ -11,6 +11,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
@@ -105,6 +106,8 @@ public final class DesktopCamera {
 	// the shot the player steers themselves, null while the camera works on its own
 	private Shot steered;
 	private boolean flying;
+	// if the one who is filmed is the player themselves, and not someone the settings name
+	private boolean filmsSelf = true;
 	private boolean steeredFromWindow;
 	// which of the keys 1 to 9 is held in the window of the camera, counted from 0, or -1
 	private int digitDown = -1;
@@ -196,6 +199,70 @@ public final class DesktopCamera {
 
 	private static float partialTick() {
 		return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+	}
+
+	// ---- who is filmed
+
+	/**
+	 * The director and the follow camera film another player in place of the one at the keyboard, for as long as
+	 * that player is around.
+	 *
+	 * @param name null to film oneself again
+	 * @return false if no player of that name is around
+	 */
+	public boolean film(String name) {
+		if (name != null && find(Minecraft.getInstance(), name) == null) {
+			return false;
+		}
+		CameraConfig config = CameraConfig.current();
+		config.filmPlayer = name == null ? "" : name;
+		config.save();
+		say(name == null ? "vrcamera.message.film.self" : "vrcamera.message.film.other", name);
+		return true;
+	}
+
+	/**
+	 * A friend to have in the picture: the director shows the two of them together in between its other shots.
+	 *
+	 * @param name null for no one
+	 * @return false if no player of that name is around
+	 */
+	public boolean filmWith(String name) {
+		if (name != null && find(Minecraft.getInstance(), name) == null) {
+			return false;
+		}
+		CameraConfig config = CameraConfig.current();
+		config.filmWith = name == null ? "" : name;
+		config.save();
+		say(name == null ? "vrcamera.message.with.off" : "vrcamera.message.with.on", name);
+		return true;
+	}
+
+	/**
+	 * @return the names of the other players around, to pick one to film
+	 */
+	public List<String> playersAround() {
+		Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null) {
+			return List.of();
+		}
+		return mc.level.players().stream().filter(other -> other != mc.player)
+				.map(other -> other.getGameProfile().name()).toList();
+	}
+
+	/**
+	 * @return the player of that name the game knows of right now, null if there is none or the name is empty
+	 */
+	private static Player find(Minecraft mc, String name) {
+		if (name == null || name.isBlank() || mc.level == null) {
+			return null;
+		}
+		for (Player other : mc.level.players()) {
+			if (other.isAlive() && other.getGameProfile().name().equalsIgnoreCase(name)) {
+				return other;
+			}
+		}
+		return null;
 	}
 
 	// ---- the free cameras
@@ -569,12 +636,16 @@ public final class DesktopCamera {
 		}
 		// like in VR the camera keeps moving while the game is paused, to get to the pause menu
 		double dt = frameTime();
-		this.subject.updateWithoutVR(player, partialTick, dt, dt, config);
+		Player star = find(mc, config.filmPlayer);
+		this.filmsSelf = star == null || star == player;
+		this.subject.updateWithoutVR(this.filmsSelf ? player : star, partialTick, dt, dt, config);
+		Player partner = find(mc, config.filmWith);
+		this.subject.partner = partner == this.subject.player ? null : partner;
 		if (this.mode == Mode.FREE && mc.level != this.freeLevel) {
 			openFree(mc, player, partialTick);
 		}
 		// Only for a camera with a window of its own. Filming into the game window, the menu covers the picture
-		this.subject.guiCenter = hasOwnWindow() ? DesktopGui.place(mc, this.subject, config) : null;
+		this.subject.guiCenter = hasOwnWindow() && this.filmsSelf ? DesktopGui.place(mc, this.subject, config) : null;
 		readWindow(mc);
 		reach(mc, player, partialTick, dt, config);
 		if (this.grab.isHolding()) {
@@ -799,7 +870,7 @@ public final class DesktopCamera {
 		// Walls can push the camera all the way into the player, before the director has another shot. Their own
 		// view is the picture for that long, the inside of their head is none
 		double fromHead = this.rig.position().distanceTo(this.subject.head);
-		this.inside = fromHead < (this.inside ? INSIDE_OUT : INSIDE_IN) * this.subject.unit;
+		this.inside = this.filmsSelf && fromHead < (this.inside ? INSIDE_OUT : INSIDE_IN) * this.subject.unit;
 		return new Pose(this.rig.position(), new Quaternionf(this.rig.rotation()),
 				(float) Math.clamp(this.rig.fov(), 1.0, 179.0));
 	}
@@ -883,7 +954,7 @@ public final class DesktopCamera {
 	 * their menus in it
 	 */
 	public boolean showsOwnView() {
-		return this.steered == null && this.mode == Mode.DIRECTOR && this.director != null &&
+		return this.filmsSelf && this.steered == null && this.mode == Mode.DIRECTOR && this.director != null &&
 				this.director.current() != null && (this.director.current().type == ShotType.POV || this.inside);
 	}
 

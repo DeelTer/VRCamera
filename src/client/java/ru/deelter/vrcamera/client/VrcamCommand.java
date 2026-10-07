@@ -18,6 +18,7 @@ import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 
 import java.util.Locale;
+import java.util.function.Predicate;
 
 /**
  * The {@code /vrcam} command. Runs on the client only, the server never sees it.
@@ -148,6 +149,8 @@ public final class VrcamCommand {
 					DesktopCamera.INSTANCE.clearCameras();
 					return DONE;
 				}))
+				.then(player("follow", DesktopCamera.INSTANCE::film))
+				.then(player("with", DesktopCamera.INSTANCE::filmWith))
 				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
 					DesktopCamera.INSTANCE.cameraNames().forEach(builder::suggest);
 					return builder.buildFuture();
@@ -163,6 +166,28 @@ public final class VrcamCommand {
 
 	static String name(Enum<?> value) {
 		return value.name().toLowerCase(Locale.ROOT);
+	}
+
+	/**
+	 * a command that takes the name of a player around, and goes back to no one without a name
+	 *
+	 * @param pick told the name, or null for no one. False if there is no such player
+	 */
+	private static LiteralArgumentBuilder<FabricClientCommandSource> player(String name, Predicate<String> pick) {
+		return ClientCommands.literal(name).executes(context -> {
+			pick.test(null);
+			return DONE;
+		}).then(ClientCommands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
+			DesktopCamera.INSTANCE.playersAround().forEach(builder::suggest);
+			return builder.buildFuture();
+		}).executes(context -> {
+			String player = StringArgumentType.getString(context, "player");
+			if (!pick.test(player)) {
+				context.getSource().sendError(Component.translatable("vrcamera.command.noplayer", player));
+				return 0;
+			}
+			return DONE;
+		}));
 	}
 
 	private static int status(FabricClientCommandSource source) {
