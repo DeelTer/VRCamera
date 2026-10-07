@@ -151,7 +151,15 @@ public final class OutputWindow {
 		GLFW.glfwWindowHint(GLFW.GLFW_FOCUSED, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_FOCUS_ON_SHOW, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
-		window = GLFW.glfwCreateWindow(WIDTH, HEIGHT, "VRCamera", 0, game);
+		// A mod like Ixeris has another thread make every window. Windows shares nothing with a context that is in
+		// use on a thread other than the one that asks: the game lets go of its own for that moment
+		long current = GLFW.glfwGetCurrentContext();
+		GLFW.glfwMakeContextCurrent(0);
+		try {
+			window = GLFW.glfwCreateWindow(WIDTH, HEIGHT, "VRCamera", 0, game);
+		} finally {
+			GLFW.glfwMakeContextCurrent(current);
+		}
 		GLFW.glfwDefaultWindowHints();
 		if (window == 0) {
 			Vrcamera.LOGGER.error("VRCamera: the camera window could not be made");
