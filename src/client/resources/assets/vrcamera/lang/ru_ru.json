@@ -254,5 +254,7 @@
 	"vrcamera.option.cameraLabelDistance": "Свободные камеры: дистанция меток",
 	"vrcamera.option.cameraLabelDistance.tooltip": "Остальные поставленные свободные камеры показываются с буквой и доступны для выбора не дальше этого расстояния от вас. 0 — скрыть все. Значок снимающей камеры виден всегда.",
 	"vrcamera.message.free.cleared": "Все камеры убраны",
-	"vrcamera.command.cam.none": "Свободной камеры %s здесь нет"
+	"vrcamera.command.cam.none": "Свободной камеры %s здесь нет",
+	"vrcamera.option.othersCameras": "Чужие камеры: сколько показывать",
+	"vrcamera.option.othersCameras.tooltip": "Сколько камер других игроков вы видите одновременно — ближайшие к вам. 0 — не показывать. Ваши собственные камеры в счёт не идут."
 }

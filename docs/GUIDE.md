@@ -448,7 +448,8 @@ you give it back, and are never in what you record after that.
 
 **Seen by others.** On a server with the plugin, players with the mod see the camera that films, with your name
 over it, like the camera of a player in VR. Only that one, and not further than 48 blocks from you;
-`shareCamera` turns it off.
+`shareCamera` turns it off. Of the cameras of others you see the nearest `othersCameras`, 3 unless
+you say otherwise, 0 for none.
 
 **Photos.** The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
 films, if there are several. With the camera off it is a photo of what you see.

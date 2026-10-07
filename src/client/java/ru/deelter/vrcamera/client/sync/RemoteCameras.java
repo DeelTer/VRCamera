@@ -24,6 +24,10 @@ import ru.deelter.vrcamera.sync.Protocol;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.List;
+import java.util.Comparator;
+import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 /**
  * The cameras of the other players around, as their servers pass them on: drawn where they are, with the name of
@@ -112,6 +116,22 @@ public final class RemoteCameras {
 	}
 
 	/**
+	 * @return the cameras that are shown: the nearest ones, as many as the settings say. Where many players film,
+	 * the rest would only be in the way
+	 */
+	private List<Camera> shown() {
+		Minecraft mc = Minecraft.getInstance();
+		int most = (int) Math.round(CameraController.INSTANCE.config().othersCameras);
+		// not in the picture a player without VR records: the cameras of others are for their eyes
+		if (most <= 0 || mc.player == null || DesktopCamera.INSTANCE.filmsNow()) {
+			return List.of();
+		}
+		Vec3 eyes = mc.player.getEyePosition();
+		return this.cameras.values().stream().filter(camera -> camera.position != null)
+				.sorted(Comparator.comparingDouble(camera -> camera.position.distanceToSqr(eyes))).limit(most).toList();
+	}
+
+	/**
 	 * @param viewPosition where the pass looks from, the pose stack is relative to that
 	 */
 	public void render(SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
@@ -122,7 +142,7 @@ public final class RemoteCameras {
 		try {
 			update();
 			Minecraft mc = Minecraft.getInstance();
-			for (Camera camera : this.cameras.values()) {
+			for (Camera camera : shown()) {
 				submitModel(mc, level, output, viewPosition, poseStack, camera.position, camera.rotation);
 			}
 		} catch (RuntimeException e) {
@@ -178,11 +198,9 @@ public final class RemoteCameras {
 			return;
 		}
 		try {
-			for (Camera camera : this.cameras.values()) {
-				if (camera.position != null) {
-					Gizmos.billboardText(CAMERA_ICON + " " + camera.ownerName, camera.position.add(0, 0.28, 0),
-							TextGizmo.Style.forColorAndCentered(LABEL_COLOR).withScale(0.12F));
-				}
+			for (Camera camera : shown()) {
+				Gizmos.billboardText(CAMERA_ICON + " " + camera.ownerName, camera.position.add(0, 0.28, 0),
+						TextGizmo.Style.forColorAndCentered(LABEL_COLOR).withScale(0.12F));
 			}
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into

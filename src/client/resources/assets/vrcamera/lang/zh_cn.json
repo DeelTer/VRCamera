@@ -254,5 +254,7 @@
 	"vrcamera.option.cameraLabelDistance": "自由摄像机：标记距离",
 	"vrcamera.option.cameraLabelDistance.tooltip": "其他已放置的自由摄像机在此距离内显示字母并可被选中。0 为全部隐藏。正在拍摄的摄像机始终显示图标。",
 	"vrcamera.message.free.cleared": "摄像机：已移除全部摄像机",
-	"vrcamera.command.cam.none": "这里没有自由摄像机 %s"
+	"vrcamera.command.cam.none": "这里没有自由摄像机 %s",
+	"vrcamera.option.othersCameras": "他人的摄像机：显示数量",
+	"vrcamera.option.othersCameras.tooltip": "同时显示多少台其他玩家的摄像机，取离你最近的。0 为不显示。你自己的摄像机不计入。"
 }

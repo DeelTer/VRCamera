@@ -133,6 +133,7 @@ public class CameraConfig {
 	 * let the players around see where the camera is, on servers that share that
 	 */
 	public boolean shareCamera = true;
+	public double othersCameras = 3;
 	public PhotoGesture photoGesture = PhotoGesture.SAME_HAND;
 	/**
 	 * seconds the button of the photo gesture has to be held

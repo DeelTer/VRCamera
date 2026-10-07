@@ -254,5 +254,7 @@
 	"vrcamera.option.cameraLabelDistance": "Free cameras: label distance",
 	"vrcamera.option.cameraLabelDistance.tooltip": "The other free cameras you put up are shown with their letter, and can be picked, up to this far away from you. 0 hides them all. The one that films has its icon in any case.",
 	"vrcamera.message.free.cleared": "Camera: all cameras removed",
-	"vrcamera.command.cam.none": "There is no free camera %s here"
+	"vrcamera.command.cam.none": "There is no free camera %s here",
+	"vrcamera.option.othersCameras": "Cameras of others: how many",
+	"vrcamera.option.othersCameras.tooltip": "How many cameras of other players you see at once, the nearest ones. 0 shows none. Your own cameras are not counted."
 }

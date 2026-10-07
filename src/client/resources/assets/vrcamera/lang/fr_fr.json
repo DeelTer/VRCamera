@@ -254,5 +254,7 @@
 	"vrcamera.option.cameraLabelDistance": "Caméras libres : distance des repères",
 	"vrcamera.option.cameraLabelDistance.tooltip": "Les autres caméras libres posées sont affichées avec leur lettre, et sélectionnables, jusqu'à cette distance. 0 les masque toutes. Celle qui filme garde son icône.",
 	"vrcamera.message.free.cleared": "Caméra : toutes les caméras retirées",
-	"vrcamera.command.cam.none": "Il n'y a pas de caméra libre %s ici"
+	"vrcamera.command.cam.none": "Il n'y a pas de caméra libre %s ici",
+	"vrcamera.option.othersCameras": "Caméras des autres : nombre",
+	"vrcamera.option.othersCameras.tooltip": "Combien de caméras d'autres joueurs vous voyez à la fois, les plus proches. 0 n'en montre aucune. Vos propres caméras ne comptent pas."
 }

@@ -115,6 +115,8 @@ public final class ConfigScreen {
 				value -> config.showCustomPhotos = value));
 		general.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
 				value -> config.shareCamera = value));
+		general.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
+				"%.0f", value -> config.othersCameras = value));
 		general.addEntry(screen.selector("photoGesture", PhotoGesture.values(), config.photoGesture,
 				defaults.photoGesture, value -> config.photoGesture = value));
 		general.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,

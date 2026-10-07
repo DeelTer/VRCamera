@@ -254,5 +254,7 @@
 	"vrcamera.option.cameraLabelDistance": "Câmeras livres: distância das marcas",
 	"vrcamera.option.cameraLabelDistance.tooltip": "As outras câmeras livres colocadas aparecem com sua letra, e podem ser escolhidas, até esta distância. 0 esconde todas. A que filma mantém o ícone.",
 	"vrcamera.message.free.cleared": "Câmera: todas as câmeras removidas",
-	"vrcamera.command.cam.none": "Não há câmera livre %s aqui"
+	"vrcamera.command.cam.none": "Não há câmera livre %s aqui",
+	"vrcamera.option.othersCameras": "Câmeras dos outros: quantas",
+	"vrcamera.option.othersCameras.tooltip": "Quantas câmeras de outros jogadores você vê ao mesmo tempo, as mais próximas. 0 não mostra nenhuma. Suas próprias câmeras não contam."
 }
