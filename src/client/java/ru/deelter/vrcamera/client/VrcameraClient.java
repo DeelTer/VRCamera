@@ -36,7 +36,8 @@ import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import ru.deelter.vrcamera.client.compat.WorldDrawing;
 
 public class VrcameraClient implements ClientModInitializer {
@@ -138,7 +139,9 @@ public class VrcameraClient implements ClientModInitializer {
 					PhotoStore.trimRemote();
 				}));
 
-		HudRenderCallback.EVENT.register((graphics, deltaTracker) -> DebugOverlay.extract(graphics));
+		HudLayerRegistrationCallback.EVENT.register(layers -> layers.addLayer(IdentifiedLayer.of(
+				ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "debug"),
+				(graphics, deltaTracker) -> DebugOverlay.extract(graphics))));
 
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
 			if (screen instanceof PauseScreen) {
