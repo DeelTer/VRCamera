@@ -193,6 +193,10 @@ public final class VrcamCommand {
 					DesktopCamera.INSTANCE.nextPoint();
 					return DONE;
 				}))
+				.then(ClientCommands.literal("fly").executes(context -> {
+					DesktopCamera.INSTANCE.flyToNext();
+					return DONE;
+				}))
 				.then(ClientCommands.literal("clear").executes(context -> {
 					DesktopCamera.INSTANCE.clearCameras();
 					return DONE;

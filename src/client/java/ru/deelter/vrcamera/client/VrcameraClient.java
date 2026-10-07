@@ -72,6 +72,7 @@ public class VrcameraClient implements ClientModInitializer {
 		key("preset", InputConstants.KEY_F7, desktop::nextPoint, this.controller::nextPreset);
 		key("photo", InputConstants.KEY_F6, this.controller::takePhoto);
 		key("preset.new", InputConstants.KEY_N, desktop::addCamera, this.controller::newPreset);
+		key("preset.fly", UNBOUND, desktop::flyToNext);
 		key("summon", UNBOUND, desktop::summon, this.controller::summon);
 		key("debug", UNBOUND, this.controller::toggleDebug);
 		// not in the window of the camera: going there takes the camera over, and leaving it gives it back

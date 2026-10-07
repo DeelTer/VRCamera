@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.client.desktop;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.Camera;
@@ -77,8 +78,7 @@ public final class DesktopCamera {
 	private static final double FREE_AROUND = 64.0;
 	// blocks per second a free camera has to be let go of at, to glide on
 	private static final double THROW_SPEED = 4.0;
-	// seconds a look has to stay on a free camera for it to film, and blocks it has to be away for that
-	private static final double GAZE_HOLD = 0.35;
+	// blocks a free camera has to be away from the player for their look to pick it
 	private static final double GAZE_NEAR = 1.5;
 	// closer to the head than this the camera is inside of the player, and further than the second it is out again
 	private static final double INSIDE_IN = 0.55;
@@ -87,6 +87,9 @@ public final class DesktopCamera {
 	private static final double MARKER_JUMP = 1.5;
 	// how large the letter of a free camera is, next to the camera icon
 	private static final double NAME_SIZE = 0.75;
+	// up to this many blocks away an icon has its full size, and however far away it is not smaller than this part
+	private static final double ICON_FULL = 8.0;
+	private static final double ICON_SMALLEST = 0.3;
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
 	private static final String CAMERA_ICON = "";
 
@@ -102,6 +105,8 @@ public final class DesktopCamera {
 	private Shot steered;
 	private boolean flying;
 	private boolean steeredFromWindow;
+	// which of the keys 1 to 9 is held in the window of the camera, counted from 0, or -1
+	private int digitDown = -1;
 	// the level the free cameras that are open belong to
 	private ClientLevel freeLevel;
 	// the free camera the player looks at, and for how long. Negative once that was acted on
@@ -234,18 +239,40 @@ public final class DesktopCamera {
 	 * somewhere else are passed over: by their name they can still be cut to
 	 */
 	public void nextPoint() {
+		int camera = nextAround();
+		if (camera >= 0) {
+			cutTo(camera);
+		}
+	}
+
+	/**
+	 * the same, but the camera that films flies over to the next one and films on the way
+	 */
+	public void flyToNext() {
+		int camera = nextAround();
+		if (camera >= 0) {
+			this.grab.release();
+			this.free.flyTo(camera);
+			say("vrcamera.message.free.point", this.free.name(camera), this.free.count());
+		}
+	}
+
+	/**
+	 * @return the free camera after the one that films that is around the player, -1 if there is none
+	 */
+	private int nextAround() {
 		LocalPlayer player = Minecraft.getInstance().player;
-		if (this.mode != Mode.FREE || this.free.isEmpty() || player == null) {
-			return;
+		if (this.mode != Mode.FREE || player == null) {
+			return -1;
 		}
 		Vec3 eyes = player.getEyePosition();
 		for (int step = 1; step < this.free.count(); step++) {
 			int camera = (this.free.active() + step) % this.free.count();
 			if (this.free.position(camera).distanceToSqr(eyes) < FREE_AROUND * FREE_AROUND) {
-				cutTo(camera);
-				return;
+				return camera;
 			}
 		}
+		return -1;
 	}
 
 	/**
@@ -581,6 +608,7 @@ public final class DesktopCamera {
 			toggleSteering();
 		}
 		this.steeredFromWindow = inWindow && isSteered();
+		pickByDigit(inWindow);
 		// asked for in any case: what the mouse did there while the camera was not steered is not kept for later
 		double wheel = OutputWindow.scrolled();
 		// a free camera is turned with the mouse, which has to stay in the window for that
@@ -592,6 +620,22 @@ public final class DesktopCamera {
 			zoom(wheel);
 			this.free.turn(mouse[0] * DRAG_TURN, mouse[1] * DRAG_TURN);
 		}
+	}
+
+	/**
+	 * the keys 1 to 9 in the window of the camera cut to the free cameras A to I
+	 */
+	private void pickByDigit(boolean inWindow) {
+		int down = -1;
+		for (int digit = 0; inWindow && this.mode == Mode.FREE && digit < 9 && down < 0; digit++) {
+			if (OutputWindow.isKeyDown(InputConstants.KEY_1 + digit)) {
+				down = digit;
+			}
+		}
+		if (down >= 0 && down != this.digitDown) {
+			showCamera(String.valueOf((char) ('A' + down)));
+		}
+		this.digitDown = down;
 	}
 
 	/**
@@ -714,7 +758,7 @@ public final class DesktopCamera {
 			return;
 		}
 		this.gazeTime += dt;
-		if (this.gazeTime > GAZE_HOLD) {
+		if (this.gazeTime > config.freeAutoSwitchSeconds) {
 			// done for this turn of the head
 			this.gazeTime = -1;
 			if (found != this.free.active()) {
@@ -912,6 +956,14 @@ public final class DesktopCamera {
 	}
 
 	/**
+	 * @return how large the icon of a camera that far away is. It gets a bit smaller with the distance, to tell the
+	 * near cameras from the far ones, but stays large enough to be read and pointed at
+	 */
+	private static double farSize(Vec3 eye, Vec3 camera) {
+		return Math.clamp(Math.sqrt(ICON_FULL / Math.max(eye.distanceTo(camera), 1.0E-3)), ICON_SMALLEST, 1.0);
+	}
+
+	/**
 	 * The camera icon with the distance to it, like in VR: over the camera, or at the edge of the view on the
 	 * side the camera is on. Called while the game collects gizmos for a pass
 	 */
@@ -932,14 +984,14 @@ public final class DesktopCamera {
 			int filming = this.mode == Mode.FREE ? this.free.active() : 0;
 			boolean several = this.mode == Mode.FREE && this.free.count() > 1;
 			CameraController.INSTANCE.drawIndicatorWithoutVR(CAMERA_ICON, several ? this.free.name(filming) : "",
-					markerPosition(), eye, forward, up, player.getScale(), true, this.grab.iconSize(filming, filming),
+					markerPosition(), eye, forward, up, player.getScale(), true, farSize(eye, markerPosition()) * this.grab.iconSize(filming, filming),
 					placed);
 			// the free cameras that do not film have their name for an icon, and no place at the edge of the view
 			for (int camera = 0; several && camera < this.free.count(); camera++) {
 				if (camera != filming && isAround(camera, eye)) {
 					CameraController.INSTANCE.drawIndicatorWithoutVR(this.free.name(camera), "",
 							this.free.position(camera), eye, forward, up, player.getScale(), false,
-							NAME_SIZE * this.grab.iconSize(camera, filming), placed);
+							NAME_SIZE * farSize(eye, this.free.position(camera)) * this.grab.iconSize(camera, filming), placed);
 				}
 			}
 		} catch (IllegalStateException e) {

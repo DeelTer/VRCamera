@@ -434,7 +434,8 @@ films; with none within 64 blocks a new one is put at your eyes. It films what y
 to 26 of them, with the key for a new shot of your own (`N`) or `/vrcam screen free` once more. They are called A,
 B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in the world with their letter over them, the one that films with the camera
 icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time: the
-attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter. `/cam add` puts up one more, `/cam next` goes to the next one within 64 blocks of you, like the key does, `/cam clear`
+attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter. In the window of the camera the keys `1` to `9` cut to A to I. `/cam add` puts up one more, `/cam next` goes to the next one within 64 blocks of you, like the key does, `/cam fly` and the key for a flight
+to the next camera (not bound to start with) fly there instead of cutting, filming on the way, `/cam clear`
 takes them all away. Take one with the use key and it
 films and goes where you look; let go and it stays as you held it, let go in a swing and it glides on and slows
 down; one that got 48 blocks away like that is gone. The last one is not. The key that calls the camera puts the one that films at your eyes again. They are
@@ -455,7 +456,7 @@ over it, like the camera of a player in VR. Only that one, and not further than 
 you say otherwise, 0 for none.
 
 **The camera you turn to.** With several free cameras, the one you turn to films: look its way for a moment and it
-is live, like a host who turns to the camera. `freeAutoSwitch` turns that off, `freeAutoSwitchAngle` says how
+is live (`freeAutoSwitchSeconds` says how long a moment), like a host who turns to the camera. `freeAutoSwitch` turns that off, `freeAutoSwitchAngle` says how
 close to it you have to look. A camera you picked yourself stays until you look at another.
 
 **Photos.** The photo is also put on the clipboard on Windows, `photoClipboard` turns that off. The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that

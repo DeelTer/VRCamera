@@ -12,11 +12,15 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.system.MemoryStack;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraController;
 
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.Objects;
 
 /**
@@ -173,6 +177,21 @@ public final class ChromaKey {
 	}
 
 	/**
+	 * {@link #paintOver} for where the game is in the middle of drawing into the picture: newer versions draw the
+	 * world and the entities in one go
+	 */
+	public static void paintOverWhileDrawing() {
+		clearWhileDrawing(true);
+	}
+
+	/**
+	 * {@link #shutOut} for where the game is in the middle of drawing into the picture
+	 */
+	public static void shutOutWhileDrawing() {
+		clearWhileDrawing(false);
+	}
+
+	/**
 	 * @return the colour of the settings, the default green if what is written there is not one
 	 */
 	private static Vector4fc background() {
@@ -209,8 +228,55 @@ public final class ChromaKey {
 				RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(target.getDepthTexture(), NEAR);
 			}
 		} catch (RuntimeException | LinkageError e) {
-			broken = true;
-			Vrcamera.LOGGER.error("VRCamera: the green screen can't be drawn, it is off until it is turned on again", e);
+			failed(e);
 		}
+	}
+
+	/**
+	 * While the game draws into a picture it can't be asked to clear it, that is not what it is in the middle of.
+	 * OpenGL is told directly then. The game keeps track of what it told OpenGL: everything that is changed for
+	 * the clear is put back the way it was.
+	 */
+	private static void clearWhileDrawing(boolean color) {
+		if (!applies()) {
+			return;
+		}
+		try (MemoryStack stack = MemoryStack.stackPush()) {
+			boolean scissors = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+			boolean depthMask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+			double clearDepth = GL11.glGetDouble(GL11.GL_DEPTH_CLEAR_VALUE);
+			ByteBuffer colorMask = stack.malloc(4);
+			FloatBuffer clearColor = stack.mallocFloat(4);
+			GL11.glGetBooleanv(GL11.GL_COLOR_WRITEMASK, colorMask);
+			GL11.glGetFloatv(GL11.GL_COLOR_CLEAR_VALUE, clearColor);
+
+			GL11.glDisable(GL11.GL_SCISSOR_TEST);
+			GL11.glDepthMask(true);
+			if (color) {
+				Vector4fc green = background();
+				GL11.glColorMask(true, true, true, true);
+				GL11.glClearColor(green.x(), green.y(), green.z(), green.w());
+				GL11.glClearDepth(FAR);
+				GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+			} else {
+				GL11.glClearDepth(NEAR);
+				GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
+			}
+
+			if (scissors) {
+				GL11.glEnable(GL11.GL_SCISSOR_TEST);
+			}
+			GL11.glDepthMask(depthMask);
+			GL11.glClearDepth(clearDepth);
+			GL11.glColorMask(colorMask.get(0) != 0, colorMask.get(1) != 0, colorMask.get(2) != 0, colorMask.get(3) != 0);
+			GL11.glClearColor(clearColor.get(0), clearColor.get(1), clearColor.get(2), clearColor.get(3));
+		} catch (RuntimeException | LinkageError e) {
+			failed(e);
+		}
+	}
+
+	private static void failed(Throwable cause) {
+		broken = true;
+		Vrcamera.LOGGER.error("VRCamera: the green screen can't be drawn, it is off until it is turned on again", cause);
 	}
 }

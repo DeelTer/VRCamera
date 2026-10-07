@@ -266,5 +266,8 @@
 	"vrcamera.option.freeAutoSwitch": "Cámaras libres: filma aquella hacia la que me giro",
 	"vrcamera.option.freeAutoSwitch.tooltip": "Con varias cámaras libres, empieza a filmar aquella hacia la que miras un instante. Una cámara elegida a mano se mantiene hasta que mires a otra. No mientras pilotas o sostienes una cámara.",
 	"vrcamera.option.freeAutoSwitchAngle": "Cámaras libres: precisión de la mirada",
-	"vrcamera.option.freeAutoSwitchAngle.tooltip": "Cuántos grados puede desviarse tu mirada de una cámara libre para contar como girado hacia ella. Más grande cambia antes, sin mirarla de frente."
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "Cuántos grados puede desviarse tu mirada de una cámara libre para contar como girado hacia ella. Más grande cambia antes, sin mirarla de frente.",
+	"key.vrcamera.preset.fly": "Vuelo a la cámara siguiente",
+	"vrcamera.option.freeAutoSwitchSeconds": "Cámaras libres: duración de la mirada",
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Cuántos segundos debe quedarse tu mirada hacia una cámara libre antes de que filme. Más pequeño reacciona antes, 0 al instante."
 }

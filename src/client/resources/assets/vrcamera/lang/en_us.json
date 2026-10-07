@@ -266,5 +266,8 @@
 	"vrcamera.option.freeAutoSwitch": "Free cameras: film with the one I turn to",
 	"vrcamera.option.freeAutoSwitch.tooltip": "With several free cameras, the one you look towards for a moment starts to film. A camera you picked yourself stays until you look at another one. Not while you fly or hold a camera.",
 	"vrcamera.option.freeAutoSwitchAngle": "Free cameras: how close to look",
-	"vrcamera.option.freeAutoSwitchAngle.tooltip": "How many degrees off a free camera your look may be for it to count as turned to. Larger switches sooner, before you look straight at it."
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "How many degrees off a free camera your look may be for it to count as turned to. Larger switches sooner, before you look straight at it.",
+	"key.vrcamera.preset.fly": "Fly to the next camera",
+	"vrcamera.option.freeAutoSwitchSeconds": "Free cameras: how long to look",
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "How many seconds your look has to stay towards a free camera before it starts to film. Smaller catches faster, 0 at once."
 }

@@ -2,8 +2,8 @@ package ru.deelter.vrcamera.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.CameraController.Mode;
+import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.rig.Rig;

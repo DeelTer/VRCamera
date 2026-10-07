@@ -42,6 +42,14 @@ loom {
             sourceSet sourceSets.client
         }
     }
+
+    // Every Minecraft version runs in a folder of its own, a world that was opened in a newer one can't go back.
+    // The version of gradle.properties keeps "run", the others asked for with -Pmc get "run-<version>"
+    def usualVersion = new Properties()
+    file("gradle.properties").withInputStream { usualVersion.load(it) }
+    runs.configureEach {
+        runDir = project.mc == usualVersion.mc ? "run" : "run-${project.mc}"
+    }
 }
 
 // The few classes that can't be the same for every Minecraft version, like the ones that open a window: the game

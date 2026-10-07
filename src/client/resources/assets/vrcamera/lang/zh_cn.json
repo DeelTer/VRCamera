@@ -266,5 +266,8 @@
 	"vrcamera.option.freeAutoSwitch": "自由摄像机：由我转向的那台拍摄",
 	"vrcamera.option.freeAutoSwitch.tooltip": "有多台自由摄像机时，你朝哪台看一会儿，哪台就开始拍摄。手动选择的摄像机会保持，直到你看向另一台。操控或拿着摄像机时不生效。",
 	"vrcamera.option.freeAutoSwitchAngle": "自由摄像机：视线精度",
-	"vrcamera.option.freeAutoSwitchAngle.tooltip": "视线与自由摄像机偏离多少度以内算作转向它。数值越大切换越早，不必正对着它。"
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "视线与自由摄像机偏离多少度以内算作转向它。数值越大切换越早，不必正对着它。",
+	"key.vrcamera.preset.fly": "飞向下一台摄像机",
+	"vrcamera.option.freeAutoSwitchSeconds": "自由摄像机：注视时长",
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "视线朝向自由摄像机多少秒后它开始拍摄。数值越小切换越快，0 为立即。"
 }

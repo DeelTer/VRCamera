@@ -113,6 +113,7 @@ public class CameraConfig {
 	public double cameraLabelDistance = 48;
 	public boolean freeAutoSwitch = true;
 	public double freeAutoSwitchAngle = 35;
+	public double freeAutoSwitchSeconds = 0.2;
 	/**
 	 * blocks from the head to the camera up to which the selfie screen is shown
 	 */

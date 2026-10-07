@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.desktop;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
@@ -42,6 +43,10 @@ final class FreeCamera {
 	// this many blocks that way is gone
 	private static final double GLIDE_DRAG = 0.7;
 	private static final double GONE_AFTER = 48.0;
+	// a flight from one camera to another: blocks per second, and the seconds it takes at least and at most
+	private static final double FLIGHT_SPEED = 6.0;
+	private static final double FLIGHT_SHORTEST = 1.5;
+	private static final double FLIGHT_LONGEST = 8.0;
 	private static final Gson GSON = new Gson();
 
 	/**
@@ -75,6 +80,11 @@ final class FreeCamera {
 	private Vec3 push = Vec3.ZERO;
 	private Vec3 glide = Vec3.ZERO;
 	private double glided;
+	// The flight from one camera to another: where it started, how far along it is from 0 to 1, and how long it
+	// takes. At 1 there is none
+	private Spot flightFrom;
+	private double flight = 1.0;
+	private double flightSeconds;
 	private double yaw;
 	private double pitch;
 	private double fov = 70.0;
@@ -187,6 +197,7 @@ final class FreeCamera {
 		}
 		Vec3 look = forward.normalize();
 		Spot spot = this.spots.get(this.active);
+		this.flight = 1.0;
 		this.position = position;
 		spot.yaw = Math.toDegrees(Math.atan2(-look.x, look.z));
 		spot.pitch = CamMath.clamp(Math.toDegrees(-Math.asin(CamMath.clamp(look.y, -1.0, 1.0))), -MAX_PITCH, MAX_PITCH);
@@ -201,6 +212,7 @@ final class FreeCamera {
 	void show(int camera) {
 		settle();
 		this.active = camera;
+		this.flight = 1.0;
 		Spot spot = this.spots.get(camera);
 		this.position = spot.position();
 		this.velocity = Vec3.ZERO;
@@ -209,6 +221,32 @@ final class FreeCamera {
 		this.yaw = spot.yaw;
 		this.pitch = spot.pitch;
 		this.fov = spot.fov;
+	}
+
+	/**
+	 * Goes over to another camera in one move, filming all the way: from where and how the one that films is, to
+	 * where and how the other one stands. The further, the longer it takes.
+	 */
+	void flyTo(int camera) {
+		settle();
+		this.flightFrom = new Spot();
+		this.flightFrom.x = this.position.x;
+		this.flightFrom.y = this.position.y;
+		this.flightFrom.z = this.position.z;
+		this.flightFrom.yaw = this.yaw;
+		this.flightFrom.pitch = this.pitch;
+		this.flightFrom.fov = this.fov;
+		this.active = camera;
+		this.flight = 0;
+		this.flightSeconds = CamMath.clamp(this.position.distanceTo(this.spots.get(camera).position()) / FLIGHT_SPEED,
+				FLIGHT_SHORTEST, FLIGHT_LONGEST);
+		this.velocity = Vec3.ZERO;
+		this.glide = Vec3.ZERO;
+		this.glided = 0;
+	}
+
+	private boolean isInFlight() {
+		return this.flight < 1.0;
 	}
 
 	/**
@@ -283,6 +321,18 @@ final class FreeCamera {
 	 */
 	DesktopCamera.Pose pose(double dt) {
 		Spot spot = this.spots.get(this.active);
+		if (isInFlight()) {
+			this.flight = Math.min(1.0, this.flight + dt / this.flightSeconds);
+			double along = CamMath.smoothstep(this.flight);
+			Spot from = this.flightFrom;
+			this.position = from.position().lerp(spot.position(), along);
+			// the short way around, and by the end it is the number the spot has: a turn more or less looks the same
+			this.yaw = isInFlight() ? from.yaw + Mth.wrapDegrees(spot.yaw - from.yaw) * along : spot.yaw;
+			this.pitch = from.pitch + (spot.pitch - from.pitch) * along;
+			this.fov = from.fov + (spot.fov - from.fov) * along;
+			this.push = Vec3.ZERO;
+			return new DesktopCamera.Pose(this.position, rotation(this.active), (float) this.fov);
+		}
 		this.velocity = this.velocity.lerp(this.push, ease(MOVE_EASE, dt));
 		this.push = Vec3.ZERO;
 		this.position = this.position.add(this.velocity.scale(dt));
@@ -349,7 +399,8 @@ final class FreeCamera {
 	 * the camera that films is where it was flown to, its spot has to hear of that
 	 */
 	private void settle() {
-		if (this.active >= 0 && this.active < this.spots.size()) {
+		// on its way to another camera it is not where that one stands
+		if (!isInFlight() && this.active >= 0 && this.active < this.spots.size()) {
 			Spot spot = this.spots.get(this.active);
 			spot.x = this.position.x;
 			spot.y = this.position.y;

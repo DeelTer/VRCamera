@@ -54,6 +54,24 @@ public class LevelRendererMixin {
 		ChromaKey.shutOut();
 	}
 
+	// The same from 26.3 on. There the world and the entities are drawn in one go, and the clears happen in the
+	// middle of it. With the transparency that needs no sorting, the game is done with that go by the time it gets
+	// to what is see-through
+	@Inject(method = "executeSolid", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;executeSolid(Lcom/mojang/renderpearl/api/commands/RenderPass;)V"), require = 0)
+	private void vrcamera$greenBehindEntitiesWhileDrawing(CallbackInfo ci) {
+		ChromaKey.paintOverWhileDrawing();
+	}
+
+	@Inject(method = "executeClassicTransparency", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;executeTranslucent(Lcom/mojang/renderpearl/api/commands/RenderPass;)V", shift = At.Shift.AFTER), require = 0)
+	private void vrcamera$nothingAfterEntitiesWhileDrawing(CallbackInfo ci) {
+		ChromaKey.shutOutWhileDrawing();
+	}
+
+	@Inject(method = "executeOit", at = @At("HEAD"), require = 0)
+	private void vrcamera$nothingAfterSolidEntities(CallbackInfo ci) {
+		ChromaKey.shutOut();
+	}
+
 	// what is drawn the way entities are without being one: chests and signs, particles, the outline of a block
 	@WrapWithCondition(method = "submitFeatures*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;submitBlockEntities(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/state/level/LevelRenderState;Lnet/minecraft/client/renderer/SubmitNodeCollector;)V"), require = 0)
 	private boolean vrcamera$noBlockEntities(

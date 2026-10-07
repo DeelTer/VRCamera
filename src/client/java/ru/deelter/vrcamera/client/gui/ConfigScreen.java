@@ -97,6 +97,8 @@ public final class ConfigScreen {
 				value -> config.freeAutoSwitch = value));
 		general.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
 				defaults.freeAutoSwitchAngle, 10, 90, 5, "%.0f", value -> config.freeAutoSwitchAngle = value));
+		general.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
+				defaults.freeAutoSwitchSeconds, 0, 1.5, 0.05, "%.2f s", value -> config.freeAutoSwitchSeconds = value));
 		general.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
 				value -> config.outputFps = value));
 		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,

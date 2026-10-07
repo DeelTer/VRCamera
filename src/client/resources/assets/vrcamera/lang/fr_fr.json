@@ -266,5 +266,8 @@
 	"vrcamera.option.freeAutoSwitch": "Caméras libres : filme celle vers laquelle je me tourne",
 	"vrcamera.option.freeAutoSwitch.tooltip": "Avec plusieurs caméras libres, celle vers laquelle vous regardez un instant se met à filmer. Une caméra choisie à la main reste jusqu'à ce que vous en regardiez une autre. Pas pendant que vous pilotez ou tenez une caméra.",
 	"vrcamera.option.freeAutoSwitchAngle": "Caméras libres : précision du regard",
-	"vrcamera.option.freeAutoSwitchAngle.tooltip": "De combien de degrés votre regard peut s'écarter d'une caméra libre pour compter comme tourné vers elle. Plus grand : le changement se fait plus tôt, avant de la regarder en face."
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "De combien de degrés votre regard peut s'écarter d'une caméra libre pour compter comme tourné vers elle. Plus grand : le changement se fait plus tôt, avant de la regarder en face.",
+	"key.vrcamera.preset.fly": "Vol vers la caméra suivante",
+	"vrcamera.option.freeAutoSwitchSeconds": "Caméras libres : durée du regard",
+	"vrcamera.option.freeAutoSwitchSeconds.tooltip": "Combien de secondes votre regard doit rester vers une caméra libre avant qu'elle filme. Plus petit réagit plus vite, 0 tout de suite."
 }

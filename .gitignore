@@ -19,6 +19,7 @@ hs_err_pid*
 
 # Common working directory
 run
+run-*
 
 # Local architecture notes
 /ARCHITECTURE.[mM][dD]
