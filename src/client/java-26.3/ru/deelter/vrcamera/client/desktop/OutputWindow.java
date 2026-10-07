@@ -40,9 +40,6 @@ public final class OutputWindow {
 		return new double[2];
 	}
 
-	public static void giveBack() {
-	}
-
 	public static boolean isFocused() {
 		return false;
 	}

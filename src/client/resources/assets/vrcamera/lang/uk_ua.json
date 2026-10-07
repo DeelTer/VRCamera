@@ -253,5 +253,6 @@
 	"vrcamera.message.free.full": "Камера: не більше %s камер",
 	"vrcamera.option.cameraLabelDistance": "Вільні камери: дистанція міток",
 	"vrcamera.option.cameraLabelDistance.tooltip": "Інші поставлені вільні камери показуються з літерою і доступні для вибору не далі цієї відстані від вас. 0 — сховати всі. Значок камери, що знімає, видно завжди.",
-	"vrcamera.message.free.cleared": "Камера: усі камери прибрано"
+	"vrcamera.message.free.cleared": "Камера: усі камери прибрано",
+	"vrcamera.command.cam.none": "Вільної камери %s тут немає"
 }

@@ -38,6 +38,10 @@ final class FreeCamera {
 	private static final double MAX_FOV = 120.0;
 	// the part of the field of view one notch of the wheel is
 	private static final double FOV_WHEEL = 0.08;
+	// Thrown, a camera glides on and slows down by this part of its speed per second. One that got further than
+	// this many blocks that way is gone
+	private static final double GLIDE_DRAG = 0.7;
+	private static final double GONE_AFTER = 48.0;
 	private static final Gson GSON = new Gson();
 
 	/**
@@ -69,6 +73,8 @@ final class FreeCamera {
 	private Vec3 position = Vec3.ZERO;
 	private Vec3 velocity = Vec3.ZERO;
 	private Vec3 push = Vec3.ZERO;
+	private Vec3 glide = Vec3.ZERO;
+	private double glided;
 	private double yaw;
 	private double pitch;
 	private double fov = 70.0;
@@ -141,6 +147,10 @@ final class FreeCamera {
 		return this.spots.get(camera).name;
 	}
 
+	List<String> names() {
+		return this.spots.stream().map(spot -> spot.name).toList();
+	}
+
 	/**
 	 * takes all cameras of the world away, those of its other dimensions as well
 	 */
@@ -194,9 +204,31 @@ final class FreeCamera {
 		Spot spot = this.spots.get(camera);
 		this.position = spot.position();
 		this.velocity = Vec3.ZERO;
+		this.glide = Vec3.ZERO;
+		this.glided = 0;
 		this.yaw = spot.yaw;
 		this.pitch = spot.pitch;
 		this.fov = spot.fov;
+	}
+
+	/**
+	 * throws the camera that films: it glides on from where it is
+	 *
+	 * @param velocity blocks per second, {@link Vec3#ZERO} stops it where it is
+	 */
+	void fling(Vec3 velocity) {
+		this.glide = velocity;
+		this.glided = 0;
+		if (velocity.lengthSqr() == 0) {
+			save();
+		}
+	}
+
+	/**
+	 * @return if the camera that films was thrown too far to be kept
+	 */
+	boolean isGone() {
+		return this.glided > GONE_AFTER;
 	}
 
 	/**
@@ -211,14 +243,10 @@ final class FreeCamera {
 	 * takes the camera that films away, the one before it films then
 	 */
 	void remove() {
+		int before = Math.max(0, this.active - 1);
 		this.spots.remove(this.active);
-		this.active = Math.max(0, this.active - 1);
-		Spot spot = this.spots.get(this.active);
-		this.position = spot.position();
-		this.velocity = Vec3.ZERO;
-		this.yaw = spot.yaw;
-		this.pitch = spot.pitch;
-		this.fov = spot.fov;
+		this.active = -1;
+		show(before);
 		save();
 	}
 
@@ -231,6 +259,9 @@ final class FreeCamera {
 		Vec3 way = ahead.scale(keys.z).add(right.lengthSqr() < 1.0E-6 ? Vec3.ZERO : right.normalize().scale(keys.x))
 				.add(0, keys.y, 0);
 		this.push = way.lengthSqr() < 1.0E-6 ? Vec3.ZERO : way.normalize().scale(SPEED * (fast ? FAST : 1.0));
+		if (this.push.lengthSqr() > 0) {
+			this.glide = Vec3.ZERO;
+		}
 	}
 
 	/**
@@ -263,6 +294,14 @@ final class FreeCamera {
 		this.velocity = this.velocity.lerp(this.push, ease(MOVE_EASE, dt));
 		this.push = Vec3.ZERO;
 		this.position = this.position.add(this.velocity.scale(dt));
+		if (this.glide.lengthSqr() > 0) {
+			this.position = this.position.add(this.glide.scale(dt));
+			this.glided += this.glide.length() * dt;
+			this.glide = this.glide.scale(Math.exp(-GLIDE_DRAG * dt));
+			if (this.glide.lengthSqr() < 0.01) {
+				fling(Vec3.ZERO);
+			}
+		}
 		this.yaw += (spot.yaw - this.yaw) * ease(TURN_EASE, dt);
 		this.pitch += (spot.pitch - this.pitch) * ease(TURN_EASE, dt);
 		this.fov += (spot.fov - this.fov) * ease(FOV_EASE, dt);

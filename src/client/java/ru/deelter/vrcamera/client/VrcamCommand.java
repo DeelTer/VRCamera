@@ -174,6 +174,19 @@ public final class VrcamCommand {
 				})));
 
 		dispatcher.register(root);
+		// short, for the one thing that is typed in the middle of a recording: which free camera films
+		dispatcher.register(ClientCommands.literal("cam")
+				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
+					DesktopCamera.INSTANCE.cameraNames().forEach(builder::suggest);
+					return builder.buildFuture();
+				}).executes(context -> {
+					String name = StringArgumentType.getString(context, "name");
+					if (!DesktopCamera.INSTANCE.showCamera(name)) {
+						context.getSource().sendError(Component.translatable("vrcamera.command.cam.none", name));
+						return 0;
+					}
+					return DONE;
+				})));
 	}
 
 	private static String name(Enum<?> value) {

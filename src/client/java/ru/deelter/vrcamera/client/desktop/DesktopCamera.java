@@ -34,7 +34,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import java.nio.file.Path;
 import java.io.IOException;
-import com.mojang.blaze3d.platform.InputConstants;
 
 /**
  * The director and the follow camera for a player without VR: the same shots, picked the same way, from what the
@@ -69,7 +68,7 @@ public final class DesktopCamera {
 	// Degrees the free camera turns: per unit of what the game makes of the mouse, as it turns a player, and per
 	// pixel the mouse is moved in the window of the camera
 	private static final double MOUSE_TURN = 0.15;
-	private static final double DRAG_TURN = 0.2;
+	private static final double DRAG_TURN = 0.12;
 	// Taking the camera with the mouse: from how far, how well it has to be pointed at in blocks plus blocks per
 	// block of distance, how near and far it can be held, and the part of the distance one notch of the wheel is
 	private static final double GRAB_REACH = 192.0;
@@ -78,8 +77,10 @@ public final class DesktopCamera {
 	private static final double GRAB_NEAR = 0.7;
 	private static final double GRAB_FAR = 32.0;
 	private static final double GRAB_WHEEL = 0.12;
-	// radians per second the view has to turn at when a free camera is let go of, to throw it away
-	private static final double THROW_AWAY = 3.0;
+	// blocks per second a free camera has to be let go of at, to glide on
+	private static final double THROW_SPEED = 4.0;
+	// how large the letter of a free camera is, next to the camera icon
+	private static final double NAME_SIZE = 0.75;
 	// how fast a held camera comes after the look and after the wheel, per second
 	private static final double GRAB_EASE = 9.0;
 	private static final double GRAB_WHEEL_EASE = 3.5;
@@ -214,10 +215,12 @@ public final class DesktopCamera {
 		} else {
 			say("vrcamera.message.free.full", FreeCamera.MOST);
 		}
+		this.grabbed = false;
 	}
 
 	public void nextPoint() {
 		if (this.mode == Mode.FREE && !this.free.isEmpty()) {
+			this.grabbed = false;
 			say("vrcamera.message.free.point", name(this.free.next() - 1), this.free.count());
 		}
 	}
@@ -240,6 +243,29 @@ public final class DesktopCamera {
 
 	private String name(int camera) {
 		return this.free.name(camera);
+	}
+
+	/**
+	 * @return what the free cameras of the place the player is in are called, none while the mode is another
+	 */
+	public List<String> cameraNames() {
+		return this.mode == Mode.FREE ? this.free.names() : List.of();
+	}
+
+	/**
+	 * cuts to the free camera of that name
+	 *
+	 * @return false if there is none
+	 */
+	public boolean showCamera(String name) {
+		int camera = cameraNames().indexOf(name.toUpperCase(java.util.Locale.ROOT));
+		if (camera < 0) {
+			return false;
+		}
+		this.grabbed = false;
+		this.free.show(camera);
+		say("vrcamera.message.free.point", name(camera), this.free.count());
+		return true;
 	}
 
 	/**
@@ -511,17 +537,12 @@ public final class DesktopCamera {
 	private void letGo() {
 		this.grabbed = false;
 		if (this.mode == Mode.FREE) {
-			// A flick of the view, measured by how fast it turned: a camera held far away is fast with any look
-			boolean thrown = this.handThrow.velocity(this.subject.velocity).length() >
-					THROW_AWAY * Math.max(1.0, this.grabHeld);
-			if (thrown && this.free.count() > 1) {
-				// thrown away. Not the last one, the mode has nothing to film with then
-				say("vrcamera.message.free.removed", name(this.free.active()));
-				this.free.remove();
-			} else {
-				// it stays as it was held
-				this.free.place(this.grabbedAt, new Vec3(this.grabRotation.transform(new Vector3f(0, 0, -1))),
-						this.pose == null ? 70.0 : this.pose.fov());
+			// it stays as it was held, and let go of in a swing it glides on from there
+			this.free.place(this.grabbedAt, new Vec3(this.grabRotation.transform(new Vector3f(0, 0, -1))),
+					this.pose == null ? 70.0 : this.pose.fov());
+			Vec3 swing = this.handThrow.velocity(this.subject.velocity);
+			if (swing.length() > THROW_SPEED) {
+				this.free.fling(swing.scale(CameraController.INSTANCE.config().throwPower));
 			}
 			return;
 		}
@@ -644,14 +665,13 @@ public final class DesktopCamera {
 			Vec3 up = new Vec3(view.upVector().x(), view.upVector().y(), view.upVector().z());
 			int filming = this.mode == Mode.FREE ? this.free.active() : 0;
 			boolean several = this.mode == Mode.FREE && this.free.count() > 1;
-			CameraController.INSTANCE.drawIndicatorWithoutVR(several ? CAMERA_ICON + " " + name(filming) : CAMERA_ICON,
+			CameraController.INSTANCE.drawIndicatorWithoutVR(CAMERA_ICON, several ? name(filming) : "",
 					markerPosition(), view.position(), forward, up, player.getScale(), true, grow(filming));
 			// the free cameras that do not film have their name for an icon, and no place at the edge of the view
 			for (int camera = 0; several && camera < this.free.count(); camera++) {
 				if (camera != filming && isAround(camera, view.position())) {
-					CameraController.INSTANCE.drawIndicatorWithoutVR(name(camera),
-							this.free.position(camera), view.position(), forward, up, player.getScale(), false,
-							grow(camera));
+					CameraController.INSTANCE.drawIndicatorWithoutVR(name(camera), "", this.free.position(camera),
+							view.position(), forward, up, player.getScale(), false, NAME_SIZE * grow(camera));
 				}
 			}
 		} catch (IllegalStateException e) {
@@ -808,9 +828,6 @@ public final class DesktopCamera {
 			mc.getFramerateLimitTracker().onInputReceived();
 			zoom(wheel);
 			this.free.turn(mouse[0] * DRAG_TURN, mouse[1] * DRAG_TURN);
-			if (OutputWindow.isKeyDown(InputConstants.KEY_ESCAPE)) {
-				OutputWindow.giveBack();
-			}
 		}
 		reach(mc, player, partialTick, realDt);
 		if (this.grabbed) {
@@ -822,7 +839,18 @@ public final class DesktopCamera {
 			if (this.flying) {
 				fly(mc);
 			}
-			return this.free.pose(realDt);
+			Pose filmed = this.free.pose(realDt);
+			if (!this.free.isGone()) {
+				return filmed;
+			}
+			if (this.free.count() == 1) {
+				// the last one is not thrown away, the mode has nothing to film with then
+				this.free.fling(Vec3.ZERO);
+				return filmed;
+			}
+			say("vrcamera.message.free.removed", name(this.free.active()));
+			this.free.remove();
+			return this.free.pose(0);
 		}
 		Shot shot;
 		if (this.steered != null) {

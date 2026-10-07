@@ -29,6 +29,7 @@ public final class OutputWindow {
 	private static boolean unsupported;
 	private static double scrolled;
 	private static boolean captured;
+	private static boolean letGo;
 	private static boolean moving;
 	private static double mouseX;
 	private static double mouseY;
@@ -205,14 +206,26 @@ public final class OutputWindow {
 	}
 
 	/**
-	 * takes the mouse for the window, hidden and held inside of it, or lets it go again
+	 * Takes the mouse for the window, hidden and held inside of it, or lets it go again. Escape lets it go as well,
+	 * to move the window or to leave it, and a click into the window takes it back.
 	 */
 	public static void capture(boolean wanted) {
-		if (window != 0 && wanted != captured) {
-			captured = wanted;
+		if (window == 0) {
+			return;
+		}
+		if (!wanted) {
+			letGo = false;
+		} else if (GLFW.glfwGetKey(window, GLFW.GLFW_KEY_ESCAPE) == GLFW.GLFW_PRESS) {
+			letGo = true;
+		} else if (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS) {
+			letGo = false;
+		}
+		boolean held = wanted && !letGo;
+		if (held != captured) {
+			captured = held;
 			moving = false;
 			GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR,
-					wanted ? GLFW.GLFW_CURSOR_DISABLED : GLFW.GLFW_CURSOR_NORMAL);
+					held ? GLFW.GLFW_CURSOR_DISABLED : GLFW.GLFW_CURSOR_NORMAL);
 		}
 	}
 
@@ -239,15 +252,6 @@ public final class OutputWindow {
 		return moved;
 	}
 
-	/**
-	 * gives the keyboard back to the game window
-	 */
-	public static void giveBack() {
-		if (window != 0) {
-			GLFW.glfwFocusWindow(Minecraft.getInstance().getWindow().handle());
-		}
-	}
-
 	public static void close() {
 		if (window == 0) {
 			return;
@@ -255,6 +259,7 @@ public final class OutputWindow {
 		Callbacks.glfwFreeCallbacks(window);
 		scrolled = 0;
 		captured = false;
+		letGo = false;
 		moving = false;
 		long game = Minecraft.getInstance().getWindow().handle();
 		GLCapabilities gameCapabilities = GL.getCapabilities();

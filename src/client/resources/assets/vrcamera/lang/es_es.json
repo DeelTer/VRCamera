@@ -253,5 +253,6 @@
 	"vrcamera.message.free.full": "Cámara: no más de %s cámaras",
 	"vrcamera.option.cameraLabelDistance": "Cámaras libres: distancia de las marcas",
 	"vrcamera.option.cameraLabelDistance.tooltip": "Las demás cámaras libres colocadas se muestran con su letra, y se pueden elegir, hasta esta distancia. 0 las oculta todas. La que filma conserva su icono.",
-	"vrcamera.message.free.cleared": "Cámara: todas las cámaras quitadas"
+	"vrcamera.message.free.cleared": "Cámara: todas las cámaras quitadas",
+	"vrcamera.command.cam.none": "Aquí no hay cámara libre %s"
 }

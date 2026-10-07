@@ -434,15 +434,15 @@ films what you look at, and stays there whatever you do: it does not follow you 
 to 26 of them, with the key for a new shot of your own (`N`) or `/vrcam screen free` once more. They are called A,
 B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in the world with their letter over them, the one that films with the camera
 icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time: the
-attack key on a camera picks it, so does the key for the next shot of your own. Take one with the use key and it
-films and goes where you look; let go and it stays as you held it, let go in a swing and it is thrown away and
-gone. The last one can't be. The key that calls the camera puts the one that films at your eyes again. They are
+attack key on a camera picks it, so does the key for the next shot of your own, and `/cam B` cuts to one by its letter. Take one with the use key and it
+films and goes where you look; let go and it stays as you held it, let go in a swing and it glides on and slows
+down; one that got 48 blocks away like that is gone. The last one is not. The key that calls the camera puts the one that films at your eyes again. They are
 kept with the world, for each dimension; `/vrcam screen clear` takes them all away. The keys of the mod work in
 the window of the camera as well as in the game.
 
 Take the camera over (click into its window, or `G`) and you fly it: the keys to walk move it, jump and sneak take
-it up and down, sprint makes it fast, and the mouse turns it — its window takes the mouse for that, `Esc` goes back to
-the game; from the game window it turns it as it turns you. It comes after all of that softly. The wheel zooms, also for a shot of the director that
+it up and down, sprint makes it fast, and the mouse turns it — its window takes the mouse for that, `Esc` lets it go, to move the window or
+leave it, and a click into the window takes it again; from the game window it turns it as it turns you. It comes after all of that softly. The wheel zooms, also for a shot of the director that
 you steer. While you have the camera, lines that split the picture into thirds are on its window; they go when
 you give it back, and are never in what you record after that.
 

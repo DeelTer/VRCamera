@@ -317,23 +317,24 @@ public final class CameraController implements Tracker {
 	 */
 	private void drawIndicator(String icon, Vec3 camera, VRData vr, boolean alsoOutOfSight) {
 		drawIndicator(icon, camera, vr.hmd.getPosition(), new Vec3(vr.hmd.getDirection()),
-				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0);
+				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0, "");
 	}
 
 	/**
 	 * the same for a player without VR
 	 *
+	 * @param name what the camera is called, in front of the distance to it. Empty for none
 	 * @param head where the game looks from, and which way and how it is turned
 	 */
 	public void drawIndicatorWithoutVR(
-			String icon, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale, boolean alsoOutOfSight,
-			double grow) {
-		drawIndicator(icon, camera, head, forward, up, scale, alsoOutOfSight, grow);
+			String icon, String name, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale,
+			boolean alsoOutOfSight, double grow) {
+		drawIndicator(icon, camera, head, forward, up, scale, alsoOutOfSight, grow, name);
 	}
 
 	private void drawIndicator(
 			String icon, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float worldScale, boolean alsoOutOfSight,
-			double grow) {
+			double grow, String name) {
 		Vec3 right = forward.cross(up);
 
 		Vec3 toCamera = camera.subtract(head);
@@ -367,7 +368,7 @@ public final class CameraController implements Tracker {
 		Gizmos.billboardText(icon, iconTop,
 				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
 		// in blocks, the world scale of Vivecraft changes the size of the player and not of the world
-		Gizmos.billboardText(Math.round(distance) + " M", textTop,
+		Gizmos.billboardText((name.isEmpty() ? "" : name + "  ") + Math.round(distance) + " M", textTop,
 						TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale((float) (INDICATOR_TEXT_SCALE * size)))
 				.setAlwaysOnTop();
 	}
