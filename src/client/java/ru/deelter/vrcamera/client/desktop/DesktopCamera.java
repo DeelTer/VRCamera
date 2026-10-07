@@ -35,6 +35,7 @@ import ru.deelter.vrcamera.client.photo.PhotoStore;
 import java.nio.file.Path;
 import java.io.IOException;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
+import java.util.function.UnaryOperator;
 
 /**
  * The director and the follow camera for a player without VR: the same shots, picked the same way, from what the
@@ -694,18 +695,52 @@ public final class DesktopCamera {
 			Vec3 up = new Vec3(view.upVector().x(), view.upVector().y(), view.upVector().z());
 			int filming = this.mode == Mode.FREE ? this.free.active() : 0;
 			boolean several = this.mode == Mode.FREE && this.free.count() > 1;
+			UnaryOperator<Vec3> placed = steady(mc, player, view.position(), forward, up);
 			CameraController.INSTANCE.drawIndicatorWithoutVR(CAMERA_ICON, several ? name(filming) : "",
-					markerPosition(), view.position(), forward, up, player.getScale(), true, grow(filming));
+					markerPosition(), view.position(), forward, up, player.getScale(), true, grow(filming), placed);
 			// the free cameras that do not film have their name for an icon, and no place at the edge of the view
 			for (int camera = 0; several && camera < this.free.count(); camera++) {
 				if (camera != filming && isAround(camera, view.position())) {
 					CameraController.INSTANCE.drawIndicatorWithoutVR(name(camera), "", this.free.position(camera),
-							view.position(), forward, up, player.getScale(), false, NAME_SIZE * grow(camera));
+							view.position(), forward, up, player.getScale(), false, NAME_SIZE * grow(camera),
+							placed);
 				}
 			}
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
 		}
+	}
+
+	/**
+	 * With view bobbing on, the game sways the whole world in front of the eyes of a player who walks. An icon that
+	 * is read like a part of the screen sways with it, and should not.
+	 *
+	 * @return where to draw something for it to be seen where it is, with the sway of this frame taken back
+	 */
+	private static UnaryOperator<Vec3> steady(Minecraft mc, LocalPlayer player, Vec3 eye, Vec3 forward, Vec3 up) {
+		if (!mc.options.bobView().get()) {
+			return UnaryOperator.identity();
+		}
+		// the numbers of GameRenderer#bobView: a shift, then a roll, then a nod
+		float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		double walk = player.avatarState().getBackwardsInterpolatedWalkDistance(partialTick) * Math.PI;
+		double bob = player.avatarState().getInterpolatedBob(partialTick);
+		double shiftX = Math.sin(walk) * bob * 0.5;
+		double shiftY = -Math.abs(Math.cos(walk) * bob);
+		double roll = -Math.toRadians(Math.sin(walk) * bob * 3.0);
+		double nod = -Math.toRadians(Math.abs(Math.cos(walk - 0.2) * bob) * 5.0);
+		Vec3 right = forward.cross(up);
+		return point -> {
+			Vec3 to = point.subtract(eye);
+			double x = to.dot(right) - shiftX;
+			double y = to.dot(up) - shiftY;
+			double z = -to.dot(forward);
+			double rolledX = x * Math.cos(roll) - y * Math.sin(roll);
+			double rolledY = x * Math.sin(roll) + y * Math.cos(roll);
+			double noddedY = rolledY * Math.cos(nod) - z * Math.sin(nod);
+			double noddedZ = rolledY * Math.sin(nod) + z * Math.cos(nod);
+			return eye.add(right.scale(rolledX)).add(up.scale(noddedY)).add(forward.scale(-noddedZ));
+		};
 	}
 
 	/**

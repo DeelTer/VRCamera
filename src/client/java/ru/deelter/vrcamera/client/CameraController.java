@@ -40,6 +40,7 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.Locale;
+import java.util.function.UnaryOperator;
 
 /**
  * Drives the Vivecraft handheld camera. Runs as a Vivecraft tracker, once per frame before rendering.
@@ -317,7 +318,8 @@ public final class CameraController implements Tracker {
 	 */
 	private void drawIndicator(String icon, Vec3 camera, VRData vr, boolean alsoOutOfSight) {
 		drawIndicator(icon, camera, vr.hmd.getPosition(), new Vec3(vr.hmd.getDirection()),
-				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0, "");
+				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0, "",
+				UnaryOperator.identity());
 	}
 
 	/**
@@ -325,16 +327,17 @@ public final class CameraController implements Tracker {
 	 *
 	 * @param name what the camera is called, in front of the distance to it. Empty for none
 	 * @param head where the game looks from, and which way and how it is turned
+	 * @param placed where to draw what should be seen at a place, see {@code DesktopCamera#steady}
 	 */
 	public void drawIndicatorWithoutVR(
 			String icon, String name, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale,
-			boolean alsoOutOfSight, double grow) {
-		drawIndicator(icon, camera, head, forward, up, scale, alsoOutOfSight, grow, name);
+			boolean alsoOutOfSight, double grow, UnaryOperator<Vec3> placed) {
+		drawIndicator(icon, camera, head, forward, up, scale, alsoOutOfSight, grow, name, placed);
 	}
 
 	private void drawIndicator(
 			String icon, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float worldScale, boolean alsoOutOfSight,
-			double grow, String name) {
+			double grow, String name, UnaryOperator<Vec3> placed) {
 		Vec3 right = forward.cross(up);
 
 		Vec3 toCamera = camera.subtract(head);
@@ -363,8 +366,8 @@ public final class CameraController implements Tracker {
 		double size = this.config.indicatorSize * anchor.distanceTo(head) * grow;
 		float iconScale = (float) (INDICATOR_ICON_SCALE * size);
 		// text is drawn downwards from its position: the icon stands on the anchor, the distance hangs below it
-		Vec3 iconTop = anchor.add(up.scale(iconScale / 2.0));
-		Vec3 textTop = anchor.subtract(up.scale(0.2 * iconScale / 2.0));
+		Vec3 iconTop = placed.apply(anchor.add(up.scale(iconScale / 2.0)));
+		Vec3 textTop = placed.apply(anchor.subtract(up.scale(0.2 * iconScale / 2.0)));
 		Gizmos.billboardText(icon, iconTop,
 				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
 		// in blocks, the world scale of Vivecraft changes the size of the player and not of the world
