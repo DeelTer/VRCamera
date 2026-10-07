@@ -23,7 +23,8 @@ The mod runs on the client, so there is nothing to install on the server.
 Use Fabric Loader and put these files in your `mods` folder:
 
 - VRCamera for your Minecraft version.
-- Vivecraft for the same Minecraft version (Fabric).
+- Vivecraft for the same Minecraft version (Fabric), for VR. Without it the mod works for a player at a
+  screen: the director, the follow camera, the free cameras, the camera window and the green screen.
 - Fabric API.
 
 Optional: **Cloth Config** adds the settings screen; **Mod Menu** adds a settings button in the mod list.

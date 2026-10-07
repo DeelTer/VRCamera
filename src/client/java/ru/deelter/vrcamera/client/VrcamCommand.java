@@ -8,6 +8,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.Pace;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
@@ -30,35 +31,38 @@ public final class VrcamCommand {
 	private static final int DONE = 1;
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-		CameraController controller = CameraController.INSTANCE;
+		// the camera of Vivecraft, null without Vivecraft: what is only for that one is left out then
+		CameraController controller = Vr.INSTALLED ? CameraController.INSTANCE : null;
 
 		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
 				.executes(context -> status(context.getSource(), controller));
 
-		for (CameraController.Mode mode : CameraController.Mode.values()) {
-			root.then(ClientCommands.literal(name(mode)).executes(context -> {
-				controller.setMode(mode);
+		if (controller != null) {
+			for (CameraController.Mode mode : CameraController.Mode.values()) {
+				root.then(ClientCommands.literal(name(mode)).executes(context -> {
+					controller.setMode(mode);
+					return DONE;
+				}));
+			}
+			root.then(ClientCommands.literal("mode").executes(context -> {
+				controller.cycleMode();
+				return DONE;
+			}));
+			root.then(ClientCommands.literal("next").executes(context -> {
+				controller.nextShot();
+				return DONE;
+			}));
+			root.then(ClientCommands.literal("hold").executes(context -> {
+				controller.toggleHold();
+				return DONE;
+			}));
+			root.then(ClientCommands.literal("summon").executes(context -> {
+				controller.summon();
 				return DONE;
 			}));
 		}
-		root.then(ClientCommands.literal("mode").executes(context -> {
-			controller.cycleMode();
-			return DONE;
-		}));
-		root.then(ClientCommands.literal("next").executes(context -> {
-			controller.nextShot();
-			return DONE;
-		}));
-		root.then(ClientCommands.literal("hold").executes(context -> {
-			controller.toggleHold();
-			return DONE;
-		}));
-		root.then(ClientCommands.literal("summon").executes(context -> {
-			controller.summon();
-			return DONE;
-		}));
 		root.then(ClientCommands.literal("photo").executes(context -> {
-			controller.takePhoto();
+			VrcameraClient.takePhoto();
 			return DONE;
 		}));
 		root.then(ClientCommands.literal("load")
@@ -69,15 +73,15 @@ public final class VrcamCommand {
 					return DONE;
 				})));
 		root.then(ClientCommands.literal("debug").executes(context -> {
-			controller.toggleDebug();
+			DebugOverlay.toggle();
 			return DONE;
 		}));
 		LiteralArgumentBuilder<FabricClientCommandSource> pace = ClientCommands.literal("pace");
 		for (Pace value : Pace.values()) {
 			String name = value.name().toLowerCase(Locale.ROOT);
 			pace.then(ClientCommands.literal(name).executes(context -> {
-				value.apply(controller.config());
-				controller.config().save();
+				value.apply(CameraConfig.current());
+				CameraConfig.current().save();
 				context.getSource().sendFeedback(Component.translatable("vrcamera.command.pace",
 						Component.translatable("vrcamera.option.pace." + name)));
 				return DONE;
@@ -88,7 +92,7 @@ public final class VrcamCommand {
 		LiteralArgumentBuilder<FabricClientCommandSource> screen = ClientCommands.literal("screen");
 		for (DesktopCamera.Mode mode : DesktopCamera.Mode.values()) {
 			screen.then(ClientCommands.literal(mode.name().toLowerCase(Locale.ROOT)).executes(context -> {
-				if (mode != DesktopCamera.Mode.OFF && CameraController.isVRRunning()) {
+				if (mode != DesktopCamera.Mode.OFF && Vr.isRunning()) {
 					context.getSource().sendError(Component.translatable("vrcamera.command.screen.vr"));
 					return 0;
 				}
@@ -99,8 +103,8 @@ public final class VrcamCommand {
 		for (ScreenOutput output : ScreenOutput.values()) {
 			// where it films to: "window" gives it a window of its own and leaves the view of the player alone
 			screen.then(ClientCommands.literal(output == ScreenOutput.WINDOW ? "window" : "here").executes(context -> {
-				controller.config().screenOutput = output;
-				controller.config().save();
+				CameraConfig.current().screenOutput = output;
+				CameraConfig.current().save();
 				context.getSource().sendFeedback(Component.translatable("vrcamera.command.screen." +
 						output.name().toLowerCase(Locale.ROOT)));
 				return DONE;
@@ -130,7 +134,11 @@ public final class VrcamCommand {
 			return DONE;
 		}));
 		root.then(ClientCommands.literal("reload").executes(context -> {
-			controller.reloadConfig();
+			if (controller != null) {
+				controller.reloadConfig();
+			} else {
+				CameraConfig.reload();
+			}
 			context.getSource().sendFeedback(Component.translatable("vrcamera.command.reloaded"));
 			return DONE;
 		}));
@@ -146,42 +154,44 @@ public final class VrcamCommand {
 			return DONE;
 		}));
 
-		// one literal per shot, so they are all offered by tab completion
-		LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot");
-		for (ShotType type : ShotType.values()) {
-			shot.then(ClientCommands.literal(name(type)).executes(context -> {
-				if (!controller.showShot(type)) {
-					context.getSource().sendError(Component.translatable("vrcamera.message.novr"));
-					return 0;
-				}
-				return DONE;
-			}));
-		}
-		root.then(shot);
-
-		root.then(ClientCommands.literal("preset")
-				.then(ClientCommands.literal("next").executes(context -> {
-					controller.nextPreset();
-					return DONE;
-				}))
-				.then(ClientCommands.literal("new").executes(context -> {
-					controller.newPreset();
-					return DONE;
-				}))
-				.then(ClientCommands.literal("delete").executes(context -> {
-					controller.deletePreset();
-					return DONE;
-				}))
-				.then(ClientCommands.argument("number", IntegerArgumentType.integer(1)).executes(context -> {
-					int number = IntegerArgumentType.getInteger(context, "number");
-					if (!controller.selectPreset(number - 1)) {
-						context.getSource().sendError(
-								Component.translatable("vrcamera.command.nopreset", controller.presetLabel()));
+		if (controller != null) {
+			// one literal per shot, so they are all offered by tab completion
+			LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot");
+			for (ShotType type : ShotType.values()) {
+				shot.then(ClientCommands.literal(name(type)).executes(context -> {
+					if (!controller.showShot(type)) {
+						context.getSource().sendError(Component.translatable("vrcamera.message.novr"));
 						return 0;
 					}
 					return DONE;
-				})));
+				}));
+			}
+			root.then(shot);
 
+			root.then(ClientCommands.literal("preset")
+					.then(ClientCommands.literal("next").executes(context -> {
+						controller.nextPreset();
+						return DONE;
+					}))
+					.then(ClientCommands.literal("new").executes(context -> {
+						controller.newPreset();
+						return DONE;
+					}))
+					.then(ClientCommands.literal("delete").executes(context -> {
+						controller.deletePreset();
+						return DONE;
+					}))
+					.then(ClientCommands.argument("number", IntegerArgumentType.integer(1)).executes(context -> {
+						int number = IntegerArgumentType.getInteger(context, "number");
+						if (!controller.selectPreset(number - 1)) {
+							context.getSource().sendError(
+									Component.translatable("vrcamera.command.nopreset", controller.presetLabel()));
+							return 0;
+						}
+						return DONE;
+					})));
+
+		}
 		dispatcher.register(root);
 		// short, for what is typed in the middle of a recording: the free cameras
 		dispatcher.register(ClientCommands.literal("cam")
@@ -219,7 +229,8 @@ public final class VrcamCommand {
 	}
 
 	private static int status(FabricClientCommandSource source, CameraController controller) {
-		for (String line : DebugOverlay.lines(controller)) {
+		boolean onScreen = controller == null || DesktopCamera.INSTANCE.isOn();
+		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : DebugOverlay.lines(controller)) {
 			source.sendFeedback(Component.literal(line));
 		}
 		return DONE;

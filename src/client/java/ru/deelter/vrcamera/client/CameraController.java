@@ -75,19 +75,6 @@ public final class CameraController implements Tracker {
 	// The camera icon of the default font, see assets/minecraft/font/default.json. From the private use area,
 	// to not collide with a real character
 	private static final String INDICATOR_ICON = "\uE7C0";
-	// the icon is left out while the camera is closer than this, in the hand or right in front of the face
-	private static final double INDICATOR_MIN_DISTANCE = 1.2;
-	// further from the middle of the view than this the camera counts as out of sight
-	private static final double INDICATOR_VIEW_ANGLE = Math.toRadians(35);
-	// where the icon goes while the camera is out of sight: this far in front of the face, and this far off the
-	// middle of the view, a bit inside of where it would leave the view
-	private static final double INDICATOR_PINNED_DISTANCE = 0.6;
-	private static final double INDICATOR_PINNED_ANGLE = Math.toRadians(30);
-	// Text scale of icon and distance per block they are away. Growing with the distance keeps them the same size
-	// for the eye. Text of scale 1 is half a block tall
-	private static final double INDICATOR_ICON_SCALE = 0.11;
-	private static final double INDICATOR_TEXT_SCALE = 0.05;
-	private static final int INDICATOR_COLOR = 0xFFFFFFFF;
 	// blocks the camera of the physics mode can be left behind, before it comes back to the player
 	private static final double PHYSICS_LEASH = 40.0;
 	// A pulled camera flies to the hand: seconds it needs to catch up with it, how close counts as there, and
@@ -130,7 +117,7 @@ public final class CameraController implements Tracker {
 	private final Rig rig = new Rig();
 
 	private Mode mode = Mode.OFF;
-	private CameraConfig config = CameraConfig.load();
+	private CameraConfig config = CameraConfig.current();
 	private Director director = new Director(this.config);
 	private Shot followShot;
 
@@ -317,63 +304,9 @@ public final class CameraController implements Tracker {
 	 * walls. While the camera is out of sight the icon sticks to the edge of the view on the side the camera is on.
 	 */
 	private void drawIndicator(String icon, Vec3 camera, VRData vr, boolean alsoOutOfSight) {
-		drawIndicator(icon, camera, vr.hmd.getPosition(), new Vec3(vr.hmd.getDirection()),
-				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0, "",
+		CameraIndicator.draw(icon, "", camera, vr.hmd.getPosition(), new Vec3(vr.hmd.getDirection()),
+				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0,
 				UnaryOperator.identity());
-	}
-
-	/**
-	 * the same for a player without VR
-	 *
-	 * @param name   what the camera is called, in front of the distance to it. Empty for none
-	 * @param head   where the game looks from, and which way and how it is turned
-	 * @param placed where to draw what should be seen at a place, see {@code DesktopCamera#steady}
-	 */
-	public void drawIndicatorWithoutVR(
-			String icon, String name, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale,
-			boolean alsoOutOfSight, double grow, UnaryOperator<Vec3> placed) {
-		drawIndicator(icon, camera, head, forward, up, scale, alsoOutOfSight, grow, name, placed);
-	}
-
-	private void drawIndicator(
-			String icon, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float worldScale, boolean alsoOutOfSight,
-			double grow, String name, UnaryOperator<Vec3> placed) {
-		Vec3 right = forward.cross(up);
-
-		Vec3 toCamera = camera.subtract(head);
-		double distance = toCamera.length();
-		if (distance < INDICATOR_MIN_DISTANCE * worldScale) {
-			return;
-		}
-		double x = toCamera.dot(right);
-		double y = toCamera.dot(up);
-		double z = toCamera.dot(forward);
-		double sideways = Math.sqrt(x * x + y * y);
-
-		Vec3 anchor;
-		if (Math.atan2(sideways, z) < INDICATOR_VIEW_ANGLE) {
-			// above the camera, to not cover it
-			anchor = camera.add(up.scale(0.15 * worldScale));
-		} else if (!alsoOutOfSight) {
-			return;
-		} else {
-			// straight behind has no side, call that right
-			Vec3 side = sideways < 1.0E-3 ? right : right.scale(x / sideways).add(up.scale(y / sideways));
-			double depth = INDICATOR_PINNED_DISTANCE * worldScale;
-			anchor = head.add(forward.scale(depth)).add(side.scale(depth * Math.tan(INDICATOR_PINNED_ANGLE)));
-		}
-
-		double size = this.config.indicatorSize * anchor.distanceTo(head) * grow;
-		float iconScale = (float) (INDICATOR_ICON_SCALE * size);
-		// text is drawn downwards from its position: the icon stands on the anchor, the distance hangs below it
-		Vec3 iconTop = placed.apply(anchor.add(up.scale(iconScale / 2.0)));
-		Vec3 textTop = placed.apply(anchor.subtract(up.scale(0.2 * iconScale / 2.0)));
-		Gizmos.billboardText(icon, iconTop,
-				TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale(iconScale)).setAlwaysOnTop();
-		// in blocks, the world scale of Vivecraft changes the size of the player and not of the world
-		Gizmos.billboardText((name.isEmpty() ? "" : name + "  ") + Math.round(distance) + " M", textTop,
-						TextGizmo.Style.forColorAndCentered(INDICATOR_COLOR).withScale((float) (INDICATOR_TEXT_SCALE * size)))
-				.setAlwaysOnTop();
 	}
 
 	private String markerText() {
@@ -613,7 +546,7 @@ public final class CameraController implements Tracker {
 				return;
 			}
 			if (this.mode == Mode.OFF) {
-				this.config = CameraConfig.load();
+				this.config = CameraConfig.reload();
 				this.director = new Director(this.config);
 			}
 		}
@@ -826,7 +759,7 @@ public final class CameraController implements Tracker {
 	 * reads the config file again, without turning the camera off
 	 */
 	public void reloadConfig() {
-		this.config = CameraConfig.load();
+		this.config = CameraConfig.reload();
 		this.director = new Director(this.config);
 		this.followShot = null;
 		this.rig.reset();

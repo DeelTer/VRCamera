@@ -6,9 +6,9 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GLCapabilities;
 import ru.deelter.vrcamera.Vrcamera;
 
@@ -230,7 +230,7 @@ public final class OutputWindow {
 	 * copies the picture to the window
 	 *
 	 * @param guides if the lines that help to frame a picture go over it, the ones that were picked with H
-	 * @param fill if the picture was drawn for the shape of the window, and fills it
+	 * @param fill   if the picture was drawn for the shape of the window, and fills it
 	 */
 	public static void show(Minecraft mc, RenderTarget picture, boolean guides, boolean fill) {
 		int[] size = size();

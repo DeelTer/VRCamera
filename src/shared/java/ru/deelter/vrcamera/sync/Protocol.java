@@ -1,10 +1,6 @@
 package ru.deelter.vrcamera.sync;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -26,7 +22,9 @@ public final class Protocol {
 	public static final int MAX_IMAGE_SIDE = 320;
 	public static final int MAX_SHEETS_PER_MESSAGE = 48;
 
-	/** to the server */
+	/**
+	 * to the server
+	 */
 	public static final byte C_HELLO = 1;
 	public static final byte C_PIN = 2;
 	public static final byte C_UNPIN = 3;
@@ -39,7 +37,9 @@ public final class Protocol {
 	public static final byte C_SHUTTER = 10;
 	public static final byte C_PRINT = 11;
 
-	/** to the client */
+	/**
+	 * to the client
+	 */
 	public static final byte S_HELLO = 1;
 	public static final byte S_SHEETS = 2;
 	public static final byte S_REMOVE = 3;
@@ -55,7 +55,9 @@ public final class Protocol {
 	public static final byte S_LOOSE_GONE = 11;
 	public static final byte S_LOOSE_RESULT = 12;
 
-	/** why a sheet is gone: someone took it off, or what it was pinned to is gone and it falls */
+	/**
+	 * why a sheet is gone: someone took it off, or what it was pinned to is gone and it falls
+	 */
 	public static final byte REMOVED_TAKEN = 0;
 	public static final byte REMOVED_FELL = 1;
 
@@ -77,7 +79,8 @@ public final class Protocol {
 	 */
 	public record Sheet(
 			long id, UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
-			float qw, float aspect, long imageHash, boolean removable, boolean custom) {}
+			float qw, float aspect, long imageHash, boolean removable, boolean custom) {
+	}
 
 	/**
 	 * a sheet a player pinned
@@ -87,11 +90,15 @@ public final class Protocol {
 	 */
 	public record Pin(
 			long reference, int blockX, int blockY, int blockZ, double x, double y, double z, float qx, float qy,
-			float qz, float qw, float aspect, byte[] image, boolean custom) {}
+			float qz, float qw, float aspect, byte[] image, boolean custom) {
+	}
 
-	public record PinResult(long reference, byte result, long id, long imageHash) {}
+	public record PinResult(long reference, byte result, long id, long imageHash) {
+	}
 
-	/** where something is and how it is turned */
+	/**
+	 * where something is and how it is turned
+	 */
 	public record Pose(double x, double y, double z, float qx, float qy, float qz, float qw) {
 		public boolean isSane() {
 			float length = qx * qx + qy * qy + qz * qz + qw * qw;
@@ -113,23 +120,28 @@ public final class Protocol {
 	 * and for a while, they are told about so the others see them and can pick them up
 	 */
 	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash,
-	                    boolean custom) {}
+	                    boolean custom) {
+	}
 
-	public record NewLoose(long reference, Pose pose, byte[] image, boolean custom) {}
+	public record NewLoose(long reference, Pose pose, byte[] image, boolean custom) {
+	}
 
 	/**
 	 * @param id 0 if the server did not take it
 	 */
-	public record LooseResult(long reference, long id, long imageHash) {}
+	public record LooseResult(long reference, long id, long imageHash) {
+	}
 
-	public record Limits(int version, int maxOwn, int maxPerChunk, int maxImageBytes) {}
+	public record Limits(int version, int maxOwn, int maxPerChunk, int maxImageBytes) {
+	}
 
 	/**
 	 * where the camera of a player is. Sent a few times per second while it is on, nothing says that it is off:
 	 * a camera that is not heard of for a moment is gone
 	 */
 	public record Camera(UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
-	                     float qw) {}
+	                     float qw) {
+	}
 
 	private Protocol() {
 	}
@@ -443,6 +455,7 @@ public final class Protocol {
 	}
 
 	public static byte[] reset() {
-		return message(S_RESET, out -> {});
+		return message(S_RESET, out -> {
+		});
 	}
 }

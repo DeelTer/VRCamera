@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.vivecraft.client_xr.render_pass.RenderPassType;
+import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
@@ -31,7 +31,7 @@ public class LevelRendererMixin {
 	private void vrcamera$drawWithoutVR(
 			CallbackInfo ci, @Local(argsOnly = true) LevelRenderState levelRenderState,
 			@Local(argsOnly = true) SubmitNodeCollector output, @Local PoseStack poseStack) {
-		if (!RenderPassType.isVanilla()) {
+		if (!Vr.isVanillaPass()) {
 			return;
 		}
 		PhotoAlbum.INSTANCE.render(output, levelRenderState.cameraRenderState.pos, poseStack);

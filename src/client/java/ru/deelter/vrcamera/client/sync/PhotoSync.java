@@ -10,8 +10,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.CameraEffects;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoSheet;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
@@ -412,8 +412,8 @@ public final class PhotoSync {
 		this.waiting.values().removeIf(since -> this.ticks - since > WAIT_TICKS);
 		this.askedServer.retainAll(this.waiting.keySet());
 
-		boolean showOthers = CameraController.INSTANCE.config().showOthersPhotos;
-		boolean showCustom = CameraController.INSTANCE.config().showCustomPhotos;
+		boolean showOthers = CameraConfig.current().showOthersPhotos;
+		boolean showCustom = CameraConfig.current().showCustomPhotos;
 		if (showCustom != this.shownCustom) {
 			// the player changed their mind: everything is taken out and comes back the other way
 			this.shownCustom = showCustom;

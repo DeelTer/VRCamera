@@ -16,14 +16,14 @@ import org.bukkit.event.player.PlayerRegisterChannelEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jspecify.annotations.NonNull;
+import ru.deelter.vrcamera.sync.Jpeg;
 import ru.deelter.vrcamera.sync.Protocol;
 
-import javax.imageio.*;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,7 +31,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Level;
-import ru.deelter.vrcamera.sync.Jpeg;
 
 /**
  * Keeps the photos players pinned with the VRCamera mod, and tells the clients around about them.

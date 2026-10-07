@@ -19,9 +19,7 @@
 		"MobAccessor",
 		"MouseHandlerMixin",
 		"ScreenMixin",
-		"SkyRendererAccessor",
-		"VRPlayerModelMixin",
-		"VRWidgetHelperMixin"
+		"SkyRendererAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

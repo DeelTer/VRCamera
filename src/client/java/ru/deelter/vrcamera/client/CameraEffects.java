@@ -15,8 +15,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.photo.CameraFlashes;
@@ -76,8 +76,8 @@ public final class CameraEffects {
 	 * @return where this player takes photos from: the camera, or their eyes if they have none
 	 */
 	public static Vec3 lens(LocalPlayer player) {
-		if (CameraController.isVRRunning()) {
-			return ClientDataHolderVR.getInstance().cameraTracker.getPosition();
+		if (Vr.isRunning()) {
+			return Vive.cameraPosition();
 		}
 		DesktopCamera.Pose onScreen = DesktopCamera.INSTANCE.lens();
 		return onScreen == null ? player.getEyePosition() : onScreen.position();
@@ -111,7 +111,7 @@ public final class CameraEffects {
 	}
 
 	private static void cameraSound(Level level, Vec3 at, SoundEvent sound) {
-		if (CameraController.INSTANCE.config().photoSounds) {
+		if (CameraConfig.current().photoSounds) {
 			level.playLocalSound(at.x, at.y, at.z, sound, SoundSource.PLAYERS, 0.8F, 1.0F, false);
 		}
 	}

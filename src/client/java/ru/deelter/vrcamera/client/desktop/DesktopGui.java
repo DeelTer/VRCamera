@@ -13,16 +13,20 @@ import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.gizmos.Gizmos;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
-import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.Vive;
+import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.rig.Subject;
@@ -60,7 +64,9 @@ public final class DesktopGui {
 
 	// widgets in a menu that are not part of it. They go when their menu does
 	private static final Set<GuiEventListener> LEFT_OUT = Collections.newSetFromMap(new WeakHashMap<>());
+	private static final Identifier TEXTURE = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "menu");
 	private static RenderTarget target;
+	private static TargetTexture texture;
 	private static boolean drawing;
 	private static boolean broken;
 	private static boolean drawn;
@@ -220,8 +226,7 @@ public final class DesktopGui {
 			Vec3 from = center.subtract(viewPosition);
 			poseStack.pushPose();
 			// drawn from both sides, and only where the menu is
-			output.submitCustomGeometry(poseStack, VRRenderTypes.entityCutoutNoCardinalLightLinear(
-					target.getColorTextureView(), false, false), (pose, consumer) -> {
+			output.submitCustomGeometry(poseStack, layer(), (pose, consumer) -> {
 				corner(consumer, pose, from, right, -halfWidth, halfHeight, frameLeft, frameTop);
 				corner(consumer, pose, from, right, halfWidth, halfHeight, frameRight, frameTop);
 				corner(consumer, pose, from, right, halfWidth, -halfHeight, frameRight, frameBottom);
@@ -232,6 +237,22 @@ public final class DesktopGui {
 			broken = true;
 			Vrcamera.LOGGER.error("VRCamera: the menu can't be drawn in the world, the camera films without it", e);
 		}
+	}
+
+	/**
+	 * @return how the picture of the menu is drawn onto the screen in the world. With Vivecraft the way Vivecraft
+	 * draws its own screens, without it as a texture of the game like any other
+	 */
+	private static RenderType layer() {
+		if (Vr.INSTALLED) {
+			return Vive.pictureLayer(target);
+		}
+		if (texture == null) {
+			texture = new TargetTexture();
+			Minecraft.getInstance().getTextureManager().register(TEXTURE, texture);
+		}
+		texture.show(target);
+		return RenderTypes.entityCutout(TEXTURE);
 	}
 
 	private static void corner(
@@ -249,6 +270,10 @@ public final class DesktopGui {
 	public static void close() {
 		center = null;
 		drawn = false;
+		if (texture != null) {
+			Minecraft.getInstance().getTextureManager().release(TEXTURE);
+			texture = null;
+		}
 		if (target != null) {
 			target.destroyBuffers();
 			target = null;

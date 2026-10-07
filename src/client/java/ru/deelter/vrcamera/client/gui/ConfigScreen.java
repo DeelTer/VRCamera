@@ -9,7 +9,6 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
@@ -34,7 +33,7 @@ public final class ConfigScreen {
 
 	public static Screen create(Screen parent) {
 		// the config the camera is using right now, changes apply as soon as they are saved
-		CameraConfig config = CameraController.INSTANCE.config();
+		CameraConfig config = CameraConfig.current();
 		CameraConfig defaults = new CameraConfig();
 		Pace pace = config.pace;
 

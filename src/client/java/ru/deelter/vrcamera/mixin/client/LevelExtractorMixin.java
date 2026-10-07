@@ -8,9 +8,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.vivecraft.api.client.data.RenderPass;
-import org.vivecraft.client_vr.ClientDataHolderVR;
-import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.Vive;
+import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
@@ -24,18 +23,12 @@ public class LevelExtractorMixin {
 	// Optional, without this only the marker and the camera icon are missing
 	@Inject(method = "extractGizmos", at = @At("HEAD"), require = 0)
 	private void vrcamera$drawHeadsetAids(CallbackInfo ci) {
-		CameraController controller = CameraController.INSTANCE;
-		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		// names over the cameras of other players, for whoever looks: also without VR, also in the recording
 		RemoteCameras.INSTANCE.drawLabels();
 		PhotoAlbum.INSTANCE.drawLabels();
 		DesktopCamera.INSTANCE.drawLabel();
-		if (!CameraController.isVRRunning()) {
-			return;
-		}
-		// only for the eyes of the player, none of this should show up in the recording
-		if (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT) {
-			controller.drawHeadsetAids(dh.vrPlayer.vrdata_world_render);
+		if (Vr.isRunning()) {
+			Vive.drawHeadsetAids();
 		}
 	}
 

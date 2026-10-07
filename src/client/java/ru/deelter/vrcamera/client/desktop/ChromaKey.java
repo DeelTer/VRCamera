@@ -14,10 +14,10 @@ import org.joml.Vector4f;
 import org.joml.Vector4fc;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
-import org.vivecraft.api.client.data.RenderPass;
-import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.Vive;
+import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
@@ -102,7 +102,7 @@ public final class ChromaKey {
 		if (player == null || entity == player || entity.getRootVehicle() == player.getRootVehicle()) {
 			return true;
 		}
-		double reach = CameraController.INSTANCE.config().chromaDistance;
+		double reach = CameraConfig.current().chromaDistance;
 		if (reach > 0 && entity.distanceToSqr(player) > reach * reach) {
 			return false;
 		}
@@ -154,8 +154,8 @@ public final class ChromaKey {
 		if (!on || broken) {
 			return false;
 		}
-		if (CameraController.isVRRunning()) {
-			return ClientDataHolderVR.getInstance().currentPass == RenderPass.CAMERA;
+		if (Vr.isRunning()) {
+			return Vive.isCameraPass();
 		}
 		// without VR the same goes for a camera with a window of its own. Filming into the game window, or with
 		// no camera at all, the game window is what is keyed
@@ -195,7 +195,7 @@ public final class ChromaKey {
 	 * @return the colour of the settings, the default green if what is written there is not one
 	 */
 	private static Vector4fc background() {
-		String text = preset.color == null ? CameraController.INSTANCE.config().chromaColor : preset.color;
+		String text = preset.color == null ? CameraConfig.current().chromaColor : preset.color;
 		if (!Objects.equals(text, colorText)) {
 			colorText = text;
 			int rgb = parse(text == null ? "" : text);

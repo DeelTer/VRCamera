@@ -1,6 +1,5 @@
 package ru.deelter.vrcamera.client.desktop;
 
-import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 
 /**
@@ -55,7 +54,7 @@ final class WindowPlace {
 	 * Not if that monitor is gone: a window nobody sees is no help
 	 */
 	void putBack() {
-		CameraConfig config = CameraController.INSTANCE.config();
+		CameraConfig config = CameraConfig.current();
 		Box place = Box.of(config.outputWindowPlace);
 		if (place == null || this.window.monitorOf(place) == null) {
 			return;
@@ -68,7 +67,7 @@ final class WindowPlace {
 	}
 
 	void remember() {
-		CameraConfig config = CameraController.INSTANCE.config();
+		CameraConfig config = CameraConfig.current();
 		config.outputWindowFull = this.windowed != null;
 		config.outputWindowPlace = (this.windowed != null ? this.windowed : this.window.place()).toArray();
 		config.save();

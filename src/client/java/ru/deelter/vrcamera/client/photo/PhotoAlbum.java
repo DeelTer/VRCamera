@@ -29,10 +29,10 @@ import org.joml.Quaternionfc;
 import org.joml.Vector3f;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
-import org.vivecraft.client_vr.VRState;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.CameraEffects;
+import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
 import ru.deelter.vrcamera.client.sync.PhotoCodec;
@@ -178,7 +178,7 @@ public final class PhotoAlbum {
 		NativeImage small = new NativeImage(width, height, false);
 		// A print is lit by the world around it and never as bright as the screen it was taken from. The picture on
 		// the sheet is lifted to make up for that, the file of the photo stays as it was taken
-		double brightness = Math.clamp(CameraController.INSTANCE.config().photoBrightness, 0.0, 1.0);
+		double brightness = Math.clamp(CameraConfig.current().photoBrightness, 0.0, 1.0);
 		int[] brighter = new int[256];
 		for (int i = 0; i < 256; i++) {
 			brighter[i] = (int) Math.round(255.0 * Math.pow(i / 255.0, 1.0 - (1.0 - BRIGHTEST_GAMMA) * brightness));
@@ -197,7 +197,7 @@ public final class PhotoAlbum {
 			small.close();
 			throw e;
 		}
-		small = PixelArt.apply(small, CameraController.INSTANCE.config().photoPixels);
+		small = PixelArt.apply(small, CameraConfig.current().photoPixels);
 		String file = name;
 		try {
 			PhotoStore.prepare(this.cache);
@@ -218,7 +218,7 @@ public final class PhotoAlbum {
 	 * one more loose sheet is coming, the oldest go if that is too many
 	 */
 	private void makeRoom() {
-		int maxLoose = VRState.VR_RUNNING ? MAX_LOOSE : MAX_LOOSE_WITHOUT_VR;
+		int maxLoose = Vr.isRunning() ? MAX_LOOSE : MAX_LOOSE_WITHOUT_VR;
 		int loose = 0;
 		for (int i = this.sheets.size() - 1; i >= 0; i--) {
 			if (this.sheets.get(i).isLoose() && ++loose >= maxLoose) {
@@ -763,7 +763,7 @@ public final class PhotoAlbum {
 		this.developingSince = System.nanoTime();
 		Screenshot.takeScreenshot(ofCamera == null ? mc.gameRenderer.mainRenderTarget() : ofCamera, image -> mc.execute(() -> {
 			NativeImage photo = shape == null ? image : reshape(image, shape);
-			if (CameraController.INSTANCE.config().photoClipboard) {
+			if (CameraConfig.current().photoClipboard) {
 				PhotoClipboard.copy(photo.getPixels(), photo.getWidth(), photo.getHeight());
 			}
 			PhotoSheet sheet = develop(photo, printSheet);

@@ -36,12 +36,12 @@ final class PictureBlit {
 	}
 
 	/**
-	 * @param texture what {@link #textureId} said
+	 * @param texture     what {@link #textureId} said
 	 * @param frameBuffer a frame buffer of the OpenGL context that is current, to read the picture through
-	 * @param width how wide the window is, in pixels
-	 * @param fill if the picture was drawn for the shape of the window, and fills it. Otherwise it is shown whole,
-	 * with black bars where the window has another shape
-	 * @param guide the lines over the picture, null for none
+	 * @param width       how wide the window is, in pixels
+	 * @param fill        if the picture was drawn for the shape of the window, and fills it. Otherwise it is shown whole,
+	 *                    with black bars where the window has another shape
+	 * @param guide       the lines over the picture, null for none
 	 */
 	static void draw(
 			RenderTarget picture, int texture, int frameBuffer, int width, int height, boolean fill, FrameGuide guide) {

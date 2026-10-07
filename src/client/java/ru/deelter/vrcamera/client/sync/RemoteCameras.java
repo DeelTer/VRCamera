@@ -9,6 +9,7 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gizmos.Gizmos;
 import net.minecraft.gizmos.TextGizmo;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -16,9 +17,8 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
-import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.math.PoseTrail;
 import ru.deelter.vrcamera.sync.Protocol;
@@ -45,6 +45,9 @@ public final class RemoteCameras {
 	private static final float MODEL_UP = 0.25F;
 	private static final float MODEL_BACK = 0.28F;
 	private static final int MAX_CAMERAS = 64;
+	// the model and the texture of the camera of Vivecraft, which the mod has a copy of to not need Vivecraft for
+	// them
+	private static final Identifier CAMERA_MODEL = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera");
 	private static final int LABEL_COLOR = 0xFFFFFFFF;
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
 	private static final String CAMERA_ICON = "";
@@ -117,7 +120,7 @@ public final class RemoteCameras {
 	 */
 	private List<Camera> shown() {
 		Minecraft mc = Minecraft.getInstance();
-		int most = (int) Math.round(CameraController.INSTANCE.config().othersCameras);
+		int most = (int) Math.round(CameraConfig.current().othersCameras);
 		// not in the picture a player without VR records: the cameras of others are for their eyes
 		if (most <= 0 || mc.player == null || DesktopCamera.INSTANCE.filmsNow()) {
 			return List.of();
@@ -169,7 +172,7 @@ public final class RemoteCameras {
 			Minecraft mc, ClientLevel level, SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack,
 			Vec3 position, Quaternionf rotation) {
 		this.model.clear();
-		mc.getModelManager().getItemModel(CameraTracker.CAMERA_MODEL).update(this.model, ItemStack.EMPTY,
+		mc.getModelManager().getItemModel(CAMERA_MODEL).update(this.model, ItemStack.EMPTY,
 				mc.getItemModelResolver(), ItemDisplayContext.GROUND, null, null, 0);
 		if (this.model.isEmpty()) {
 			return;

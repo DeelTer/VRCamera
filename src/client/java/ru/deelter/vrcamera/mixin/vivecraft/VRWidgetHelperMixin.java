@@ -1,4 +1,4 @@
-package ru.deelter.vrcamera.mixin.client;
+package ru.deelter.vrcamera.mixin.vivecraft;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.player.LocalPlayer;
@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -20,6 +21,7 @@ import ru.deelter.vrcamera.client.photo.CameraFlashes;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
+@Pseudo
 @Mixin(value = VRWidgetHelper.class, remap = false)
 public class VRWidgetHelperMixin {
 

@@ -14,7 +14,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.CameraIndicator;
+import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -139,7 +140,7 @@ public final class DesktopCamera {
 
 	public void setMode(Mode mode) {
 		Minecraft mc = Minecraft.getInstance();
-		if (mode != Mode.OFF && CameraController.isVRRunning()) {
+		if (mode != Mode.OFF && Vr.isRunning()) {
 			// in VR the camera of Vivecraft does this
 			return;
 		}
@@ -321,7 +322,7 @@ public final class DesktopCamera {
 	 * ones at another place they built at are not in the way then
 	 */
 	private boolean isAround(int camera, Vec3 from) {
-		double reach = CameraController.INSTANCE.config().cameraLabelDistance;
+		double reach = CameraConfig.current().cameraLabelDistance;
 		return camera == this.free.active() || this.free.position(camera).distanceToSqr(from) < reach * reach;
 	}
 
@@ -416,7 +417,7 @@ public final class DesktopCamera {
 		}
 		place.fov = fov;
 		Shot shot = new Shot(ShotType.CUSTOM, place, 1);
-		shot.start(this.subject, CameraController.INSTANCE.config());
+		shot.start(this.subject, CameraConfig.current());
 		return shot;
 	}
 
@@ -559,7 +560,7 @@ public final class DesktopCamera {
 	}
 
 	private Pose move(Minecraft mc, LocalPlayer player, float partialTick) {
-		CameraConfig config = CameraController.INSTANCE.config();
+		CameraConfig config = CameraConfig.current();
 		if (config != this.config || this.director == null) {
 			// the settings were read again
 			this.config = config;
@@ -820,7 +821,7 @@ public final class DesktopCamera {
 	 */
 	public void tick() {
 		Pose filming = lens();
-		if (filming != null && ++this.shareTicks % 2 == 0 && CameraController.INSTANCE.config().shareCamera) {
+		if (filming != null && ++this.shareTicks % 2 == 0 && CameraConfig.current().shareCamera) {
 			PhotoSync.INSTANCE.shareCamera(filming.position(), filming.rotation());
 		}
 	}
@@ -831,12 +832,12 @@ public final class DesktopCamera {
 	 * F5 was pressed. With a window of its own the view of the player is theirs
 	 */
 	public void keepView(Minecraft mc) {
-		if (this.mode != Mode.OFF && CameraController.isVRRunning()) {
+		if (this.mode != Mode.OFF && Vr.isRunning()) {
 			// in VR the camera of Vivecraft does all of this
 			setMode(Mode.OFF);
 			return;
 		}
-		if (this.mode != Mode.OFF && CameraController.INSTANCE.config().screenOutput == ScreenOutput.SCREEN) {
+		if (this.mode != Mode.OFF && CameraConfig.current().screenOutput == ScreenOutput.SCREEN) {
 			if (this.viewBefore == null) {
 				this.viewBefore = mc.options.getCameraType();
 			}
@@ -857,7 +858,7 @@ public final class DesktopCamera {
 	 * @return if the camera is on and films into a window of its own
 	 */
 	public boolean hasOwnWindow() {
-		return this.mode != Mode.OFF && CameraController.INSTANCE.config().screenOutput == ScreenOutput.WINDOW;
+		return this.mode != Mode.OFF && CameraConfig.current().screenOutput == ScreenOutput.WINDOW;
 	}
 
 	/**
@@ -866,7 +867,7 @@ public final class DesktopCamera {
 	 */
 	public boolean filmsNow() {
 		return this.mode != Mode.OFF && (DirectorPass.isActive() ||
-				CameraController.INSTANCE.config().screenOutput == ScreenOutput.SCREEN);
+				CameraConfig.current().screenOutput == ScreenOutput.SCREEN);
 	}
 
 	/**
@@ -970,7 +971,7 @@ public final class DesktopCamera {
 	public void drawLabel() {
 		Minecraft mc = Minecraft.getInstance();
 		LocalPlayer player = mc.player;
-		if (!showsMarker() || player == null || !CameraController.INSTANCE.config().indicator) {
+		if (!showsMarker() || player == null || !CameraConfig.current().indicator) {
 			return;
 		}
 		try {
@@ -983,13 +984,13 @@ public final class DesktopCamera {
 			UnaryOperator<Vec3> placed = ViewBob.steady(mc, player, eye, forward, up);
 			int filming = this.mode == Mode.FREE ? this.free.active() : 0;
 			boolean several = this.mode == Mode.FREE && this.free.count() > 1;
-			CameraController.INSTANCE.drawIndicatorWithoutVR(CAMERA_ICON, several ? this.free.name(filming) : "",
+			CameraIndicator.draw(CAMERA_ICON, several ? this.free.name(filming) : "",
 					markerPosition(), eye, forward, up, player.getScale(), true, farSize(eye, markerPosition()) * this.grab.iconSize(filming, filming),
 					placed);
 			// the free cameras that do not film have their name for an icon, and no place at the edge of the view
 			for (int camera = 0; several && camera < this.free.count(); camera++) {
 				if (camera != filming && isAround(camera, eye)) {
-					CameraController.INSTANCE.drawIndicatorWithoutVR(this.free.name(camera), "",
+					CameraIndicator.draw(this.free.name(camera), "",
 							this.free.position(camera), eye, forward, up, player.getScale(), false,
 							NAME_SIZE * farSize(eye, this.free.position(camera)) * this.grab.iconSize(camera, filming), placed);
 				}

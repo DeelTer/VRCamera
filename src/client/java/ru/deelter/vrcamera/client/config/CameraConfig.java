@@ -413,7 +413,27 @@ public class CameraConfig {
 		}
 	}
 
-	public static CameraConfig load() {
+	private static CameraConfig current;
+
+	/**
+	 * @return the settings in use
+	 */
+	public static CameraConfig current() {
+		if (current == null) {
+			current = load();
+		}
+		return current;
+	}
+
+	/**
+	 * reads the settings from their file again
+	 */
+	public static CameraConfig reload() {
+		current = load();
+		return current;
+	}
+
+	private static CameraConfig load() {
 		CameraConfig config = null;
 		if (Files.exists(PATH)) {
 			try (Reader reader = Files.newBufferedReader(PATH)) {

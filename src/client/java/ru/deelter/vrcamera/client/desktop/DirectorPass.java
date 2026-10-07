@@ -10,7 +10,8 @@ import net.minecraft.gizmos.Gizmos;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.mixin.client.GameRendererAccessor;
 import ru.deelter.vrcamera.mixin.client.SkyRendererAccessor;
@@ -85,8 +86,8 @@ public final class DirectorPass {
 			camera.setMode(DesktopCamera.Mode.OFF);
 		}
 		camera.keepView(mc);
-		boolean wanted = camera.isOn() && !CameraController.isVRRunning() &&
-				CameraController.INSTANCE.config().screenOutput == ScreenOutput.WINDOW;
+		boolean wanted = camera.isOn() && !Vr.isRunning() &&
+				CameraConfig.current().screenOutput == ScreenOutput.WINDOW;
 		FlawlessFrames.set(wanted);
 		if (!wanted) {
 			close();
@@ -104,7 +105,7 @@ public final class DirectorPass {
 		if (!camera.isOn() || !renderLevel) {
 			return;
 		}
-		double fps = CameraController.INSTANCE.config().outputFps;
+		double fps = CameraConfig.current().outputFps;
 		long now = System.nanoTime();
 		// the world is drawn twice for this, less often than the game is half as bad
 		if (fps > 0 && now - lastNanos < 1.0E9 / fps - 500_000L) {
