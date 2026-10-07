@@ -1,7 +1,7 @@
 package ru.deelter.vrcamera.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import ru.deelter.vrcamera.client.Vive;
 import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
@@ -21,7 +21,7 @@ public final class DebugOverlay {
 		config.save();
 	}
 
-	public static void extract(GuiGraphicsExtractor graphics) {
+	public static void extract(GuiGraphics graphics) {
 		Minecraft mc = Minecraft.getInstance();
 		if (!CameraConfig.current().debugOverlay || mc.player == null) {
 			return;
@@ -34,7 +34,7 @@ public final class DebugOverlay {
 		int y = 4;
 		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
 			graphics.fill(2, y - 1, 6 + mc.font.width(line), y + LINE_HEIGHT - 1, BACKGROUND_COLOR);
-			graphics.text(mc.font, line, 4, y, TEXT_COLOR, false);
+			graphics.drawString(mc.font, line, 4, y, TEXT_COLOR, false);
 			y += LINE_HEIGHT;
 		}
 	}

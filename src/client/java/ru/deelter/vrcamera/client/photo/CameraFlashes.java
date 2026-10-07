@@ -2,10 +2,10 @@ package ru.deelter.vrcamera.client.photo;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -22,7 +22,7 @@ import java.util.List;
 public final class CameraFlashes {
 	public static final CameraFlashes INSTANCE = new CameraFlashes();
 
-	private static final Identifier GLOW = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "textures/misc/flash.png");
+	private static final ResourceLocation GLOW = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "textures/misc/flash.png");
 	private static final long DURATION_NANOS = 160_000_000L;
 	private static final float SIZE = 0.45F;
 	private static final float BRIGHTEST = 0.85F;
@@ -71,7 +71,7 @@ public final class CameraFlashes {
 			poseStack.translate(flash.position.x - viewPosition.x, flash.position.y - viewPosition.y,
 					flash.position.z - viewPosition.z);
 			poseStack.mulPose(new Matrix4f().rotation(new Quaternionf().rotationTo(new Vector3f(0, 0, 1), facing)));
-			output.submitCustomGeometry(poseStack, RenderTypes.entityTranslucentEmissive(GLOW), (pose, consumer) -> {
+			output.submitCustomGeometry(poseStack, RenderType.entityTranslucentEmissive(GLOW), (pose, consumer) -> {
 				vertex(consumer, pose, -half, -half, 0, 1, alpha);
 				vertex(consumer, pose, half, -half, 1, 1, alpha);
 				vertex(consumer, pose, half, half, 1, 0, alpha);

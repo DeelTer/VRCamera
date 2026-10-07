@@ -258,7 +258,7 @@ public final class ConfigScreen {
 	 */
 	private static Supplier<Optional<Component[]>> help(String key) {
 		return () -> Optional.of(new Component[]{Component.translatable(
-				Minecraft.getInstance().hasShiftDown() ? key : "vrcamera.config.help")});
+				Screen.hasShiftDown() ? key : "vrcamera.config.help")});
 	}
 
 	private AbstractConfigListEntry<?> toggle(String field, boolean value, boolean def, Consumer<Boolean> save) {

@@ -72,7 +72,7 @@ public final class OutputWindow {
 
 		@Override
 		public Box gamePlace() {
-			return placeOf(Minecraft.getInstance().getWindow().handle());
+			return placeOf(Minecraft.getInstance().getWindow().getWindow());
 		}
 
 		@Override
@@ -133,7 +133,7 @@ public final class OutputWindow {
 			}
 			return true;
 		}
-		long game = mc.getWindow().handle();
+		long game = mc.getWindow().getWindow();
 		if (GLFW.glfwGetWindowAttrib(game, GLFW.GLFW_CLIENT_API) != GLFW.GLFW_OPENGL_API) {
 			Vrcamera.LOGGER.error("VRCamera: the camera window needs the OpenGL renderer of the game");
 			unsupported = true;
@@ -177,7 +177,7 @@ public final class OutputWindow {
 		Callbacks.glfwFreeCallbacks(window);
 		if (frameBuffer != 0 && capabilities != null) {
 			// it belongs to the context of the window, and goes with it
-			long game = Minecraft.getInstance().getWindow().handle();
+			long game = Minecraft.getInstance().getWindow().getWindow();
 			GLCapabilities gameCapabilities = GL.getCapabilities();
 			GLFW.glfwMakeContextCurrent(window);
 			GL.setCapabilities(capabilities);
@@ -244,7 +244,7 @@ public final class OutputWindow {
 			unsupported = true;
 			throw e;
 		}
-		long game = mc.getWindow().handle();
+		long game = mc.getWindow().getWindow();
 		GLCapabilities gameCapabilities = GL.getCapabilities();
 		// what the game drew has to be done before the other context looks at it
 		GL11.glFlush();

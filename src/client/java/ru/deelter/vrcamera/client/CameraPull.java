@@ -1,7 +1,7 @@
 package ru.deelter.vrcamera.client;
 
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
 import org.vivecraft.api.client.HeldInteractModule;
@@ -22,7 +22,7 @@ import ru.deelter.vrcamera.client.math.CamMath;
  * from attacking or using the held item meanwhile.
  */
 public final class CameraPull implements HeldInteractModule {
-	private static final Identifier ID = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera_pull");
+	private static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera_pull");
 
 	// The hand has to point at the camera this well, and the head has to look about its way. Pointing alone would
 	// catch the camera all the time while doing something else
@@ -46,7 +46,7 @@ public final class CameraPull implements HeldInteractModule {
 	}
 
 	@Override
-	public Identifier getId() {
+	public ResourceLocation getId() {
 		return ID;
 	}
 

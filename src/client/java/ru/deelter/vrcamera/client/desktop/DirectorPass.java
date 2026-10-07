@@ -1,20 +1,16 @@
 package ru.deelter.vrcamera.client.desktop;
 
-import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.pipeline.TextureTarget;
+import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.gizmos.Gizmos;
-import org.joml.Vector4f;
-import org.joml.Vector4fc;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
-import ru.deelter.vrcamera.mixin.client.GameRendererAccessor;
-import ru.deelter.vrcamera.mixin.client.SkyRendererAccessor;
+import ru.deelter.vrcamera.mixin.client.MinecraftAccessor;
 
 import java.util.List;
 import java.util.Locale;
@@ -23,13 +19,10 @@ import java.util.Locale;
  * Draws the world a second time in one frame, from where the director has the camera, into a picture of its own.
  * The player keeps their own view in the game window, the picture of the camera goes to a window next to it.
  * <p>
- * The way Vivecraft draws its eyes and its camera: the game is told that another picture is the one to draw into,
- * and goes through everything that depends on where it is looked from once more. Everything that was changed for
- * that is put back before the frame goes on.
+ * The game is told that another picture is the one to draw into, and draws the world once more. Everything that was
+ * changed for that is put back before the frame goes on.
  */
 public final class DirectorPass {
-	private static final Vector4fc BLACK = new Vector4f(0.0F, 0.0F, 0.0F, 1.0F);
-
 	private static boolean active;
 	private static RenderTarget target;
 	// width and height of the window of the camera, null to draw in the shape of the game window
@@ -113,8 +106,9 @@ public final class DirectorPass {
 		}
 		lastNanos = now;
 
-		RenderTarget own = mc.gameRenderer.mainRenderTarget();
-		if (!camera.advance(deltaTracker.getGameTimeDeltaPartialTick(true))) {
+		RenderTarget own = mc.getMainRenderTarget();
+		float partialTick = deltaTracker.getGameTimeDeltaPartialTick(true);
+		if (!camera.advance(partialTick)) {
 			// it could not be moved and turned itself off
 			return;
 		}
@@ -123,19 +117,20 @@ public final class DirectorPass {
 				// No room for a camera around the player. What the player sees is the picture then, with their
 				// hand and everything on their screen, and it is there already
 				OutputWindow.show(mc, own, false, false);
+				own.bindWrite(true);
 				return;
 			}
 			if (target == null) {
-				target = new MainTarget(own.width, own.height);
+				target = new TextureTarget(own.width, own.height, true);
 			} else if (target.width != own.width || target.height != own.height) {
 				target.resize(own.width, own.height);
 			}
 			long started = System.nanoTime();
 			shape = OutputWindow.size();
-			DesktopGui.draw(mc, deltaTracker, own);
-			draw(mc, deltaTracker, own);
+			draw(mc, deltaTracker, own, partialTick);
 			long drawn = System.nanoTime();
 			OutputWindow.show(mc, target, camera.showsGrid(), shape != null);
+			own.bindWrite(true);
 			measure(started, drawn, System.nanoTime());
 		} catch (RuntimeException | LinkageError e) {
 			Vrcamera.LOGGER.error("VRCamera: the picture of the camera could not be drawn, it was turned off", e);
@@ -143,32 +138,27 @@ public final class DirectorPass {
 		}
 	}
 
-	private static void draw(Minecraft mc, DeltaTracker deltaTracker, RenderTarget own) {
+	private static void draw(Minecraft mc, DeltaTracker deltaTracker, RenderTarget own, float partialTick) {
 		CameraType view = mc.options.getCameraType();
 		try {
 			active = true;
-			setTarget(mc, target);
+			((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(target);
 			// from outside: the player is drawn, their hand in front of the lens is not
 			mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-			RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(target.getColorTexture(), BLACK,
-					target.getDepthTexture(), 0.0);
-			try (Gizmos.TemporaryCollection ignored = mc.levelExtractor.collectPerFrameMainThreadGizmos()) {
-				mc.gameRenderer.update(deltaTracker);
-				mc.gameRenderer.extract(deltaTracker, true);
-			}
-			try (Gizmos.TemporaryCollection ignored = mc.levelRenderer.collectPerFrameRenderThreadGizmos()) {
-				GameFrame.render(mc, deltaTracker, true);
-			}
-			mc.levelRenderer.endFrame();
-			mc.gameRenderer.renderBuffers().endFrame();
+			target.setClearColor(0.0F, 0.0F, 0.0F, 1.0F);
+			target.clear();
+			target.bindWrite(true);
+			mc.gameRenderer.renderLevel(deltaTracker);
 		} finally {
 			active = false;
 			mc.options.setCameraType(view);
-			setTarget(mc, own);
+			((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(own);
+			own.bindWrite(true);
 			// The camera of the game goes back to the player. Sounds are heard from where it is, and what happens
 			// between two frames takes it for the eyes of the player
-			try (Gizmos.TemporaryCollection ignored = mc.levelExtractor.collectPerFrameMainThreadGizmos()) {
-				mc.gameRenderer.update(deltaTracker);
+			Camera gameCamera = mc.gameRenderer.getMainCamera();
+			if (mc.level != null && mc.getCameraEntity() != null) {
+				gameCamera.setup(mc.level, mc.getCameraEntity(), !view.isFirstPerson(), view.isMirrored(), partialTick);
 			}
 		}
 	}
@@ -195,13 +185,6 @@ public final class DirectorPass {
 						framesPerSecond, drawMillis, showMillis),
 				String.format(Locale.ROOT, "that is %.0f%% of a second on the processor",
 						framesPerSecond * (drawMillis + showMillis) / 10.0));
-	}
-
-	static void setTarget(Minecraft mc, RenderTarget to) {
-		((GameRendererAccessor) mc.gameRenderer).vrcamera$setMainRenderTarget(to);
-		if (mc.levelRenderer.skyRenderer() != null) {
-			((SkyRendererAccessor) mc.levelRenderer.skyRenderer()).vrcamera$setRenderTarget(to);
-		}
 	}
 
 	private static void close() {

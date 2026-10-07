@@ -1,14 +1,12 @@
 package ru.deelter.vrcamera.client;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
-import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
 import ru.deelter.vrcamera.client.gui.CameraDebug;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
@@ -97,12 +95,5 @@ public final class Vive {
 
 	public static void reloadConfig() {
 		CameraController.INSTANCE.reloadConfig();
-	}
-
-	/**
-	 * @return how to draw a picture onto something in the world, from both sides and only where it is not see-through
-	 */
-	public static RenderType pictureLayer(RenderTarget picture) {
-		return VRRenderTypes.entityCutoutNoCardinalLightLinear(picture.getColorTextureView(), false, false);
 	}
 }

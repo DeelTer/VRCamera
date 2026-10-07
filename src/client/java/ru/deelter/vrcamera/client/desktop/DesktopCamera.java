@@ -2,14 +2,14 @@ package ru.deelter.vrcamera.client.desktop;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
@@ -193,7 +193,7 @@ public final class DesktopCamera {
 	private static void say(String key, Object... args) {
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-			player.sendOverlayMessage(Component.translatable(key, args));
+			player.displayClientMessage(Component.translatable(key, args), true);
 		}
 	}
 
@@ -255,7 +255,7 @@ public final class DesktopCamera {
 			return List.of();
 		}
 		return mc.level.players().stream().filter(other -> other != mc.player)
-				.map(other -> other.getGameProfile().name()).toList();
+				.map(other -> other.getGameProfile().getName()).toList();
 	}
 
 	/**
@@ -266,7 +266,7 @@ public final class DesktopCamera {
 			return null;
 		}
 		for (Player other : mc.level.players()) {
-			if (other.isAlive() && other.getGameProfile().name().equalsIgnoreCase(name)) {
+			if (other.isAlive() && other.getGameProfile().getName().equalsIgnoreCase(name)) {
 				return other;
 			}
 		}
@@ -412,7 +412,7 @@ public final class DesktopCamera {
 		} catch (IOException e) {
 			Vrcamera.LOGGER.warn("VRCamera: can't make {}", cache, e);
 		}
-		this.free.open(cache.resolve(FreeCamera.fileName(mc.level.dimension().identifier().toDebugFileName())));
+		this.free.open(cache.resolve(FreeCamera.fileName(mc.level.dimension().location().toDebugFileName())));
 		// The one nearest to the player films. With none around a new one is put at their eyes: the ones they left
 		// at another place are not what they turned the mode on for, and are a long flight away
 		Vec3 eyes = player.getEyePosition(partialTick);
@@ -580,7 +580,7 @@ public final class DesktopCamera {
 	private double held(KeyMapping key) {
 		// in the window of the camera the game does not hear the keys, they are asked for there
 		boolean down = this.steeredFromWindow ?
-				OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue()) : key.isDown();
+				OutputWindow.isKeyDown(KeyBindingHelper.getBoundKeyOf(key).getValue()) : key.isDown();
 		return down ? 1.0 : 0.0;
 	}
 
@@ -722,7 +722,7 @@ public final class DesktopCamera {
 	 * the mouse of the player takes the camera they point at, holds it, and lets go of it
 	 */
 	private void reach(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
-		if (!hasOwnWindow() || isSteered() || this.pose == null || mc.gui.screen() != null || showsOwnView()) {
+		if (!hasOwnWindow() || isSteered() || this.pose == null || mc.screen != null || showsOwnView()) {
 			this.grab.reset();
 			return;
 		}
@@ -1063,10 +1063,10 @@ public final class DesktopCamera {
 		try {
 			// From where the game looks in this very frame. From where the player was when the camera was moved
 			// last, the icon would shake with every step
-			Camera view = mc.gameRenderer.mainCamera();
-			Vec3 eye = view.position();
-			Vec3 forward = new Vec3(view.forwardVector().x(), view.forwardVector().y(), view.forwardVector().z());
-			Vec3 up = new Vec3(view.upVector().x(), view.upVector().y(), view.upVector().z());
+			Camera view = mc.gameRenderer.getMainCamera();
+			Vec3 eye = view.getPosition();
+			Vec3 forward = new Vec3(view.getLookVector().x(), view.getLookVector().y(), view.getLookVector().z());
+			Vec3 up = new Vec3(view.getUpVector().x(), view.getUpVector().y(), view.getUpVector().z());
 			UnaryOperator<Vec3> placed = ViewBob.steady(mc, player, eye, forward, up);
 			int filming = this.mode == Mode.FREE ? this.free.active() : 0;
 			boolean several = this.mode == Mode.FREE && this.free.count() > 1;

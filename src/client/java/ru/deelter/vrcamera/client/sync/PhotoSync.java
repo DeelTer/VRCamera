@@ -90,8 +90,8 @@ public final class PhotoSync {
 	}
 
 	public void init() {
-		PayloadTypeRegistry.serverboundPlay().register(SyncPayload.TYPE, SyncPayload.CODEC);
-		PayloadTypeRegistry.clientboundPlay().register(SyncPayload.TYPE, SyncPayload.CODEC);
+		PayloadTypeRegistry.playC2S().register(SyncPayload.TYPE, SyncPayload.CODEC);
+		PayloadTypeRegistry.playS2C().register(SyncPayload.TYPE, SyncPayload.CODEC);
 		ClientPlayNetworking.registerGlobalReceiver(SyncPayload.TYPE,
 				(payload, context) -> context.client().execute(() -> receive(payload.data())));
 		ClientPlayConnectionEvents.JOIN.register((listener, sender, mc) -> {
@@ -681,7 +681,7 @@ public final class PhotoSync {
 		PhotoAlbum.INSTANCE.pinRefused(sheet);
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-			player.sendOverlayMessage(Component.translatable(message));
+			player.displayClientMessage(Component.translatable(message), true);
 		}
 	}
 

@@ -35,7 +35,7 @@ public class CameraMenuScreen extends Screen {
 		add(Component.translatable("vrcamera.gui.summon"), button -> {
 			this.controller.summon();
 			// back into the game, to grab it
-			this.minecraft.gui.setScreen(null);
+			this.minecraft.setScreen(null);
 		});
 		add(Component.translatable("vrcamera.gui.next"), button -> this.controller.nextShot());
 		add(Component.translatable("vrcamera.gui.hold"), button -> this.controller.toggleHold());
@@ -54,7 +54,7 @@ public class CameraMenuScreen extends Screen {
 		add(Component.translatable("vrcamera.gui.debug"), button -> this.controller.toggleDebug());
 		if (ConfigScreen.isAvailable()) {
 			add(Component.translatable("vrcamera.gui.settings"),
-					button -> this.minecraft.gui.setScreen(ConfigScreen.create(this)));
+					button -> this.minecraft.setScreen(ConfigScreen.create(this)));
 		}
 		add(Component.translatable("gui.done"), button -> onClose());
 	}
@@ -87,6 +87,6 @@ public class CameraMenuScreen extends Screen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.gui.setScreen(this.parent);
+		this.minecraft.setScreen(this.parent);
 	}
 }

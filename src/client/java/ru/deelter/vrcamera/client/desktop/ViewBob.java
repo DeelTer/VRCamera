@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.desktop;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.function.UnaryOperator;
@@ -24,8 +25,8 @@ final class ViewBob {
 		}
 		// the numbers of GameRenderer#bobView: a shift, then a roll, then a nod
 		float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		double walk = player.avatarState().getBackwardsInterpolatedWalkDistance(partialTick) * Math.PI;
-		double bob = player.avatarState().getInterpolatedBob(partialTick);
+		double walk = -(player.walkDist + (player.walkDist - player.walkDistO) * partialTick) * Math.PI;
+		double bob = Mth.lerp(partialTick, player.oBob, player.bob);
 		double shiftX = Math.sin(walk) * bob * 0.5;
 		double shiftY = -Math.abs(Math.cos(walk) * bob);
 		double roll = -Math.toRadians(Math.sin(walk) * bob * 3.0);

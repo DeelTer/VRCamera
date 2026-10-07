@@ -3,14 +3,14 @@ package ru.deelter.vrcamera.client.sync;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
-import net.minecraft.gizmos.Gizmos;
-import net.minecraft.gizmos.TextGizmo;
-import net.minecraft.resources.Identifier;
-import net.minecraft.util.LightCoordsUtil;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LightLayer;
@@ -47,7 +47,7 @@ public final class RemoteCameras {
 	private static final int MAX_CAMERAS = 64;
 	// the model and the texture of the camera of Vivecraft, which the mod has a copy of to not need Vivecraft for
 	// them
-	private static final Identifier CAMERA_MODEL = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera");
+	private static final ResourceLocation CAMERA_MODEL = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera");
 	private static final int LABEL_COLOR = 0xFFFFFFFF;
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
 	private static final String CAMERA_ICON = "";
@@ -178,14 +178,14 @@ public final class RemoteCameras {
 			return;
 		}
 		BlockPos block = BlockPos.containing(position);
-		int light = LightCoordsUtil.pack(level.getBrightness(LightLayer.BLOCK, block),
+		int light = LightTexture.pack(level.getBrightness(LightLayer.BLOCK, block),
 				level.getBrightness(LightLayer.SKY, block));
 		poseStack.pushPose();
 		poseStack.translate(position.x - viewPosition.x, position.y - viewPosition.y, position.z - viewPosition.z);
 		poseStack.mulPose(new Matrix4f().rotation(rotation));
 		poseStack.scale(MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
 		poseStack.translate(0.0F, MODEL_UP, MODEL_BACK);
-		this.model.submit(poseStack, output, light, OverlayTexture.NO_OVERLAY, 0);
+		this.model.render(poseStack, output.buffers(), light, OverlayTexture.NO_OVERLAY);
 		poseStack.popPose();
 	}
 

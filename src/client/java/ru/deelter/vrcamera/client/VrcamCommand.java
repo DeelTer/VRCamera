@@ -3,7 +3,7 @@ package ru.deelter.vrcamera.client;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -31,31 +31,31 @@ public final class VrcamCommand {
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
 
-		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
+		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommandManager.literal("vrcam")
 				.executes(context -> status(context.getSource()));
 
 		if (Vr.INSTALLED) {
 			VrCommands.register(root);
 		}
-		root.then(ClientCommands.literal("photo").executes(context -> {
+		root.then(ClientCommandManager.literal("photo").executes(context -> {
 			VrcameraClient.takePhoto();
 			return DONE;
 		}));
-		root.then(ClientCommands.literal("load")
-				.then(ClientCommands.argument("address", StringArgumentType.greedyString()).executes(context -> {
+		root.then(ClientCommandManager.literal("load")
+				.then(ClientCommandManager.argument("address", StringArgumentType.greedyString()).executes(context -> {
 					FabricClientCommandSource source = context.getSource();
 					PhotoAlbum.INSTANCE.loadCustom(StringArgumentType.getString(context, "address"),
 							source::sendFeedback);
 					return DONE;
 				})));
-		root.then(ClientCommands.literal("debug").executes(context -> {
+		root.then(ClientCommandManager.literal("debug").executes(context -> {
 			DebugOverlay.toggle();
 			return DONE;
 		}));
-		LiteralArgumentBuilder<FabricClientCommandSource> pace = ClientCommands.literal("pace");
+		LiteralArgumentBuilder<FabricClientCommandSource> pace = ClientCommandManager.literal("pace");
 		for (Pace value : Pace.values()) {
 			String name = value.name().toLowerCase(Locale.ROOT);
-			pace.then(ClientCommands.literal(name).executes(context -> {
+			pace.then(ClientCommandManager.literal(name).executes(context -> {
 				value.apply(CameraConfig.current());
 				CameraConfig.current().save();
 				context.getSource().sendFeedback(Component.translatable("vrcamera.command.pace",
@@ -65,9 +65,9 @@ public final class VrcamCommand {
 		}
 		root.then(pace);
 		// the camera for a player without VR, in the game window
-		LiteralArgumentBuilder<FabricClientCommandSource> screen = ClientCommands.literal("screen");
+		LiteralArgumentBuilder<FabricClientCommandSource> screen = ClientCommandManager.literal("screen");
 		for (DesktopCamera.Mode mode : DesktopCamera.Mode.values()) {
-			screen.then(ClientCommands.literal(mode.name().toLowerCase(Locale.ROOT)).executes(context -> {
+			screen.then(ClientCommandManager.literal(mode.name().toLowerCase(Locale.ROOT)).executes(context -> {
 				if (mode != DesktopCamera.Mode.OFF && Vr.isRunning()) {
 					context.getSource().sendError(Component.translatable("vrcamera.command.screen.vr"));
 					return 0;
@@ -78,7 +78,7 @@ public final class VrcamCommand {
 		}
 		for (ScreenOutput output : ScreenOutput.values()) {
 			// where it films to: "window" gives it a window of its own and leaves the view of the player alone
-			screen.then(ClientCommands.literal(output == ScreenOutput.WINDOW ? "window" : "here").executes(context -> {
+			screen.then(ClientCommandManager.literal(output == ScreenOutput.WINDOW ? "window" : "here").executes(context -> {
 				CameraConfig.current().screenOutput = output;
 				CameraConfig.current().save();
 				context.getSource().sendFeedback(Component.translatable("vrcamera.command.screen." +
@@ -86,30 +86,30 @@ public final class VrcamCommand {
 				return DONE;
 			}));
 		}
-		screen.then(ClientCommands.literal("resetwindow").executes(context -> {
+		screen.then(ClientCommandManager.literal("resetwindow").executes(context -> {
 			OutputWindow.resetPlace();
 			return DONE;
 		}));
-		screen.then(ClientCommands.literal("fullscreen").executes(context -> {
+		screen.then(ClientCommandManager.literal("fullscreen").executes(context -> {
 			OutputWindow.toggleFullscreen();
 			return DONE;
 		}));
-		screen.then(ClientCommands.literal("clear").executes(context -> {
+		screen.then(ClientCommandManager.literal("clear").executes(context -> {
 			DesktopCamera.INSTANCE.clearCameras();
 			return DONE;
 		}));
-		screen.then(ClientCommands.literal("steer").executes(context -> {
+		screen.then(ClientCommandManager.literal("steer").executes(context -> {
 			DesktopCamera.INSTANCE.toggleSteering();
 			return DONE;
 		}));
 		root.then(screen);
-		root.then(ClientCommands.literal("chroma").executes(context -> {
+		root.then(ClientCommandManager.literal("chroma").executes(context -> {
 			ChromaKey.set(!ChromaKey.isOn());
 			context.getSource().sendFeedback(Component.translatable(
 					ChromaKey.isOn() ? "vrcamera.command.chroma.on" : "vrcamera.command.chroma.off"));
 			return DONE;
 		}));
-		root.then(ClientCommands.literal("reload").executes(context -> {
+		root.then(ClientCommandManager.literal("reload").executes(context -> {
 			if (Vr.INSTALLED) {
 				Vive.reloadConfig();
 			} else {
@@ -118,40 +118,40 @@ public final class VrcamCommand {
 			context.getSource().sendFeedback(Component.translatable("vrcamera.command.reloaded"));
 			return DONE;
 		}));
-		root.then(ClientCommands.literal("status").executes(context -> status(context.getSource())));
-		root.then(ClientCommands.literal("settings").executes(context -> {
+		root.then(ClientCommandManager.literal("status").executes(context -> status(context.getSource())));
+		root.then(ClientCommandManager.literal("settings").executes(context -> {
 			if (!ConfigScreen.isAvailable()) {
 				context.getSource().sendError(Component.translatable("vrcamera.command.nocloth"));
 				return 0;
 			}
 			// the chat screen is still closing, open the settings after that
 			Minecraft mc = context.getSource().getClient();
-			mc.schedule(() -> mc.gui.setScreen(ConfigScreen.create(mc.gui.screen())));
+			mc.schedule(() -> mc.setScreen(ConfigScreen.create(mc.screen)));
 			return DONE;
 		}));
 
 		dispatcher.register(root);
 		// short, for what is typed in the middle of a recording: the free cameras
-		dispatcher.register(ClientCommands.literal("cam")
-				.then(ClientCommands.literal("add").executes(context -> {
+		dispatcher.register(ClientCommandManager.literal("cam")
+				.then(ClientCommandManager.literal("add").executes(context -> {
 					DesktopCamera.INSTANCE.addCamera();
 					return DONE;
 				}))
-				.then(ClientCommands.literal("next").executes(context -> {
+				.then(ClientCommandManager.literal("next").executes(context -> {
 					DesktopCamera.INSTANCE.nextPoint();
 					return DONE;
 				}))
-				.then(ClientCommands.literal("fly").executes(context -> {
+				.then(ClientCommandManager.literal("fly").executes(context -> {
 					DesktopCamera.INSTANCE.flyToNext();
 					return DONE;
 				}))
-				.then(ClientCommands.literal("clear").executes(context -> {
+				.then(ClientCommandManager.literal("clear").executes(context -> {
 					DesktopCamera.INSTANCE.clearCameras();
 					return DONE;
 				}))
 				.then(player("follow", DesktopCamera.INSTANCE::film))
 				.then(player("with", DesktopCamera.INSTANCE::filmWith))
-				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
+				.then(ClientCommandManager.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
 					DesktopCamera.INSTANCE.cameraNames().forEach(builder::suggest);
 					return builder.buildFuture();
 				}).executes(context -> {
@@ -174,10 +174,10 @@ public final class VrcamCommand {
 	 * @param pick told the name, or null for no one. False if there is no such player
 	 */
 	private static LiteralArgumentBuilder<FabricClientCommandSource> player(String name, Predicate<String> pick) {
-		return ClientCommands.literal(name).executes(context -> {
+		return ClientCommandManager.literal(name).executes(context -> {
 			pick.test(null);
 			return DONE;
-		}).then(ClientCommands.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
+		}).then(ClientCommandManager.argument("player", StringArgumentType.word()).suggests((context, builder) -> {
 			DesktopCamera.INSTANCE.playersAround().forEach(builder::suggest);
 			return builder.buildFuture();
 		}).executes(context -> {

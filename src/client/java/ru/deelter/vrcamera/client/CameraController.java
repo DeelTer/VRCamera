@@ -4,8 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.gizmos.Gizmos;
-import net.minecraft.gizmos.TextGizmo;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.InteractionHand;
@@ -783,7 +783,7 @@ public final class CameraController implements Tracker {
 
 	private void notify(Component message) {
 		if (Minecraft.getInstance().player != null) {
-			Minecraft.getInstance().player.sendOverlayMessage(message);
+			Minecraft.getInstance().player.displayClientMessage(message, true);
 		}
 	}
 
@@ -890,7 +890,7 @@ public final class CameraController implements Tracker {
 	 * @return where in the world the menu is that the player has open, null if there is none
 	 */
 	private Vec3 openMenuPosition(VRData vr) {
-		Screen screen = Minecraft.getInstance().gui.screen();
+		Screen screen = Minecraft.getInstance().screen;
 		// chat is often only open for a moment, not everyone wants a cut for that
 		if (GuiHandler.GUI_POS_ROOM == null || screen == null ||
 				(screen instanceof ChatScreen && !this.config.menuShotChat)) {

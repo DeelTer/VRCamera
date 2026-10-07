@@ -9,6 +9,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -105,8 +106,7 @@ public final class CustomPictures {
 			throw new IOException("not an address");
 		}
 		// The whole download has this long. A server that sends a byte now and then would hold it forever otherwise
-		CompletableFuture<HttpResponse<byte[]>> pending = client.sendAsync(request,
-				HttpResponse.BodyHandlers.limiting(HttpResponse.BodyHandlers.ofByteArray(), MAX_BYTES));
+		CompletableFuture<HttpResponse<byte[]>> pending = client.sendAsync(request, info -> limited());
 		try {
 			HttpResponse<byte[]> response = pending.get(DOWNLOAD_SECONDS, TimeUnit.SECONDS);
 			if (response.statusCode() != 200) {
@@ -159,5 +159,22 @@ public final class CustomPictures {
 		graphics.drawImage(image, 0, 0, width, height, left, top, left + cutWidth, top + cutHeight, null);
 		graphics.dispose();
 		return new PhotoCodec.Picture(width, height, fitted.getRGB(0, 0, width, height, null, 0, width));
+	}
+
+	/**
+	 * @return what takes the bytes of a download, and gives up on one that is larger than a picture may be
+	 */
+	private static HttpResponse.BodySubscriber<byte[]> limited() {
+		return HttpResponse.BodySubscribers.mapping(HttpResponse.BodySubscribers.ofInputStream(), stream -> {
+			try (stream) {
+				byte[] bytes = stream.readNBytes(MAX_BYTES + 1);
+				if (bytes.length > MAX_BYTES) {
+					throw new UncheckedIOException(new IOException("too large"));
+				}
+				return bytes;
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		});
 	}
 }

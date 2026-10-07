@@ -5,7 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -33,9 +33,9 @@ import java.util.Random;
 public final class CameraEffects {
 	// only played on this client, so it does not have to be in the registry the server knows
 	private static final SoundEvent SHUTTER = SoundEvent.createVariableRangeEvent(
-			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "shutter"));
+			ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "shutter"));
 	private static final SoundEvent PRINTING = SoundEvent.createVariableRangeEvent(
-			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "print"));
+			ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "print"));
 	private static final Random RANDOM = new Random();
 
 	/**

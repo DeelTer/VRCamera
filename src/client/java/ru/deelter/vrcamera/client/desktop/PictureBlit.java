@@ -4,7 +4,6 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 
-import java.lang.reflect.Method;
 
 /**
  * Copies the picture of the camera to the window that OpenGL draws into right now, with the lines that help to
@@ -13,7 +12,6 @@ import java.lang.reflect.Method;
 final class PictureBlit {
 	// lines over the picture are this many times thinner than it is high
 	private static final int LINE_PART = 360;
-	private static Method glId;
 
 	private PictureBlit() {
 	}
@@ -24,15 +22,7 @@ final class PictureBlit {
 	 * @throws IllegalStateException if the game does not draw with OpenGL
 	 */
 	static int textureId(RenderTarget picture) {
-		Object texture = picture.getColorTexture();
-		try {
-			if (glId == null || glId.getDeclaringClass() != texture.getClass()) {
-				glId = texture.getClass().getMethod("glId");
-			}
-			return (int) glId.invoke(texture);
-		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("the camera window needs the OpenGL renderer of the game", e);
-		}
+		return picture.getColorTextureId();
 	}
 
 	/**

@@ -1,7 +1,7 @@
 package ru.deelter.vrcamera.client;
 
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
 import org.vivecraft.api.client.HeldInteractModule;
@@ -22,7 +22,7 @@ import ru.deelter.vrcamera.client.math.CamMath;
  * lets go, or there would be no telling a photo from taking the camera over.
  */
 public final class CameraShutter implements HeldInteractModule {
-	private static final Identifier ID = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera_shutter");
+	private static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "camera_shutter");
 	// blocks between both hands
 	private static final double REACH = 0.35;
 
@@ -35,7 +35,7 @@ public final class CameraShutter implements HeldInteractModule {
 	}
 
 	@Override
-	public Identifier getId() {
+	public ResourceLocation getId() {
 		return ID;
 	}
 

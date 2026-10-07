@@ -1,7 +1,7 @@
 package ru.deelter.vrcamera.client;
 
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.Vec3;
 import org.vivecraft.api.client.HeldInteractModule;
@@ -16,12 +16,12 @@ import ru.deelter.vrcamera.client.photo.PhotoSheet;
  * pinned there, anywhere else it is thrown.
  */
 public final class SheetGrab implements HeldInteractModule {
-	private static final Identifier ID = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "sheet_grab");
+	private static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "sheet_grab");
 	// blocks from the hand to the middle of a sheet
 	private static final double REACH = 0.22;
 
 	@Override
-	public Identifier getId() {
+	public ResourceLocation getId() {
 		return ID;
 	}
 

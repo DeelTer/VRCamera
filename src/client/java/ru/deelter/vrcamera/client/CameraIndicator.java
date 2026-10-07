@@ -1,7 +1,7 @@
 package ru.deelter.vrcamera.client;
 
-import net.minecraft.gizmos.Gizmos;
-import net.minecraft.gizmos.TextGizmo;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 

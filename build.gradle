@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.18.2'
+    id 'net.fabricmc.fabric-loom-remap' version '1.18.2'
     id 'maven-publish'
 }
 
@@ -78,22 +78,23 @@ repositories {
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    mappings loom.officialMojangMappings()
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // Vivecraft, the mod this addon extends
     // The mod works without Vivecraft, for a player at a screen. -PnoVivecraft runs the game without it, to try that
     if (project.hasProperty("noVivecraft")) {
-        compileOnly "maven.modrinth:vivecraft:${project.vivecraft_version}"
+        modCompileOnly "maven.modrinth:vivecraft:${project.vivecraft_version}"
     } else {
-        implementation "maven.modrinth:vivecraft:${project.vivecraft_version}"
+        modImplementation "maven.modrinth:vivecraft:${project.vivecraft_version}"
     }
 
     // optional, for the settings screen
-    implementation "maven.modrinth:cloth-config:${project.cloth_config_version}"
+    modImplementation "maven.modrinth:cloth-config:${project.cloth_config_version}"
     // optional, to open the settings screen from the mod list. Not needed at runtime in the dev environment
-    compileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
+    modCompileOnly "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
 processResources {
@@ -109,7 +110,7 @@ processResources {
     }
 }
 
-def targetJavaVersion = 25
+def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {

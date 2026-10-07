@@ -2,7 +2,7 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "ru.deelter.vrcamera.mixin.client",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "JAVA_21",
 	"client": [
 		"CameraMixin",
 		"ClientPacketListenerMixin",
@@ -10,17 +10,13 @@
 		"EntityMixin",
 		"EntityRendererMixin",
 		"FramerateLimitTrackerMixin",
-		"GameRendererAccessor",
 		"GameRendererMixin",
-		"HudMixin",
+		"GuiMixin",
 		"KeyboardInputMixin",
-		"LevelExtractorMixin",
-		"LevelRendererMixin",
+		"MinecraftAccessor",
 		"MinecraftMixin",
 		"MobAccessor",
-		"MouseHandlerMixin",
-		"ScreenMixin",
-		"SkyRendererAccessor"
+		"MouseHandlerMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

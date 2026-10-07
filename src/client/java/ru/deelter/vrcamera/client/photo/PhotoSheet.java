@@ -2,7 +2,7 @@ package ru.deelter.vrcamera.client.photo;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
@@ -73,7 +73,7 @@ public final class PhotoSheet {
 		GHOST
 	}
 
-	public final Identifier texture;
+	public final ResourceLocation texture;
 	public final int textureSlot;
 	/**
 	 * height by width of the picture
@@ -126,7 +126,7 @@ public final class PhotoSheet {
 	private final Vector3f gripOffset = new Vector3f();
 	private final Quaternionf gripRotation = new Quaternionf();
 
-	public PhotoSheet(Identifier texture, int textureSlot, float aspect, String file) {
+	public PhotoSheet(ResourceLocation texture, int textureSlot, float aspect, String file) {
 		this.texture = texture;
 		this.textureSlot = textureSlot;
 		this.aspect = aspect;

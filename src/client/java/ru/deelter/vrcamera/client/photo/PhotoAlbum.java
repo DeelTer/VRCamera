@@ -7,19 +7,19 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
-import net.minecraft.gizmos.Gizmos;
-import net.minecraft.gizmos.TextGizmo;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
@@ -74,7 +74,7 @@ public final class PhotoAlbum {
 	// an explosion reaches sheets this many times its radius away, and throws the nearest ones this fast
 	private static final double BLAST_REACH = 2.5;
 	private static final double BLAST_SPEED = 9.0;
-	private static final Identifier WHITE = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID,
+	private static final ResourceLocation WHITE = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID,
 			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
@@ -131,7 +131,8 @@ public final class PhotoAlbum {
 		Minecraft mc = Minecraft.getInstance();
 		this.developing = true;
 		this.developingSince = System.nanoTime();
-		Screenshot.takeScreenshot(picture, image -> mc.execute(() -> develop(image, printSheet)));
+		NativeImage image = Screenshot.takeScreenshot(picture);
+		mc.execute(() -> develop(image, printSheet));
 		return true;
 	}
 
@@ -231,10 +232,10 @@ public final class PhotoAlbum {
 		// Names are used again. Render types are kept per texture name and never forgotten, a new name for
 		// every photo would add up over a long session
 		int slot = this.freeTextures.isEmpty() ? this.nextTexture++ : this.freeTextures.pop();
-		Identifier texture = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "photo/" + slot);
+		ResourceLocation texture = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "photo/" + slot);
 		// the texture owns the picture from here on
 		Minecraft.getInstance().getTextureManager().register(texture,
-				new DynamicTexture(() -> "VRCamera photo", picture));
+				new DynamicTexture(picture));
 		PhotoSheet sheet = new PhotoSheet(texture, slot, aspect, file);
 		this.sheets.add(sheet);
 		return sheet;
@@ -786,7 +787,8 @@ public final class PhotoAlbum {
 		int[] shape = ofCamera == null ? null : DirectorPass.shape();
 		this.developing = true;
 		this.developingSince = System.nanoTime();
-		Screenshot.takeScreenshot(ofCamera == null ? mc.gameRenderer.mainRenderTarget() : ofCamera, image -> mc.execute(() -> {
+		NativeImage image = Screenshot.takeScreenshot(ofCamera == null ? mc.getMainRenderTarget() : ofCamera);
+		mc.execute(() -> {
 			NativeImage photo = shape == null ? image : reshape(image, shape);
 			if (CameraConfig.current().photoClipboard) {
 				PhotoClipboard.copy(photo.getPixels(), photo.getWidth(), photo.getHeight());
@@ -803,7 +805,7 @@ public final class PhotoAlbum {
 			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
 			Quaternionf rotation = new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z));
 			sheet.toss(from.add(forward.scale(0.7)), rotation, forward.scale(1.5));
-		}));
+		});
 		return true;
 	}
 
@@ -869,7 +871,7 @@ public final class PhotoAlbum {
 			return;
 		}
 		BlockPos block = BlockPos.containing(sheet.center());
-		int light = LightCoordsUtil.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
+		int light = LightTexture.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
 				level.getBrightness(LightLayer.SKY, block));
 		float half = PhotoSheet.WIDTH / 2.0F;
 		// Only what is out of the camera, the lower edge comes first and takes the picture with it
@@ -883,13 +885,13 @@ public final class PhotoAlbum {
 		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
 		// Each side only seen from its own: the picture from the front, which is what faces away from a block the
 		// sheet is pinned to, and blank paper from behind
-		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(sheet.texture), (pose, consumer) -> {
+		output.submitCustomGeometry(poseStack, RenderType.entityCutout(sheet.texture), (pose, consumer) -> {
 			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
 			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
 			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
 			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
 		});
-		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(WHITE), (pose, consumer) -> {
+		output.submitCustomGeometry(poseStack, RenderType.entityCutout(WHITE), (pose, consumer) -> {
 			vertex(consumer, pose, -half, 0, 0, 0, 0, light, 1.0F);
 			vertex(consumer, pose, half, 0, 0, 1, 0, light, 1.0F);
 			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
@@ -899,7 +901,7 @@ public final class PhotoAlbum {
 		if (veil > 0.01F) {
 			// A fresh photo is blank and the picture comes through, like from an instant camera: white paper
 			// over it that fades. Only over the side with the picture, a hair in front of it
-			output.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(WHITE), (pose, consumer) -> {
+			output.submitCustomGeometry(poseStack, RenderType.entityTranslucent(WHITE), (pose, consumer) -> {
 				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
 				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
 				vertex(consumer, pose, half, 0, VEIL_GAP, 1, 0, light, veil);

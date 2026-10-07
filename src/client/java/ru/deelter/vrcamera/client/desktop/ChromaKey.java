@@ -1,7 +1,5 @@
 package ru.deelter.vrcamera.client.desktop;
 
-import com.mojang.blaze3d.pipeline.RenderTarget;
-import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -36,9 +34,9 @@ public final class ChromaKey {
 	public static final String DEFAULT_COLOR = "#00B140";
 	// what entities are lit with in front of it: full light from blocks and from the sky, the same at any hour
 	public static final int EVEN_LIGHT = 0xF000F0;
-	// the game keeps depth the other way around: 0 is far away, 1 is right at the lens
-	private static final double FAR = 0.0;
-	private static final double NEAR = 1.0;
+	// depth as OpenGL has it: 1 is far away, 0 is right at the lens
+	private static final double FAR = 1.0;
+	private static final double NEAR = 0.0;
 
 	/**
 	 * the colours to switch between while filming, without going to the settings
@@ -113,7 +111,7 @@ public final class ChromaKey {
 		if (known != 0 && now - Math.abs(known) < SEEN_NANOS) {
 			return known > 0;
 		}
-		Vec3 lens = mc.gameRenderer.mainCamera().position();
+		Vec3 lens = mc.gameRenderer.getMainCamera().getPosition();
 		boolean seen = sees(entity, lens, entity.getBoundingBox().getCenter()) ||
 				sees(entity, lens, entity.getEyePosition());
 		if (SEEN.size() >= SEEN_MOST) {
@@ -166,28 +164,13 @@ public final class ChromaKey {
 	 * before the entities: green over the world that was drawn so far
 	 */
 	public static void paintOver() {
-		clear(true);
+		clearWhileDrawing(true);
 	}
 
 	/**
 	 * after the entities: nothing else gets into the picture
 	 */
 	public static void shutOut() {
-		clear(false);
-	}
-
-	/**
-	 * {@link #paintOver} for where the game is in the middle of drawing into the picture: newer versions draw the
-	 * world and the entities in one go
-	 */
-	public static void paintOverWhileDrawing() {
-		clearWhileDrawing(true);
-	}
-
-	/**
-	 * {@link #shutOut} for where the game is in the middle of drawing into the picture
-	 */
-	public static void shutOutWhileDrawing() {
 		clearWhileDrawing(false);
 	}
 
@@ -213,23 +196,6 @@ public final class ChromaKey {
 			return Integer.parseInt(hex, 16);
 		}
 		return Integer.parseInt(DEFAULT_COLOR.substring(1), 16);
-	}
-
-	private static void clear(boolean color) {
-		if (!applies()) {
-			return;
-		}
-		try {
-			RenderTarget target = Minecraft.getInstance().gameRenderer.mainRenderTarget();
-			if (color) {
-				RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(target.getColorTexture(),
-						background(), target.getDepthTexture(), FAR);
-			} else {
-				RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(target.getDepthTexture(), NEAR);
-			}
-		} catch (RuntimeException | LinkageError e) {
-			failed(e);
-		}
 	}
 
 	/**
