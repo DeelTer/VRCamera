@@ -167,7 +167,10 @@ public class VrcameraClient implements ClientModInitializer {
 		});
 
 		// don't leave the changed camera settings behind in the Vivecraft config
-		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> this.controller.release());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
+			this.controller.release();
+			OutputWindow.close();
+		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(PhotoAlbum.INSTANCE::clear));
 		ClientLifecycleEvents.CLIENT_STARTED.register(

@@ -13,6 +13,8 @@ import java.lang.reflect.Method;
 import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWVidMode;
+import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 
 /**
  * A second window that shows the picture of the camera and nothing else, for OBS to capture.
@@ -112,6 +114,8 @@ public final class OutputWindow {
 		// It must not take the keyboard from the game: the game pauses when it loses it
 		GLFW.glfwWindowHint(GLFW.GLFW_FOCUSED, GLFW.GLFW_FALSE);
 		GLFW.glfwWindowHint(GLFW.GLFW_FOCUS_ON_SHOW, GLFW.GLFW_FALSE);
+		// shown once it is where it was the last time, not before
+		GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
 		window = GLFW.glfwCreateWindow(WIDTH, HEIGHT, "VRCamera", 0, game);
 		GLFW.glfwDefaultWindowHints();
 		if (window == 0) {
@@ -122,7 +126,66 @@ public final class OutputWindow {
 		GLFW.glfwSetScrollCallback(window, (handle, x, y) -> scrolled += y);
 		capabilities = null;
 		frameBuffer = 0;
+		putBack();
+		GLFW.glfwShowWindow(window);
 		return true;
+	}
+
+	/**
+	 * Where the window was when it was closed the last time, and as large, and over the whole monitor if it was.
+	 * Not if that monitor is gone: a window nobody sees is no help
+	 */
+	private static void putBack() {
+		CameraConfig config = CameraController.INSTANCE.config();
+		int[] place = config.outputWindowPlace;
+		if (place == null || place.length != 4 || place[2] < 1 || place[3] < 1 ||
+				monitorAround(place[0] + place[2] / 2, place[1] + place[3] / 2) == null) {
+			return;
+		}
+		GLFW.glfwSetWindowPos(window, place[0], place[1]);
+		GLFW.glfwSetWindowSize(window, place[2], place[3]);
+		if (config.outputWindowFull) {
+			toggleFullscreen();
+		}
+	}
+
+	private static void remember() {
+		CameraConfig config = CameraController.INSTANCE.config();
+		config.outputWindowFull = windowed != null;
+		config.outputWindowPlace = windowed != null ? windowed : place();
+		config.save();
+	}
+
+	/**
+	 * @return where the window is and how large: x, y, width and height
+	 */
+	private static int[] place() {
+		int[] x = new int[1];
+		int[] y = new int[1];
+		int[] width = new int[1];
+		int[] height = new int[1];
+		GLFW.glfwGetWindowPos(window, x, y);
+		GLFW.glfwGetWindowSize(window, width, height);
+		return new int[]{x[0], y[0], width[0], height[0]};
+	}
+
+	/**
+	 * @return the monitor that point of the desktop is on, as {@link #place} has a window, null if it is on none
+	 */
+	private static int[] monitorAround(int x, int y) {
+		PointerBuffer monitors = GLFW.glfwGetMonitors();
+		for (int i = 0; monitors != null && i < monitors.limit(); i++) {
+			long monitor = monitors.get(i);
+			GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
+			int[] left = new int[1];
+			int[] top = new int[1];
+			GLFW.glfwGetMonitorPos(monitor, left, top);
+			if (mode != null && x >= left[0] && x < left[0] + mode.width() && y >= top[0] &&
+					y < top[0] + mode.height()) {
+				return new int[]{left[0], top[0], mode.width(), mode.height()};
+			}
+		}
+		return null;
 	}
 
 	/**
@@ -272,29 +335,13 @@ public final class OutputWindow {
 			windowed = null;
 			return;
 		}
-		int[] x = new int[1];
-		int[] y = new int[1];
-		int[] width = new int[1];
-		int[] height = new int[1];
-		GLFW.glfwGetWindowPos(window, x, y);
-		GLFW.glfwGetWindowSize(window, width, height);
-		int middleX = x[0] + width[0] / 2;
-		int middleY = y[0] + height[0] / 2;
-		PointerBuffer monitors = GLFW.glfwGetMonitors();
-		for (int i = 0; monitors != null && i < monitors.limit(); i++) {
-			long monitor = monitors.get(i);
-			GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
-			int[] left = new int[1];
-			int[] top = new int[1];
-			GLFW.glfwGetMonitorPos(monitor, left, top);
-			if (mode != null && middleX >= left[0] && middleX < left[0] + mode.width() && middleY >= top[0] &&
-					middleY < top[0] + mode.height()) {
-				windowed = new int[]{x[0], y[0], width[0], height[0]};
-				GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
-				GLFW.glfwSetWindowPos(window, left[0], top[0]);
-				GLFW.glfwSetWindowSize(window, mode.width(), mode.height());
-				return;
-			}
+		int[] place = place();
+		int[] monitor = monitorAround(place[0] + place[2] / 2, place[1] + place[3] / 2);
+		if (monitor != null) {
+			windowed = place;
+			GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+			GLFW.glfwSetWindowPos(window, monitor[0], monitor[1]);
+			GLFW.glfwSetWindowSize(window, monitor[2], monitor[3]);
 		}
 	}
 
@@ -371,6 +418,7 @@ public final class OutputWindow {
 		if (window == 0) {
 			return;
 		}
+		remember();
 		Callbacks.glfwFreeCallbacks(window);
 		scrolled = 0;
 		captured = false;

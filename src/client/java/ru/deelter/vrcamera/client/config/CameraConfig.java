@@ -99,6 +99,9 @@ public class CameraConfig {
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */
 	public double outputFps = 60;
+	// where the window of the camera was the last time: x, y, width and height. Kept by the mod, not a setting
+	public int[] outputWindowPlace = {};
+	public boolean outputWindowFull = false;
 	/**
 	 * how large the screen with an open menu is that stands in front of the player for the camera, 1 = as it comes
 	 */
