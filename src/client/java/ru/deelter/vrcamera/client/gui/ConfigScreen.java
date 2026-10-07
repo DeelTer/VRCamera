@@ -6,6 +6,7 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.impl.builders.SubCategoryBuilder;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.CameraController;
@@ -13,10 +14,9 @@ import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
-import java.util.function.Consumer;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
-import net.minecraft.client.Minecraft;
 
 /**
  * Settings screen, built with Cloth Config. Only load this class when Cloth Config is installed.
@@ -81,8 +81,8 @@ public final class ConfigScreen {
 						config.chromaColor)
 				.setDefaultValue(defaults.chromaColor)
 				.setTooltipSupplier(help("vrcamera.option.chromaColor.tooltip"))
-				.setErrorSupplier(value -> value.trim().matches("#?[0-9a-fA-F]{6}") ? java.util.Optional.empty() :
-						java.util.Optional.of(Component.translatable("vrcamera.option.chromaColor.invalid")))
+				.setErrorSupplier(value -> value.trim().matches("#?[0-9a-fA-F]{6}") ? Optional.empty() :
+						Optional.of(Component.translatable("vrcamera.option.chromaColor.invalid")))
 				.setSaveConsumer(value -> config.chromaColor = value.trim())
 				.build());
 		general.addEntry(screen.selector("screenOutput", ScreenOutput.values(), config.screenOutput,

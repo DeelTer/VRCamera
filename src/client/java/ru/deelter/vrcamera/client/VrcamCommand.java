@@ -9,16 +9,16 @@ import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.config.Pace;
+import ru.deelter.vrcamera.client.config.ScreenOutput;
+import ru.deelter.vrcamera.client.desktop.ChromaKey;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
-import ru.deelter.vrcamera.client.desktop.ChromaKey;
-import ru.deelter.vrcamera.client.config.ScreenOutput;
-import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 /**
  * The {@code /vrcam} command. Runs on the client only, the server never sees it.

@@ -17,6 +17,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.photo.CameraFlashes;
 import ru.deelter.vrcamera.client.rig.DroppedCamera;
@@ -25,7 +26,6 @@ import ru.deelter.vrcamera.mixin.client.MobAccessor;
 import ru.deelter.vrcamera.sync.Protocol;
 
 import java.util.Random;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 /**
  * particles and sounds around the camera. All of it only exists on this client

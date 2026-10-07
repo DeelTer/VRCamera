@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.mixin.client;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
@@ -12,7 +13,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
-import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
 
 @Mixin(Camera.class)

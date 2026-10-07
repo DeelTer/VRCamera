@@ -7,11 +7,17 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.gizmos.Gizmos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
@@ -20,13 +26,11 @@ import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.rig.Subject;
-import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.HitResult;
 import ru.deelter.vrcamera.mixin.client.ContainerScreenAccessor;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * The menu a player without VR has open, as something in the world: a screen that stands in front of them, for the
@@ -54,8 +58,8 @@ public final class DesktopGui {
 	private static final Vector4fc BACKGROUND = new Vector4f(0.0F, 0.0F, 0.0F, 0.0F);
 	private static final int FULL_LIGHT = 0xF000F0;
 
-	private static final java.util.Set<GuiEventListener> LEFT_OUT =
-			java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+	// widgets in a menu that are not part of it. They go when their menu does
+	private static final Set<GuiEventListener> LEFT_OUT = Collections.newSetFromMap(new WeakHashMap<>());
 	private static RenderTarget target;
 	private static boolean drawing;
 	private static boolean broken;

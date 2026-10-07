@@ -18,16 +18,12 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.CameraController;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.math.PoseTrail;
 import ru.deelter.vrcamera.sync.Protocol;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.List;
-import java.util.Comparator;
-import ru.deelter.vrcamera.client.CameraController;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import java.util.*;
 
 /**
  * The cameras of the other players around, as their servers pass them on: drawn where they are, with the name of

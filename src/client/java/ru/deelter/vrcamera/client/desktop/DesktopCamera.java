@@ -1,45 +1,44 @@
 package ru.deelter.vrcamera.client.desktop;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.config.CameraConfig;
+import ru.deelter.vrcamera.client.config.ScreenOutput;
+import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
+import ru.deelter.vrcamera.client.math.CamMath;
+import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
+import ru.deelter.vrcamera.client.rig.WorldProbe;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
-import ru.deelter.vrcamera.client.config.ScreenOutput;
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.gizmos.Gizmos;
-import net.minecraft.gizmos.TextGizmo;
+import ru.deelter.vrcamera.client.sync.PhotoSync;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
+
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.client.Camera;
-import net.minecraft.client.KeyMapping;
-import ru.deelter.vrcamera.client.config.ShotConfig;
-import ru.deelter.vrcamera.client.math.CamMath;
-import ru.deelter.vrcamera.client.rig.HandThrow;
-import ru.deelter.vrcamera.client.rig.WorldProbe;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import org.joml.Vector3f;
-import net.minecraft.client.multiplayer.ClientLevel;
-import ru.deelter.vrcamera.client.photo.PhotoStore;
-import java.nio.file.Path;
-import java.io.IOException;
-import ru.deelter.vrcamera.client.sync.PhotoSync;
+import java.util.Locale;
 import java.util.function.UnaryOperator;
 
 /**
- * The director and the follow camera for a player without VR: the same shots, picked the same way, from what the
- * game knows of a player at a screen. Shown in the game window in place of the view of the player.
+ * The camera of a player without VR. The director and the follow camera have the same shots as in VR, picked the
+ * same way from what the game knows of a player at a screen. The free cameras stay where they are put. Either films
+ * into the game window in place of the view of the player, or into a window of its own.
  * <p>
  * Apart from everything that has to do with VR. It only runs while VR does not, and is off until it is asked for.
  */
@@ -59,85 +58,64 @@ public final class DesktopCamera {
 	// a gap between frames this long means the game stood still, not a slow frame
 	private static final double MAX_FRAME_TIME = 0.25;
 	private static final double MAX_GAP = 1.0;
+	private static final float DEFAULT_FOV = 70.0F;
 	// steering: degrees per second around the player and up or down, and the part of the distance per second
 	private static final double STEER_TURN = 70.0;
 	private static final double STEER_RISE = 40.0;
 	private static final double STEER_ZOOM = 1.1;
 	// closer to the player than this the camera has no place around them to start from
 	private static final double STEER_MIN_DISTANCE = 1.0;
-	// blocks from the player a free camera is still one of this place, when the mode is turned on
-	private static final double FREE_AROUND = 64.0;
-	// seconds a look has to stay on a free camera for it to film, and blocks it has to be away for that
-	private static final double GAZE_HOLD = 0.35;
-	private static final double GAZE_NEAR = 1.5;
-	// closer to the head than this the camera is inside of the player, and further than the second it is out again
-	private static final double INSIDE_IN = 0.55;
-	private static final double INSIDE_OUT = 0.8;
+	// a shot the camera is put into by hand is not closer to the player than this many of their sizes
+	private static final double MIN_SHOT_DISTANCE = 0.3;
 	// the part of the field of view one notch of the wheel is, for a shot that is steered
 	private static final double FOV_WHEEL = 0.08;
 	// Degrees the free camera turns: per unit of what the game makes of the mouse, as it turns a player, and per
 	// pixel the mouse is moved in the window of the camera
 	private static final double MOUSE_TURN = 0.15;
 	private static final double DRAG_TURN = 0.12;
-	// Taking the camera with the mouse: from how far, how well it has to be pointed at in blocks plus blocks per
-	// block of distance, how near and far it can be held, and the part of the distance one notch of the wheel is
-	private static final double GRAB_REACH = 192.0;
-	private static final double GRAB_AIM = 0.3;
-	private static final double GRAB_AIM_PER_BLOCK = 0.05;
-	private static final double GRAB_NEAR = 0.7;
-	private static final double GRAB_FAR = 32.0;
-	private static final double GRAB_WHEEL = 0.12;
+	// blocks from the player a free camera is still one of the place they are at
+	private static final double FREE_AROUND = 64.0;
 	// blocks per second a free camera has to be let go of at, to glide on
 	private static final double THROW_SPEED = 4.0;
-	// how large the letter of a free camera is, next to the camera icon
-	private static final double NAME_SIZE = 0.75;
-	// how fast a held camera comes after the look and after the wheel, per second
-	private static final double GRAB_EASE = 9.0;
-	private static final double GRAB_WHEEL_EASE = 3.5;
-	// how much larger the icon is while the camera can be taken, how much of that it beats by, and how fast
-	private static final double GRAB_ICON = 1.35;
-	private static final double GRAB_ICON_BEAT = 0.2;
-	private static final double GRAB_ICON_RATE = 9.0;
+	// seconds a look has to stay on a free camera for it to film, and blocks it has to be away for that
+	private static final double GAZE_HOLD = 0.35;
+	private static final double GAZE_NEAR = 1.5;
+	// closer to the head than this the camera is inside of the player, and further than the second it is out again
+	private static final double INSIDE_IN = 0.55;
+	private static final double INSIDE_OUT = 0.8;
 	// further than this in one step the camera cut to another shot, it did not fly there
 	private static final double MARKER_JUMP = 1.5;
+	// how large the letter of a free camera is, next to the camera icon
+	private static final double NAME_SIZE = 0.75;
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
-	private static final String CAMERA_ICON = "\uE7C0";
+	private static final String CAMERA_ICON = "";
 
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig();
-	private Director director;
-	private CameraConfig config;
-	private Shot followShot;
+	private final FreeCamera free = new FreeCamera();
+	private final CameraGrab grab = new CameraGrab();
 	private Mode mode = Mode.OFF;
-	private CameraType viewBefore;
-	private long lastNanos;
-	private Pose pose;
+	private CameraConfig config;
+	private Director director;
+	private Shot followShot;
 	// the shot the player steers themselves, null while the camera works on its own
 	private Shot steered;
-	// the free camera, and if the player flies it right now
-	private final FreeCamera free = new FreeCamera();
-	private ClientLevel freeLevel;
 	private boolean flying;
-	private boolean inside;
+	private boolean steeredFromWindow;
+	// the level the free cameras that are open belong to
+	private ClientLevel freeLevel;
 	// the free camera the player looks at, and for how long. Negative once that was acted on
 	private int gazeAt = -1;
 	private double gazeTime;
-	private boolean steeredFromWindow;
-	// held with the mouse: where it hangs, how far in front of the eyes, and what the hand does with it
-	private boolean grabbed;
-	private boolean aimed;
-	private int aimedAt;
-	private double grabDistance;
-	private Vec3 grabbedAt = Vec3.ZERO;
-	// where it is on the way there: how far, where from the eyes, and how it is turned
-	private double grabHeld;
-	private Vec3 grabOffset = Vec3.ZERO;
-	private final Quaternionf grabRotation = new Quaternionf();
-	private final HandThrow handThrow = new HandThrow();
+	private boolean inside;
+	private CameraType viewBefore;
+	private long lastNanos;
+	private Pose pose;
+	// when the camera was moved last, how long that step was and how fast it went
 	private long poseNanos;
-	private int shareTicks;
 	private double poseStep;
 	private Vec3 poseSpeed = Vec3.ZERO;
+	private int shareTicks;
 
 	private DesktopCamera() {
 	}
@@ -171,8 +149,7 @@ public final class DesktopCamera {
 		this.flying = false;
 		this.inside = false;
 		this.steeredFromWindow = false;
-		this.grabbed = false;
-		this.aimed = false;
+		this.grab.reset();
 		keepView(mc);
 		this.subject.reset();
 		this.rig.reset();
@@ -180,10 +157,15 @@ public final class DesktopCamera {
 		this.director = null;
 		this.pose = null;
 		this.lastNanos = 0;
-		if (mc.player != null) {
-			mc.player.sendOverlayMessage(Component.translatable("vrcamera.message.mode",
-					Component.translatable("vrcamera.mode." + mode.name().toLowerCase(java.util.Locale.ROOT))));
-		}
+		say("vrcamera.message.mode", Component.translatable("vrcamera.mode." + mode.name().toLowerCase(Locale.ROOT)));
+	}
+
+	/**
+	 * the picture can't be drawn or shown: off, and the player is told why
+	 */
+	public void failed(String message) {
+		setMode(Mode.OFF);
+		say(message);
 	}
 
 	public void nextShot() {
@@ -206,13 +188,19 @@ public final class DesktopCamera {
 		}
 	}
 
+	private static float partialTick() {
+		return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+	}
+
+	// ---- the free cameras
+
 	/**
 	 * puts the free camera that films at the eyes of the player: it films what they look at right now, and stays
 	 */
 	public void summon() {
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (this.mode == Mode.FREE && player != null) {
-			float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+			float partialTick = partialTick();
 			this.free.place(player.getEyePosition(partialTick), player.getViewVector(partialTick), ownFov());
 		}
 	}
@@ -225,13 +213,20 @@ public final class DesktopCamera {
 		if (this.mode != Mode.FREE || player == null || this.freeLevel == null) {
 			return;
 		}
-		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		if (this.free.add(player.getEyePosition(partialTick), player.getViewVector(partialTick), ownFov())) {
-			say("vrcamera.message.free.saved", name(this.free.active()));
+		if (addAtEyes(player, partialTick())) {
+			say("vrcamera.message.free.saved", this.free.name(this.free.active()));
 		} else {
 			say("vrcamera.message.free.full", FreeCamera.MOST);
 		}
-		this.grabbed = false;
+		this.grab.release();
+	}
+
+	private boolean addAtEyes(LocalPlayer player, float partialTick) {
+		return this.free.add(player.getEyePosition(partialTick), player.getViewVector(partialTick), ownFov());
+	}
+
+	private static double ownFov() {
+		return Minecraft.getInstance().options.fov().get();
 	}
 
 	/**
@@ -243,35 +238,14 @@ public final class DesktopCamera {
 		if (this.mode != Mode.FREE || this.free.isEmpty() || player == null) {
 			return;
 		}
+		Vec3 eyes = player.getEyePosition();
 		for (int step = 1; step < this.free.count(); step++) {
 			int camera = (this.free.active() + step) % this.free.count();
-			if (this.free.position(camera).distanceToSqr(player.getEyePosition()) < FREE_AROUND * FREE_AROUND) {
-				this.grabbed = false;
-				this.free.show(camera);
-				say("vrcamera.message.free.point", name(camera), this.free.count());
+			if (this.free.position(camera).distanceToSqr(eyes) < FREE_AROUND * FREE_AROUND) {
+				cutTo(camera);
 				return;
 			}
 		}
-	}
-
-	/**
-	 * takes away every free camera of the world the player is in, and puts a first one at their eyes
-	 */
-	public void clearCameras() {
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (this.mode != Mode.FREE || player == null || this.freeLevel == null) {
-			return;
-		}
-		this.grabbed = false;
-		this.aimed = false;
-		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		this.free.clear();
-		this.free.add(player.getEyePosition(partialTick), player.getViewVector(partialTick), ownFov());
-		say("vrcamera.message.free.cleared");
-	}
-
-	private String name(int camera) {
-		return this.free.name(camera);
 	}
 
 	/**
@@ -287,14 +261,32 @@ public final class DesktopCamera {
 	 * @return false if there is none
 	 */
 	public boolean showCamera(String name) {
-		int camera = cameraNames().indexOf(name.toUpperCase(java.util.Locale.ROOT));
+		int camera = cameraNames().indexOf(name.toUpperCase(Locale.ROOT));
 		if (camera < 0) {
 			return false;
 		}
-		this.grabbed = false;
-		this.free.show(camera);
-		say("vrcamera.message.free.point", name(camera), this.free.count());
+		cutTo(camera);
 		return true;
+	}
+
+	private void cutTo(int camera) {
+		this.grab.release();
+		this.free.show(camera);
+		say("vrcamera.message.free.point", this.free.name(camera), this.free.count());
+	}
+
+	/**
+	 * takes away every free camera of the world the player is in, and puts a first one at their eyes
+	 */
+	public void clearCameras() {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (this.mode != Mode.FREE || player == null || this.freeLevel == null) {
+			return;
+		}
+		this.grab.reset();
+		this.free.clear();
+		addAtEyes(player, partialTick());
+		say("vrcamera.message.free.cleared");
 	}
 
 	/**
@@ -307,34 +299,7 @@ public final class DesktopCamera {
 	}
 
 	/**
-	 * The attack key on a free camera: that one films now.
-	 *
-	 * @return false if the key is for the game
-	 */
-	public boolean select() {
-		if (!pointsAtFreeCamera()) {
-			return false;
-		}
-		if (this.aimedAt != this.free.active()) {
-			this.free.show(this.aimedAt);
-			say("vrcamera.message.free.point", name(this.aimedAt), this.free.count());
-		}
-		return true;
-	}
-
-	/**
-	 * @return if the attack key is for a free camera right now, and not for what is behind it
-	 */
-	public boolean pointsAtFreeCamera() {
-		return this.mode == Mode.FREE && this.aimed && !this.grabbed;
-	}
-
-	private static double ownFov() {
-		return Minecraft.getInstance().options.fov().get();
-	}
-
-	/**
-	 * the cameras of the world and dimension the player is in now, one at their eyes if there is none yet
+	 * the cameras of the world and dimension the player is in now
 	 */
 	private void openFree(Minecraft mc, LocalPlayer player, float partialTick) {
 		this.freeLevel = mc.level;
@@ -351,15 +316,91 @@ public final class DesktopCamera {
 		int nearest = -1;
 		double distance = FREE_AROUND * FREE_AROUND;
 		for (int camera = 0; camera < this.free.count(); camera++) {
-			if (this.free.position(camera).distanceToSqr(eyes) < distance) {
-				distance = this.free.position(camera).distanceToSqr(eyes);
+			double away = this.free.position(camera).distanceToSqr(eyes);
+			if (away < distance) {
+				distance = away;
 				nearest = camera;
 			}
 		}
 		if (nearest >= 0) {
 			this.free.show(nearest);
 		} else {
-			this.free.add(eyes, player.getViewVector(partialTick), ownFov());
+			addAtEyes(player, partialTick);
+		}
+	}
+
+	// ---- what the keys and the mouse of the player do with the camera
+
+	/**
+	 * @return if the player has the camera themselves right now, and steers it with the keys they walk with
+	 */
+	public boolean isSteered() {
+		return this.mode != Mode.OFF && (this.steered != null || this.flying);
+	}
+
+	/**
+	 * The player takes the camera over, or gives it back. Taken over, the keys to walk move it: closer and away,
+	 * around the player, up and down, and a free camera flies. Given back it stays where it was put, like a camera
+	 * placed by hand in VR: the director keeps it for a while and then goes on, the others keep it for good.
+	 */
+	public void toggleSteering() {
+		if (this.mode == Mode.OFF || this.pose == null) {
+			return;
+		}
+		// no word on the screen for a window the player went to or left
+		boolean told = !this.steeredFromWindow && !(hasOwnWindow() && OutputWindow.isFocused());
+		boolean taken;
+		if (this.mode == Mode.FREE) {
+			this.flying = !this.flying;
+			if (!this.flying) {
+				this.free.save();
+			}
+			taken = this.flying;
+		} else if (this.steered != null) {
+			handOver(this.steered);
+			this.steered = null;
+			taken = false;
+		} else {
+			this.steered = shotFrom(this.pose.position(), this.pose.fov(), STEER_MIN_DISTANCE);
+			this.rig.adopt(this.pose.position(), this.steered, this.subject);
+			taken = true;
+		}
+		if (told) {
+			say(taken ? "vrcamera.message.steer.on" : "vrcamera.message.steer.off");
+		}
+	}
+
+	/**
+	 * @param closest closer to the player than this many of their sizes the camera has no place of its own, and
+	 *                gets one behind them
+	 * @return a shot from where the camera is, so that going on from there is not a jump
+	 */
+	private Shot shotFrom(Vec3 camera, double fov, double closest) {
+		Vec3 offset = camera.subtract(this.subject.center);
+		ShotConfig place = CameraConfig.defaultPreset();
+		if (offset.length() > closest * this.subject.unit) {
+			place.azimuth = Math.toDegrees(CamMath.wrap(CamMath.azimuthOf(offset) - this.subject.facing));
+			place.elevation = Math.toDegrees(CamMath.elevationOf(offset));
+			place.distance = Math.max(MIN_SHOT_DISTANCE, offset.length() / this.subject.unit);
+		} else {
+			place.azimuth = 180;
+			place.elevation = 15;
+			place.distance = 3;
+		}
+		place.fov = fov;
+		Shot shot = new Shot(ShotType.CUSTOM, place, 1);
+		shot.start(this.subject, CameraController.INSTANCE.config());
+		return shot;
+	}
+
+	/**
+	 * a shot the player set up is shown from here on: for a while by the director, for good by the follow camera
+	 */
+	private void handOver(Shot shot) {
+		if (this.mode == Mode.FOLLOW) {
+			this.followShot = shot;
+		} else if (this.director != null) {
+			this.director.showManual(shot);
 		}
 	}
 
@@ -377,11 +418,70 @@ public final class DesktopCamera {
 	}
 
 	/**
-	 * @return if the lines that help to frame a picture are on it: while the player has the camera, never after
+	 * The mouse wheel while the camera is held: away from the player and back. While it is steered: its zoom.
+	 *
+	 * @return false if the wheel is for the game
 	 */
-	public boolean showsGrid() {
-		return isSteered() && hasOwnWindow();
+	public boolean scroll(double amount) {
+		if (this.mode != Mode.OFF && this.grab.scroll(amount)) {
+			return true;
+		}
+		if (isSteered() && !this.steeredFromWindow) {
+			zoom(amount);
+			return true;
+		}
+		return false;
 	}
+
+	/**
+	 * @return if the use key belongs to the camera right now: the player holds it, or points at it to take it
+	 */
+	public boolean wantsUseKey() {
+		return this.mode != Mode.OFF && this.grab.wantsUseKey();
+	}
+
+	/**
+	 * @return if the attack key is for a free camera right now, and not for what is behind it
+	 */
+	public boolean pointsAtFreeCamera() {
+		return this.mode == Mode.FREE && this.grab.isAiming() && !this.grab.isHolding();
+	}
+
+	/**
+	 * The attack key on a free camera: that one films now.
+	 *
+	 * @return false if the key is for the game
+	 */
+	public boolean select() {
+		if (!pointsAtFreeCamera()) {
+			return false;
+		}
+		if (this.grab.aimedAt() != this.free.active()) {
+			cutTo(this.grab.aimedAt());
+		}
+		return true;
+	}
+
+	/**
+	 * @param notches of the wheel, away from the player zooms in
+	 */
+	private void zoom(double notches) {
+		if (this.mode == Mode.FREE) {
+			this.free.zoom(notches);
+		} else if (this.steered != null) {
+			ShotConfig place = this.steered.config;
+			place.fov = CamMath.clamp(place.fov * Math.exp(-notches * FOV_WHEEL), 10.0, 120.0);
+		}
+	}
+
+	private double held(KeyMapping key) {
+		// in the window of the camera the game does not hear the keys, they are asked for there
+		boolean down = this.steeredFromWindow ?
+				OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue()) : key.isDown();
+		return down ? 1.0 : 0.0;
+	}
+
+	// ---- one frame of the camera
 
 	/**
 	 * Called while the game sets up its camera for a picture.
@@ -431,220 +531,151 @@ public final class DesktopCamera {
 		}
 	}
 
-	/**
-	 * @return if the player has the camera themselves right now, and steers it with the keys they walk with
-	 */
-	public boolean isSteered() {
-		return this.mode != Mode.OFF && (this.steered != null || this.flying);
+	private Pose move(Minecraft mc, LocalPlayer player, float partialTick) {
+		CameraConfig config = CameraController.INSTANCE.config();
+		if (config != this.config || this.director == null) {
+			// the settings were read again
+			this.config = config;
+			this.director = new Director(config);
+			this.followShot = null;
+		}
+		// like in VR the camera keeps moving while the game is paused, to get to the pause menu
+		double dt = frameTime();
+		this.subject.updateWithoutVR(player, partialTick, dt, dt, config);
+		if (this.mode == Mode.FREE && mc.level != this.freeLevel) {
+			openFree(mc, player, partialTick);
+		}
+		// Only for a camera with a window of its own. Filming into the game window, the menu covers the picture
+		this.subject.guiCenter = hasOwnWindow() ? DesktopGui.place(mc, this.subject, config) : null;
+		readWindow(mc);
+		reach(mc, player, partialTick, dt, config);
+		if (this.grab.isHolding()) {
+			// in the hand of the player, which is where they look: no shot has a say in that
+			return new Pose(this.grab.position(), this.grab.rotation(), this.pose == null ? DEFAULT_FOV : this.pose.fov());
+		}
+		return this.mode == Mode.FREE ? filmFree(mc, player, partialTick, dt, config) : filmShot(mc, dt, config);
 	}
 
 	/**
-	 * The player takes the camera over, or gives it back. Taken over, the keys to walk move it: closer and away,
-	 * around the player, up and down. Given back it stays where it was put, like a camera placed by hand in VR:
-	 * the director keeps it for a while and then goes on, the follow camera keeps it for good.
+	 * @return seconds since the camera was moved last
 	 */
-	public void toggleSteering() {
-		if (this.mode == Mode.OFF || this.pose == null) {
-			return;
+	private double frameTime() {
+		long now = System.nanoTime();
+		double seconds = this.lastNanos == 0 ? 0 : (now - this.lastNanos) / 1.0E9;
+		this.lastNanos = now;
+		if (seconds > MAX_GAP) {
+			this.subject.reset();
+			return 0;
 		}
-		// no word on the screen for a window the player went to or left
-		boolean told = !this.steeredFromWindow && !(hasOwnWindow() && OutputWindow.isFocused());
-		if (this.mode == Mode.FREE) {
-			this.flying = !this.flying;
-			if (!this.flying) {
-				this.free.save();
-			}
-			if (told) {
-				say(this.flying ? "vrcamera.message.steer.on" : "vrcamera.message.steer.off");
-			}
-			return;
+		// a camera that takes few pictures per second has long steps, but not longer than this
+		return Math.min(seconds, MAX_FRAME_TIME);
+	}
+
+	/**
+	 * The window of the camera has the keyboard while the player steers from it: going over to it takes the camera,
+	 * going back to the game gives it back.
+	 */
+	private void readWindow(Minecraft mc) {
+		boolean inWindow = hasOwnWindow() && OutputWindow.isFocused();
+		if (inWindow != this.steeredFromWindow && inWindow != isSteered()) {
+			toggleSteering();
 		}
-		if (this.steered != null) {
-			Shot kept = this.steered;
-			this.steered = null;
-			if (this.mode == Mode.FOLLOW) {
-				this.followShot = kept;
-			} else if (this.director != null) {
-				this.director.showManual(kept);
-			}
-			if (told) {
-				say("vrcamera.message.steer.off");
-			}
-			return;
-		}
-		// from where the camera is right now, so that taking it over is not a jump
-		Vec3 offset = this.pose.position().subtract(this.subject.center);
-		ShotConfig place = CameraConfig.defaultPreset();
-		if (offset.length() > STEER_MIN_DISTANCE * this.subject.unit) {
-			place.azimuth = Math.toDegrees(CamMath.wrap(CamMath.azimuthOf(offset) - this.subject.facing));
-			place.elevation = Math.toDegrees(CamMath.elevationOf(offset));
-			place.distance = offset.length() / this.subject.unit;
-		} else {
-			// it was at the eyes of the player: behind them, to have something to steer
-			place.azimuth = 180;
-			place.elevation = 15;
-			place.distance = 3;
-		}
-		place.fov = this.pose.fov();
-		this.steered = new Shot(ShotType.CUSTOM, place, 1);
-		this.steered.start(this.subject, CameraController.INSTANCE.config());
-		this.rig.adopt(this.pose.position(), this.steered, this.subject);
-		if (told) {
-			say("vrcamera.message.steer.on");
+		this.steeredFromWindow = inWindow && isSteered();
+		// asked for in any case: what the mouse did there while the camera was not steered is not kept for later
+		double wheel = OutputWindow.scrolled();
+		// a free camera is turned with the mouse, which has to stay in the window for that
+		OutputWindow.capture(this.steeredFromWindow && this.mode == Mode.FREE);
+		double[] mouse = OutputWindow.mouseMoved();
+		if (this.steeredFromWindow) {
+			// the game takes a player who presses nothing in its own window for gone, and draws fewer frames
+			mc.getFramerateLimitTracker().onInputReceived();
+			zoom(wheel);
+			this.free.turn(mouse[0] * DRAG_TURN, mouse[1] * DRAG_TURN);
 		}
 	}
 
 	/**
-	 * @return if the use key belongs to the camera right now: the player holds it, or points at it to take it
+	 * the mouse of the player takes the camera they point at, holds it, and lets go of it
 	 */
-	public boolean wantsUseKey() {
-		return this.mode != Mode.OFF && (this.grabbed || this.aimed);
-	}
-
-	/**
-	 * The mouse wheel while the camera is held: away from the player and back. While it is steered: its zoom.
-	 *
-	 * @return false if the wheel is for the game
-	 */
-	public boolean scroll(double amount) {
-		if (this.mode != Mode.OFF && this.grabbed) {
-			this.grabDistance = CamMath.clamp(this.grabDistance * Math.exp(amount * GRAB_WHEEL), GRAB_NEAR, GRAB_FAR);
-			return true;
-		}
-		if (isSteered() && !this.steeredFromWindow) {
-			zoom(amount);
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * The hand of a player at a screen is where they look. Pointing at the camera and holding the use key takes
-	 * it, it then hangs in front of them at the distance it was taken from, and goes where they look. Let go of,
-	 * it stays there like a camera put down by hand in VR. Let go of in a swing, it is thrown.
-	 */
-	private void reach(Minecraft mc, LocalPlayer player, float partialTick, double dt) {
-		boolean possible = hasOwnWindow() && !isSteered() && this.pose != null && mc.gui.screen() == null &&
-				!showsOwnView();
-		if (!possible) {
-			this.grabbed = false;
-			this.aimed = false;
+	private void reach(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
+		if (!hasOwnWindow() || isSteered() || this.pose == null || mc.gui.screen() != null || showsOwnView()) {
+			this.grab.reset();
 			return;
 		}
 		Vec3 eyes = player.getEyePosition(partialTick);
 		Vec3 look = player.getViewVector(partialTick);
-		if (this.grabbed) {
-			if (!mc.options.keyUse.isDown()) {
-				letGo();
-				return;
+		if (this.grab.isHolding()) {
+			if (mc.options.keyUse.isDown()) {
+				this.grab.hold(player, eyes, look, this.subject, config, dt);
+			} else {
+				letGo(config);
 			}
-			// It comes after the look and the wheel, it is not nailed to them: a hand is not that steady, and a
-			// wheel goes in notches
-			this.grabHeld += (this.grabDistance - this.grabHeld) * (1.0 - Math.exp(-GRAB_WHEEL_EASE * dt));
-			this.grabOffset = this.grabOffset.lerp(look.scale(this.grabHeld), 1.0 - Math.exp(-GRAB_EASE * dt));
-			// not into a wall the player looks at
-			this.grabbedAt = WorldProbe.reach(player, eyes, eyes.add(this.grabOffset));
-			// like a shot does: this close only part of the player fits, and the face is the part worth showing
-			double near = CameraController.INSTANCE.config().faceDistance * this.subject.unit;
-			double closeness = near <= 0 ? 0 :
-					1.0 - CamMath.smoothstep((this.grabbedAt.distanceTo(this.subject.center) - near) / near);
-			Vec3 aim = this.subject.center.lerp(this.subject.head, closeness);
-			Quaternionf wanted = new Quaternionf(this.grabRotation);
-			if (CamMath.lookRotation(aim.subtract(this.grabbedAt), wanted)) {
-				this.grabRotation.slerp(wanted, (float) (1.0 - Math.exp(-GRAB_EASE * dt)));
-			}
-			this.handThrow.sample(this.grabbedAt);
 			return;
 		}
-		this.aimed = false;
-		double nearest = GRAB_REACH;
-		int cameras = this.mode == Mode.FREE ? this.free.count() : 1;
-		for (int camera = 0; camera < cameras; camera++) {
-			Vec3 to = (this.mode == Mode.FREE ? this.free.position(camera) : this.pose.position()).subtract(eyes);
-			double along = to.dot(look);
-			// far off a camera is a few pixels, what is pointed at there is its icon: as large at any distance
-			if (along > 0 && along < nearest && (this.mode != Mode.FREE || isAround(camera, eyes)) &&
-					to.subtract(look.scale(along)).length() < GRAB_AIM + GRAB_AIM_PER_BLOCK * along) {
-				nearest = along;
-				this.aimed = true;
-				this.aimedAt = camera;
-			}
-		}
-		if (this.aimed && mc.options.keyUse.isDown()) {
-			if (this.mode == Mode.FREE && this.aimedAt != this.free.active()) {
+		boolean several = this.mode == Mode.FREE;
+		this.grab.aim(eyes, look, several ? this.free.count() : 1,
+				camera -> several ? this.free.position(camera) : this.pose.position(),
+				camera -> !several || isAround(camera, eyes));
+		if (this.grab.isAiming() && mc.options.keyUse.isDown()) {
+			if (several && this.grab.aimedAt() != this.free.active()) {
 				// the one in the hand is the one that films
-				this.free.show(this.aimedAt);
+				this.free.show(this.grab.aimedAt());
 				this.pose = this.free.pose(0);
 			}
-			Vec3 toCamera = this.pose.position().subtract(eyes);
-			this.grabbed = true;
-			this.grabDistance = CamMath.clamp(toCamera.length(), GRAB_NEAR, GRAB_FAR);
-			// from where and how it is right now, to not jump into the hand
-			this.grabHeld = toCamera.length();
-			this.grabOffset = toCamera;
-			this.grabbedAt = this.pose.position();
-			this.grabRotation.set(this.pose.rotation());
-			this.handThrow.clear();
-		}
-	}
-
-	private void letGo() {
-		this.grabbed = false;
-		if (this.mode == Mode.FREE) {
-			// it stays as it was held, and let go of in a swing it glides on from there
-			this.free.place(this.grabbedAt, new Vec3(this.grabRotation.transform(new Vector3f(0, 0, -1))),
-					this.pose == null ? 70.0 : this.pose.fov());
-			Vec3 swing = this.handThrow.velocity(this.subject.velocity);
-			if (swing.length() > THROW_SPEED) {
-				this.free.fling(swing.scale(CameraController.INSTANCE.config().throwPower));
-			}
-			return;
-		}
-		CameraConfig config = CameraController.INSTANCE.config();
-		Vec3 landing = this.grabbedAt;
-		Vec3 thrown = this.handThrow.release(this.subject.velocity, config.throwPower);
-		boolean wasThrown = thrown.lengthSqr() > 0;
-		if (wasThrown) {
-			Vec3 target = this.grabbedAt.add(thrown);
-			landing = this.grabbedAt.lerp(target, WorldProbe.armFraction(this.subject, this.grabbedAt, target, config));
-		}
-		Vec3 offset = landing.subtract(this.subject.center);
-		ShotConfig place = CameraConfig.defaultPreset();
-		place.azimuth = Math.toDegrees(CamMath.wrap(CamMath.azimuthOf(offset) - this.subject.facing));
-		place.elevation = Math.toDegrees(CamMath.elevationOf(offset));
-		place.distance = Math.max(0.3, offset.length() / this.subject.unit);
-		if (this.pose != null) {
-			place.fov = this.pose.fov();
-		}
-		Shot shot = new Shot(ShotType.CUSTOM, place, 1);
-		shot.start(this.subject, config);
-		this.rig.adopt(this.grabbedAt, shot, this.subject);
-		if (wasThrown) {
-			this.rig.blend();
-		}
-		if (this.mode == Mode.FOLLOW) {
-			this.followShot = shot;
-		} else if (this.director != null) {
-			this.director.showManual(shot);
+			this.grab.take(this.pose, eyes);
 		}
 	}
 
 	/**
-	 * moves the camera the way the keys say
+	 * A free camera stays as it was held, and let go of in a swing it glides on from there. The camera of a shot
+	 * stays where it was put like one put down by hand in VR, and thrown it flies there.
 	 */
-	private void steer(Minecraft mc, double dt) {
-		ShotConfig place = this.steered.config;
-		double around = held(mc.options.keyRight) - held(mc.options.keyLeft);
-		double away = held(mc.options.keyDown) - held(mc.options.keyUp);
-		double up = held(mc.options.keyJump) - held(mc.options.keyShift);
-		double turned = around * STEER_TURN * dt;
-		place.azimuth = Math.toDegrees(CamMath.wrap(Math.toRadians(place.azimuth + turned)));
-		// Right away, and not when the shot has caught up with it: a shot follows where it should be slowly, to
-		// not swing with every turn of the player
-		this.steered.azimuth += Math.toRadians(turned);
-		// by a part of the distance, not by blocks: a far camera would crawl and a near one jump
-		place.distance = CamMath.clamp(place.distance * Math.exp(away * STEER_ZOOM * dt), 0.6, 48.0);
-		place.elevation = CamMath.clamp(place.elevation + up * STEER_RISE * dt, -35.0, 85.0);
+	private void letGo(CameraConfig config) {
+		this.grab.release();
+		Vec3 held = this.grab.position();
+		float fov = this.pose == null ? DEFAULT_FOV : this.pose.fov();
+		if (this.mode == Mode.FREE) {
+			this.free.place(held, this.grab.forward(), fov);
+			Vec3 swing = this.grab.swing(this.subject.velocity);
+			if (swing.length() > THROW_SPEED) {
+				this.free.fling(swing.scale(config.throwPower));
+			}
+			return;
+		}
+		Vec3 thrown = this.grab.thrown(this.subject.velocity, config.throwPower);
+		boolean wasThrown = thrown.lengthSqr() > 0;
+		Vec3 landing = held;
+		if (wasThrown) {
+			Vec3 target = held.add(thrown);
+			landing = held.lerp(target, WorldProbe.armFraction(this.subject, held, target, config));
+		}
+		Shot shot = shotFrom(landing, fov, 0);
+		this.rig.adopt(held, shot, this.subject);
+		if (wasThrown) {
+			this.rig.blend();
+		}
+		handOver(shot);
+	}
+
+	private Pose filmFree(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
+		if (this.flying) {
+			this.free.fly(new Vec3(held(mc.options.keyRight) - held(mc.options.keyLeft),
+					held(mc.options.keyJump) - held(mc.options.keyShift),
+					held(mc.options.keyUp) - held(mc.options.keyDown)), held(mc.options.keySprint) > 0);
+		}
+		followGaze(player, partialTick, dt, config);
+		Pose filmed = this.free.pose(dt);
+		if (!this.free.isGone()) {
+			return filmed;
+		}
+		if (this.free.count() == 1) {
+			// the last one is not thrown away, the mode has nothing to film with then
+			this.free.fling(Vec3.ZERO);
+			return filmed;
+		}
+		say("vrcamera.message.free.removed", this.free.name(this.free.active()));
+		this.free.remove();
+		return this.free.pose(0);
 	}
 
 	/**
@@ -653,7 +684,7 @@ public final class DesktopCamera {
 	 * until they look at another one.
 	 */
 	private void followGaze(LocalPlayer player, float partialTick, double dt, CameraConfig config) {
-		if (!config.freeAutoSwitch || this.flying || this.grabbed || this.free.count() < 2) {
+		if (!config.freeAutoSwitch || this.flying || this.free.count() < 2) {
 			this.gazeAt = -1;
 			return;
 		}
@@ -692,29 +723,106 @@ public final class DesktopCamera {
 		}
 	}
 
-	private void fly(Minecraft mc) {
-		this.free.fly(new Vec3(held(mc.options.keyRight) - held(mc.options.keyLeft),
-				held(mc.options.keyJump) - held(mc.options.keyShift),
-				held(mc.options.keyUp) - held(mc.options.keyDown)), held(mc.options.keySprint) > 0);
+	private Pose filmShot(Minecraft mc, double dt, CameraConfig config) {
+		Shot shot;
+		if (this.steered != null) {
+			steer(mc, dt);
+			this.steered.update(this.subject, config, dt);
+			shot = this.steered;
+		} else if (this.mode == Mode.FOLLOW) {
+			if (this.followShot == null || !this.rig.ready()) {
+				this.followShot = new Shot(ShotType.CUSTOM, config.preset(), 1);
+				this.followShot.start(this.subject, config);
+				this.rig.snap(this.followShot, this.subject);
+			} else if (this.subject.teleported) {
+				this.rig.rebase(this.subject);
+			}
+			this.followShot.update(this.subject, config, dt);
+			shot = this.followShot;
+		} else {
+			this.director.update(this.subject, this.rig, dt);
+			shot = this.director.current();
+		}
+		this.rig.update(shot, this.subject, dt, config);
+		// Walls can push the camera all the way into the player, before the director has another shot. Their own
+		// view is the picture for that long, the inside of their head is none
+		double fromHead = this.rig.position().distanceTo(this.subject.head);
+		this.inside = fromHead < (this.inside ? INSIDE_OUT : INSIDE_IN) * this.subject.unit;
+		return new Pose(this.rig.position(), new Quaternionf(this.rig.rotation()),
+				(float) Math.clamp(this.rig.fov(), 1.0, 179.0));
 	}
 
 	/**
-	 * @param notches of the wheel, away from the player zooms in
+	 * moves the shot the player steers the way the keys say
 	 */
-	private void zoom(double notches) {
-		if (this.mode == Mode.FREE) {
-			this.free.zoom(notches);
-		} else if (this.steered != null) {
-			ShotConfig place = this.steered.config;
-			place.fov = CamMath.clamp(place.fov * Math.exp(-notches * FOV_WHEEL), 10.0, 120.0);
+	private void steer(Minecraft mc, double dt) {
+		ShotConfig place = this.steered.config;
+		double around = held(mc.options.keyRight) - held(mc.options.keyLeft);
+		double away = held(mc.options.keyDown) - held(mc.options.keyUp);
+		double up = held(mc.options.keyJump) - held(mc.options.keyShift);
+		double turned = around * STEER_TURN * dt;
+		place.azimuth = Math.toDegrees(CamMath.wrap(Math.toRadians(place.azimuth + turned)));
+		// Right away, and not when the shot has caught up with it: a shot follows where it should be slowly, to
+		// not swing with every turn of the player
+		this.steered.azimuth += Math.toRadians(turned);
+		// by a part of the distance, not by blocks: a far camera would crawl and a near one jump
+		place.distance = CamMath.clamp(place.distance * Math.exp(away * STEER_ZOOM * dt), 0.6, 48.0);
+		place.elevation = CamMath.clamp(place.elevation + up * STEER_RISE * dt, -35.0, 85.0);
+	}
+
+	/**
+	 * Called once per tick. The players around are told where the camera that films is, like they are about the
+	 * one of a player in VR: every other tick, they smooth it out
+	 */
+	public void tick() {
+		Pose filming = lens();
+		if (filming != null && ++this.shareTicks % 2 == 0 && CameraController.INSTANCE.config().shareCamera) {
+			PhotoSync.INSTANCE.shareCamera(filming.position(), filming.rotation());
 		}
 	}
 
-	private double held(KeyMapping key) {
-		// in the window of the camera the game does not hear the keys, they are asked for there
-		boolean down = this.steeredFromWindow ?
-				OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue()) : key.isDown();
-		return down ? 1.0 : 0.0;
+	/**
+	 * Called once per frame. Filming into the game window, the game has to look from behind the player: that
+	 * draws the player, and leaves the hand that is drawn over a first person view out of the picture. Also after
+	 * F5 was pressed. With a window of its own the view of the player is theirs
+	 */
+	public void keepView(Minecraft mc) {
+		if (this.mode != Mode.OFF && CameraController.isVRRunning()) {
+			// in VR the camera of Vivecraft does all of this
+			setMode(Mode.OFF);
+			return;
+		}
+		if (this.mode != Mode.OFF && CameraController.INSTANCE.config().screenOutput == ScreenOutput.SCREEN) {
+			if (this.viewBefore == null) {
+				this.viewBefore = mc.options.getCameraType();
+			}
+			// with no room for the camera the picture is the first person view of the game itself
+			CameraType view = showsOwnView() ? CameraType.FIRST_PERSON : CameraType.THIRD_PERSON_BACK;
+			if (mc.options.getCameraType() != view) {
+				mc.options.setCameraType(view);
+			}
+		} else if (this.viewBefore != null) {
+			mc.options.setCameraType(this.viewBefore);
+			this.viewBefore = null;
+		}
+	}
+
+	// ---- what the camera films, and where it is
+
+	/**
+	 * @return if the camera is on and films into a window of its own
+	 */
+	public boolean hasOwnWindow() {
+		return this.mode != Mode.OFF && CameraController.INSTANCE.config().screenOutput == ScreenOutput.WINDOW;
+	}
+
+	/**
+	 * @return if what the game draws right now is the picture of this camera: all the time while it films into
+	 * the game window, and only in its own turn while it has a window of its own
+	 */
+	public boolean filmsNow() {
+		return this.mode != Mode.OFF && (DirectorPass.isActive() ||
+				CameraController.INSTANCE.config().screenOutput == ScreenOutput.SCREEN);
 	}
 
 	/**
@@ -728,9 +836,66 @@ public final class DesktopCamera {
 	}
 
 	/**
-	 * Shows the player where the camera is, while it films into a window of its own and they can't tell from
-	 * their view.
-	 *
+	 * @return if the lines that help to frame a picture are on it: while the player has the camera, never after
+	 */
+	public boolean showsGrid() {
+		return isSteered() && hasOwnWindow();
+	}
+
+	/**
+	 * @return where the camera was put by the last {@link #update}, null while it does not film
+	 */
+	public Pose pose() {
+		return filmsNow() && !showsOwnView() && !DesktopGui.isDrawing() ? this.pose : null;
+	}
+
+	/**
+	 * @return where the camera is, for a photo that is taken with it. Null if there is none that films from a
+	 * place of its own, and a photo is of what the player sees
+	 */
+	public Pose lens() {
+		return this.mode == Mode.OFF || showsOwnView() ? null : this.pose;
+	}
+
+	/**
+	 * @return what the camera is doing, for the debug overlay
+	 */
+	public List<String> debugLines() {
+		List<String> lines = new ArrayList<>();
+		lines.add("VRCamera on screen: " + this.mode + (hasOwnWindow() ? ", own window" : ", game window"));
+		Shot shot = this.steered != null ? this.steered : this.mode == Mode.FOLLOW ? this.followShot :
+														  this.director == null ? null : this.director.current();
+		if (shot != null) {
+			lines.add("shot: " + shot.type + (showsOwnView() ? " (own view of the player)" : ""));
+		}
+		if (hasOwnWindow()) {
+			lines.addAll(DirectorPass.debugLines());
+		}
+		return lines;
+	}
+
+	// ---- shown to the player: where the cameras are, while they film into a window and can't be told from the view
+
+	private boolean showsMarker() {
+		return hasOwnWindow() && this.pose != null && !DirectorPass.isActive() && !showsOwnView();
+	}
+
+	/**
+	 * @return where the camera is right now. It is moved once per picture it takes, the game draws more frames
+	 * than that: shown where it was moved to, it would go in steps
+	 */
+	private Vec3 markerPosition() {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (this.grab.isHolding() && player != null &&
+				this.grab.position().distanceToSqr(this.pose.position()) < 1.0E-6) {
+			// held, it goes with the eyes of the player: with those of this very frame
+			return this.grab.shownAt(player, player.getEyePosition(partialTick()));
+		}
+		double since = Math.min((System.nanoTime() - this.poseNanos) / 1.0E9, this.poseStep * 1.5);
+		return this.pose.position().add(this.poseSpeed.scale(Math.max(0.0, since)));
+	}
+
+	/**
 	 * @param viewPosition where the pass looks from, the pose stack is relative to that
 	 */
 	public void renderModel(SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
@@ -760,276 +925,25 @@ public final class DesktopCamera {
 			// From where the game looks in this very frame. From where the player was when the camera was moved
 			// last, the icon would shake with every step
 			Camera view = mc.gameRenderer.mainCamera();
+			Vec3 eye = view.position();
 			Vec3 forward = new Vec3(view.forwardVector().x(), view.forwardVector().y(), view.forwardVector().z());
 			Vec3 up = new Vec3(view.upVector().x(), view.upVector().y(), view.upVector().z());
+			UnaryOperator<Vec3> placed = ViewBob.steady(mc, player, eye, forward, up);
 			int filming = this.mode == Mode.FREE ? this.free.active() : 0;
 			boolean several = this.mode == Mode.FREE && this.free.count() > 1;
-			UnaryOperator<Vec3> placed = steady(mc, player, view.position(), forward, up);
-			CameraController.INSTANCE.drawIndicatorWithoutVR(CAMERA_ICON, several ? name(filming) : "",
-					markerPosition(), view.position(), forward, up, player.getScale(), true, grow(filming), placed);
+			CameraController.INSTANCE.drawIndicatorWithoutVR(CAMERA_ICON, several ? this.free.name(filming) : "",
+					markerPosition(), eye, forward, up, player.getScale(), true, this.grab.iconSize(filming, filming),
+					placed);
 			// the free cameras that do not film have their name for an icon, and no place at the edge of the view
 			for (int camera = 0; several && camera < this.free.count(); camera++) {
-				if (camera != filming && isAround(camera, view.position())) {
-					CameraController.INSTANCE.drawIndicatorWithoutVR(name(camera), "", this.free.position(camera),
-							view.position(), forward, up, player.getScale(), false, NAME_SIZE * grow(camera),
-							placed);
+				if (camera != filming && isAround(camera, eye)) {
+					CameraController.INSTANCE.drawIndicatorWithoutVR(this.free.name(camera), "",
+							this.free.position(camera), eye, forward, up, player.getScale(), false,
+							NAME_SIZE * this.grab.iconSize(camera, filming), placed);
 				}
 			}
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
 		}
-	}
-
-	/**
-	 * With view bobbing on, the game sways the whole world in front of the eyes of a player who walks. An icon that
-	 * is read like a part of the screen sways with it, and should not.
-	 *
-	 * @return where to draw something for it to be seen where it is, with the sway of this frame taken back
-	 */
-	private static UnaryOperator<Vec3> steady(Minecraft mc, LocalPlayer player, Vec3 eye, Vec3 forward, Vec3 up) {
-		if (!mc.options.bobView().get()) {
-			return UnaryOperator.identity();
-		}
-		// the numbers of GameRenderer#bobView: a shift, then a roll, then a nod
-		float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		double walk = player.avatarState().getBackwardsInterpolatedWalkDistance(partialTick) * Math.PI;
-		double bob = player.avatarState().getInterpolatedBob(partialTick);
-		double shiftX = Math.sin(walk) * bob * 0.5;
-		double shiftY = -Math.abs(Math.cos(walk) * bob);
-		double roll = -Math.toRadians(Math.sin(walk) * bob * 3.0);
-		double nod = -Math.toRadians(Math.abs(Math.cos(walk - 0.2) * bob) * 5.0);
-		Vec3 right = forward.cross(up);
-		return point -> {
-			Vec3 to = point.subtract(eye);
-			double x = to.dot(right) - shiftX;
-			double y = to.dot(up) - shiftY;
-			double z = -to.dot(forward);
-			double rolledX = x * Math.cos(roll) - y * Math.sin(roll);
-			double rolledY = x * Math.sin(roll) + y * Math.cos(roll);
-			double noddedY = rolledY * Math.cos(nod) - z * Math.sin(nod);
-			double noddedZ = rolledY * Math.sin(nod) + z * Math.cos(nod);
-			return eye.add(right.scale(rolledX)).add(up.scale(noddedY)).add(forward.scale(-noddedZ));
-		};
-	}
-
-	/**
-	 * @return how much larger the icon of a camera is: it beats while the mouse is on the camera and can take it,
-	 * and is held larger while it has it
-	 */
-	private double grow(int camera) {
-		if (this.grabbed) {
-			return camera == (this.mode == Mode.FREE ? this.free.active() : 0) ? GRAB_ICON : 1.0;
-		}
-		return this.aimed && this.aimedAt == camera ?
-				GRAB_ICON + GRAB_ICON_BEAT * Math.sin(System.nanoTime() / 1.0E9 * GRAB_ICON_RATE) : 1.0;
-	}
-
-	/**
-	 * @return what the camera is doing, for the debug overlay
-	 */
-	public List<String> debugLines() {
-		List<String> lines = new ArrayList<>();
-		lines.add("VRCamera on screen: " + this.mode + (hasOwnWindow() ? ", own window" : ", game window"));
-		Shot shot = this.steered != null ? this.steered : this.mode == Mode.FOLLOW ? this.followShot :
-				this.director == null ? null : this.director.current();
-		if (shot != null) {
-			lines.add("shot: " + shot.type + (showsOwnView() ? " (own view of the player)" : ""));
-		}
-		if (hasOwnWindow()) {
-			lines.addAll(DirectorPass.debugLines());
-		}
-		return lines;
-	}
-
-	/**
-	 * @return where the camera is right now. It is moved once per picture it takes, the game draws more frames
-	 * than that: shown where it was moved to, it would go in steps
-	 */
-	private Vec3 markerPosition() {
-		Minecraft mc = Minecraft.getInstance();
-		if (this.grabbed && mc.player != null && this.grabbedAt.distanceToSqr(this.pose.position()) < 1.0E-6) {
-			// held, it goes with the eyes of the player: with those of this very frame
-			Vec3 eyes = mc.player.getEyePosition(mc.getDeltaTracker().getGameTimeDeltaPartialTick(true));
-			return WorldProbe.reach(mc.player, eyes, eyes.add(this.grabOffset));
-		}
-		double since = Math.min((System.nanoTime() - this.poseNanos) / 1.0E9, this.poseStep * 1.5);
-		return this.pose.position().add(this.poseSpeed.scale(Math.max(0.0, since)));
-	}
-
-	private boolean showsMarker() {
-		return hasOwnWindow() && this.pose != null && !DirectorPass.isActive() && !showsOwnView();
-	}
-
-	/**
-	 * @return if what the game draws right now is the picture of this camera: all the time while it films into
-	 * the game window, and only in its own turn while it has a window of its own
-	 */
-	public boolean filmsNow() {
-		return this.mode != Mode.OFF && (DirectorPass.isActive() ||
-				CameraController.INSTANCE.config().screenOutput == ScreenOutput.SCREEN);
-	}
-
-	/**
-	 * Called once per frame. Filming into the game window, the game has to look from behind the player: that
-	 * draws the player, and leaves the hand that is drawn over a first person view out of the picture. Also after
-	 * F5 was pressed. With a window of its own the view of the player is theirs
-	 */
-	public void keepView(Minecraft mc) {
-		if (this.mode != Mode.OFF && CameraController.isVRRunning()) {
-			// in VR the camera of Vivecraft does all of this
-			setMode(Mode.OFF);
-			return;
-		}
-		boolean ownView = this.mode != Mode.OFF &&
-				CameraController.INSTANCE.config().screenOutput == ScreenOutput.SCREEN;
-		if (ownView) {
-			if (this.viewBefore == null) {
-				this.viewBefore = mc.options.getCameraType();
-			}
-			// with no room for the camera the picture is the first person view of the game itself
-			CameraType view = showsOwnView() ? CameraType.FIRST_PERSON : CameraType.THIRD_PERSON_BACK;
-			if (mc.options.getCameraType() != view) {
-				mc.options.setCameraType(view);
-			}
-		} else if (this.viewBefore != null) {
-			mc.options.setCameraType(this.viewBefore);
-			this.viewBefore = null;
-		}
-	}
-
-	/**
-	 * @return if the camera is on and films into a window of its own
-	 */
-	public boolean hasOwnWindow() {
-		return this.mode != Mode.OFF && CameraController.INSTANCE.config().screenOutput == ScreenOutput.WINDOW;
-	}
-
-	/**
-	 * the picture can't be drawn or shown: off, and the player is told why
-	 */
-	public void failed(String message) {
-		setMode(Mode.OFF);
-		say(message);
-	}
-
-	/**
-	 * Called once per tick. The players around are told where the camera that films is, like they are about the
-	 * one of a player in VR: every other tick, they smooth it out
-	 */
-	public void tick() {
-		Pose filming = lens();
-		if (filming != null && ++this.shareTicks % 2 == 0 && CameraController.INSTANCE.config().shareCamera) {
-			PhotoSync.INSTANCE.shareCamera(filming.position(), filming.rotation());
-		}
-	}
-
-	/**
-	 * @return where the camera is, for a photo that is taken with it. Null if there is none that films from a
-	 * place of its own, and a photo is of what the player sees
-	 */
-	public Pose lens() {
-		return this.mode == Mode.OFF || showsOwnView() ? null : this.pose;
-	}
-
-	/**
-	 * @return where the camera was put by the last {@link #update}, null while it does not film
-	 */
-	public Pose pose() {
-		return filmsNow() && !showsOwnView() && !DesktopGui.isDrawing() ? this.pose : null;
-	}
-
-	private Pose move(Minecraft mc, LocalPlayer player, float partialTick) {
-		CameraConfig config = CameraController.INSTANCE.config();
-		if (config != this.config || this.director == null) {
-			// the settings were read again
-			this.config = config;
-			this.director = new Director(config);
-			this.followShot = null;
-		}
-		long now = System.nanoTime();
-		double realDt = this.lastNanos == 0 ? 0 : (now - this.lastNanos) / 1.0E9;
-		this.lastNanos = now;
-		if (realDt > MAX_GAP) {
-			this.subject.reset();
-			realDt = 0;
-		}
-		// a camera that takes few pictures per second has long steps, but not longer than this
-		realDt = Math.min(realDt, MAX_FRAME_TIME);
-		// like in VR the camera keeps moving while the game is paused, to get to the pause menu
-		double dt = realDt;
-
-		this.subject.updateWithoutVR(player, partialTick, dt, realDt, config);
-		if (this.mode == Mode.FREE && mc.level != this.freeLevel) {
-			openFree(mc, player, partialTick);
-		}
-		// Only for a camera with a window of its own. Filming into the game window, the menu covers the picture
-		this.subject.guiCenter = hasOwnWindow() ? DesktopGui.place(mc, this.subject, config) : null;
-		// The window of the camera has the keyboard: the player went over to it to steer. And back to the game
-		boolean inWindow = hasOwnWindow() && OutputWindow.isFocused();
-		if (inWindow != this.steeredFromWindow && inWindow != isSteered()) {
-			toggleSteering();
-		}
-		this.steeredFromWindow = inWindow && isSteered();
-		// asked for in any case: what the mouse did there while the camera was not steered is not kept for later
-		double wheel = OutputWindow.scrolled();
-		// a free camera is turned with the mouse, which has to stay in the window for that
-		OutputWindow.capture(this.steeredFromWindow && this.mode == Mode.FREE);
-		double[] mouse = OutputWindow.mouseMoved();
-		if (this.steeredFromWindow) {
-			// the game takes a player who presses nothing in its own window for gone, and draws fewer frames
-			mc.getFramerateLimitTracker().onInputReceived();
-			zoom(wheel);
-			this.free.turn(mouse[0] * DRAG_TURN, mouse[1] * DRAG_TURN);
-		}
-		reach(mc, player, partialTick, realDt);
-		if (this.grabbed) {
-			// in the hand of the player, which is where they look: no shot has a say in that
-			return new Pose(this.grabbedAt, new Quaternionf(this.grabRotation),
-					this.pose == null ? 70.0F : this.pose.fov());
-		}
-		if (this.mode == Mode.FREE) {
-			if (this.flying) {
-				fly(mc);
-			}
-			followGaze(player, partialTick, realDt, config);
-			Pose filmed = this.free.pose(realDt);
-			if (!this.free.isGone()) {
-				return filmed;
-			}
-			if (this.free.count() == 1) {
-				// the last one is not thrown away, the mode has nothing to film with then
-				this.free.fling(Vec3.ZERO);
-				return filmed;
-			}
-			say("vrcamera.message.free.removed", name(this.free.active()));
-			this.free.remove();
-			return this.free.pose(0);
-		}
-		Shot shot;
-		if (this.steered != null) {
-			steer(mc, realDt);
-			this.steered.update(this.subject, config, dt);
-			shot = this.steered;
-		} else if (this.mode == Mode.FOLLOW) {
-			if (this.followShot == null || !this.rig.ready()) {
-				this.followShot = new Shot(ShotType.CUSTOM, config.preset(), 1);
-				this.followShot.start(this.subject, config);
-				this.rig.snap(this.followShot, this.subject);
-			} else if (this.subject.teleported) {
-				this.rig.rebase(this.subject);
-			}
-			this.followShot.update(this.subject, config, dt);
-			shot = this.followShot;
-		} else {
-			this.director.update(this.subject, this.rig, dt);
-			shot = this.director.current();
-		}
-		this.rig.update(shot, this.subject, dt, config);
-		// Walls can push the camera all the way into the player, before the director has another shot. Their own
-		// view is the picture for that long, the inside of their head is none
-		double fromHead = this.rig.position().distanceTo(this.subject.head);
-		this.inside = fromHead < (this.inside ? INSIDE_OUT : INSIDE_IN) * this.subject.unit;
-		return new Pose(this.rig.position(), new Quaternionf(this.rig.rotation()),
-				(float) Math.clamp(this.rig.fov(), 1.0, 179.0));
 	}
 }

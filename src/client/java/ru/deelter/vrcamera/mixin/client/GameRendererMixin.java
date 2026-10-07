@@ -8,8 +8,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.deelter.vrcamera.client.desktop.DirectorPass;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
+import ru.deelter.vrcamera.client.desktop.DirectorPass;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {

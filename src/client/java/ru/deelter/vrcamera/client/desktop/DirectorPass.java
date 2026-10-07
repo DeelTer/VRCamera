@@ -14,6 +14,7 @@ import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.mixin.client.GameRendererAccessor;
 import ru.deelter.vrcamera.mixin.client.SkyRendererAccessor;
+
 import java.util.List;
 import java.util.Locale;
 
@@ -79,6 +80,10 @@ public final class DirectorPass {
 	 */
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
 		DesktopCamera camera = DesktopCamera.INSTANCE;
+		if (camera.isOn() && (mc.level == null || mc.player == null)) {
+			// the world was left: nothing to film, and a window that shows nothing is in the way
+			camera.setMode(DesktopCamera.Mode.OFF);
+		}
 		camera.keepView(mc);
 		boolean wanted = camera.isOn() && !CameraController.isVRRunning() &&
 				CameraController.INSTANCE.config().screenOutput == ScreenOutput.WINDOW;
@@ -87,7 +92,16 @@ public final class DirectorPass {
 			close();
 			return;
 		}
-		if (active || !renderLevel || mc.level == null || mc.player == null) {
+		if (active) {
+			return;
+		}
+		// in every frame, also the ones without a picture of the camera: the window is asked if it was closed
+		if (!OutputWindow.open(mc)) {
+			camera.failed("vrcamera.message.output.failed");
+			return;
+		}
+		OutputWindow.handleKeys();
+		if (!camera.isOn() || !renderLevel) {
 			return;
 		}
 		double fps = CameraController.INSTANCE.config().outputFps;
@@ -99,13 +113,8 @@ public final class DirectorPass {
 		lastNanos = now;
 
 		RenderTarget own = mc.gameRenderer.mainRenderTarget();
-		if (!OutputWindow.open(mc)) {
-			camera.failed("vrcamera.message.output.failed");
-			return;
-		}
-		OutputWindow.handleKeys();
-		if (!camera.isOn() || !camera.advance(deltaTracker.getGameTimeDeltaPartialTick(true))) {
-			// its window was closed, or it could not be moved and turned itself off
+		if (!camera.advance(deltaTracker.getGameTimeDeltaPartialTick(true))) {
+			// it could not be moved and turned itself off
 			return;
 		}
 		try {

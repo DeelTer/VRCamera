@@ -8,10 +8,10 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ru.deelter.vrcamera.client.desktop.DirectorPass;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
-import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import ru.deelter.vrcamera.client.desktop.DirectorPass;
+import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {

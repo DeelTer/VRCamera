@@ -26,12 +26,15 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
+import org.joml.Vector3f;
 import org.vivecraft.client_vr.ClientDataHolderVR;
 import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.VRState;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.CameraEffects;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import ru.deelter.vrcamera.client.desktop.DirectorPass;
 import ru.deelter.vrcamera.client.sync.PhotoCodec;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
@@ -43,9 +46,6 @@ import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
-import ru.deelter.vrcamera.client.desktop.DirectorPass;
-import org.joml.Vector3f;
 
 /**
  * Takes photos with the camera and keeps the sheets they are printed on.

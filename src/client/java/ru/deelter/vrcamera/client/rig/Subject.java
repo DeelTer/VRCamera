@@ -1,13 +1,13 @@
 package ru.deelter.vrcamera.client.rig;
 
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import org.vivecraft.client_vr.VRData;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.SmoothAngle;
 import ru.deelter.vrcamera.client.math.SmoothVec;
-import net.minecraft.util.Mth;
 
 /**
  * per frame snapshot of the player the camera films

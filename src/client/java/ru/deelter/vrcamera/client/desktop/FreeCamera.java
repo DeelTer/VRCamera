@@ -257,7 +257,7 @@ final class FreeCamera {
 	}
 
 	/**
-	 * @param yaw degrees to the right
+	 * @param yaw   degrees to the right
 	 * @param pitch degrees down
 	 */
 	void turn(double yaw, double pitch) {

@@ -2,19 +2,22 @@ package ru.deelter.vrcamera.client.desktop;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import it.unimi.dsi.fastutil.ints.Int2LongOpenHashMap;
 import net.minecraft.client.Minecraft;
-import org.joml.Vector4f;
-import org.joml.Vector4fc;
-import org.vivecraft.api.client.data.RenderPass;
-import org.vivecraft.client_vr.ClientDataHolderVR;
-import ru.deelter.vrcamera.Vrcamera;
-import ru.deelter.vrcamera.client.CameraController;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import org.joml.Vector4f;
+import org.joml.Vector4fc;
+import org.vivecraft.api.client.data.RenderPass;
+import org.vivecraft.client_vr.ClientDataHolderVR;
+import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.CameraController;
+
+import java.util.Objects;
 
 /**
  * Films entities in front of plain green, to cut them out of the picture later: the world, the sky and everything
@@ -46,6 +49,10 @@ public final class ChromaKey {
 		}
 	}
 
+	// When each entity was looked for last, by its id: positive if it was seen, negative if not
+	private static final Int2LongOpenHashMap SEEN = new Int2LongOpenHashMap();
+	private static final long SEEN_NANOS = 100_000_000L;
+	private static final int SEEN_MOST = 1024;
 	private static Preset preset = Preset.CONFIG;
 	private static boolean on;
 	private static boolean broken;
@@ -64,8 +71,19 @@ public final class ChromaKey {
 		return preset;
 	}
 
-	public static void nextPreset() {
-		preset = Preset.values()[(preset.ordinal() + 1) % Preset.values().length];
+	/**
+	 * the next step of the button that works it: on, through its colours, and off after the last one
+	 */
+	public static void cycle() {
+		Preset[] presets = Preset.values();
+		if (!on) {
+			preset = presets[0];
+			set(true);
+		} else if (preset == presets[presets.length - 1]) {
+			set(false);
+		} else {
+			preset = presets[preset.ordinal() + 1];
+		}
 	}
 
 	/**
@@ -84,8 +102,21 @@ public final class ChromaKey {
 		if (reach > 0 && entity.distanceToSqr(player) > reach * reach) {
 			return false;
 		}
+		// Asked for every entity in every picture, and answered with two rays through the world each. What was
+		// found a moment ago is still true
+		long now = System.nanoTime();
+		long known = SEEN.get(entity.getId());
+		if (known != 0 && now - Math.abs(known) < SEEN_NANOS) {
+			return known > 0;
+		}
 		Vec3 lens = mc.gameRenderer.mainCamera().position();
-		return sees(entity, lens, entity.getBoundingBox().getCenter()) || sees(entity, lens, entity.getEyePosition());
+		boolean seen = sees(entity, lens, entity.getBoundingBox().getCenter()) ||
+				sees(entity, lens, entity.getEyePosition());
+		if (SEEN.size() >= SEEN_MOST) {
+			SEEN.clear();
+		}
+		SEEN.put(entity.getId(), seen ? now : -now);
+		return seen;
 	}
 
 	private static boolean sees(Entity entity, Vec3 from, Vec3 to) {
@@ -100,6 +131,7 @@ public final class ChromaKey {
 		}
 		on = value;
 		broken = false;
+		SEEN.clear();
 		// the round shadow under an entity is drawn on the ground, and there is no ground
 		if (value) {
 			shadowsBefore = mc.options.entityShadows().get();
@@ -145,7 +177,7 @@ public final class ChromaKey {
 	 */
 	private static Vector4fc background() {
 		String text = preset.color == null ? CameraController.INSTANCE.config().chromaColor : preset.color;
-		if (!java.util.Objects.equals(text, colorText)) {
+		if (!Objects.equals(text, colorText)) {
 			colorText = text;
 			int rgb = parse(text == null ? "" : text);
 			color.set((rgb >> 16 & 0xFF) / 255.0F, (rgb >> 8 & 0xFF) / 255.0F, (rgb & 0xFF) / 255.0F, 1.0F);

@@ -22,6 +22,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
 import org.vivecraft.api.client.VRClientAPI;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.config.CameraConfig;
+import ru.deelter.vrcamera.client.config.ScreenOutput;
+import ru.deelter.vrcamera.client.desktop.ChromaKey;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import ru.deelter.vrcamera.client.desktop.DesktopGui;
+import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.CameraMenuScreen;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
@@ -29,18 +35,8 @@ import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
-import java.util.Locale;
-import ru.deelter.vrcamera.client.config.CameraConfig;
-import ru.deelter.vrcamera.client.config.ScreenOutput;
-import ru.deelter.vrcamera.client.desktop.ChromaKey;
-import ru.deelter.vrcamera.client.desktop.DesktopGui;
-import java.util.HashMap;
-import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 public class VrcameraClient implements ClientModInitializer {
 	private static final int PAUSE_BUTTON = 150;
@@ -54,7 +50,7 @@ public class VrcameraClient implements ClientModInitializer {
 	private final CameraController controller = CameraController.INSTANCE;
 	// what each key does. Regular key mappings, Vivecraft makes those bindable to VR controllers as well
 	private final Map<KeyMapping, Runnable> keys = new LinkedHashMap<>();
-	private final Map<KeyMapping, Boolean> heldInWindow = new HashMap<>();
+	private final Set<KeyMapping> heldInWindow = new HashSet<>();
 	private KeyMapping gameOnly;
 
 	@Override
@@ -69,52 +65,17 @@ public class VrcameraClient implements ClientModInitializer {
 
 		// Without VR the same keys work the camera on the screen. Not while the camera of VR is still on though:
 		// VR can go away at any time, and that one has to be turned off first
-		key("mode", InputConstants.KEY_F8, () -> {
-			if (onScreen()) {
-				DesktopCamera.INSTANCE.cycleMode();
-			} else {
-				this.controller.cycleMode();
-			}
-		});
-		key("next", InputConstants.KEY_F9, () -> {
-			if (onScreen()) {
-				DesktopCamera.INSTANCE.nextShot();
-			} else {
-				this.controller.nextShot();
-			}
-		});
-		key("hold", InputConstants.KEY_F10, () -> {
-			if (onScreen()) {
-				DesktopCamera.INSTANCE.toggleHold();
-			} else {
-				this.controller.toggleHold();
-			}
-		});
-		key("preset", InputConstants.KEY_F7, () -> {
-			if (onScreen()) {
-				DesktopCamera.INSTANCE.nextPoint();
-			} else {
-				this.controller.nextPreset();
-			}
-		});
+		DesktopCamera desktop = DesktopCamera.INSTANCE;
+		key("mode", InputConstants.KEY_F8, desktop::cycleMode, this.controller::cycleMode);
+		key("next", InputConstants.KEY_F9, desktop::nextShot, this.controller::nextShot);
+		key("hold", InputConstants.KEY_F10, desktop::toggleHold, this.controller::toggleHold);
+		key("preset", InputConstants.KEY_F7, desktop::nextPoint, this.controller::nextPreset);
 		key("photo", InputConstants.KEY_F6, this.controller::takePhoto);
-		key("preset.new", InputConstants.KEY_N, () -> {
-			if (onScreen()) {
-				DesktopCamera.INSTANCE.addCamera();
-			} else {
-				this.controller.newPreset();
-			}
-		});
-		key("summon", UNBOUND, () -> {
-			if (onScreen()) {
-				DesktopCamera.INSTANCE.summon();
-			} else {
-				this.controller.summon();
-			}
-		});
+		key("preset.new", InputConstants.KEY_N, desktop::addCamera, this.controller::newPreset);
+		key("summon", UNBOUND, desktop::summon, this.controller::summon);
 		key("debug", UNBOUND, this.controller::toggleDebug);
 		// not in the window of the camera: going there takes the camera over, and leaving it gives it back
-		this.gameOnly = key("steer", InputConstants.KEY_G, DesktopCamera.INSTANCE::toggleSteering);
+		this.gameOnly = key("steer", InputConstants.KEY_G, desktop::toggleSteering);
 		// the screen with everything on it: one place in the radial menu of Vivecraft is enough for the whole mod
 		key("menu", UNBOUND, () -> {
 			Minecraft mc = Minecraft.getInstance();
@@ -150,10 +111,10 @@ public class VrcameraClient implements ClientModInitializer {
 				}
 				boolean down = inWindow && key != this.gameOnly &&
 						OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue());
-				if (down && !Boolean.TRUE.equals(this.heldInWindow.put(key, true))) {
-					action.run();
-				} else if (!down) {
+				if (!down) {
 					this.heldInWindow.remove(key);
+				} else if (this.heldInWindow.add(key)) {
+					action.run();
 				}
 			});
 		});
@@ -203,6 +164,13 @@ public class VrcameraClient implements ClientModInitializer {
 		return !CameraController.isVRRunning() && this.controller.mode() == CameraController.Mode.OFF;
 	}
 
+	/**
+	 * a key that works the camera on the screen without VR, and the one of Vivecraft with it
+	 */
+	private void key(String name, int keyCode, Runnable onScreen, Runnable inVR) {
+		key(name, keyCode, () -> (onScreen() ? onScreen : inVR).run());
+	}
+
 	private KeyMapping key(String name, int keyCode, Runnable action) {
 		KeyMapping key = new KeyMapping("key.vrcamera." + name, keyCode, CATEGORY);
 		KeyMappingHelper.registerKeyMapping(key);
@@ -218,31 +186,31 @@ public class VrcameraClient implements ClientModInitializer {
 		// Without VR the buttons work the camera on the screen. Not while the camera of VR is still on though,
 		// to be able to turn that one off after VR went away
 		if (onScreen()) {
-			int before = widgets.size();
-			int slot = 0;
-			int[] at = pauseSlot(pauseMenu, slot++);
-			widgets.add(Button.builder(screenModeLabel(), button -> {
+			List<Button> buttons = new ArrayList<>();
+			buttons.add(Button.builder(screenModeLabel(), button -> {
 				DesktopCamera.INSTANCE.cycleMode();
 				button.setMessage(screenModeLabel());
-			}).bounds(at[0], at[1], at[2], 20).build());
-			at = pauseSlot(pauseMenu, slot++);
-			widgets.add(Button.builder(screenOutputLabel(), button -> {
+			}).build());
+			buttons.add(Button.builder(screenOutputLabel(), button -> {
 				CameraConfig config = this.controller.config();
 				config.screenOutput = config.screenOutput == ScreenOutput.WINDOW ? ScreenOutput.SCREEN :
 						ScreenOutput.WINDOW;
 				config.save();
 				button.setMessage(screenOutputLabel());
-			}).bounds(at[0], at[1], at[2], 20).build());
+			}).build());
 			if (ConfigScreen.isAvailable()) {
-				at = pauseSlot(pauseMenu, slot++);
-				widgets.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
-								button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu)))
-						.bounds(at[0], at[1], at[2], 20).build());
+				buttons.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
+						button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu))).build());
 			}
-			at = pauseSlot(pauseMenu, slot);
-			addChromaButton(widgets, at[0], at[1], at[2]);
-			// the menu on the screen in the world is the pause menu, not these
-			widgets.stream().skip(before).forEach(DesktopGui::leaveOut);
+			buttons.add(chromaButton());
+			for (int slot = 0; slot < buttons.size(); slot++) {
+				Button button = buttons.get(slot);
+				int[] at = pauseSlot(pauseMenu, slot);
+				button.setRectangle(at[2], 20, at[0], at[1]);
+				// the menu on the screen in the world is the pause menu, not these
+				DesktopGui.leaveOut(button);
+				widgets.add(button);
+			}
 			return;
 		}
 		if (!CameraController.isVRRunning() && this.controller.mode() == CameraController.Mode.OFF) {
@@ -255,7 +223,9 @@ public class VrcameraClient implements ClientModInitializer {
 		widgets.add(Button.builder(Component.translatable("vrcamera.gui.menu"),
 						button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
 				.bounds(4, 26, 120, 20).build());
-		addChromaButton(widgets, 4, 48, 120);
+		Button chroma = chromaButton();
+		chroma.setRectangle(120, 20, 4, 48);
+		widgets.add(chroma);
 	}
 
 	/**
@@ -279,21 +249,11 @@ public class VrcameraClient implements ClientModInitializer {
 	/**
 	 * a button that goes through the colours of the green screen, and off after the last one
 	 */
-	private static void addChromaButton(List<AbstractWidget> widgets, int x, int y, int width) {
-		widgets.add(Button.builder(chromaLabel(), button -> {
-			ChromaKey.Preset[] presets = ChromaKey.Preset.values();
-			if (!ChromaKey.isOn()) {
-				while (ChromaKey.preset() != presets[0]) {
-					ChromaKey.nextPreset();
-				}
-				ChromaKey.set(true);
-			} else if (ChromaKey.preset() == presets[presets.length - 1]) {
-				ChromaKey.set(false);
-			} else {
-				ChromaKey.nextPreset();
-			}
+	private static Button chromaButton() {
+		return Button.builder(chromaLabel(), button -> {
+			ChromaKey.cycle();
 			button.setMessage(chromaLabel());
-		}).bounds(x, y, width, 20).build());
+		}).build();
 	}
 
 	private static Component chromaLabel() {

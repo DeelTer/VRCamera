@@ -325,8 +325,8 @@ public final class CameraController implements Tracker {
 	/**
 	 * the same for a player without VR
 	 *
-	 * @param name what the camera is called, in front of the distance to it. Empty for none
-	 * @param head where the game looks from, and which way and how it is turned
+	 * @param name   what the camera is called, in front of the distance to it. Empty for none
+	 * @param head   where the game looks from, and which way and how it is turned
 	 * @param placed where to draw what should be seen at a place, see {@code DesktopCamera#steady}
 	 */
 	public void drawIndicatorWithoutVR(

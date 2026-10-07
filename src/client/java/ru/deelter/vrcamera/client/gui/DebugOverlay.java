@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.CameraController.Mode;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
@@ -12,7 +13,6 @@ import ru.deelter.vrcamera.client.shot.Shot;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 /**
  * Text on the hud about what the camera is doing and why, to tune the settings with.
