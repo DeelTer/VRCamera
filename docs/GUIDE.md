@@ -446,6 +446,10 @@ leave it, and a click into the window takes it again; from the game window it tu
 you steer. While you have the camera, lines that split the picture into thirds are on its window; they go when
 you give it back, and are never in what you record after that.
 
+**Seen by others.** On a server with the plugin, players with the mod see the camera that films, with your name
+over it, like the camera of a player in VR. Only that one, and not further than 48 blocks from you;
+`shareCamera` turns it off.
+
 **Photos.** The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
 films, if there are several. With the camera off it is a photo of what you see.
 

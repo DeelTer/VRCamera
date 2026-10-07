@@ -34,6 +34,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import java.nio.file.Path;
 import java.io.IOException;
+import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 /**
  * The director and the follow camera for a player without VR: the same shots, picked the same way, from what the
@@ -121,6 +122,7 @@ public final class DesktopCamera {
 	private final Quaternionf grabRotation = new Quaternionf();
 	private final HandThrow handThrow = new HandThrow();
 	private long poseNanos;
+	private int shareTicks;
 	private double poseStep;
 	private Vec3 poseSpeed = Vec3.ZERO;
 
@@ -784,6 +786,17 @@ public final class DesktopCamera {
 	public void failed(String message) {
 		setMode(Mode.OFF);
 		say(message);
+	}
+
+	/**
+	 * Called once per tick. The players around are told where the camera that films is, like they are about the
+	 * one of a player in VR: every other tick, they smooth it out
+	 */
+	public void tick() {
+		Pose filming = lens();
+		if (filming != null && ++this.shareTicks % 2 == 0 && CameraController.INSTANCE.config().shareCamera) {
+			PhotoSync.INSTANCE.shareCamera(filming.position(), filming.rotation());
+		}
 	}
 
 	/**

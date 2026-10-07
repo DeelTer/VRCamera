@@ -134,6 +134,7 @@ public class VrcameraClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
 			this.controller.tick();
+			DesktopCamera.INSTANCE.tick();
 			PhotoSync.INSTANCE.tick();
 			// In VR sheets move with every frame, from the tracker. Without VR there is no tracker, and nothing
 			// to hold a sheet with either: a tick is often enough for the ones that hang and the few that fall
