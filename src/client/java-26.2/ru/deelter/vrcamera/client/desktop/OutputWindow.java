@@ -144,9 +144,59 @@ public final class OutputWindow {
 		}
 		GLFW.glfwSetWindowPos(window, place[0], place[1]);
 		GLFW.glfwSetWindowSize(window, place[2], place[3]);
+		keepReachable();
 		if (config.outputWindowFull) {
 			toggleFullscreen();
 		}
+	}
+
+	/**
+	 * A window is moved by the bar at its top. With that bar off the monitor, or the window larger than the
+	 * monitor, there is no getting hold of it anymore: it is made to fit, and its bar is brought back into view
+	 */
+	private static void keepReachable() {
+		int[] place = place();
+		int[] monitor = monitorAround(place[0] + place[2] / 2, place[1] + place[3] / 2);
+		if (monitor == null) {
+			return;
+		}
+		int[] bar = new int[1];
+		GLFW.glfwGetWindowFrameSize(window, null, bar, null, null);
+		int width = Math.min(place[2], monitor[2]);
+		int height = Math.min(place[3], monitor[3] - bar[0]);
+		int x = Math.clamp(place[0], monitor[0], monitor[0] + monitor[2] - width);
+		int y = Math.clamp(place[1], monitor[1] + bar[0], monitor[1] + monitor[3] - height);
+		if (width != place[2] || height != place[3]) {
+			GLFW.glfwSetWindowSize(window, width, height);
+		}
+		if (x != place[0] || y != place[1]) {
+			GLFW.glfwSetWindowPos(window, x, y);
+		}
+	}
+
+	/**
+	 * the window as it is the first time: its usual size, in the middle of the monitor the game is on
+	 */
+	public static void resetPlace() {
+		if (window == 0) {
+			return;
+		}
+		if (windowed != null) {
+			toggleFullscreen();
+		}
+		int[] x = new int[1];
+		int[] y = new int[1];
+		int[] width = new int[1];
+		int[] height = new int[1];
+		long game = Minecraft.getInstance().getWindow().handle();
+		GLFW.glfwGetWindowPos(game, x, y);
+		GLFW.glfwGetWindowSize(game, width, height);
+		int[] monitor = monitorAround(x[0] + width[0] / 2, y[0] + height[0] / 2);
+		GLFW.glfwSetWindowSize(window, WIDTH, HEIGHT);
+		if (monitor != null) {
+			GLFW.glfwSetWindowPos(window, monitor[0] + (monitor[2] - WIDTH) / 2, monitor[1] + (monitor[3] - HEIGHT) / 2);
+		}
+		keepReachable();
 	}
 
 	private static void remember() {
@@ -333,6 +383,7 @@ public final class OutputWindow {
 			GLFW.glfwSetWindowPos(window, windowed[0], windowed[1]);
 			GLFW.glfwSetWindowSize(window, windowed[2], windowed[3]);
 			windowed = null;
+			keepReachable();
 			return;
 		}
 		int[] place = place();

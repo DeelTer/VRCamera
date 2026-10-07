@@ -35,6 +35,9 @@ public final class OutputWindow {
 	public static void toggleFullscreen() {
 	}
 
+	public static void resetPlace() {
+	}
+
 	public static double scrolled() {
 		return 0;
 	}

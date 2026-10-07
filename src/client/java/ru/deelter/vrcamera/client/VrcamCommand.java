@@ -106,6 +106,10 @@ public final class VrcamCommand {
 				return DONE;
 			}));
 		}
+		screen.then(ClientCommands.literal("resetwindow").executes(context -> {
+			OutputWindow.resetPlace();
+			return DONE;
+		}));
 		screen.then(ClientCommands.literal("fullscreen").executes(context -> {
 			OutputWindow.toggleFullscreen();
 			return DONE;

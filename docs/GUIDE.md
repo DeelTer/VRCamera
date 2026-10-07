@@ -463,7 +463,8 @@ films, if there are several. With the camera off it is a photo of what you see.
 
 **The whole monitor.** `F11` in the window of the camera, or `/vrcam screen fullscreen`, lets it fill the monitor it is
 on, without a frame; once more and it is a window again. The window comes back where it was, on the same monitor and as
-large, the next time the camera is turned on. The picture is drawn as large as the game window and shown
+large, the next time the camera is turned on. `/vrcam screen resetwindow` puts it back in the middle of the monitor
+the game is on, at its usual size, should it ever end up where you can't get hold of it. The picture is drawn as large as the game window and shown
 as large as the window of the camera: for a full 1080p picture in OBS both have to be that large. Mods that draw
 fewer frames while the game is not looked at, like Dynamic FPS, leave the camera alone while it has its window, and
 so does the game itself when it is minimized.
