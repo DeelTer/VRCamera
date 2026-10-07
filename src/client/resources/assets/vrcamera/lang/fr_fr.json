@@ -256,5 +256,9 @@
 	"vrcamera.message.free.cleared": "Caméra : toutes les caméras retirées",
 	"vrcamera.command.cam.none": "Il n'y a pas de caméra libre %s ici",
 	"vrcamera.option.othersCameras": "Caméras des autres : nombre",
-	"vrcamera.option.othersCameras.tooltip": "Combien de caméras d'autres joueurs vous voyez à la fois, les plus proches. 0 n'en montre aucune. Vos propres caméras ne comptent pas."
+	"vrcamera.option.othersCameras.tooltip": "Combien de caméras d'autres joueurs vous voyez à la fois, les plus proches. 0 n'en montre aucune. Vos propres caméras ne comptent pas.",
+	"vrcamera.option.povHome": "Première personne comme plan principal (sans VR)",
+	"vrcamera.option.povHome.tooltip": "Sans VR, le réalisateur reste longtemps en première personne, montre deux ou trois autres plans et revient. Un combat ou un vol ne l'interrompt pas. Désactivé : c'est un plan parmi les autres.",
+	"vrcamera.option.povHomeSeconds": "Première personne comme plan principal : durée",
+	"vrcamera.option.povHomeSeconds.tooltip": "Combien de secondes le réalisateur reste en première personne avant de montrer d'autres plans."
 }

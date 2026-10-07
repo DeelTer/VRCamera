@@ -35,6 +35,8 @@ public final class Director {
 	// how well first person fits where it is tight, it does not fit anywhere else
 	private static final double TIGHT_POV_FIT = 0.6;
 	private static final double SCREEN_POV_FIT = 0.2;
+	// shots between two stays in first person, this many or one more
+	private static final int HOME_ASIDES = 2;
 	// fights are cut faster
 	private static final double COMBAT_DURATION_SCALE = 0.6;
 
@@ -86,6 +88,8 @@ public final class Director {
 	private ShotType boost;
 	private boolean tight;
 	private boolean atScreen;
+	// other shots left to show before first person is come back to
+	private int asides;
 	private double tightTimer;
 	private double combatTimer;
 	// seconds of recent mining, goes up while a block is being broken, slowly down otherwise
@@ -260,7 +264,7 @@ public final class Director {
 			} else if (this.current.age >= this.current.duration) {
 				reason = "time";
 			} else if (this.current.age > this.config.minShotTime && this.current.type != ShotType.CUSTOM &&
-					!this.current.forced) {
+					!this.current.forced && !(isHome() && this.current.type == ShotType.POV)) {
 				Context now = activity(this.context);
 				if (fit(this.current.type) <= 0) {
 					reason = "unfit for " + this.context;
@@ -378,10 +382,12 @@ public final class Director {
 		} else if (this.forceType != null) {
 			// the player asked for this one, it doesn't have to fit the situation or be enabled
 			selection.considerBothSides(this.forceType, 1.0, distanceScale);
+		} else if (isHome() && this.asides <= 0 && (this.current == null || this.current.type != ShotType.POV)) {
+			selection.considerBothSides(ShotType.POV, 1.0, distanceScale);
 		} else {
 			for (ShotType type : ShotType.values()) {
 				ShotConfig shotConfig = this.config.shot(type);
-				if (type == ShotType.CUSTOM || !shotConfig.enabled ||
+				if (type == ShotType.CUSTOM || !shotConfig.enabled || (type == ShotType.POV && isHome()) ||
 						(type == ShotType.DUEL && subject.targetCenter == null) ||
 						(type == ShotType.HANDS && !subject.tracksHands)) {
 					continue;
@@ -410,6 +416,14 @@ public final class Director {
 		next.forced = this.forceType != null;
 		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, this.random.nextDouble()) *
 				(this.context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
+		if (isHome() && !next.forced) {
+			if (next.type == ShotType.POV) {
+				next.duration = this.config.povHomeSeconds;
+				this.asides = HOME_ASIDES + this.random.nextInt(2);
+			} else {
+				this.asides--;
+			}
+		}
 
 		if (next == this.current) {
 			// still the only shot with room, carry on with it
@@ -431,6 +445,14 @@ public final class Director {
 		this.forceType = null;
 		this.occludedTime = -OCCLUSION_GRACE;
 		this.lastReason = reason;
+	}
+
+	/**
+	 * @return if first person is where the director of a player at a screen comes back to and stays, with a few
+	 * other shots in between
+	 */
+	private boolean isHome() {
+		return this.config.povHome && this.atScreen;
 	}
 
 	/**

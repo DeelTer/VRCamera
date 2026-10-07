@@ -21,6 +21,39 @@ import org.lwjgl.glfw.GLFWVidMode;
  * of the game and copies the finished picture to its screen. Needs the OpenGL renderer of the game.
  */
 public final class OutputWindow {
+	/**
+	 * the lines that help to frame a picture: where they are, as parts of its width and of its height
+	 */
+	private enum Grid {
+		THIRDS(1.0 / 3.0, 2.0 / 3.0),
+		GOLDEN(0.382, 0.618),
+		HALVES(0.5),
+		// what of a wide picture is left in an upright one, for a video that is cut to both
+		UPRIGHT,
+		// Frames and not lines: what is inside the outer one is seen on any screen, what is inside the inner one is
+		// not under the buttons and titles a player puts over a video
+		SAFE,
+		NONE;
+
+		private static final double UPRIGHT_SHAPE = 9.0 / 16.0;
+		// how far in from each edge the frames are, as parts of the picture
+		private static final double[] SAFE_FRAMES = {0.05, 0.1};
+
+		private final double[] up;
+
+		Grid(double... lines) {
+			this.up = lines;
+		}
+
+		private double[] across(int width, int height) {
+			if (this != UPRIGHT) {
+				return this.up;
+			}
+			double part = height * UPRIGHT_SHAPE / width;
+			return part >= 1.0 ? new double[0] : new double[]{0.5 - part / 2.0, 0.5 + part / 2.0};
+		}
+	}
+
 	private static final int WIDTH = 1280;
 	private static final int HEIGHT = 720;
 
@@ -32,6 +65,8 @@ public final class OutputWindow {
 	private static double scrolled;
 	private static boolean captured;
 	private static boolean fullKeyDown;
+	private static boolean gridKeyDown;
+	private static int grid;
 	// where the window was and how large, while it fills a monitor. Null while it is a window
 	private static int[] windowed;
 	private static boolean letGo;
@@ -93,7 +128,7 @@ public final class OutputWindow {
 	/**
 	 * copies the picture to the window, as large as it fits
 	 *
-	 * @param grid if lines that split the picture into thirds go over it
+	 * @param grid if the lines that help to frame a picture go over it, the ones that were picked with H
 	 * @param fill if the picture was drawn for the shape of the window, and fills it
 	 */
 	public static void show(Minecraft mc, RenderTarget picture, boolean grid, boolean fill) {
@@ -139,11 +174,25 @@ public final class OutputWindow {
 					int thickness = Math.max(1, shownHeight / 360);
 					GL11.glEnable(GL11.GL_SCISSOR_TEST);
 					GL11.glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
-					for (int third = 1; third < 3; third++) {
-						GL11.glScissor(left + shownWidth * third / 3, bottom, thickness, shownHeight);
+					Grid lines = Grid.values()[OutputWindow.grid];
+					for (double across : lines.across(shownWidth, shownHeight)) {
+						GL11.glScissor(left + (int) (shownWidth * across), bottom, thickness, shownHeight);
 						GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
-						GL11.glScissor(left, bottom + shownHeight * third / 3, shownWidth, thickness);
+					}
+					for (double up : lines.up) {
+						GL11.glScissor(left, bottom + (int) (shownHeight * up), shownWidth, thickness);
 						GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+					}
+					for (double in : lines == Grid.SAFE ? Grid.SAFE_FRAMES : new double[0]) {
+						int x = left + (int) (shownWidth * in);
+						int y = bottom + (int) (shownHeight * in);
+						int across = shownWidth - 2 * (int) (shownWidth * in);
+						int high = shownHeight - 2 * (int) (shownHeight * in);
+						for (int[] side : new int[][]{{x, y, across, thickness}, {x, y + high - thickness, across, thickness},
+								{x, y, thickness, high}, {x + across - thickness, y, thickness, high}}) {
+							GL11.glScissor(side[0], side[1], side[2], side[3]);
+							GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+						}
 					}
 					GL11.glDisable(GL11.GL_SCISSOR_TEST);
 				}
@@ -189,17 +238,23 @@ public final class OutputWindow {
 	}
 
 	/**
-	 * F11 in the window: over the whole monitor it is on, and back
+	 * The keys of the window itself. F11: over the whole monitor it is on, and back. H: the next kind of lines
+	 * over the picture, see {@link Grid}
 	 */
 	public static void handleKeys() {
 		if (window == 0) {
 			return;
 		}
-		boolean down = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_F11) == GLFW.GLFW_PRESS;
-		if (down && !fullKeyDown) {
+		boolean full = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_F11) == GLFW.GLFW_PRESS;
+		if (full && !fullKeyDown) {
 			toggleFullscreen();
 		}
-		fullKeyDown = down;
+		fullKeyDown = full;
+		boolean grid = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_H) == GLFW.GLFW_PRESS;
+		if (grid && !gridKeyDown) {
+			OutputWindow.grid = (OutputWindow.grid + 1) % Grid.values().length;
+		}
+		gridKeyDown = grid;
 	}
 
 	/**

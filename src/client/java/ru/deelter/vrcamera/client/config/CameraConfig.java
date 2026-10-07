@@ -254,6 +254,8 @@ public class CameraConfig {
 	 * also use the hand placed shots in the director rotation
 	 */
 	public boolean customInRotation = false;
+	public boolean povHome = false;
+	public double povHomeSeconds = 60;
 
 	public Map<String, ShotConfig> shots = new LinkedHashMap<>();
 

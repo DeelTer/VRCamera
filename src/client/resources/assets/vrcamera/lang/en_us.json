@@ -256,5 +256,9 @@
 	"vrcamera.message.free.cleared": "Camera: all cameras removed",
 	"vrcamera.command.cam.none": "There is no free camera %s here",
 	"vrcamera.option.othersCameras": "Cameras of others: how many",
-	"vrcamera.option.othersCameras.tooltip": "How many cameras of other players you see at once, the nearest ones. 0 shows none. Your own cameras are not counted."
+	"vrcamera.option.othersCameras.tooltip": "How many cameras of other players you see at once, the nearest ones. 0 shows none. Your own cameras are not counted.",
+	"vrcamera.option.povHome": "First person as the main shot (no VR)",
+	"vrcamera.option.povHome.tooltip": "Without VR the director stays in first person for a long time, shows two or three other shots, and comes back. A fight or a flight does not cut first person short. Off: first person is one shot among the others.",
+	"vrcamera.option.povHomeSeconds": "First person as the main shot: how long",
+	"vrcamera.option.povHomeSeconds.tooltip": "How many seconds the director stays in first person before it shows other shots."
 }

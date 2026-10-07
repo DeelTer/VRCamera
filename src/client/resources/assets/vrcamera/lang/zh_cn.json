@@ -256,5 +256,9 @@
 	"vrcamera.message.free.cleared": "摄像机：已移除全部摄像机",
 	"vrcamera.command.cam.none": "这里没有自由摄像机 %s",
 	"vrcamera.option.othersCameras": "他人的摄像机：显示数量",
-	"vrcamera.option.othersCameras.tooltip": "同时显示多少台其他玩家的摄像机，取离你最近的。0 为不显示。你自己的摄像机不计入。"
+	"vrcamera.option.othersCameras.tooltip": "同时显示多少台其他玩家的摄像机，取离你最近的。0 为不显示。你自己的摄像机不计入。",
+	"vrcamera.option.povHome": "第一人称作为主镜头（无 VR）",
+	"vrcamera.option.povHome.tooltip": "无 VR 时导演长时间停留在第一人称，展示两三个其他镜头后再回来。战斗或飞行不会打断第一人称。关闭：第一人称只是普通镜头之一。",
+	"vrcamera.option.povHomeSeconds": "第一人称作为主镜头：时长",
+	"vrcamera.option.povHomeSeconds.tooltip": "导演在展示其他镜头之前停留在第一人称的秒数。"
 }

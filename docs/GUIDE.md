@@ -429,8 +429,8 @@ further away and brings it back. It comes after both softly, for a shot that flo
 you swing the view and it is thrown that way; `throwPower` sets how far. While you point at the camera or hold it,
 the use key does nothing else.
 
-**Free cameras.** The third mode without VR, `/vrcam screen free` or the mode key. A camera is put at your eyes,
-films what you look at, and stays there whatever you do: it does not follow you and does not look for you. Put up
+**Free cameras.** The third mode without VR, `/vrcam screen free` or the mode key. Turned on, the camera nearest to you
+films; with none within 64 blocks a new one is put at your eyes. It films what you look at, and stays there whatever you do: it does not follow you and does not look for you. Put up
 to 26 of them, with the key for a new shot of your own (`N`) or `/vrcam screen free` once more. They are called A,
 B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in the world with their letter over them, the one that films with the camera
 icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time: the
@@ -444,7 +444,9 @@ Take the camera over (click into its window, or `G`) and you fly it: the keys to
 it up and down, sprint makes it fast, and the mouse turns it — its window takes the mouse for that, `Esc` lets it go, to move the window or
 leave it, and a click into the window takes it again; from the game window it turns it as it turns you. It comes after all of that softly. The wheel zooms, also for a shot of the director that
 you steer. While you have the camera, lines that split the picture into thirds are on its window; they go when
-you give it back, and are never in what you record after that.
+you give it back, and are never in what you record after that. `H` in the window of the camera goes through
+thirds, the golden ratio, halves, the part of the picture an upright 9:16 video keeps, safe frames at 90% and 80% of the picture, and no lines at
+all.
 
 **Seen by others.** On a server with the plugin, players with the mod see the camera that films, with your name
 over it, like the camera of a player in VR. Only that one, and not further than 48 blocks from you;

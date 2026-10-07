@@ -256,5 +256,9 @@
 	"vrcamera.message.free.cleared": "Kamera: alle Kameras entfernt",
 	"vrcamera.command.cam.none": "Hier gibt es keine freie Kamera %s",
 	"vrcamera.option.othersCameras": "Kameras anderer: Anzahl",
-	"vrcamera.option.othersCameras.tooltip": "Wie viele Kameras anderer Spieler du gleichzeitig siehst, die nächsten zuerst. 0 zeigt keine. Deine eigenen Kameras zählen nicht."
+	"vrcamera.option.othersCameras.tooltip": "Wie viele Kameras anderer Spieler du gleichzeitig siehst, die nächsten zuerst. 0 zeigt keine. Deine eigenen Kameras zählen nicht.",
+	"vrcamera.option.povHome": "Ich-Perspektive als Haupteinstellung (ohne VR)",
+	"vrcamera.option.povHome.tooltip": "Ohne VR bleibt der Regisseur lange in der Ich-Perspektive, zeigt zwei oder drei andere Einstellungen und kommt zurück. Kampf oder Flug brechen sie nicht ab. Aus: sie ist eine Einstellung unter den anderen.",
+	"vrcamera.option.povHomeSeconds": "Ich-Perspektive als Haupteinstellung: Dauer",
+	"vrcamera.option.povHomeSeconds.tooltip": "Wie viele Sekunden der Regisseur in der Ich-Perspektive bleibt, bevor er andere Einstellungen zeigt."
 }

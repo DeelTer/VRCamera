@@ -64,6 +64,8 @@ public final class DesktopCamera {
 	private static final double STEER_ZOOM = 1.1;
 	// closer to the player than this the camera has no place around them to start from
 	private static final double STEER_MIN_DISTANCE = 1.0;
+	// blocks from the player a free camera is still one of this place, when the mode is turned on
+	private static final double FREE_AROUND = 64.0;
 	// closer to the head than this the camera is inside of the player, and further than the second it is out again
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
@@ -323,8 +325,21 @@ public final class DesktopCamera {
 			Vrcamera.LOGGER.warn("VRCamera: can't make {}", cache, e);
 		}
 		this.free.open(cache.resolve(FreeCamera.fileName(mc.level.dimension().identifier().toDebugFileName())));
-		if (this.free.isEmpty()) {
-			this.free.add(player.getEyePosition(partialTick), player.getViewVector(partialTick), ownFov());
+		// The one nearest to the player films. With none around a new one is put at their eyes: the ones they left
+		// at another place are not what they turned the mode on for, and are a long flight away
+		Vec3 eyes = player.getEyePosition(partialTick);
+		int nearest = -1;
+		double distance = FREE_AROUND * FREE_AROUND;
+		for (int camera = 0; camera < this.free.count(); camera++) {
+			if (this.free.position(camera).distanceToSqr(eyes) < distance) {
+				distance = this.free.position(camera).distanceToSqr(eyes);
+				nearest = camera;
+			}
+		}
+		if (nearest >= 0) {
+			this.free.show(nearest);
+		} else {
+			this.free.add(eyes, player.getViewVector(partialTick), ownFov());
 		}
 	}
 

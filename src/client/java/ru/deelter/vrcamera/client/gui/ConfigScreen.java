@@ -180,6 +180,9 @@ public final class ConfigScreen {
 		director.addEntry(screen.toggle("events", config.events, defaults.events, value -> config.events = value));
 		director.addEntry(screen.toggle("customInRotation", config.customInRotation, defaults.customInRotation,
 				value -> config.customInRotation = value));
+		director.addEntry(screen.toggle("povHome", config.povHome, defaults.povHome, value -> config.povHome = value));
+		director.addEntry(screen.slider("povHomeSeconds", config.povHomeSeconds, defaults.povHomeSeconds, 10, 300, 5,
+				"%.0f s", value -> config.povHomeSeconds = value));
 
 		ConfigCategory shots = builder.getOrCreateCategory(Component.translatable("vrcamera.config.shots"));
 		for (ShotType type : ShotType.values()) {
@@ -224,9 +227,9 @@ public final class ConfigScreen {
 		group.add(shotSlider("distance", shot.distance, defaults.distance, 0.5, 20, 0.1, "%.1f",
 				value -> shot.distance = value));
 		group.add(shotSlider("fov", shot.fov, defaults.fov, 20, 110, 1, "%.0f°", value -> shot.fov = value));
-		group.add(shotSlider("minDuration", shot.minDuration, defaults.minDuration, 1, 30, 0.5, "%.1f s",
+		group.add(shotSlider("minDuration", shot.minDuration, defaults.minDuration, 1, 120, 0.5, "%.1f s",
 				value -> shot.minDuration = value));
-		group.add(shotSlider("maxDuration", shot.maxDuration, defaults.maxDuration, 1, 60, 0.5, "%.1f s",
+		group.add(shotSlider("maxDuration", shot.maxDuration, defaults.maxDuration, 1, 180, 0.5, "%.1f s",
 				value -> shot.maxDuration = value));
 	}
 
