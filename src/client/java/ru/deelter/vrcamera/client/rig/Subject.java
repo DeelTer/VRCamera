@@ -4,7 +4,6 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import org.vivecraft.client_vr.VRData;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.SmoothAngle;
 import ru.deelter.vrcamera.client.math.SmoothVec;
@@ -74,28 +73,10 @@ public final class Subject {
 	}
 
 	/**
+	 * A player at a screen, from what the game knows of them. For one in VR see {@link VrSubject}
+	 *
 	 * @param dt     seconds since the last update, limited to a sane step size
 	 * @param realDt actual seconds since the last update
-	 */
-	public void update(
-			LocalPlayer player, VRData vr, float partialTick, double dt, double realDt, CameraConfig config) {
-		Vec3 newFeet = move(player, partialTick, dt, realDt);
-
-		this.head = vr.hmd.getPosition();
-		this.headDir = new Vec3(vr.hmd.getDirection());
-		// the headset should be right above the player, if it isn't, something is off and the entity is the safer bet
-		if (this.head.distanceTo(newFeet) > 4.0 * this.unit + 2.0) {
-			this.head = player.getEyePosition(partialTick);
-		}
-		this.center = this.feet.lerp(this.head, config.aimHeight);
-		this.hands = vr.getController(0).getPosition().lerp(vr.getController(1).getPosition(), 0.5);
-		this.tracksHands = true;
-
-		turn(player, partialTick, vr.getBodyYawRad(), dt);
-	}
-
-	/**
-	 * the same for a player at a screen, from what the game knows of them
 	 */
 	public void updateWithoutVR(LocalPlayer player, float partialTick, double dt, double realDt, CameraConfig config) {
 		move(player, partialTick, dt, realDt);
@@ -109,7 +90,7 @@ public final class Subject {
 		turn(player, partialTick, Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD, dt);
 	}
 
-	private Vec3 move(LocalPlayer player, float partialTick, double dt, double realDt) {
+	Vec3 move(LocalPlayer player, float partialTick, double dt, double realDt) {
 		this.player = player;
 		this.partialTick = partialTick;
 		Vec3 newFeet = player.getPosition(partialTick);
@@ -128,7 +109,7 @@ public final class Subject {
 		return newFeet;
 	}
 
-	private void turn(LocalPlayer player, float partialTick, double bodyYaw, double dt) {
+	void turn(LocalPlayer player, float partialTick, double bodyYaw, double dt) {
 		if (this.teleported) {
 			this.facingSmooth.reset(bodyYaw);
 		} else {

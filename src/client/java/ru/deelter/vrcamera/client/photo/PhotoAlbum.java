@@ -26,11 +26,9 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Quaternionfc;
-import org.joml.Vector3f;
-import org.vivecraft.client_vr.ClientDataHolderVR;
-import org.vivecraft.client_vr.VRData;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraEffects;
+import ru.deelter.vrcamera.client.Vive;
 import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
@@ -55,6 +53,8 @@ import java.util.function.Consumer;
  */
 public final class PhotoAlbum {
 	public static final PhotoAlbum INSTANCE = new PhotoAlbum();
+	// a frame that took longer than this is a pause, not a step for the sheets to take
+	private static final double MAX_FRAME_TIME = 0.1;
 
 	// Pixels across a sheet. It is a hand wide in the world, more would not be seen, and every sheet stays in memory
 	private static final int SHEET_PIXELS = 384;
@@ -78,6 +78,7 @@ public final class PhotoAlbum {
 			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
+	private long frameNanos;
 	private int nextTexture;
 	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
 	// set when drawing failed once. A broken sheet must not take the whole frame of the headset with it every time
@@ -123,8 +124,7 @@ public final class PhotoAlbum {
 	 * @return false if there is no camera picture to take
 	 */
 	public boolean take(boolean printSheet) {
-		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		RenderTarget picture = dh.vrRenderer == null ? null : dh.vrRenderer.cameraFramebuffer;
+		RenderTarget picture = Vive.cameraPicture();
 		if (picture == null) {
 			return false;
 		}
@@ -464,11 +464,19 @@ public final class PhotoAlbum {
 		return nearest;
 	}
 
-	public void grab(PhotoSheet sheet, int hand, VRData vr) {
+	/**
+	 * where the hands of a player in VR are
+	 */
+	public interface Hands {
+		Vec3 position(int hand);
+
+		Quaternionf rotation(int hand);
+	}
+
+	public void grab(PhotoSheet sheet, int hand, Hands hands) {
 		boolean wasPinned = sheet.isPinned();
 		boolean wasGhost = sheet.isGhost();
-		VRData.VRDevicePose pose = vr.getController(hand);
-		sheet.grab(hand, pose.getPosition(), pose.getMatrix().getNormalizedRotation(new Quaternionf()));
+		sheet.grab(hand, hands.position(hand), hands.rotation(hand));
 		if (wasGhost) {
 			// someone else's, this player's from here on. If someone was faster the server takes it back
 			PhotoSync.INSTANCE.takeLoose(sheet.looseId());
@@ -526,16 +534,33 @@ public final class PhotoAlbum {
 		}
 	}
 
-	public void update(Level level, VRData vr, double dt) {
+	/**
+	 * One frame for a player who is not in VR, where the camera of Vivecraft does this otherwise: the sheets move
+	 * on, and the one that is being printed hangs from the camera on the screen.
+	 */
+	public void frameWithoutVR(Minecraft mc) {
+		long now = System.nanoTime();
+		double dt = this.frameNanos == 0 ? 0 : Math.min((now - this.frameNanos) / 1.0E9, MAX_FRAME_TIME);
+		this.frameNanos = now;
+		if (mc.player == null || Vr.isRunning()) {
+			return;
+		}
+		update(mc.player.level(), null, mc.isPaused() ? 0 : dt);
+		DesktopCamera.Pose lens = DesktopCamera.INSTANCE.lens();
+		if (lens != null) {
+			hangFrom(lens.position(), lens.rotation(), mc.player.getScale());
+		}
+	}
+
+	public void update(Level level, Hands hands, double dt) {
 		if (level != this.level) {
 			// another world, or another dimension with other things at the same coordinates
 			enter(level);
 		}
 		for (int i = this.sheets.size() - 1; i >= 0; i--) {
 			PhotoSheet sheet = this.sheets.get(i);
-			if (sheet.hand() >= 0 && vr != null) {
-				VRData.VRDevicePose pose = vr.getController(sheet.hand());
-				sheet.carry(pose.getPosition(), pose.getMatrix().getNormalizedRotation(new Quaternionf()), dt);
+			if (sheet.hand() >= 0 && hands != null) {
+				sheet.carry(hands.position(sheet.hand()), hands.rotation(sheet.hand()), dt);
 			}
 			boolean wasPinned = sheet.isPinned();
 			sheet.update(level, dt);
@@ -768,12 +793,12 @@ public final class PhotoAlbum {
 			}
 			PhotoSheet sheet = develop(photo, printSheet);
 			LocalPlayer now = mc.player;
-			if (sheet == null || now == null) {
+			// with a camera the sheet comes out of it, the way it does in VR. Without one it is tossed forward
+			if (sheet == null || now == null || lens != null) {
 				return;
 			}
-			Vec3 from = lens == null ? now.getEyePosition() : lens.position();
-			Vec3 look = lens == null ? now.getLookAngle() :
-					new Vec3(lens.rotation().transform(new Vector3f(0, 0, -1)));
+			Vec3 from = now.getEyePosition();
+			Vec3 look = now.getLookAngle();
 			Vec3 forward = new Vec3(look.x, 0, look.z);
 			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
 			Quaternionf rotation = new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z));

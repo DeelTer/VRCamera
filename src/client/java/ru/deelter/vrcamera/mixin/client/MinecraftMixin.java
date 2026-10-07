@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
@@ -24,6 +25,7 @@ public class MinecraftMixin {
 	// the camera of the director gets a picture of its own here
 	@Inject(method = "renderFrame", at = @At(value = "CONSTANT", args = "stringValue=present"), require = 0)
 	private void vrcamera$drawDirector(boolean renderLevel, CallbackInfo ci) {
+		PhotoAlbum.INSTANCE.frameWithoutVR((Minecraft) (Object) this);
 		DirectorPass.onFrame((Minecraft) (Object) this, this.deltaTracker, renderLevel);
 	}
 

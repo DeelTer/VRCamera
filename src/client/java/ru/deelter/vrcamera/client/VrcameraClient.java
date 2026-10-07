@@ -97,11 +97,6 @@ public class VrcameraClient implements ClientModInitializer {
 			}
 			DesktopCamera.INSTANCE.tick();
 			PhotoSync.INSTANCE.tick();
-			// In VR sheets move with every frame, from the tracker. Without VR there is no tracker, and nothing
-			// to hold a sheet with either: a tick is often enough for the ones that hang and the few that fall
-			if (mc.player != null && !Vr.isRunning()) {
-				PhotoAlbum.INSTANCE.update(mc.player.level(), null, mc.isPaused() ? 0 : 0.05);
-			}
 			// The game does not hear keys in the window of the camera. They work there all the same, to not have
 			// to go back to the game for them
 			boolean inWindow = OutputWindow.isFocused();

@@ -3,11 +3,17 @@ package ru.deelter.vrcamera.client;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
 import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.client.data.RenderPass;
 import org.vivecraft.client_vr.ClientDataHolderVR;
+import org.vivecraft.client_vr.VRData;
 import org.vivecraft.client_vr.render.rendertypes.VRRenderTypes;
 import org.vivecraft.client_xr.render_pass.RenderPassType;
+import ru.deelter.vrcamera.client.gui.CameraDebug;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
+
+import java.util.List;
 
 /**
  * What the parts of the mod that also work without Vivecraft need of it. Only to be called after {@link Vr} said
@@ -54,6 +60,43 @@ public final class Vive {
 		if (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT) {
 			CameraController.INSTANCE.drawHeadsetAids(dh.vrPlayer.vrdata_world_render);
 		}
+	}
+
+	/**
+	 * @return the picture the camera films right now, null if there is none
+	 */
+	public static RenderTarget cameraPicture() {
+		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		return dh.vrRenderer == null ? null : dh.vrRenderer.cameraFramebuffer;
+	}
+
+	public static PhotoAlbum.Hands hands(VRData vr) {
+		return new PhotoAlbum.Hands() {
+			@Override
+			public Vec3 position(int hand) {
+				return vr.getController(hand).getPosition();
+			}
+
+			@Override
+			public Quaternionf rotation(int hand) {
+				return vr.getController(hand).getMatrix().getNormalizedRotation(new Quaternionf());
+			}
+		};
+	}
+
+	/**
+	 * @return if the camera is in a mode, whether it films right now or waits for VR
+	 */
+	public static boolean isCameraOn() {
+		return CameraController.INSTANCE.mode() != CameraController.Mode.OFF;
+	}
+
+	public static List<String> debugLines() {
+		return CameraDebug.lines(CameraController.INSTANCE);
+	}
+
+	public static void reloadConfig() {
+		CameraController.INSTANCE.reloadConfig();
 	}
 
 	/**

@@ -1,7 +1,6 @@
 package ru.deelter.vrcamera.client;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
@@ -17,7 +16,6 @@ import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
-import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
 
@@ -31,35 +29,12 @@ public final class VrcamCommand {
 	private static final int DONE = 1;
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-		// the camera of Vivecraft, null without Vivecraft: what is only for that one is left out then
-		CameraController controller = Vr.INSTALLED ? CameraController.INSTANCE : null;
 
 		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
-				.executes(context -> status(context.getSource(), controller));
+				.executes(context -> status(context.getSource()));
 
-		if (controller != null) {
-			for (CameraController.Mode mode : CameraController.Mode.values()) {
-				root.then(ClientCommands.literal(name(mode)).executes(context -> {
-					controller.setMode(mode);
-					return DONE;
-				}));
-			}
-			root.then(ClientCommands.literal("mode").executes(context -> {
-				controller.cycleMode();
-				return DONE;
-			}));
-			root.then(ClientCommands.literal("next").executes(context -> {
-				controller.nextShot();
-				return DONE;
-			}));
-			root.then(ClientCommands.literal("hold").executes(context -> {
-				controller.toggleHold();
-				return DONE;
-			}));
-			root.then(ClientCommands.literal("summon").executes(context -> {
-				controller.summon();
-				return DONE;
-			}));
+		if (Vr.INSTALLED) {
+			VrCommands.register(root);
 		}
 		root.then(ClientCommands.literal("photo").executes(context -> {
 			VrcameraClient.takePhoto();
@@ -134,15 +109,15 @@ public final class VrcamCommand {
 			return DONE;
 		}));
 		root.then(ClientCommands.literal("reload").executes(context -> {
-			if (controller != null) {
-				controller.reloadConfig();
+			if (Vr.INSTALLED) {
+				Vive.reloadConfig();
 			} else {
 				CameraConfig.reload();
 			}
 			context.getSource().sendFeedback(Component.translatable("vrcamera.command.reloaded"));
 			return DONE;
 		}));
-		root.then(ClientCommands.literal("status").executes(context -> status(context.getSource(), controller)));
+		root.then(ClientCommands.literal("status").executes(context -> status(context.getSource())));
 		root.then(ClientCommands.literal("settings").executes(context -> {
 			if (!ConfigScreen.isAvailable()) {
 				context.getSource().sendError(Component.translatable("vrcamera.command.nocloth"));
@@ -154,44 +129,6 @@ public final class VrcamCommand {
 			return DONE;
 		}));
 
-		if (controller != null) {
-			// one literal per shot, so they are all offered by tab completion
-			LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot");
-			for (ShotType type : ShotType.values()) {
-				shot.then(ClientCommands.literal(name(type)).executes(context -> {
-					if (!controller.showShot(type)) {
-						context.getSource().sendError(Component.translatable("vrcamera.message.novr"));
-						return 0;
-					}
-					return DONE;
-				}));
-			}
-			root.then(shot);
-
-			root.then(ClientCommands.literal("preset")
-					.then(ClientCommands.literal("next").executes(context -> {
-						controller.nextPreset();
-						return DONE;
-					}))
-					.then(ClientCommands.literal("new").executes(context -> {
-						controller.newPreset();
-						return DONE;
-					}))
-					.then(ClientCommands.literal("delete").executes(context -> {
-						controller.deletePreset();
-						return DONE;
-					}))
-					.then(ClientCommands.argument("number", IntegerArgumentType.integer(1)).executes(context -> {
-						int number = IntegerArgumentType.getInteger(context, "number");
-						if (!controller.selectPreset(number - 1)) {
-							context.getSource().sendError(
-									Component.translatable("vrcamera.command.nopreset", controller.presetLabel()));
-							return 0;
-						}
-						return DONE;
-					})));
-
-		}
 		dispatcher.register(root);
 		// short, for what is typed in the middle of a recording: the free cameras
 		dispatcher.register(ClientCommands.literal("cam")
@@ -224,13 +161,13 @@ public final class VrcamCommand {
 				})));
 	}
 
-	private static String name(Enum<?> value) {
+	static String name(Enum<?> value) {
 		return value.name().toLowerCase(Locale.ROOT);
 	}
 
-	private static int status(FabricClientCommandSource source, CameraController controller) {
-		boolean onScreen = controller == null || DesktopCamera.INSTANCE.isOn();
-		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : DebugOverlay.lines(controller)) {
+	private static int status(FabricClientCommandSource source) {
+		boolean onScreen = !Vr.INSTALLED || DesktopCamera.INSTANCE.isOn();
+		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
 			source.sendFeedback(Component.literal(line));
 		}
 		return DONE;

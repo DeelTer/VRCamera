@@ -834,7 +834,7 @@ public final class CameraController implements Tracker {
 		double dt = Minecraft.getInstance().isPaused() ? 0 : Math.min((now - this.albumNanos) / 1.0E9, 0.1);
 		this.albumNanos = now;
 		try {
-			PhotoAlbum.INSTANCE.update(player.level(), ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render,
+			PhotoAlbum.INSTANCE.update(player.level(), Vive.hands(ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render),
 					dt);
 		} catch (RuntimeException e) {
 			// same as for the camera: nothing here is worth losing the frame of the headset
@@ -975,7 +975,7 @@ public final class CameraController implements Tracker {
 
 		VRData vr = dh.vrPlayer.vrdata_world_render;
 		float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		this.subject.update(player, vr, partialTick, dt, realDt, this.config);
+		VrSubject.update(this.subject, player, vr, partialTick, dt, realDt, this.config);
 		this.subject.guiCenter = openMenuPosition(vr);
 		this.dropped.allowSelf(this.config.attachToSelf);
 		ResourceKey<Level> dimension = player.level().dimension();

@@ -55,7 +55,7 @@ public final class SheetGrab implements HeldInteractModule {
 			return false;
 		}
 		// by the pose of the frame, that is what the sheet is moved with from here on
-		PhotoAlbum.INSTANCE.grab(sheet, hand.ordinal(), dh.vrPlayer.vrdata_world_render);
+		PhotoAlbum.INSTANCE.grab(sheet, hand.ordinal(), Vive.hands(dh.vrPlayer.vrdata_world_render));
 		return true;
 	}
 
