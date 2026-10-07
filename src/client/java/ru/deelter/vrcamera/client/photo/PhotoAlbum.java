@@ -43,6 +43,9 @@ import java.nio.file.attribute.FileTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import ru.deelter.vrcamera.client.desktop.DirectorPass;
+import org.joml.Vector3f;
 
 /**
  * Takes photos with the camera and keeps the sheets they are printed on.
@@ -742,8 +745,9 @@ public final class PhotoAlbum {
 	}
 
 	/**
-	 * A photo by a player who is not in VR and has no camera: what they see, as a sheet that drops in front of
-	 * them. They can't pick it up again, someone in VR can.
+	 * A photo by a player who is not in VR. With a camera on their screen that films: what that one sees, and the
+	 * sheet comes out of it. With none: what they see themselves, as a sheet that drops in front of them. They
+	 * can't pick it up again, someone in VR can.
 	 *
 	 * @return false if the last one is still on its way
 	 */
@@ -752,21 +756,48 @@ public final class PhotoAlbum {
 			return false;
 		}
 		Minecraft mc = Minecraft.getInstance();
+		DesktopCamera.Pose lens = DesktopCamera.INSTANCE.lens();
+		RenderTarget ofCamera = lens == null ? null : DirectorPass.picture();
+		int[] shape = ofCamera == null ? null : DirectorPass.shape();
 		this.developing = true;
 		this.developingSince = System.nanoTime();
-		Screenshot.takeScreenshot(mc.gameRenderer.mainRenderTarget(), image -> mc.execute(() -> {
-			PhotoSheet sheet = develop(image, printSheet);
+		Screenshot.takeScreenshot(ofCamera == null ? mc.gameRenderer.mainRenderTarget() : ofCamera, image -> mc.execute(() -> {
+			PhotoSheet sheet = develop(shape == null ? image : reshape(image, shape), printSheet);
 			LocalPlayer now = mc.player;
 			if (sheet == null || now == null) {
 				return;
 			}
-			Vec3 look = now.getLookAngle();
+			Vec3 from = lens == null ? now.getEyePosition() : lens.position();
+			Vec3 look = lens == null ? now.getLookAngle() :
+					new Vec3(lens.rotation().transform(new Vector3f(0, 0, -1)));
 			Vec3 forward = new Vec3(look.x, 0, look.z);
 			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
 			Quaternionf rotation = new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z));
-			sheet.toss(now.getEyePosition().add(forward.scale(0.7)), rotation, forward.scale(1.5));
+			sheet.toss(from.add(forward.scale(0.7)), rotation, forward.scale(1.5));
 		}));
 		return true;
+	}
+
+	/**
+	 * The picture of a camera with a window of its own is drawn as large as the game window and squeezed into the
+	 * shape of its own. A photo of it has to be squeezed the same way.
+	 *
+	 * @param shape width and height of what the picture is shown in
+	 */
+	private static NativeImage reshape(NativeImage image, int[] shape) {
+		int width = Math.min(image.getWidth(), Math.max(1, Math.round(image.getHeight() * shape[0] / (float) shape[1])));
+		int height = Math.max(1, Math.round(width * shape[1] / (float) shape[0]));
+		if (width == image.getWidth() && height == image.getHeight()) {
+			return image;
+		}
+		NativeImage shaped = new NativeImage(width, height, false);
+		try (image) {
+			image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), shaped);
+		} catch (RuntimeException e) {
+			shaped.close();
+			throw e;
+		}
+		return shaped;
 	}
 
 	/**

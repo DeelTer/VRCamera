@@ -446,6 +446,9 @@ leave it, and a click into the window takes it again; from the game window it tu
 you steer. While you have the camera, lines that split the picture into thirds are on its window; they go when
 you give it back, and are never in what you record after that.
 
+**Photos.** The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
+films, if there are several. With the camera off it is a photo of what you see.
+
 **Upright pictures.** The picture has the shape of the window of the camera. Make that window tall and narrow and
 the camera films upright, with no bars at the sides.
 

@@ -61,6 +61,20 @@ public final class DirectorPass {
 	}
 
 	/**
+	 * @return the picture of a camera with a window of its own, null if there is none
+	 */
+	public static RenderTarget picture() {
+		return DesktopCamera.INSTANCE.hasOwnWindow() ? target : null;
+	}
+
+	/**
+	 * @return width and height of what {@link #picture} is shown in, null if that has the shape it was drawn in
+	 */
+	public static int[] shape() {
+		return shape;
+	}
+
+	/**
 	 * Called once per frame, after the game drew the view of the player and before it shows it.
 	 */
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {

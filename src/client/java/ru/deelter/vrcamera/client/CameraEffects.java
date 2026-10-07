@@ -25,6 +25,7 @@ import ru.deelter.vrcamera.mixin.client.MobAccessor;
 import ru.deelter.vrcamera.sync.Protocol;
 
 import java.util.Random;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 /**
  * particles and sounds around the camera. All of it only exists on this client
@@ -72,11 +73,14 @@ public final class CameraEffects {
 	}
 
 	/**
-	 * @return where this player takes photos from: the camera, or without VR their eyes
+	 * @return where this player takes photos from: the camera, or their eyes if they have none
 	 */
 	public static Vec3 lens(LocalPlayer player) {
-		return CameraController.isVRRunning() ? ClientDataHolderVR.getInstance().cameraTracker.getPosition() :
-				player.getEyePosition();
+		if (CameraController.isVRRunning()) {
+			return ClientDataHolderVR.getInstance().cameraTracker.getPosition();
+		}
+		DesktopCamera.Pose onScreen = DesktopCamera.INSTANCE.lens();
+		return onScreen == null ? player.getEyePosition() : onScreen.position();
 	}
 
 	/**

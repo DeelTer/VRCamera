@@ -787,6 +787,14 @@ public final class DesktopCamera {
 	}
 
 	/**
+	 * @return where the camera is, for a photo that is taken with it. Null if there is none that films from a
+	 * place of its own, and a photo is of what the player sees
+	 */
+	public Pose lens() {
+		return this.mode == Mode.OFF || showsOwnView() ? null : this.pose;
+	}
+
+	/**
 	 * @return where the camera was put by the last {@link #update}, null while it does not film
 	 */
 	public Pose pose() {
