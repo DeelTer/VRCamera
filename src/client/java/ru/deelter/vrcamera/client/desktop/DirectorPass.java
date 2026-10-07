@@ -30,6 +30,8 @@ public final class DirectorPass {
 
 	private static boolean active;
 	private static RenderTarget target;
+	// width and height of the window of the camera, null to draw in the shape of the game window
+	private static int[] shape;
 	private static long lastNanos;
 	private static double drawMillis;
 	private static double showMillis;
@@ -45,6 +47,17 @@ public final class DirectorPass {
 	 */
 	public static boolean isActive() {
 		return active;
+	}
+
+	/**
+	 * @return how wide the picture that is drawn right now is taken to be, for its shape
+	 */
+	public static int width(int ofGame) {
+		return active && shape != null ? shape[0] : ofGame;
+	}
+
+	public static int height(int ofGame) {
+		return active && shape != null ? shape[1] : ofGame;
 	}
 
 	/**
@@ -83,7 +96,7 @@ public final class DirectorPass {
 			if (camera.showsOwnView()) {
 				// No room for a camera around the player. What the player sees is the picture then, with their
 				// hand and everything on their screen, and it is there already
-				OutputWindow.show(mc, own);
+				OutputWindow.show(mc, own, false, false);
 				return;
 			}
 			if (target == null) {
@@ -92,10 +105,11 @@ public final class DirectorPass {
 				target.resize(own.width, own.height);
 			}
 			long started = System.nanoTime();
+			shape = OutputWindow.size();
 			DesktopGui.draw(mc, deltaTracker, own);
 			draw(mc, deltaTracker, own);
 			long drawn = System.nanoTime();
-			OutputWindow.show(mc, target);
+			OutputWindow.show(mc, target, camera.showsGrid(), shape != null);
 			measure(started, drawn, System.nanoTime());
 		} catch (RuntimeException | LinkageError e) {
 			Vrcamera.LOGGER.error("VRCamera: the picture of the camera could not be drawn, it was turned off", e);

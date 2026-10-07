@@ -245,5 +245,13 @@
 	"vrcamera.gui.chroma.red": "Red",
 	"key.vrcamera.steer": "Steer the camera yourself",
 	"vrcamera.message.steer.on": "Camera: you steer it",
-	"vrcamera.message.steer.off": "Camera: it works on its own again"
+	"vrcamera.message.steer.off": "Camera: it works on its own again",
+	"vrcamera.mode.free": "Free",
+	"vrcamera.message.free.saved": "Camera: camera %s put up",
+	"vrcamera.message.free.point": "Camera: camera %s of %s",
+	"vrcamera.message.free.removed": "Camera: camera %s removed",
+	"vrcamera.message.free.full": "Camera: no more than %s cameras",
+	"vrcamera.option.cameraLabelDistance": "Free cameras: label distance",
+	"vrcamera.option.cameraLabelDistance.tooltip": "The other free cameras you put up are shown with their letter, and can be picked, up to this far away from you. 0 hides them all. The one that films has its icon in any case.",
+	"vrcamera.message.free.cleared": "Camera: all cameras removed"
 }

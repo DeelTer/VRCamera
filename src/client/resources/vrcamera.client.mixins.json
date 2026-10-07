@@ -6,6 +6,7 @@
 	"client": [
 		"CameraMixin",
 		"ContainerScreenAccessor",
+		"EntityMixin",
 		"EntityRendererMixin",
 		"GameRendererAccessor",
 		"GameRendererMixin",

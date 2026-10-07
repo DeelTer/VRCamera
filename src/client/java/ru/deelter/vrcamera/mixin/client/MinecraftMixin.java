@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
@@ -40,6 +41,14 @@ public class MinecraftMixin {
 	private void vrcamera$noPauseForCameraWindow(CallbackInfo ci) {
 		if (OutputWindow.isFocused()) {
 			ci.cancel();
+		}
+	}
+
+	// the attack key picks the free camera a player without VR points at, it does not also hit what is behind it
+	@Inject(method = "startAttack", at = @At("HEAD"), cancellable = true, require = 0)
+	private void vrcamera$attackKeyPicksCamera(CallbackInfoReturnable<Boolean> cir) {
+		if (DesktopCamera.INSTANCE.select()) {
+			cir.setReturnValue(false);
 		}
 	}
 }

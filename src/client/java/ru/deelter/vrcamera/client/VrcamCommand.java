@@ -105,6 +105,10 @@ public final class VrcamCommand {
 				return DONE;
 			}));
 		}
+		screen.then(ClientCommands.literal("clear").executes(context -> {
+			DesktopCamera.INSTANCE.clearCameras();
+			return DONE;
+		}));
 		screen.then(ClientCommands.literal("steer").executes(context -> {
 			DesktopCamera.INSTANCE.toggleSteering();
 			return DONE;

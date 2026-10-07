@@ -245,5 +245,13 @@
 	"vrcamera.gui.chroma.red": "Красный",
 	"key.vrcamera.steer": "Управлять камерой самому",
 	"vrcamera.message.steer.on": "Камера: вы управляете",
-	"vrcamera.message.steer.off": "Камера: снова работает сама"
+	"vrcamera.message.steer.off": "Камера: снова работает сама",
+	"vrcamera.mode.free": "Свободная",
+	"vrcamera.message.free.saved": "Камера: камера %s поставлена",
+	"vrcamera.message.free.point": "Камера: камера %s из %s",
+	"vrcamera.message.free.removed": "Камера: камера %s убрана",
+	"vrcamera.message.free.full": "Камера: не больше %s камер",
+	"vrcamera.option.cameraLabelDistance": "Свободные камеры: дистанция меток",
+	"vrcamera.option.cameraLabelDistance.tooltip": "Остальные поставленные свободные камеры показываются с буквой и доступны для выбора не дальше этого расстояния от вас. 0 — скрыть все. Значок снимающей камеры виден всегда.",
+	"vrcamera.message.free.cleared": "Камера: все камеры убраны"
 }

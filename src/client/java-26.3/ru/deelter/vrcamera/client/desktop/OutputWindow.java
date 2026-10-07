@@ -22,7 +22,25 @@ public final class OutputWindow {
 		return false;
 	}
 
-	public static void show(Minecraft mc, RenderTarget picture) {
+	public static void show(Minecraft mc, RenderTarget picture, boolean grid, boolean fill) {
+	}
+
+	public static int[] size() {
+		return null;
+	}
+
+	public static double scrolled() {
+		return 0;
+	}
+
+	public static void capture(boolean wanted) {
+	}
+
+	public static double[] mouseMoved() {
+		return new double[2];
+	}
+
+	public static void giveBack() {
 	}
 
 	public static boolean isFocused() {

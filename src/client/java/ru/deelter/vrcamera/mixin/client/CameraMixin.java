@@ -12,6 +12,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
+import ru.deelter.vrcamera.client.desktop.DirectorPass;
 
 @Mixin(Camera.class)
 public abstract class CameraMixin {
@@ -48,5 +50,17 @@ public abstract class CameraMixin {
 	private float vrcamera$fovOfDirector(float fov) {
 		DesktopCamera.Pose pose = DesktopCamera.INSTANCE.pose();
 		return pose == null ? fov : pose.fov();
+	}
+
+	// The picture of a camera with a window of its own has the shape of that window, not of the game window. It is
+	// drawn as large as the game window all the same, and squeezed into shape when it is shown
+	@ModifyExpressionValue(method = {"update", "createProjectionMatrixForCulling"}, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;getWidth()I"), require = 0)
+	private int vrcamera$widthOfPicture(int width) {
+		return DirectorPass.width(width);
+	}
+
+	@ModifyExpressionValue(method = {"update", "createProjectionMatrixForCulling"}, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;getHeight()I"), require = 0)
+	private int vrcamera$heightOfPicture(int height) {
+		return DirectorPass.height(height);
 	}
 }

@@ -325,8 +325,10 @@ public final class CameraController implements Tracker {
 	 *
 	 * @param head where the game looks from, and which way and how it is turned
 	 */
-	public void drawIndicatorWithoutVR(Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale, double grow) {
-		drawIndicator(INDICATOR_ICON, camera, head, forward, up, scale, true, grow);
+	public void drawIndicatorWithoutVR(
+			String icon, Vec3 camera, Vec3 head, Vec3 forward, Vec3 up, float scale, boolean alsoOutOfSight,
+			double grow) {
+		drawIndicator(icon, camera, head, forward, up, scale, alsoOutOfSight, grow);
 	}
 
 	private void drawIndicator(

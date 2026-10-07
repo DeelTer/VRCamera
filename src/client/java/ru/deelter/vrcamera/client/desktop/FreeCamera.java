@@ -1,0 +1,339 @@
+package ru.deelter.vrcamera.client.desktop;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonParseException;
+import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
+import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.math.CamMath;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+/**
+ * The cameras of the free mode: each stays where it was put and looks where it was turned, whatever the player
+ * does. One of them films. Flown by hand it comes after the keys and the mouse softly, for a move that can be shown.
+ * <p>
+ * They are kept with the world they stand in, one file per dimension.
+ */
+final class FreeCamera {
+	// one letter of the alphabet for each
+	static final int MOST = 26;
+	private static final String FILES = "cameras-";
+	// blocks per second, and how many times that with the sprint key
+	private static final double SPEED = 6.0;
+	private static final double FAST = 3.0;
+	// how fast it comes after what is asked of it, per second
+	private static final double MOVE_EASE = 5.0;
+	private static final double TURN_EASE = 14.0;
+	private static final double FOV_EASE = 6.0;
+	// straight up and down the picture has no way to be level
+	private static final double MAX_PITCH = 84.0;
+	private static final double MIN_FOV = 10.0;
+	private static final double MAX_FOV = 120.0;
+	// the part of the field of view one notch of the wheel is
+	private static final double FOV_WHEEL = 0.08;
+	private static final Gson GSON = new Gson();
+
+	/**
+	 * where a camera stands: degrees the way the game counts them for a player
+	 */
+	private static final class Spot {
+		// a letter. It stays with the camera for as long as there is one, whatever happens to the others
+		String name;
+		double x;
+		double y;
+		double z;
+		double yaw;
+		double pitch;
+		double fov;
+
+		Vec3 position() {
+			return new Vec3(this.x, this.y, this.z);
+		}
+
+		Vec3 forward() {
+			return FreeCamera.forward(this.yaw, this.pitch);
+		}
+	}
+
+	private final List<Spot> spots = new ArrayList<>();
+	private int active;
+	private Path file;
+	// the one that films, on its way to where its spot says
+	private Vec3 position = Vec3.ZERO;
+	private Vec3 velocity = Vec3.ZERO;
+	private Vec3 push = Vec3.ZERO;
+	private double yaw;
+	private double pitch;
+	private double fov = 70.0;
+
+	boolean isEmpty() {
+		return this.spots.isEmpty();
+	}
+
+	int count() {
+		return this.spots.size();
+	}
+
+	/**
+	 * @return which of them films, starting at 0
+	 */
+	int active() {
+		return this.active;
+	}
+
+	Vec3 position(int camera) {
+		return camera == this.active ? this.position : this.spots.get(camera).position();
+	}
+
+	Quaternionf rotation(int camera) {
+		Quaternionf rotation = new Quaternionf();
+		CamMath.lookRotation(camera == this.active ? forward(this.yaw, this.pitch) : this.spots.get(camera).forward(),
+				rotation);
+		return rotation;
+	}
+
+	/**
+	 * Puts one more camera somewhere, and films with it.
+	 *
+	 * @param forward where it looks
+	 * @return false if there are as many as there can be
+	 */
+	boolean add(Vec3 position, Vec3 forward, double fov) {
+		if (this.spots.size() >= MOST) {
+			return false;
+		}
+		settle();
+		Spot spot = new Spot();
+		spot.name = freeName();
+		// in the order of the alphabet, which is the order they are gone through in
+		int at = 0;
+		while (at < this.spots.size() && this.spots.get(at).name.compareTo(spot.name) < 0) {
+			at++;
+		}
+		this.spots.add(at, spot);
+		this.active = -1;
+		show(at);
+		place(position, forward, fov);
+		return true;
+	}
+
+	/**
+	 * @return the first letter no camera has
+	 */
+	private String freeName() {
+		for (char letter = 'A'; letter <= 'Z'; letter++) {
+			String name = String.valueOf(letter);
+			if (this.spots.stream().noneMatch(spot -> name.equals(spot.name))) {
+				return name;
+			}
+		}
+		throw new IllegalStateException("more cameras than letters");
+	}
+
+	String name(int camera) {
+		return this.spots.get(camera).name;
+	}
+
+	/**
+	 * takes all cameras of the world away, those of its other dimensions as well
+	 */
+	void clear() {
+		this.spots.clear();
+		this.active = 0;
+		if (this.file == null) {
+			return;
+		}
+		try (Stream<Path> files = Files.list(this.file.getParent())) {
+			for (Path other : files.toList()) {
+				if (other.getFileName().toString().startsWith(FILES)) {
+					Files.deleteIfExists(other);
+				}
+			}
+		} catch (IOException e) {
+			Vrcamera.LOGGER.warn("VRCamera: can't remove the cameras next to {}", this.file, e);
+		}
+	}
+
+	/**
+	 * @return the name of the file the cameras of a dimension are kept in
+	 */
+	static String fileName(String dimension) {
+		return FILES + dimension + ".json";
+	}
+
+	/**
+	 * puts the camera that films somewhere else, at once
+	 */
+	void place(Vec3 position, Vec3 forward, double fov) {
+		if (this.spots.isEmpty()) {
+			return;
+		}
+		Vec3 look = forward.normalize();
+		Spot spot = this.spots.get(this.active);
+		this.position = position;
+		spot.yaw = Math.toDegrees(Math.atan2(-look.x, look.z));
+		spot.pitch = CamMath.clamp(Math.toDegrees(-Math.asin(CamMath.clamp(look.y, -1.0, 1.0))), -MAX_PITCH, MAX_PITCH);
+		spot.fov = CamMath.clamp(fov, MIN_FOV, MAX_FOV);
+		show(this.active);
+		save();
+	}
+
+	/**
+	 * cuts to another camera
+	 */
+	void show(int camera) {
+		settle();
+		this.active = camera;
+		Spot spot = this.spots.get(camera);
+		this.position = spot.position();
+		this.velocity = Vec3.ZERO;
+		this.yaw = spot.yaw;
+		this.pitch = spot.pitch;
+		this.fov = spot.fov;
+	}
+
+	/**
+	 * @return the number of the camera that films now, starting at 1
+	 */
+	int next() {
+		show((this.active + 1) % this.spots.size());
+		return this.active + 1;
+	}
+
+	/**
+	 * takes the camera that films away, the one before it films then
+	 */
+	void remove() {
+		this.spots.remove(this.active);
+		this.active = Math.max(0, this.active - 1);
+		Spot spot = this.spots.get(this.active);
+		this.position = spot.position();
+		this.velocity = Vec3.ZERO;
+		this.yaw = spot.yaw;
+		this.pitch = spot.pitch;
+		this.fov = spot.fov;
+		save();
+	}
+
+	/**
+	 * @param keys what is held, from -1 to 1: to the right, up, and ahead
+	 */
+	void fly(Vec3 keys, boolean fast) {
+		Vec3 ahead = forward(this.yaw, this.pitch);
+		Vec3 right = new Vec3(-ahead.z, 0, ahead.x);
+		Vec3 way = ahead.scale(keys.z).add(right.lengthSqr() < 1.0E-6 ? Vec3.ZERO : right.normalize().scale(keys.x))
+				.add(0, keys.y, 0);
+		this.push = way.lengthSqr() < 1.0E-6 ? Vec3.ZERO : way.normalize().scale(SPEED * (fast ? FAST : 1.0));
+	}
+
+	/**
+	 * @param yaw degrees to the right
+	 * @param pitch degrees down
+	 */
+	void turn(double yaw, double pitch) {
+		if (!this.spots.isEmpty()) {
+			Spot spot = this.spots.get(this.active);
+			spot.yaw += yaw;
+			spot.pitch = CamMath.clamp(spot.pitch + pitch, -MAX_PITCH, MAX_PITCH);
+		}
+	}
+
+	/**
+	 * @param notches of the wheel, away from the player zooms in
+	 */
+	void zoom(double notches) {
+		if (!this.spots.isEmpty()) {
+			Spot spot = this.spots.get(this.active);
+			spot.fov = CamMath.clamp(spot.fov * Math.exp(-notches * FOV_WHEEL), MIN_FOV, MAX_FOV);
+		}
+	}
+
+	/**
+	 * moves the camera that films on by one frame
+	 */
+	DesktopCamera.Pose pose(double dt) {
+		Spot spot = this.spots.get(this.active);
+		this.velocity = this.velocity.lerp(this.push, ease(MOVE_EASE, dt));
+		this.push = Vec3.ZERO;
+		this.position = this.position.add(this.velocity.scale(dt));
+		this.yaw += (spot.yaw - this.yaw) * ease(TURN_EASE, dt);
+		this.pitch += (spot.pitch - this.pitch) * ease(TURN_EASE, dt);
+		this.fov += (spot.fov - this.fov) * ease(FOV_EASE, dt);
+		return new DesktopCamera.Pose(this.position, rotation(this.active), (float) this.fov);
+	}
+
+	/**
+	 * Goes over to the cameras of another world or dimension. Those of the one before are written down first.
+	 */
+	void open(Path file) {
+		save();
+		this.file = file;
+		this.spots.clear();
+		this.active = 0;
+		if (Files.isRegularFile(file)) {
+			try {
+				Spot[] kept = GSON.fromJson(Files.readString(file, StandardCharsets.UTF_8), Spot[].class);
+				if (kept != null) {
+					for (Spot spot : List.of(kept).subList(0, Math.min(kept.length, MOST))) {
+						if (spot.name == null) {
+							spot.name = freeName();
+						}
+						this.spots.add(spot);
+					}
+				}
+			} catch (IOException | JsonParseException | NullPointerException e) {
+				Vrcamera.LOGGER.warn("VRCamera: can't read the cameras in {}", file, e);
+			}
+		}
+		if (!this.spots.isEmpty()) {
+			this.active = -1;
+			show(0);
+		}
+	}
+
+	/**
+	 * writes down where the cameras stand
+	 */
+	void save() {
+		if (this.file == null) {
+			return;
+		}
+		settle();
+		try {
+			Files.createDirectories(this.file.getParent());
+			Files.writeString(this.file, GSON.toJson(this.spots), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			Vrcamera.LOGGER.warn("VRCamera: can't write the cameras to {}", this.file, e);
+		}
+	}
+
+	/**
+	 * the camera that films is where it was flown to, its spot has to hear of that
+	 */
+	private void settle() {
+		if (this.active >= 0 && this.active < this.spots.size()) {
+			Spot spot = this.spots.get(this.active);
+			spot.x = this.position.x;
+			spot.y = this.position.y;
+			spot.z = this.position.z;
+		}
+	}
+
+	private static Vec3 forward(double yaw, double pitch) {
+		double yawRad = Math.toRadians(yaw);
+		double pitchRad = Math.toRadians(pitch);
+		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
+				Math.cos(yawRad) * Math.cos(pitchRad));
+	}
+
+	private static double ease(double rate, double dt) {
+		return 1.0 - Math.exp(-rate * dt);
+	}
+}

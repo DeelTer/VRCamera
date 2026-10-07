@@ -429,6 +429,26 @@ further away and brings it back. It comes after both softly, for a shot that flo
 you swing the view and it is thrown that way; `throwPower` sets how far. While you point at the camera or hold it,
 the use key does nothing else.
 
+**Free cameras.** The third mode without VR, `/vrcam screen free` or the mode key. A camera is put at your eyes,
+films what you look at, and stays there whatever you do: it does not follow you and does not look for you. Put up
+to 26 of them, with the key for a new shot of your own (`N`) or `/vrcam screen free` once more. They are called A,
+B, C and so on — a letter stays with its camera, and a new one gets the first letter that is free — and you see them in the world with their letter over them, the one that films with the camera
+icon as well. The ones further away than `cameraLabelDistance` are left out, 0 leaves them all out. One films at a time: the
+attack key on a camera picks it, so does the key for the next shot of your own. Take one with the use key and it
+films and goes where you look; let go and it stays as you held it, let go in a swing and it is thrown away and
+gone. The last one can't be. The key that calls the camera puts the one that films at your eyes again. They are
+kept with the world, for each dimension; `/vrcam screen clear` takes them all away. The keys of the mod work in
+the window of the camera as well as in the game.
+
+Take the camera over (click into its window, or `G`) and you fly it: the keys to walk move it, jump and sneak take
+it up and down, sprint makes it fast, and the mouse turns it — its window takes the mouse for that, `Esc` goes back to
+the game; from the game window it turns it as it turns you. It comes after all of that softly. The wheel zooms, also for a shot of the director that
+you steer. While you have the camera, lines that split the picture into thirds are on its window; they go when
+you give it back, and are never in what you record after that.
+
+**Upright pictures.** The picture has the shape of the window of the camera. Make that window tall and narrow and
+the camera films upright, with no bars at the sides.
+
 **Green screen.** `/vrcam chroma` films only entities, on one plain colour, to cut them out later: green `#00B140`, or what `chromaColor` says. They are all lit the same, as in full daylight, wherever they stand. The
 world, the sky, clouds, weather, particles, chests and signs are left out, and the round shadows under entities
 are off. In VR only the picture of the camera turns green, your eyes see the world as it is. The same command

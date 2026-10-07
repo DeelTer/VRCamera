@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GLCapabilities;
 import ru.deelter.vrcamera.Vrcamera;
 
 import java.lang.reflect.Method;
+import org.lwjgl.glfw.Callbacks;
 
 /**
  * A second window that shows the picture of the camera and nothing else, for OBS to capture.
@@ -26,6 +27,11 @@ public final class OutputWindow {
 	private static int frameBuffer;
 	private static Method glId;
 	private static boolean unsupported;
+	private static double scrolled;
+	private static boolean captured;
+	private static boolean moving;
+	private static double mouseX;
+	private static double mouseY;
 
 	private OutputWindow() {
 	}
@@ -72,6 +78,7 @@ public final class OutputWindow {
 			unsupported = true;
 			return false;
 		}
+		GLFW.glfwSetScrollCallback(window, (handle, x, y) -> scrolled += y);
 		capabilities = null;
 		frameBuffer = 0;
 		return true;
@@ -79,8 +86,11 @@ public final class OutputWindow {
 
 	/**
 	 * copies the picture to the window, as large as it fits
+	 *
+	 * @param grid if lines that split the picture into thirds go over it
+	 * @param fill if the picture was drawn for the shape of the window, and fills it
 	 */
-	public static void show(Minecraft mc, RenderTarget picture) {
+	public static void show(Minecraft mc, RenderTarget picture, boolean grid, boolean fill) {
 		if (window == 0) {
 			return;
 		}
@@ -104,8 +114,8 @@ public final class OutputWindow {
 			if (width[0] > 0 && height[0] > 0) {
 				// the whole picture, with black bars if the window has another shape
 				double scale = Math.min(width[0] / (double) picture.width, height[0] / (double) picture.height);
-				int shownWidth = (int) Math.round(picture.width * scale);
-				int shownHeight = (int) Math.round(picture.height * scale);
+				int shownWidth = fill ? width[0] : (int) Math.round(picture.width * scale);
+				int shownHeight = fill ? height[0] : (int) Math.round(picture.height * scale);
 				int left = (width[0] - shownWidth) / 2;
 				int bottom = (height[0] - shownHeight) / 2;
 
@@ -118,6 +128,19 @@ public final class OutputWindow {
 						texture, 0);
 				GL30.glBlitFramebuffer(0, 0, picture.width, picture.height, left, bottom, left + shownWidth,
 						bottom + shownHeight, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_LINEAR);
+				if (grid) {
+					// lines without a shader of its own: clearing thin strips of the window
+					int thickness = Math.max(1, shownHeight / 360);
+					GL11.glEnable(GL11.GL_SCISSOR_TEST);
+					GL11.glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
+					for (int third = 1; third < 3; third++) {
+						GL11.glScissor(left + shownWidth * third / 3, bottom, thickness, shownHeight);
+						GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+						GL11.glScissor(left, bottom + shownHeight * third / 3, shownWidth, thickness);
+						GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+					}
+					GL11.glDisable(GL11.GL_SCISSOR_TEST);
+				}
 				GLFW.glfwSwapBuffers(window);
 			}
 		} finally {
@@ -159,10 +182,80 @@ public final class OutputWindow {
 				GLFW.glfwGetKey(window, key) == GLFW.GLFW_PRESS;
 	}
 
+	/**
+	 * @return width and height of the window, null without one that shows
+	 */
+	public static int[] size() {
+		if (window == 0) {
+			return null;
+		}
+		int[] width = new int[1];
+		int[] height = new int[1];
+		GLFW.glfwGetFramebufferSize(window, width, height);
+		return width[0] > 0 && height[0] > 0 ? new int[]{width[0], height[0]} : null;
+	}
+
+	/**
+	 * @return how far the wheel was turned over the window since this was asked last
+	 */
+	public static double scrolled() {
+		double turned = scrolled;
+		scrolled = 0;
+		return turned;
+	}
+
+	/**
+	 * takes the mouse for the window, hidden and held inside of it, or lets it go again
+	 */
+	public static void capture(boolean wanted) {
+		if (window != 0 && wanted != captured) {
+			captured = wanted;
+			moving = false;
+			GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR,
+					wanted ? GLFW.GLFW_CURSOR_DISABLED : GLFW.GLFW_CURSOR_NORMAL);
+		}
+	}
+
+	/**
+	 * @return how far the mouse the window has taken was moved since this was asked last, in pixels to the right
+	 * and down
+	 */
+	public static double[] mouseMoved() {
+		double[] moved = new double[2];
+		if (!captured || !isFocused()) {
+			moving = false;
+			return moved;
+		}
+		double[] x = new double[1];
+		double[] y = new double[1];
+		GLFW.glfwGetCursorPos(window, x, y);
+		if (moving) {
+			moved[0] = x[0] - mouseX;
+			moved[1] = y[0] - mouseY;
+		}
+		moving = true;
+		mouseX = x[0];
+		mouseY = y[0];
+		return moved;
+	}
+
+	/**
+	 * gives the keyboard back to the game window
+	 */
+	public static void giveBack() {
+		if (window != 0) {
+			GLFW.glfwFocusWindow(Minecraft.getInstance().getWindow().handle());
+		}
+	}
+
 	public static void close() {
 		if (window == 0) {
 			return;
 		}
+		Callbacks.glfwFreeCallbacks(window);
+		scrolled = 0;
+		captured = false;
+		moving = false;
 		long game = Minecraft.getInstance().getWindow().handle();
 		GLCapabilities gameCapabilities = GL.getCapabilities();
 		if (frameBuffer != 0 && capabilities != null) {

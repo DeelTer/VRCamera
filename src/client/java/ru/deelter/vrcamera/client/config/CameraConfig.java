@@ -107,6 +107,7 @@ public class CameraConfig {
 	 * blocks around the player in which entities are filmed with the green screen on, 0 = all of them
 	 */
 	public double chromaDistance = 32;
+	public double cameraLabelDistance = 48;
 	/**
 	 * blocks from the head to the camera up to which the selfie screen is shown
 	 */

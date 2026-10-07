@@ -245,5 +245,13 @@
 	"vrcamera.gui.chroma.red": "Rouge",
 	"key.vrcamera.steer": "Piloter la caméra soi-même",
 	"vrcamera.message.steer.on": "Caméra : vous la pilotez",
-	"vrcamera.message.steer.off": "Caméra : elle travaille de nouveau seule"
+	"vrcamera.message.steer.off": "Caméra : elle travaille de nouveau seule",
+	"vrcamera.mode.free": "Libre",
+	"vrcamera.message.free.saved": "Caméra : caméra %s posée",
+	"vrcamera.message.free.point": "Caméra : caméra %s sur %s",
+	"vrcamera.message.free.removed": "Caméra : caméra %s retirée",
+	"vrcamera.message.free.full": "Caméra : pas plus de %s caméras",
+	"vrcamera.option.cameraLabelDistance": "Caméras libres : distance des repères",
+	"vrcamera.option.cameraLabelDistance.tooltip": "Les autres caméras libres posées sont affichées avec leur lettre, et sélectionnables, jusqu'à cette distance. 0 les masque toutes. Celle qui filme garde son icône.",
+	"vrcamera.message.free.cleared": "Caméra : toutes les caméras retirées"
 }

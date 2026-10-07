@@ -39,6 +39,8 @@ import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
+import java.util.HashMap;
+import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 public class VrcameraClient implements ClientModInitializer {
 	private static final int PAUSE_BUTTON = 150;
@@ -52,6 +54,8 @@ public class VrcameraClient implements ClientModInitializer {
 	private final CameraController controller = CameraController.INSTANCE;
 	// what each key does. Regular key mappings, Vivecraft makes those bindable to VR controllers as well
 	private final Map<KeyMapping, Runnable> keys = new LinkedHashMap<>();
+	private final Map<KeyMapping, Boolean> heldInWindow = new HashMap<>();
+	private KeyMapping gameOnly;
 
 	@Override
 	public void onInitializeClient() {
@@ -86,12 +90,31 @@ public class VrcameraClient implements ClientModInitializer {
 				this.controller.toggleHold();
 			}
 		});
-		key("preset", InputConstants.KEY_F7, this.controller::nextPreset);
+		key("preset", InputConstants.KEY_F7, () -> {
+			if (onScreen()) {
+				DesktopCamera.INSTANCE.nextPoint();
+			} else {
+				this.controller.nextPreset();
+			}
+		});
 		key("photo", InputConstants.KEY_F6, this.controller::takePhoto);
-		key("preset.new", UNBOUND, this.controller::newPreset);
-		key("summon", UNBOUND, this.controller::summon);
+		key("preset.new", InputConstants.KEY_N, () -> {
+			if (onScreen()) {
+				DesktopCamera.INSTANCE.addCamera();
+			} else {
+				this.controller.newPreset();
+			}
+		});
+		key("summon", UNBOUND, () -> {
+			if (onScreen()) {
+				DesktopCamera.INSTANCE.summon();
+			} else {
+				this.controller.summon();
+			}
+		});
 		key("debug", UNBOUND, this.controller::toggleDebug);
-		key("steer", InputConstants.KEY_G, DesktopCamera.INSTANCE::toggleSteering);
+		// not in the window of the camera: going there takes the camera over, and leaving it gives it back
+		this.gameOnly = key("steer", InputConstants.KEY_G, DesktopCamera.INSTANCE::toggleSteering);
 		// the screen with everything on it: one place in the radial menu of Vivecraft is enough for the whole mod
 		key("menu", UNBOUND, () -> {
 			Minecraft mc = Minecraft.getInstance();
@@ -117,9 +140,19 @@ public class VrcameraClient implements ClientModInitializer {
 			if (mc.player != null && !CameraController.isVRRunning()) {
 				PhotoAlbum.INSTANCE.update(mc.player.level(), null, mc.isPaused() ? 0 : 0.05);
 			}
+			// The game does not hear keys in the window of the camera. They work there all the same, to not have
+			// to go back to the game for them
+			boolean inWindow = OutputWindow.isFocused();
 			this.keys.forEach((key, action) -> {
 				while (key.consumeClick()) {
 					action.run();
+				}
+				boolean down = inWindow && key != this.gameOnly &&
+						OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue());
+				if (down && !Boolean.TRUE.equals(this.heldInWindow.put(key, true))) {
+					action.run();
+				} else if (!down) {
+					this.heldInWindow.remove(key);
 				}
 			});
 		});
@@ -166,10 +199,11 @@ public class VrcameraClient implements ClientModInitializer {
 		return !CameraController.isVRRunning() && this.controller.mode() == CameraController.Mode.OFF;
 	}
 
-	private void key(String name, int keyCode, Runnable action) {
+	private KeyMapping key(String name, int keyCode, Runnable action) {
 		KeyMapping key = new KeyMapping("key.vrcamera." + name, keyCode, CATEGORY);
 		KeyMappingHelper.registerKeyMapping(key);
 		this.keys.put(key, action);
+		return key;
 	}
 
 	/**

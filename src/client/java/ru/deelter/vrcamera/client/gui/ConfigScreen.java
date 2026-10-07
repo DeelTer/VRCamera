@@ -91,6 +91,8 @@ public final class ConfigScreen {
 				value -> config.menuSize = value));
 		general.addEntry(screen.slider("chromaDistance", config.chromaDistance, defaults.chromaDistance, 0, 128, 8,
 				"%.0f", value -> config.chromaDistance = value));
+		general.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
+				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
 		general.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
 				value -> config.outputFps = value));
 		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,

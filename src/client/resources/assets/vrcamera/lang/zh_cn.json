@@ -245,5 +245,13 @@
 	"vrcamera.gui.chroma.red": "红色",
 	"key.vrcamera.steer": "自己操控相机",
 	"vrcamera.message.steer.on": "摄像机：由你操控",
-	"vrcamera.message.steer.off": "摄像机：恢复自动运行"
+	"vrcamera.message.steer.off": "摄像机：恢复自动运行",
+	"vrcamera.mode.free": "自由",
+	"vrcamera.message.free.saved": "摄像机：已放置 %s 号",
+	"vrcamera.message.free.point": "摄像机：%s 号，共 %s 台",
+	"vrcamera.message.free.removed": "摄像机：已移除 %s 号",
+	"vrcamera.message.free.full": "摄像机：最多 %s 台",
+	"vrcamera.option.cameraLabelDistance": "自由摄像机：标记距离",
+	"vrcamera.option.cameraLabelDistance.tooltip": "其他已放置的自由摄像机在此距离内显示字母并可被选中。0 为全部隐藏。正在拍摄的摄像机始终显示图标。",
+	"vrcamera.message.free.cleared": "摄像机：已移除全部摄像机"
 }
