@@ -193,7 +193,7 @@ public class VrcameraClient implements ClientModInitializer {
 								button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu)))
 						.bounds(4, 48, 150, 20).build());
 			}
-			addChromaButton(widgets, 70, 150);
+			addChromaButton(widgets, 70, 150, true);
 			return;
 		}
 		if (!CameraController.isVRRunning() && this.controller.mode() == CameraController.Mode.OFF) {
@@ -207,25 +207,37 @@ public class VrcameraClient implements ClientModInitializer {
 		widgets.add(Button.builder(Component.translatable("vrcamera.gui.menu"),
 						button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
 				.bounds(4, 26, 120, 20).build());
-		addChromaButton(widgets, 48, 120);
+		addChromaButton(widgets, 48, 120, false);
 	}
 
 	/**
-	 * while the green screen is on: a button that goes through its colours
+	 * A button that goes through the colours of the green screen, and off after the last one.
+	 *
+	 * @param always false to only have it while the green screen is on
 	 */
-	private static void addChromaButton(List<AbstractWidget> widgets, int y, int width) {
-		if (!ChromaKey.isOn()) {
+	private static void addChromaButton(List<AbstractWidget> widgets, int y, int width, boolean always) {
+		if (!always && !ChromaKey.isOn()) {
 			return;
 		}
 		widgets.add(Button.builder(chromaLabel(), button -> {
-			ChromaKey.nextPreset();
+			ChromaKey.Preset[] presets = ChromaKey.Preset.values();
+			if (!ChromaKey.isOn()) {
+				while (ChromaKey.preset() != presets[0]) {
+					ChromaKey.nextPreset();
+				}
+				ChromaKey.set(true);
+			} else if (always && ChromaKey.preset() == presets[presets.length - 1]) {
+				ChromaKey.set(false);
+			} else {
+				ChromaKey.nextPreset();
+			}
 			button.setMessage(chromaLabel());
 		}).bounds(4, y, width, 20).build());
 	}
 
 	private static Component chromaLabel() {
-		return Component.translatable("vrcamera.gui.chroma", Component.translatable(
-				"vrcamera.gui.chroma." + ChromaKey.preset().name().toLowerCase(Locale.ROOT)));
+		return Component.translatable("vrcamera.gui.chroma", Component.translatable(!ChromaKey.isOn() ?
+				"vrcamera.mode.off" : "vrcamera.gui.chroma." + ChromaKey.preset().name().toLowerCase(Locale.ROOT)));
 	}
 
 	private Component modeLabel() {
