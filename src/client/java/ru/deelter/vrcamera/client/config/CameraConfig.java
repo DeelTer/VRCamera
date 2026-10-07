@@ -111,6 +111,8 @@ public class CameraConfig {
 	 */
 	public double chromaDistance = 32;
 	public double cameraLabelDistance = 48;
+	public boolean freeAutoSwitch = true;
+	public double freeAutoSwitchAngle = 35;
 	/**
 	 * blocks from the head to the camera up to which the selfie screen is shown
 	 */
@@ -156,6 +158,7 @@ public class CameraConfig {
 	 * heard by the others
 	 */
 	public boolean photoSounds = true;
+	public boolean photoClipboard = true;
 	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory
 	 */

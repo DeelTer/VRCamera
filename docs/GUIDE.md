@@ -453,7 +453,11 @@ over it, like the camera of a player in VR. Only that one, and not further than 
 `shareCamera` turns it off. Of the cameras of others you see the nearest `othersCameras`, 3 unless
 you say otherwise, 0 for none.
 
-**Photos.** The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
+**The camera you turn to.** With several free cameras, the one you turn to films: look its way for a moment and it
+is live, like a host who turns to the camera. `freeAutoSwitch` turns that off, `freeAutoSwitchAngle` says how
+close to it you have to look. A camera you picked yourself stays until you look at another.
+
+**Photos.** The photo is also put on the clipboard on Windows, `photoClipboard` turns that off. The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
 films, if there are several. With the camera off it is a photo of what you see.
 
 **The whole monitor.** `F11` in the window of the camera, or `/vrcam screen fullscreen`, lets it fill the monitor it is

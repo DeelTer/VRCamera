@@ -260,5 +260,11 @@
 	"vrcamera.option.povHome": "Première personne comme plan principal (sans VR)",
 	"vrcamera.option.povHome.tooltip": "Sans VR, le réalisateur reste longtemps en première personne, montre deux ou trois autres plans et revient. Un combat ou un vol ne l'interrompt pas. Désactivé : c'est un plan parmi les autres.",
 	"vrcamera.option.povHomeSeconds": "Première personne comme plan principal : durée",
-	"vrcamera.option.povHomeSeconds.tooltip": "Combien de secondes le réalisateur reste en première personne avant de montrer d'autres plans."
+	"vrcamera.option.povHomeSeconds.tooltip": "Combien de secondes le réalisateur reste en première personne avant de montrer d'autres plans.",
+	"vrcamera.option.photoClipboard": "Photo : copier dans le presse-papiers (sans VR)",
+	"vrcamera.option.photoClipboard.tooltip": "Sans VR, la photo en taille réelle est aussi placée dans le presse-papiers, pour la coller tout de suite. Windows uniquement. Le fichier dans screenshots/vrcamera est enregistré dans tous les cas.",
+	"vrcamera.option.freeAutoSwitch": "Caméras libres : filme celle vers laquelle je me tourne",
+	"vrcamera.option.freeAutoSwitch.tooltip": "Avec plusieurs caméras libres, celle vers laquelle vous regardez un instant se met à filmer. Une caméra choisie à la main reste jusqu'à ce que vous en regardiez une autre. Pas pendant que vous pilotez ou tenez une caméra.",
+	"vrcamera.option.freeAutoSwitchAngle": "Caméras libres : précision du regard",
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "De combien de degrés votre regard peut s'écarter d'une caméra libre pour compter comme tourné vers elle. Plus grand : le changement se fait plus tôt, avant de la regarder en face."
 }

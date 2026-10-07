@@ -260,5 +260,11 @@
 	"vrcamera.option.povHome": "First person as the main shot (no VR)",
 	"vrcamera.option.povHome.tooltip": "Without VR the director stays in first person for a long time, shows two or three other shots, and comes back. A fight or a flight does not cut first person short. Off: first person is one shot among the others.",
 	"vrcamera.option.povHomeSeconds": "First person as the main shot: how long",
-	"vrcamera.option.povHomeSeconds.tooltip": "How many seconds the director stays in first person before it shows other shots."
+	"vrcamera.option.povHomeSeconds.tooltip": "How many seconds the director stays in first person before it shows other shots.",
+	"vrcamera.option.photoClipboard": "Photo: copy to the clipboard (no VR)",
+	"vrcamera.option.photoClipboard.tooltip": "Without VR a photo is also put on the clipboard at its full size, to paste it right away. Windows only. The file in screenshots/vrcamera is saved either way.",
+	"vrcamera.option.freeAutoSwitch": "Free cameras: film with the one I turn to",
+	"vrcamera.option.freeAutoSwitch.tooltip": "With several free cameras, the one you look towards for a moment starts to film. A camera you picked yourself stays until you look at another one. Not while you fly or hold a camera.",
+	"vrcamera.option.freeAutoSwitchAngle": "Free cameras: how close to look",
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "How many degrees off a free camera your look may be for it to count as turned to. Larger switches sooner, before you look straight at it."
 }

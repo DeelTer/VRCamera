@@ -93,6 +93,10 @@ public final class ConfigScreen {
 				"%.0f", value -> config.chromaDistance = value));
 		general.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
 				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
+		general.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
+				value -> config.freeAutoSwitch = value));
+		general.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
+				defaults.freeAutoSwitchAngle, 10, 90, 5, "%.0f", value -> config.freeAutoSwitchAngle = value));
 		general.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
 				value -> config.outputFps = value));
 		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,
@@ -127,6 +131,8 @@ public final class ConfigScreen {
 				0.05, "%.2f", value -> config.photoPixels = value));
 		general.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
 				value -> config.photoSounds = value));
+		general.addEntry(screen.toggle("photoClipboard", config.photoClipboard, defaults.photoClipboard,
+				value -> config.photoClipboard = value));
 		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
 				value -> config.menuShotChat = value));
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,

@@ -67,6 +67,9 @@ public final class DesktopCamera {
 	private static final double STEER_MIN_DISTANCE = 1.0;
 	// blocks from the player a free camera is still one of this place, when the mode is turned on
 	private static final double FREE_AROUND = 64.0;
+	// seconds a look has to stay on a free camera for it to film, and blocks it has to be away for that
+	private static final double GAZE_HOLD = 0.35;
+	private static final double GAZE_NEAR = 1.5;
 	// closer to the head than this the camera is inside of the player, and further than the second it is out again
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
@@ -116,6 +119,9 @@ public final class DesktopCamera {
 	private ClientLevel freeLevel;
 	private boolean flying;
 	private boolean inside;
+	// the free camera the player looks at, and for how long. Negative once that was acted on
+	private int gazeAt = -1;
+	private double gazeTime;
 	private boolean steeredFromWindow;
 	// held with the mouse: where it hangs, how far in front of the eyes, and what the hand does with it
 	private boolean grabbed;
@@ -623,6 +629,51 @@ public final class DesktopCamera {
 		place.elevation = CamMath.clamp(place.elevation + up * STEER_RISE * dt, -35.0, 85.0);
 	}
 
+	/**
+	 * The free camera a player turns to films them, like a host who turns to the camera that is live: no key for
+	 * it. Once per turn, and only after their look stayed there for a moment. A camera picked by hand stays picked
+	 * until they look at another one.
+	 */
+	private void followGaze(LocalPlayer player, float partialTick, double dt, CameraConfig config) {
+		if (!config.freeAutoSwitch || this.flying || this.grabbed || this.free.count() < 2) {
+			this.gazeAt = -1;
+			return;
+		}
+		Vec3 eyes = player.getEyePosition(partialTick);
+		Vec3 look = player.getViewVector(partialTick);
+		int found = -1;
+		double nearest = Math.cos(Math.toRadians(config.freeAutoSwitchAngle));
+		for (int camera = 0; camera < this.free.count(); camera++) {
+			Vec3 to = this.free.position(camera).subtract(eyes);
+			double distance = to.length();
+			// not the one at their own eyes, they look into that one whatever they do
+			if (distance < GAZE_NEAR || !isAround(camera, eyes)) {
+				continue;
+			}
+			double facing = to.dot(look) / distance;
+			if (facing > nearest && WorldProbe.visible(this.subject, eyes, this.free.position(camera))) {
+				nearest = facing;
+				found = camera;
+			}
+		}
+		if (found != this.gazeAt) {
+			this.gazeAt = found;
+			this.gazeTime = 0;
+			return;
+		}
+		if (found < 0 || this.gazeTime < 0) {
+			return;
+		}
+		this.gazeTime += dt;
+		if (this.gazeTime > GAZE_HOLD) {
+			// done for this turn of the head
+			this.gazeTime = -1;
+			if (found != this.free.active()) {
+				this.free.show(found);
+			}
+		}
+	}
+
 	private void fly(Minecraft mc) {
 		this.free.fly(new Vec3(held(mc.options.keyRight) - held(mc.options.keyLeft),
 				held(mc.options.keyJump) - held(mc.options.keyShift),
@@ -922,6 +973,7 @@ public final class DesktopCamera {
 			if (this.flying) {
 				fly(mc);
 			}
+			followGaze(player, partialTick, realDt, config);
 			Pose filmed = this.free.pose(realDt);
 			if (!this.free.isGone()) {
 				return filmed;

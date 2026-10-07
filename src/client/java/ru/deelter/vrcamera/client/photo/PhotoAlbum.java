@@ -762,7 +762,11 @@ public final class PhotoAlbum {
 		this.developing = true;
 		this.developingSince = System.nanoTime();
 		Screenshot.takeScreenshot(ofCamera == null ? mc.gameRenderer.mainRenderTarget() : ofCamera, image -> mc.execute(() -> {
-			PhotoSheet sheet = develop(shape == null ? image : reshape(image, shape), printSheet);
+			NativeImage photo = shape == null ? image : reshape(image, shape);
+			if (CameraController.INSTANCE.config().photoClipboard) {
+				PhotoClipboard.copy(photo.getPixels(), photo.getWidth(), photo.getHeight());
+			}
+			PhotoSheet sheet = develop(photo, printSheet);
 			LocalPlayer now = mc.player;
 			if (sheet == null || now == null) {
 				return;

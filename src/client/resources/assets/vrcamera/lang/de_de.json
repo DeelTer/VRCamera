@@ -260,5 +260,11 @@
 	"vrcamera.option.povHome": "Ich-Perspektive als Haupteinstellung (ohne VR)",
 	"vrcamera.option.povHome.tooltip": "Ohne VR bleibt der Regisseur lange in der Ich-Perspektive, zeigt zwei oder drei andere Einstellungen und kommt zurück. Kampf oder Flug brechen sie nicht ab. Aus: sie ist eine Einstellung unter den anderen.",
 	"vrcamera.option.povHomeSeconds": "Ich-Perspektive als Haupteinstellung: Dauer",
-	"vrcamera.option.povHomeSeconds.tooltip": "Wie viele Sekunden der Regisseur in der Ich-Perspektive bleibt, bevor er andere Einstellungen zeigt."
+	"vrcamera.option.povHomeSeconds.tooltip": "Wie viele Sekunden der Regisseur in der Ich-Perspektive bleibt, bevor er andere Einstellungen zeigt.",
+	"vrcamera.option.photoClipboard": "Foto: in die Zwischenablage kopieren (ohne VR)",
+	"vrcamera.option.photoClipboard.tooltip": "Ohne VR landet ein Foto in voller Größe auch in der Zwischenablage, zum sofortigen Einfügen. Nur Windows. Die Datei in screenshots/vrcamera wird in jedem Fall gespeichert.",
+	"vrcamera.option.freeAutoSwitch": "Freie Kameras: es filmt die, der ich mich zuwende",
+	"vrcamera.option.freeAutoSwitch.tooltip": "Bei mehreren freien Kameras beginnt die zu filmen, zu der du einen Moment hinsiehst. Eine selbst gewählte Kamera bleibt, bis du eine andere ansiehst. Nicht, während du eine Kamera fliegst oder hältst.",
+	"vrcamera.option.freeAutoSwitchAngle": "Freie Kameras: Genauigkeit des Blicks",
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "Wie viele Grad dein Blick von einer freien Kamera abweichen darf, um als zugewandt zu gelten. Größer schaltet früher um, noch bevor du sie direkt ansiehst."
 }

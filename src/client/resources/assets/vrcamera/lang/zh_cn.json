@@ -260,5 +260,11 @@
 	"vrcamera.option.povHome": "第一人称作为主镜头（无 VR）",
 	"vrcamera.option.povHome.tooltip": "无 VR 时导演长时间停留在第一人称，展示两三个其他镜头后再回来。战斗或飞行不会打断第一人称。关闭：第一人称只是普通镜头之一。",
 	"vrcamera.option.povHomeSeconds": "第一人称作为主镜头：时长",
-	"vrcamera.option.povHomeSeconds.tooltip": "导演在展示其他镜头之前停留在第一人称的秒数。"
+	"vrcamera.option.povHomeSeconds.tooltip": "导演在展示其他镜头之前停留在第一人称的秒数。",
+	"vrcamera.option.photoClipboard": "照片：复制到剪贴板（无 VR）",
+	"vrcamera.option.photoClipboard.tooltip": "无 VR 时，照片还会以完整尺寸放入剪贴板，可立即粘贴。仅限 Windows。screenshots/vrcamera 中的文件照常保存。",
+	"vrcamera.option.freeAutoSwitch": "自由摄像机：由我转向的那台拍摄",
+	"vrcamera.option.freeAutoSwitch.tooltip": "有多台自由摄像机时，你朝哪台看一会儿，哪台就开始拍摄。手动选择的摄像机会保持，直到你看向另一台。操控或拿着摄像机时不生效。",
+	"vrcamera.option.freeAutoSwitchAngle": "自由摄像机：视线精度",
+	"vrcamera.option.freeAutoSwitchAngle.tooltip": "视线与自由摄像机偏离多少度以内算作转向它。数值越大切换越早，不必正对着它。"
 }
