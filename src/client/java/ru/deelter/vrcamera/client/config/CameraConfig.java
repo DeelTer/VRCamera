@@ -44,6 +44,10 @@ public class CameraConfig {
 	 */
 	public boolean hints = true;
 	/**
+	 * if the camera of a player at a screen holds still while they jump
+	 */
+	public JumpSteady jumpSteady = JumpSteady.SERIES;
+	/**
 	 * size of the camera icon
 	 */
 	public double indicatorSize = 1.0;

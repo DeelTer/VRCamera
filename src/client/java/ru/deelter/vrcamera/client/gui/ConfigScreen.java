@@ -58,32 +58,14 @@ public final class ConfigScreen {
 
 		ConfigCategory general = builder.getOrCreateCategory(Component.translatable("vrcamera.config.general"));
 		general.addEntry(screen.toggle("hints", config.hints, defaults.hints, value -> config.hints = value));
-		general.addEntry(screen.toggle("forceMirror", config.forceMirror, defaults.forceMirror,
-				value -> config.forceMirror = value));
-		general.addEntry(screen.selector("marker", Marker.values(), config.marker, defaults.marker,
-				value -> config.marker = value));
-		general.addEntry(screen.toggle("markerLabel", config.markerLabel, defaults.markerLabel,
-				value -> config.markerLabel = value));
-		general.addEntry(screen.slider("markerSize", config.markerSize, defaults.markerSize, 2, 60, 1, "%.0f",
-				value -> config.markerSize = value));
 		general.addEntry(screen.toggle("indicator", config.indicator, defaults.indicator,
 				value -> config.indicator = value));
 		general.addEntry(screen.slider("indicatorSize", config.indicatorSize, defaults.indicatorSize, 0.3, 3, 0.1,
 				"%.1f", value -> config.indicatorSize = value));
 		general.addEntry(screen.slider("throwPower", config.throwPower, defaults.throwPower, 0, 3, 0.1, "%.1f",
 				value -> config.throwPower = value));
-		general.addEntry(screen.slider("physicsAim", config.physicsAim, defaults.physicsAim, 0, 1, 0.05, "%.2f",
-				value -> config.physicsAim = value));
-		general.addEntry(screen.slider("physicsShake", config.physicsShake, defaults.physicsShake, 0, 3, 0.1,
-				"%.1f", value -> config.physicsShake = value));
-		general.addEntry(screen.toggle("underwaterLook", config.underwaterLook, defaults.underwaterLook,
-				value -> config.underwaterLook = value));
-		general.addEntry(screen.toggle("hideHoldingArm", config.hideHoldingArm, defaults.hideHoldingArm,
-				value -> config.hideHoldingArm = value));
-		general.addEntry(screen.toggle("selfieScreen", config.selfieScreen, defaults.selfieScreen,
-				value -> config.selfieScreen = value));
-		general.addEntry(screen.toggle("attachToSelf", config.attachToSelf, defaults.attachToSelf,
-				value -> config.attachToSelf = value));
+		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
+				value -> config.menuShotChat = value));
 		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.chromaColor"),
 						config.chromaColor)
 				.setDefaultValue(defaults.chromaColor)
@@ -92,73 +74,102 @@ public final class ConfigScreen {
 						Optional.of(Component.translatable("vrcamera.option.chromaColor.invalid")))
 				.setSaveConsumer(value -> config.chromaColor = value.trim())
 				.build());
-		general.addEntry(screen.selector("screenOutput", ScreenOutput.values(), config.screenOutput,
-				defaults.screenOutput, value -> config.screenOutput = value));
-		general.addEntry(screen.slider("menuSize", config.menuSize, defaults.menuSize, 0.5, 3, 0.25, "%.2fx",
-				value -> config.menuSize = value));
 		general.addEntry(screen.slider("chromaDistance", config.chromaDistance, defaults.chromaDistance, 0, 128, 8,
 				"%.0f", value -> config.chromaDistance = value));
-		general.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
-				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
-		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmPlayer"),
+		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
+				value -> config.debugOverlay = value));
+
+		// what only a player at a screen has: where the picture goes, and the cameras of the free mode
+		ConfigCategory desktop = builder.getOrCreateCategory(Component.translatable("vrcamera.config.desktop"));
+		desktop.addEntry(screen.selector("screenOutput", ScreenOutput.values(), config.screenOutput,
+				defaults.screenOutput, value -> config.screenOutput = value));
+		desktop.addEntry(screen.outputSize(config));
+		desktop.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
+				value -> config.outputFps = value));
+		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
+				value -> config.jumpSteady = value));
+		desktop.addEntry(screen.slider("menuSize", config.menuSize, defaults.menuSize, 0.5, 3, 0.25, "%.2fx",
+				value -> config.menuSize = value));
+		desktop.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmPlayer"),
 						config.filmPlayer)
 				.setDefaultValue(defaults.filmPlayer)
 				.setTooltipSupplier(help("vrcamera.option.filmPlayer.tooltip"))
 				.setSaveConsumer(value -> config.filmPlayer = value.trim())
 				.build());
-		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmWith"),
+		desktop.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmWith"),
 						config.filmWith)
 				.setDefaultValue(defaults.filmWith)
 				.setTooltipSupplier(help("vrcamera.option.filmWith.tooltip"))
 				.setSaveConsumer(value -> config.filmWith = value.trim())
 				.build());
-		general.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
+		desktop.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
 				value -> config.freeAutoSwitch = value));
-		general.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
+		desktop.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
 				defaults.freeAutoSwitchAngle, 10, 90, 5, "%.0f", value -> config.freeAutoSwitchAngle = value));
-		general.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
+		desktop.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
 				defaults.freeAutoSwitchSeconds, 0, 1.5, 0.05, "%.2f s", value -> config.freeAutoSwitchSeconds = value));
-		general.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
-				value -> config.outputFps = value));
-		general.addEntry(screen.outputSize(config));
-		general.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,
+		desktop.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
+				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
+
+		// what only a player in VR has: the camera in their hands
+		ConfigCategory vr = builder.getOrCreateCategory(Component.translatable("vrcamera.config.vr"));
+		vr.addEntry(screen.toggle("forceMirror", config.forceMirror, defaults.forceMirror,
+				value -> config.forceMirror = value));
+		vr.addEntry(screen.selector("marker", Marker.values(), config.marker, defaults.marker,
+				value -> config.marker = value));
+		vr.addEntry(screen.toggle("markerLabel", config.markerLabel, defaults.markerLabel,
+				value -> config.markerLabel = value));
+		vr.addEntry(screen.slider("markerSize", config.markerSize, defaults.markerSize, 2, 60, 1, "%.0f",
+				value -> config.markerSize = value));
+		vr.addEntry(screen.toggle("hideHoldingArm", config.hideHoldingArm, defaults.hideHoldingArm,
+				value -> config.hideHoldingArm = value));
+		vr.addEntry(screen.toggle("attachToSelf", config.attachToSelf, defaults.attachToSelf,
+				value -> config.attachToSelf = value));
+		vr.addEntry(screen.toggle("selfieScreen", config.selfieScreen, defaults.selfieScreen,
+				value -> config.selfieScreen = value));
+		vr.addEntry(screen.slider("selfieDistance", config.selfieDistance, defaults.selfieDistance, 0.5, 8,
 				0.5, "%.1f", value -> config.selfieDistance = value));
-		general.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
-				"%.1f", value -> config.kickPower = value));
-		general.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
+		vr.addEntry(screen.slider("handStabilize", config.handStabilize, defaults.handStabilize, 0, 1, 0.05,
 				"%.2f", value -> config.handStabilize = value));
-		general.addEntry(screen.selector("pullStyle", PullStyle.values(), config.pullStyle, defaults.pullStyle,
+		vr.addEntry(screen.selector("pullStyle", PullStyle.values(), config.pullStyle, defaults.pullStyle,
 				value -> config.pullStyle = value));
-		general.addEntry(screen.slider("pullSeconds", config.pullSeconds, defaults.pullSeconds, 0, 5, 0.25,
+		vr.addEntry(screen.slider("pullSeconds", config.pullSeconds, defaults.pullSeconds, 0, 5, 0.25,
 				"%.2f s", value -> config.pullSeconds = value));
-		general.addEntry(screen.toggle("pullAllModes", config.pullAllModes, defaults.pullAllModes,
+		vr.addEntry(screen.toggle("pullAllModes", config.pullAllModes, defaults.pullAllModes,
 				value -> config.pullAllModes = value));
-		general.addEntry(screen.toggle("photoSheet", config.photoSheet, defaults.photoSheet,
-				value -> config.photoSheet = value));
-		general.addEntry(screen.toggle("showOthersPhotos", config.showOthersPhotos, defaults.showOthersPhotos,
-				value -> config.showOthersPhotos = value));
-		general.addEntry(screen.toggle("showCustomPhotos", config.showCustomPhotos, defaults.showCustomPhotos,
-				value -> config.showCustomPhotos = value));
-		general.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
-				value -> config.shareCamera = value));
-		general.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
-				"%.0f", value -> config.othersCameras = value));
-		general.addEntry(screen.selector("photoGesture", PhotoGesture.values(), config.photoGesture,
+		vr.addEntry(screen.slider("kickPower", config.kickPower, defaults.kickPower, 0, 3, 0.1,
+				"%.1f", value -> config.kickPower = value));
+		vr.addEntry(screen.slider("physicsAim", config.physicsAim, defaults.physicsAim, 0, 1, 0.05, "%.2f",
+				value -> config.physicsAim = value));
+		vr.addEntry(screen.slider("physicsShake", config.physicsShake, defaults.physicsShake, 0, 3, 0.1,
+				"%.1f", value -> config.physicsShake = value));
+		vr.addEntry(screen.toggle("underwaterLook", config.underwaterLook, defaults.underwaterLook,
+				value -> config.underwaterLook = value));
+		vr.addEntry(screen.selector("photoGesture", PhotoGesture.values(), config.photoGesture,
 				defaults.photoGesture, value -> config.photoGesture = value));
-		general.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,
+		vr.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,
 				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
-		general.addEntry(screen.slider("photoBrightness", config.photoBrightness, defaults.photoBrightness, 0, 1,
+
+		// photos, and what is shared with the other players of a server
+		ConfigCategory photo = builder.getOrCreateCategory(Component.translatable("vrcamera.config.photo"));
+		photo.addEntry(screen.toggle("photoSheet", config.photoSheet, defaults.photoSheet,
+				value -> config.photoSheet = value));
+		photo.addEntry(screen.slider("photoBrightness", config.photoBrightness, defaults.photoBrightness, 0, 1,
 				0.05, "%.2f", value -> config.photoBrightness = value));
-		general.addEntry(screen.slider("photoPixels", config.photoPixels, defaults.photoPixels, 0, 1,
+		photo.addEntry(screen.slider("photoPixels", config.photoPixels, defaults.photoPixels, 0, 1,
 				0.05, "%.2f", value -> config.photoPixels = value));
-		general.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
+		photo.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
 				value -> config.photoSounds = value));
-		general.addEntry(screen.toggle("photoClipboard", config.photoClipboard, defaults.photoClipboard,
+		photo.addEntry(screen.toggle("photoClipboard", config.photoClipboard, defaults.photoClipboard,
 				value -> config.photoClipboard = value));
-		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
-				value -> config.menuShotChat = value));
-		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
-				value -> config.debugOverlay = value));
+		photo.addEntry(screen.toggle("showOthersPhotos", config.showOthersPhotos, defaults.showOthersPhotos,
+				value -> config.showOthersPhotos = value));
+		photo.addEntry(screen.toggle("showCustomPhotos", config.showCustomPhotos, defaults.showCustomPhotos,
+				value -> config.showCustomPhotos = value));
+		photo.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
+				value -> config.shareCamera = value));
+		photo.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
+				"%.0f", value -> config.othersCameras = value));
 
 		ConfigCategory motion = builder.getOrCreateCategory(Component.translatable("vrcamera.config.motion"));
 		motion.addEntry(screen.slider("aimHeight", config.aimHeight, defaults.aimHeight, 0, 1, 0.05, "%.2f",
