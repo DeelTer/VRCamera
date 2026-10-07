@@ -71,8 +71,10 @@ public class VrcameraClient implements ClientModInitializer {
 		key("mode", InputConstants.KEY_F8, desktop::cycleMode, () -> CameraController.INSTANCE.cycleMode());
 		key("next", InputConstants.KEY_F9, desktop::nextShot, () -> CameraController.INSTANCE.nextShot());
 		key("hold", InputConstants.KEY_F10, desktop::toggleHold, () -> CameraController.INSTANCE.toggleHold());
-		// the one key between the view of the player and the picture of the camera. In VR that is the mode key
-		key("toggle", InputConstants.KEY_F4, desktop::toggle, () -> CameraController.INSTANCE.cycleMode());
+		// the one key between the view of the player and the picture of the camera. Nothing in VR, where the eyes
+		// of the player are their view and the camera is in their hand
+		key("toggle", InputConstants.KEY_F4, desktop::toggle, () -> {
+		});
 		// straight to a shot, for a moment that will not wait for the right one to come around
 		for (ShotType shot : List.of(ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY)) {
 			key("shot." + shot.name().toLowerCase(Locale.ROOT), UNBOUND, () -> desktop.showShot(shot),
