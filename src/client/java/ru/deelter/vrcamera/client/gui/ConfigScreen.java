@@ -57,6 +57,7 @@ public final class ConfigScreen {
 		ConfigScreen screen = new ConfigScreen(builder.entryBuilder());
 
 		ConfigCategory general = builder.getOrCreateCategory(Component.translatable("vrcamera.config.general"));
+		general.addEntry(screen.toggle("hints", config.hints, defaults.hints, value -> config.hints = value));
 		general.addEntry(screen.toggle("forceMirror", config.forceMirror, defaults.forceMirror,
 				value -> config.forceMirror = value));
 		general.addEntry(screen.selector("marker", Marker.values(), config.marker, defaults.marker,

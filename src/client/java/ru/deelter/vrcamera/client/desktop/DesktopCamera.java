@@ -100,7 +100,7 @@ public final class DesktopCamera {
 	private static final String CAMERA_ICON = "";
 
 	private final Subject subject = new Subject();
-	private final Rig rig = new Rig();
+	private final Rig rig = new Rig(true);
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
 	private Mode mode = Mode.OFF;
@@ -195,6 +195,7 @@ public final class DesktopCamera {
 	}
 
 	private static void say(String key, Object... args) {
+		CameraHints.spoke();
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
 			player.sendOverlayMessage(Component.translatable(key, args));
@@ -945,10 +946,37 @@ public final class DesktopCamera {
 	 * one of a player in VR: every other tick, they smooth it out
 	 */
 	public void tick() {
+		Component hint = CameraHints.next(hintNow());
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (hint != null && player != null) {
+			player.sendOverlayMessage(hint);
+		}
 		Pose filming = lens();
 		if (filming != null && ++this.shareTicks % 2 == 0 && CameraConfig.current().shareCamera) {
 			PhotoSync.INSTANCE.shareCamera(filming.position(), filming.rotation());
 		}
+	}
+
+	/**
+	 * @return what the player is doing with the camera right now, for the hint on what to press. Null while the
+	 * camera has no window of its own: in the game window a hint would be in its picture
+	 */
+	private CameraHints.Hint hintNow() {
+		if (!hasOwnWindow() || this.pose == null) {
+			return null;
+		}
+		boolean free = this.mode == Mode.FREE;
+		if (isSteered()) {
+			return CameraHints.Hint.STEER;
+		}
+		if (this.grab.isHolding()) {
+			return free ? CameraHints.Hint.HOLD_FREE : CameraHints.Hint.HOLD;
+		}
+		if (this.grab.isAiming()) {
+			return free && this.grab.aimedAt() != this.free.active() ? CameraHints.Hint.AIM_OTHER :
+					CameraHints.Hint.AIM;
+		}
+		return free ? CameraHints.Hint.IDLE_FREE : CameraHints.Hint.IDLE;
 	}
 
 	/**

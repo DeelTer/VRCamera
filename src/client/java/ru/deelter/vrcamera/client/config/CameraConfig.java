@@ -40,6 +40,10 @@ public class CameraConfig {
 	 */
 	public boolean indicator = true;
 	/**
+	 * a few words over the hotbar on what to press to work the camera of a player at a screen
+	 */
+	public boolean hints = true;
+	/**
 	 * size of the camera icon
 	 */
 	public double indicatorSize = 1.0;

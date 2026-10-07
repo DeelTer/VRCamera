@@ -18,6 +18,8 @@ public final class Rig {
 	private static final double BLEND_TIME = 1.6;
 	// seconds the smoothed player position lags behind
 	private static final double ANCHOR_LAG = 0.18;
+	// half of the field of view distances are meant for, as how wide it makes a picture
+	private static final double USUAL_VIEW = Math.tan(Math.toRadians(35.0));
 
 	private final SmoothAngle azimuth = new SmoothAngle();
 	private final Smooth elevation = new Smooth();
@@ -36,6 +38,8 @@ public final class Rig {
 	private boolean ready;
 
 	private Vec3 position = Vec3.ZERO;
+	// if a camera that is zoomed in counts as being that much closer
+	private final boolean zoomIsCloseness;
 	private final Quaternionf rotation = new Quaternionf();
 
 	public Vec3 position() {
@@ -57,6 +61,18 @@ public final class Rig {
 	/**
 	 * @return if something thin is between the camera and the player right now, and the camera waits for it to pass
 	 */
+	public Rig() {
+		this(false);
+	}
+
+	/**
+	 * @param zoomIsCloseness if a camera that is zoomed in is taken to be as close as it looks to be, for what of
+	 *                        the player it shows: zoomed in from far away it fits as little of them as from close by
+	 */
+	public Rig(boolean zoomIsCloseness) {
+		this.zoomIsCloseness = zoomIsCloseness;
+	}
+
 	public boolean lookingPast() {
 		return this.softTime > 0;
 	}
@@ -172,7 +188,11 @@ public final class Rig {
 		if (config.faceDistance > 0 && !shot.exactAim()) {
 			// this close only part of the player fits into the picture, and the face is the part worth showing
 			double near = config.faceDistance * subject.unit;
-			double closeness = 1.0 - CamMath.smoothstep((this.position.distanceTo(subject.center) - near) / near);
+			double away = this.position.distanceTo(subject.center);
+			if (this.zoomIsCloseness) {
+				away *= Math.tan(Math.toRadians(this.fov.get()) / 2.0) / USUAL_VIEW;
+			}
+			double closeness = 1.0 - CamMath.smoothstep((away - near) / near);
 			aim = aim.add(subject.head.subtract(subject.center).scale(closeness));
 		}
 		if (config.leadRoom > 0 && !shot.exactAim()) {
