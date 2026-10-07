@@ -437,6 +437,9 @@ Play in first person and cut to the camera yourself, shot by shot, like a live d
 2. Settings → **Director** → **Director: shots by hand only**: on.
 3. `F4` — your view ↔ the camera. `F9` — next shot.
 
+With a camera window instead of the game window it works the same: `F4` then shows your own view in the camera
+window, and the camera again.
+
 The director then never changes the shot by itself. It only leaves a shot the camera can't see you from.
 
 Straight to a shot, without going around: bind the keys **Shot: over the shoulder / front / orbit / fly-by** in

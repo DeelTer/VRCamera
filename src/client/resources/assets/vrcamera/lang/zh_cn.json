@@ -274,6 +274,7 @@
 	"vrcamera.message.free.removed": "摄像机：已移除 %s 号",
 	"vrcamera.message.free.stuck": "摄像机：%s 号已固定在 %s 上",
 	"vrcamera.message.manual": "手动导演 · %s — 镜头 · %s — 我的视角",
+	"vrcamera.message.ownview": "摄像机：你自己的视角",
 	"vrcamera.command.manual.on": "摄像机：导演只在你下令时切换镜头",
 	"vrcamera.command.manual.off": "摄像机：导演恢复自行切换镜头",
 	"vrcamera.hint.idle": "%s — 操控摄像机",

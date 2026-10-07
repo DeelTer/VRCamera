@@ -274,6 +274,7 @@
 	"vrcamera.message.free.removed": "Cámara: cámara %s quitada",
 	"vrcamera.message.free.stuck": "Cámara: cámara %s fijada a %s",
 	"vrcamera.message.manual": "Director a mano · %s — plano · %s — mi vista",
+	"vrcamera.message.ownview": "Cámara: tu propia vista",
 	"vrcamera.command.manual.on": "Cámara: el director solo cambia de plano cuando tú lo dices",
 	"vrcamera.command.manual.off": "Cámara: el director vuelve a cambiar de plano solo",
 	"vrcamera.hint.idle": "%s — dirigir la cámara",

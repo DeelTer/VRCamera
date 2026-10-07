@@ -274,6 +274,7 @@
 	"vrcamera.message.free.removed": "Камера: камеру %s прибрано",
 	"vrcamera.message.free.stuck": "Камера: камеру %s закріплено на: %s",
 	"vrcamera.message.manual": "Режисер вручну · %s — план · %s — мій вид",
+	"vrcamera.message.ownview": "Камера: мій вид",
 	"vrcamera.command.manual.on": "Камера: режисер змінює плани лише за вашою командою",
 	"vrcamera.command.manual.off": "Камера: режисер знову змінює плани сам",
 	"vrcamera.hint.idle": "%s — керувати камерою",
