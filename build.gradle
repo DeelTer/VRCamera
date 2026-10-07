@@ -90,6 +90,14 @@ dependencies {
         implementation "maven.modrinth:vivecraft:${project.vivecraft_version}"
     }
 
+    // Optional, avatars of Figura can look into the camera. Built against NoFigura, the Figura for these versions
+    // of the game. -Pfigura runs the game with it
+    if (project.hasProperty("figura")) {
+        implementation "maven.modrinth:nofigura:${project.figura_version}"
+    } else {
+        compileOnly "maven.modrinth:nofigura:${project.figura_version}"
+    }
+
     // optional, for the settings screen
     implementation "maven.modrinth:cloth-config:${project.cloth_config_version}"
     // optional, to open the settings screen from the mod list. Not needed at runtime in the dev environment

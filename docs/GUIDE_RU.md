@@ -421,6 +421,45 @@
 (по умолчанию 32 блока, 0 — без ограничения). Меняется только картинка камеры, ваш вид остаётся обычным.
 Шейдеры и графика Fabulous не поддерживаются.
 
+## Аватары Figura
+
+С модом [NoFigura](https://modrinth.com/mod/nofigura) глаза вашего аватара могут смотреть в ПК-камеру: 2,5 секунды после переключения на
+другую свободную камеру и время от времени, пока камера ближе 8 блоков и перед лицом.
+
+Глаза — часть аватара, двигает их его скрипт. Мод только говорит, куда смотреть, через глобал `vrcamera`:
+
+1. Поставьте [NoFigura](https://modrinth.com/mod/nofigura) рядом с VRCamera.
+2. Добавьте в скрипт аватара один из двух кусков ниже.
+3. Перезагрузите аватар и включите камеру.
+
+С библиотекой [Gaze](https://github.com/Bitslayn/FOX-Gaze), где `tracking` — то, что вернул `gaze:newGaze()`:
+
+```lua
+events.tick:register(function()
+  local lens = vrcamera and vrcamera:getLookTarget()
+  if lens then
+    tracking:setTargetOverride(lens)
+  end
+end, "VRCameraEyes")
+```
+
+Если глаза двигает ваш код, подставьте свой путь к ним:
+
+```lua
+function events.render()
+  local look = vrcamera and vrcamera:getLookOffset()
+  local x = look and math.clamp(look.x / 60, -1, 1) or 0
+  local y = look and math.clamp(look.y / 60, -1, 1) or 0
+  models.model.Head.Eyes:setPos(-x, y, 0)
+end
+```
+
+`getLookTarget()` — позиция объектива, `getLookOffset()` — градусы вправо и вверх от направления головы. Обе
+возвращают `nil`, когда смотреть не на что. Ещё есть `isFilming()` и `getCameraPos()`.
+
+Отвечает только вашему аватару и только в вашей игре: для записи этого хватает. Чтобы движение глаз видели
+другие игроки, передавайте его через ping. Камера в руке в VR не поддерживается.
+
 ## Метка, значок и отладочный оверлей
 
 **Метка.** Модель камеры Vivecraft с экранчиком показывает камеру в шлеме. В записи её нет. `marker`

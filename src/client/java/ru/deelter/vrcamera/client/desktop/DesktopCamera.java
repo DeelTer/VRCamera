@@ -941,6 +941,20 @@ public final class DesktopCamera {
 	// ---- what the camera films, and where it is
 
 	/**
+	 * @return if the one who is filmed is the player themselves
+	 */
+	public boolean filmsSelf() {
+		return this.filmsSelf;
+	}
+
+	/**
+	 * @return which of the free cameras films, counted from 0, or -1 if none of them does
+	 */
+	public int activeFreeCamera() {
+		return this.mode == Mode.FREE ? this.free.active() : -1;
+	}
+
+	/**
 	 * @return if the camera is on and films into a window of its own
 	 */
 	public boolean hasOwnWindow() {

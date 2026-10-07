@@ -427,6 +427,46 @@ the world, weather, particles, block entities, vignette and entity shadows are h
 the range (default 32 blocks, 0 means unlimited). Only the camera output is affected; your game or headset view
 stays normal. Shaders and Fabulous graphics are not supported.
 
+## Figura avatars
+
+Optional. With [NoFigura](https://modrinth.com/mod/nofigura) installed, the eyes of your avatar can look into the PC camera: for 2.5 seconds after a cut
+to another free camera, and now and then while the camera is closer than 8 blocks and in front of your face.
+
+Eyes belong to the avatar, so its script moves them. The mod only tells it where to look, through the global
+`vrcamera`:
+
+1. Install [NoFigura](https://modrinth.com/mod/nofigura) next to VRCamera.
+2. Add one of the two snippets to the script of your avatar.
+3. Reload the avatar and turn the camera on.
+
+With the [Gaze](https://github.com/Bitslayn/FOX-Gaze) library, where `tracking` is what `gaze:newGaze()` gave you:
+
+```lua
+events.tick:register(function()
+  local lens = vrcamera and vrcamera:getLookTarget()
+  if lens then
+    tracking:setTargetOverride(lens)
+  end
+end, "VRCameraEyes")
+```
+
+With eyes you move yourself, put your own path to them:
+
+```lua
+function events.render()
+  local look = vrcamera and vrcamera:getLookOffset()
+  local x = look and math.clamp(look.x / 60, -1, 1) or 0
+  local y = look and math.clamp(look.y / 60, -1, 1) or 0
+  models.model.Head.Eyes:setPos(-x, y, 0)
+end
+```
+
+`getLookTarget()` is the position of the lens, `getLookOffset()` is degrees to the right and up from where the
+head faces. Both are `nil` when there is nothing to look at. There are also `isFilming()` and `getCameraPos()`.
+
+Only your own avatar gets answers, and only in your own game: enough for a recording. For other players to see
+the eyes move, send them with a ping. The camera in a VR hand is not covered.
+
 ## Marker, icon and debug overlay
 
 **Marker.** The Vivecraft camera model with its screen shows where the camera is in the headset. It is not in the

@@ -91,6 +91,27 @@ The [user guide](docs/GUIDE.md) covers camera modes, photos, commands, configura
 
 See the [guide](docs/GUIDE.md#known-limits) for details.
 
+## Figura avatars
+
+With Figura installed ([NoFigura](https://modrinth.com/mod/nofigura) for these versions of the game), the script of
+your avatar gets a global `vrcamera` and can make its eyes look into the camera of the screen mode: for a moment
+after a cut to another free camera, and now and then while the camera is closer than 8 blocks. Eyes are part of the
+avatar, so its script has to move them:
+
+```lua
+function events.render()
+    local look = vrcamera and vrcamera:getLookOffset()
+    local x = look and math.clamp(look.x / 60, -1, 1) or 0
+    local y = look and math.clamp(look.y / 60, -1, 1) or 0
+    models.model.Head.Eyes:setPos(-x, y, 0)
+end
+```
+
+`getLookOffset()` gives degrees to the right and up from where the head faces, or `nil` when there is nothing to
+look at. There are also `isFilming()`, `getCameraPos()` and `getLookTarget()`: a position, which an eye library like
+Gaze takes as it is, `tracking:setTargetOverride(vrcamera:getLookTarget())`. Only your own avatar gets answers, and
+only on your own game: for others to see the eyes move, send them with a ping.
+
 ## Server plugin API
 
 The optional **VRCamera** plugin runs on **Paper 1.21.4+ / Java 21** and shares photos and camera positions.
