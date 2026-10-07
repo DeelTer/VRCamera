@@ -29,6 +29,12 @@ public final class OutputWindow {
 		return null;
 	}
 
+	public static void handleKeys() {
+	}
+
+	public static void toggleFullscreen() {
+	}
+
 	public static double scrolled() {
 		return 0;
 	}

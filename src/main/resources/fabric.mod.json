@@ -15,6 +15,9 @@
 		],
 		"modmenu": [
 			"ru.deelter.vrcamera.client.gui.ModMenuIntegration"
+		],
+		"frex_flawless_frames": [
+			"ru.deelter.vrcamera.client.desktop.FlawlessFrames"
 		]
 	},
 	"mixins": [

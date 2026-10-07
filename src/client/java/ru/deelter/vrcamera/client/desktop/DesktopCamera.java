@@ -64,6 +64,9 @@ public final class DesktopCamera {
 	private static final double STEER_ZOOM = 1.1;
 	// closer to the player than this the camera has no place around them to start from
 	private static final double STEER_MIN_DISTANCE = 1.0;
+	// closer to the head than this the camera is inside of the player, and further than the second it is out again
+	private static final double INSIDE_IN = 0.55;
+	private static final double INSIDE_OUT = 0.8;
 	// the part of the field of view one notch of the wheel is, for a shot that is steered
 	private static final double FOV_WHEEL = 0.08;
 	// Degrees the free camera turns: per unit of what the game makes of the mouse, as it turns a player, and per
@@ -109,6 +112,7 @@ public final class DesktopCamera {
 	private final FreeCamera free = new FreeCamera();
 	private ClientLevel freeLevel;
 	private boolean flying;
+	private boolean inside;
 	private boolean steeredFromWindow;
 	// held with the mouse: where it hangs, how far in front of the eyes, and what the hand does with it
 	private boolean grabbed;
@@ -156,6 +160,7 @@ public final class DesktopCamera {
 		this.mode = mode;
 		this.steered = null;
 		this.flying = false;
+		this.inside = false;
 		this.steeredFromWindow = false;
 		this.grabbed = false;
 		this.aimed = false;
@@ -634,7 +639,7 @@ public final class DesktopCamera {
 	 */
 	public boolean showsOwnView() {
 		return this.steered == null && this.mode == Mode.DIRECTOR && this.director != null &&
-				this.director.current() != null && this.director.current().type == ShotType.POV;
+				this.director.current() != null && (this.director.current().type == ShotType.POV || this.inside);
 	}
 
 	/**
@@ -900,6 +905,10 @@ public final class DesktopCamera {
 			shot = this.director.current();
 		}
 		this.rig.update(shot, this.subject, dt, config);
+		// Walls can push the camera all the way into the player, before the director has another shot. Their own
+		// view is the picture for that long, the inside of their head is none
+		double fromHead = this.rig.position().distanceTo(this.subject.head);
+		this.inside = fromHead < (this.inside ? INSIDE_OUT : INSIDE_IN) * this.subject.unit;
 		return new Pose(this.rig.position(), new Quaternionf(this.rig.rotation()),
 				(float) Math.clamp(this.rig.fov(), 1.0, 179.0));
 	}

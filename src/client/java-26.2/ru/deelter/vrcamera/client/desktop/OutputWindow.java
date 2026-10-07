@@ -11,6 +11,8 @@ import ru.deelter.vrcamera.Vrcamera;
 
 import java.lang.reflect.Method;
 import org.lwjgl.glfw.Callbacks;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.glfw.GLFWVidMode;
 
 /**
  * A second window that shows the picture of the camera and nothing else, for OBS to capture.
@@ -29,6 +31,9 @@ public final class OutputWindow {
 	private static boolean unsupported;
 	private static double scrolled;
 	private static boolean captured;
+	private static boolean fullKeyDown;
+	// where the window was and how large, while it fills a monitor. Null while it is a window
+	private static int[] windowed;
 	private static boolean letGo;
 	private static boolean moving;
 	private static double mouseX;
@@ -184,6 +189,61 @@ public final class OutputWindow {
 	}
 
 	/**
+	 * F11 in the window: over the whole monitor it is on, and back
+	 */
+	public static void handleKeys() {
+		if (window == 0) {
+			return;
+		}
+		boolean down = GLFW.glfwGetKey(window, GLFW.GLFW_KEY_F11) == GLFW.GLFW_PRESS;
+		if (down && !fullKeyDown) {
+			toggleFullscreen();
+		}
+		fullKeyDown = down;
+	}
+
+	/**
+	 * Fills the monitor the window is on, without a frame, or goes back to the window it was. Not the fullscreen
+	 * a game takes for itself: that one goes away as soon as another window is clicked, which is the game
+	 */
+	public static void toggleFullscreen() {
+		if (window == 0) {
+			return;
+		}
+		if (windowed != null) {
+			GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
+			GLFW.glfwSetWindowPos(window, windowed[0], windowed[1]);
+			GLFW.glfwSetWindowSize(window, windowed[2], windowed[3]);
+			windowed = null;
+			return;
+		}
+		int[] x = new int[1];
+		int[] y = new int[1];
+		int[] width = new int[1];
+		int[] height = new int[1];
+		GLFW.glfwGetWindowPos(window, x, y);
+		GLFW.glfwGetWindowSize(window, width, height);
+		int middleX = x[0] + width[0] / 2;
+		int middleY = y[0] + height[0] / 2;
+		PointerBuffer monitors = GLFW.glfwGetMonitors();
+		for (int i = 0; monitors != null && i < monitors.limit(); i++) {
+			long monitor = monitors.get(i);
+			GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
+			int[] left = new int[1];
+			int[] top = new int[1];
+			GLFW.glfwGetMonitorPos(monitor, left, top);
+			if (mode != null && middleX >= left[0] && middleX < left[0] + mode.width() && middleY >= top[0] &&
+					middleY < top[0] + mode.height()) {
+				windowed = new int[]{x[0], y[0], width[0], height[0]};
+				GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+				GLFW.glfwSetWindowPos(window, left[0], top[0]);
+				GLFW.glfwSetWindowSize(window, mode.width(), mode.height());
+				return;
+			}
+		}
+	}
+
+	/**
 	 * @return width and height of the window, null without one that shows
 	 */
 	public static int[] size() {
@@ -259,6 +319,7 @@ public final class OutputWindow {
 		Callbacks.glfwFreeCallbacks(window);
 		scrolled = 0;
 		captured = false;
+		windowed = null;
 		letGo = false;
 		moving = false;
 		long game = Minecraft.getInstance().getWindow().handle();

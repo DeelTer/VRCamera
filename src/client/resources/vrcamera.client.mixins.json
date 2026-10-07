@@ -8,6 +8,7 @@
 		"ContainerScreenAccessor",
 		"EntityMixin",
 		"EntityRendererMixin",
+		"FramerateLimitTrackerMixin",
 		"GameRendererAccessor",
 		"GameRendererMixin",
 		"KeyboardInputMixin",

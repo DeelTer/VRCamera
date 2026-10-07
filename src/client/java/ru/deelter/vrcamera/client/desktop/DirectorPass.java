@@ -82,6 +82,7 @@ public final class DirectorPass {
 		camera.keepView(mc);
 		boolean wanted = camera.isOn() && !CameraController.isVRRunning() &&
 				CameraController.INSTANCE.config().screenOutput == ScreenOutput.WINDOW;
+		FlawlessFrames.set(wanted);
 		if (!wanted) {
 			close();
 			return;
@@ -102,6 +103,7 @@ public final class DirectorPass {
 			camera.failed("vrcamera.message.output.failed");
 			return;
 		}
+		OutputWindow.handleKeys();
 		if (!camera.isOn() || !camera.advance(deltaTracker.getGameTimeDeltaPartialTick(true))) {
 			// its window was closed, or it could not be moved and turned itself off
 			return;

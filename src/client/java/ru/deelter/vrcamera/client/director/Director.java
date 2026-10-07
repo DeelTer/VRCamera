@@ -34,6 +34,7 @@ public final class Director {
 	private static final double BOOST = 4.0;
 	// how well first person fits where it is tight, it does not fit anywhere else
 	private static final double TIGHT_POV_FIT = 0.6;
+	private static final double SCREEN_POV_FIT = 0.2;
 	// fights are cut faster
 	private static final double COMBAT_DURATION_SCALE = 0.6;
 
@@ -84,6 +85,7 @@ public final class Director {
 	// shot type that gets a better chance on the next pick
 	private ShotType boost;
 	private boolean tight;
+	private boolean atScreen;
 	private double tightTimer;
 	private double combatTimer;
 	// seconds of recent mining, goes up while a block is being broken, slowly down otherwise
@@ -436,7 +438,9 @@ public final class Director {
 	 */
 	private double fit(ShotType type) {
 		if (type == ShotType.POV) {
-			return this.tight ? TIGHT_POV_FIT : 0.0;
+			// At a screen it is the view the player has themselves, with their hand and what they do with it: worth
+			// a cut now and then. In VR it is the shaking view of a headset, for where nothing else fits
+			return this.tight ? TIGHT_POV_FIT : this.atScreen ? SCREEN_POV_FIT : 0.0;
 		}
 		return type.weight(this.context) * (this.tight ? type.tightFactor : 1.0);
 	}
@@ -639,6 +643,7 @@ public final class Director {
 			this.tightTimer = 0.5;
 			this.tight = WorldProbe.openness(subject) < 0.55;
 		}
+		this.atScreen = !subject.tracksHands;
 	}
 
 }

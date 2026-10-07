@@ -454,6 +454,12 @@ you say otherwise, 0 for none.
 **Photos.** The photo key takes what the camera films, and the sheet comes out of the camera: of the free one that
 films, if there are several. With the camera off it is a photo of what you see.
 
+**The whole monitor.** `F11` in the window of the camera, or `/vrcam screen fullscreen`, lets it fill the monitor it is
+on, without a frame; once more and it is a window again. The picture is drawn as large as the game window and shown
+as large as the window of the camera: for a full 1080p picture in OBS both have to be that large. Mods that draw
+fewer frames while the game is not looked at, like Dynamic FPS, leave the camera alone while it has its window, and
+so does the game itself when it is minimized.
+
 **Upright pictures.** The picture has the shape of the window of the camera. Make that window tall and narrow and
 the camera films upright, with no bars at the sides.
 

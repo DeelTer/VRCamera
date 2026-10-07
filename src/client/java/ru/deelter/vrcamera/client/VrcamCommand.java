@@ -18,6 +18,7 @@ import java.util.Locale;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
+import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 /**
  * The {@code /vrcam} command. Runs on the client only, the server never sees it.
@@ -105,6 +106,10 @@ public final class VrcamCommand {
 				return DONE;
 			}));
 		}
+		screen.then(ClientCommands.literal("fullscreen").executes(context -> {
+			OutputWindow.toggleFullscreen();
+			return DONE;
+		}));
 		screen.then(ClientCommands.literal("clear").executes(context -> {
 			DesktopCamera.INSTANCE.clearCameras();
 			return DONE;
