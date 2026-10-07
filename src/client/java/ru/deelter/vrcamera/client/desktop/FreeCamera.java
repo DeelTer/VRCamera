@@ -245,7 +245,7 @@ final class FreeCamera {
 		this.glided = 0;
 	}
 
-	private boolean isInFlight() {
+	boolean isInFlight() {
 		return this.flight < 1.0;
 	}
 

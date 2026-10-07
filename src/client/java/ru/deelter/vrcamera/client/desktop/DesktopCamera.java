@@ -750,6 +750,13 @@ public final class DesktopCamera {
 				found = camera;
 			}
 		}
+		if (this.free.isInFlight()) {
+			// On its way to another camera it is not cut away from: at the start it is right where the one it left
+			// stands, which the player may well look at. What they look at when it arrives counts as seen already
+			this.gazeAt = found;
+			this.gazeTime = -1;
+			return;
+		}
 		if (found != this.gazeAt) {
 			this.gazeAt = found;
 			this.gazeTime = 0;
