@@ -48,106 +48,62 @@ import java.util.function.UnaryOperator;
  */
 public final class CameraController implements Tracker {
 	public static final CameraController INSTANCE = new CameraController();
-
-	public enum Mode {
-		/**
-		 * the camera is left alone
-		 */
-		OFF,
-		/**
-		 * shots are picked and switched automatically
-		 */
-		DIRECTOR,
-		/**
-		 * the camera stays where it was placed by hand, relative to the player
-		 */
-		FOLLOW,
-		/**
-		 * the camera is carried in the hand, and falls to the ground when let go of
-		 */
-		PHYSICS;
-
-		public Component label() {
-			return Component.translatable("vrcamera.mode." + name().toLowerCase(Locale.ROOT));
-		}
-	}
-
 	private static final int MARKER_COLOR = 0xFFFF2020;
-
 	private static final String INDICATOR_ICON = "\uE7C0";
-
 	private static final double PHYSICS_LEASH = 40.0;
-
 	private static final double PULL_TIME = 0.12;
 	private static final double PULL_ARRIVED = 0.15;
-
 	private static final double PUT_UP_CHECK_TIME = 0.05;
-
 	private static final double PULL_WINDUP = 0.14;
-
 	private static final double PULL_MAX_RELEASE_SPEED = 14.0;
-
 	private static final double PULL_FLING_SPEED = 1.5;
 	private static final double PULL_FLING_GAIN = 2.2;
 	private static final double PULL_SPARKS = 30.0;
 	private static final double SELFIE_COS = Math.cos(Math.toRadians(60));
-
 	private static final double UNDERWATER_FOV = 18.0;
 	private static final double UNDERWATER_TIME = 0.4;
 	private static final double BUBBLES_PER_SECOND = 6.0;
-
 	private static final double SHUTTER_FOV = 5.0;
 	private static final double SHUTTER_TIME = 0.15;
 	private static final String PHOTO_ICON = "";
-
 	private static final double PHOTO_ICON_MIN_DISTANCE = 2.5;
 	private static final double PHOTO_ICON_MAX_DISTANCE = 48.0;
-
 	private static final double PULL_GRIP_OFFSET = 0.08;
-
 	private static final double GLIDE_TIME = 0.3;
-
 	private static final double PARK_SECONDS = 20.0;
-
 	private static final double RESUME_GAP = 0.5;
-
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig();
-
-	private Mode mode = Mode.OFF;
-	private CameraConfig config = CameraConfig.current();
-	private Director director = new Director(config);
-	private Shot followShot;
-
-	private boolean engaged;
-	private boolean previousMirror;
-	private float previousFov;
-	private boolean shownByUs;
-
-	private boolean wasGrabbed;
-
-	private boolean couldPutUp;
-	private ResourceKey<Level> dimension;
-	private boolean changedDimension;
-	private double putUpCheck;
 	private final HandThrow handThrow = new HandThrow();
 	private final DroppedCamera dropped = new DroppedCamera();
 	private final HandheldShake shake = new HandheldShake();
 	private final LimbStrikes limbs = new LimbStrikes();
-
+	private final SecondButton secondButton = new SecondButton();
+	private final Quaternionf handRotation = new Quaternionf();
+	private final HandStabilizer stabilizer = new HandStabilizer();
+	private final SmoothVec pullGlide = new SmoothVec();
+	private final Smooth underwater = new Smooth();
+	private final SmoothVec glide = new SmoothVec();
+	private Mode mode = Mode.OFF;
+	private CameraConfig config = CameraConfig.current();
+	private Director director = new Director(config);
+	private Shot followShot;
+	private boolean engaged;
+	private boolean previousMirror;
+	private float previousFov;
+	private boolean shownByUs;
+	private boolean wasGrabbed;
+	private boolean couldPutUp;
+	private ResourceKey<Level> dimension;
+	private boolean changedDimension;
+	private double putUpCheck;
 	private int offeredHand = -1;
 	private long albumNanos;
-	private final SecondButton secondButton = new SecondButton();
 	private int shutterTicks;
 	private int shareTicks;
 	private boolean shutterTaken;
 	private Vec3 handPosition;
-	private final Quaternionf handRotation = new Quaternionf();
-	private final HandStabilizer stabilizer = new HandStabilizer();
-
 	private InteractionHand pullHand;
-	private final SmoothVec pullGlide = new SmoothVec();
-
 	private boolean pullDrawn;
 	private boolean pullLifted;
 	private boolean pullArc;
@@ -157,7 +113,6 @@ public final class CameraController implements Tracker {
 	private Vec3 pullVelocity = Vec3.ZERO;
 	private double frameDt;
 	private double shutter;
-	private final Smooth underwater = new Smooth();
 	private boolean wasInWater;
 	private boolean wasDead;
 
@@ -165,11 +120,17 @@ public final class CameraController implements Tracker {
 
 	private Vec3 glideTarget;
 	private boolean plainHeld;
-	private final SmoothVec glide = new SmoothVec();
 	private long glideNanos;
-
 	private double parkedTime;
 	private long lastNanos;
+
+	private CameraController() {
+	}
+
+	public static boolean isVRRunning() {
+		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		return VRState.VR_RUNNING && dh.vrPlayer != null && dh.vrPlayer.vrdata_world_render != null;
+	}
 
 	public Mode mode() {
 		return mode;
@@ -372,11 +333,6 @@ public final class CameraController implements Tracker {
 		config.activePreset = Math.min(config.activePreset, config.presets.size() - 1);
 		config.save();
 		showPreset();
-	}
-
-	public static boolean isVRRunning() {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		return VRState.VR_RUNNING && dh.vrPlayer != null && dh.vrPlayer.vrdata_world_render != null;
 	}
 
 	public void cycleMode() {
@@ -764,9 +720,6 @@ public final class CameraController implements Tracker {
 			setMode(Mode.OFF);
 			notify(Component.translatable("vrcamera.message.error"));
 		}
-	}
-
-	private CameraController() {
 	}
 
 	private boolean looksAtPlayer(Vec3 position, Quaternionf rotation) {
@@ -1265,6 +1218,29 @@ public final class CameraController implements Tracker {
 			followShot = shot;
 		} else {
 			director.showManual(shot);
+		}
+	}
+
+	public enum Mode {
+		/**
+		 * the camera is left alone
+		 */
+		OFF,
+		/**
+		 * shots are picked and switched automatically
+		 */
+		DIRECTOR,
+		/**
+		 * the camera stays where it was placed by hand, relative to the player
+		 */
+		FOLLOW,
+		/**
+		 * the camera is carried in the hand, and falls to the ground when let go of
+		 */
+		PHYSICS;
+
+		public Component label() {
+			return Component.translatable("vrcamera.mode." + name().toLowerCase(Locale.ROOT));
 		}
 	}
 }

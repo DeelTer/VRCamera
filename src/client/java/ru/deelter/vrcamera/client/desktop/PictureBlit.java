@@ -15,6 +15,9 @@ final class PictureBlit {
 	private static final int LINE_PART = 360;
 	private static Method glId;
 
+	private PictureBlit() {
+	}
+
 	/**
 	 * @return what OpenGL calls the texture of the picture. The class that knows is not the same in every
 	 * supported version of the game, its method is
@@ -107,8 +110,5 @@ final class PictureBlit {
 	private static void strip(int x, int y, int width, int height) {
 		GL11.glScissor(x, y, width, height);
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
-	}
-
-	private PictureBlit() {
 	}
 }

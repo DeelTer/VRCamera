@@ -43,6 +43,10 @@ public final class CameraPull implements HeldInteractModule {
 		this.controller = controller;
 	}
 
+	private static double angle(Vec3 a, Vec3 b) {
+		return Math.acos(CamMath.clamp(a.normalize().dot(b.normalize()), -1.0, 1.0));
+	}
+
 	@Override
 	public Identifier getId() {
 		return ID;
@@ -118,10 +122,6 @@ public final class CameraPull implements HeldInteractModule {
 			controller.endPull(hand);
 		}
 		reset(player, hand);
-	}
-
-	private static double angle(Vec3 a, Vec3 b) {
-		return Math.acos(CamMath.clamp(a.normalize().dot(b.normalize()), -1.0, 1.0));
 	}
 
 	/**

@@ -24,6 +24,9 @@ public final class CameraIndicator {
 	private static final double TEXT_SCALE = 0.05;
 	private static final int COLOR = 0xFFFFFFFF;
 
+	private CameraIndicator() {
+	}
+
 	/**
 	 * Called while the game collects gizmos for a pass.
 	 *
@@ -71,8 +74,5 @@ public final class CameraIndicator {
 
 		Gizmos.billboardText((name.isEmpty() ? "" : name + "  ") + Math.round(distance) + " M", textTop,
 				TextGizmo.Style.forColorAndCentered(COLOR).withScale((float) (TEXT_SCALE * size))).setAlwaysOnTop();
-	}
-
-	private CameraIndicator() {
 	}
 }

@@ -20,18 +20,18 @@ public final class FlawlessFrames implements Consumer<Function<String, Consumer<
 	private static final List<Consumer<Boolean>> LISTENERS = new ArrayList<>();
 	private static boolean wanted;
 
+	static void set(boolean all) {
+		if (all != wanted) {
+			wanted = all;
+			LISTENERS.forEach(listener -> listener.accept(all));
+		}
+	}
+
 	@Override
 	public void accept(Function<String, Consumer<Boolean>> provider) {
 		final String asker = provider.getClass().getName();
 		if (FRAME_LIMITERS.stream().anyMatch(asker::contains)) {
 			LISTENERS.add(provider.apply("vrcamera"));
-		}
-	}
-
-	static void set(boolean all) {
-		if (all != wanted) {
-			wanted = all;
-			LISTENERS.forEach(listener -> listener.accept(all));
 		}
 	}
 }

@@ -23,6 +23,16 @@ public final class LimbStrikes {
 	private final Vec3[] last = new Vec3[LIMBS];
 	private final double[] rest = new double[LIMBS];
 
+	private static Vec3 closest(Vec3 from, Vec3 to, Vec3 point) {
+		final Vec3 way = to.subtract(from);
+		final double length = way.lengthSqr();
+		if (length < 1.0E-8) {
+			return to;
+		}
+		final double along = Math.max(0.0, Math.min(1.0, point.subtract(from).dot(way) / length));
+		return from.add(way.scale(along));
+	}
+
 	public void reset() {
 		for (int i = 0; i < LIMBS; i++) {
 			last[i] = null;
@@ -60,15 +70,5 @@ public final class LimbStrikes {
 				rest[i] = REST_AFTER_HIT;
 			}
 		}
-	}
-
-	private static Vec3 closest(Vec3 from, Vec3 to, Vec3 point) {
-		final Vec3 way = to.subtract(from);
-		final double length = way.lengthSqr();
-		if (length < 1.0E-8) {
-			return to;
-		}
-		final double along = Math.max(0.0, Math.min(1.0, point.subtract(from).dot(way) / length));
-		return from.add(way.scale(along));
 	}
 }

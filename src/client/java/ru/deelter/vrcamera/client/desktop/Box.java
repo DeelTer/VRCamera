@@ -7,6 +7,15 @@ import org.jetbrains.annotations.Nullable;
  * a part of the desktop or of a window: a monitor, where a window is, where a picture is in it
  */
 record Box(int x, int y, int width, int height) {
+	/**
+	 * @return null if those are not the four numbers of a box that has a size
+	 */
+	@Nullable
+	static Box of(@Nullable int[] values) {
+		return values == null || values.length != 4 || values[2] < 1 || values[3] < 1 ? null :
+				new Box(values[0], values[1], values[2], values[3]);
+	}
+
 	int middleX() {
 		return x + width / 2;
 	}
@@ -22,14 +31,5 @@ record Box(int x, int y, int width, int height) {
 	@NotNull
 	int[] toArray() {
 		return new int[]{x, y, width, height};
-	}
-
-	/**
-	 * @return null if those are not the four numbers of a box that has a size
-	 */
-	@Nullable
-	static Box of(@Nullable int[] values) {
-		return values == null || values.length != 4 || values[2] < 1 || values[3] < 1 ? null :
-				new Box(values[0], values[1], values[2], values[3]);
 	}
 }

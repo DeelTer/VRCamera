@@ -27,6 +27,10 @@ public class FiguraEyes implements FiguraAPI {
 		this(false);
 	}
 
+	private FiguraEyes(boolean filmed) {
+		this.filmed = filmed;
+	}
+
 	@NotNull
 	@Override
 	public FiguraAPI build(Avatar avatar) {
@@ -77,9 +81,5 @@ public class FiguraEyes implements FiguraAPI {
 	@Override
 	public String toString() {
 		return "VRCameraAPI";
-	}
-
-	private FiguraEyes(boolean filmed) {
-		this.filmed = filmed;
 	}
 }

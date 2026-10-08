@@ -32,42 +32,6 @@ enum FrameGuide {
 		this.lines = lines;
 	}
 
-	FrameGuide next() {
-		return ALL[(ordinal() + 1) % ALL.length];
-	}
-
-	/**
-	 * @return where the lines from top to bottom are, for a picture of that size
-	 */
-	double[] across(int width, int height) {
-		if (this != UPRIGHT) {
-			return lines;
-		}
-		final double part = height * UPRIGHT_SHAPE / width;
-		return part >= 1.0 ? NO_LINES : new double[]{0.5 - part / 2.0, 0.5 + part / 2.0};
-	}
-
-	/**
-	 * @return where the lines from side to side are
-	 */
-	double[] up() {
-		return lines;
-	}
-
-	/**
-	 * @return the points of a curve over the picture, from its left and from its bottom
-	 */
-	double[][] curve() {
-		return this == SPIRAL ? SPIRAL_CURVE : NO_CURVE;
-	}
-
-	/**
-	 * @return how far in from each edge of the picture its frames are
-	 */
-	double[] frames() {
-		return this == SAFE ? SAFE_FRAMES : NO_LINES;
-	}
-
 	/**
 	 * A golden rectangle has a square cut off its left, then off the top of what is left, off the right, off the
 	 * bottom, and so on around. A quarter circle through each square is the spiral.
@@ -120,5 +84,41 @@ enum FrameGuide {
 			}
 		}
 		return points;
+	}
+
+	FrameGuide next() {
+		return ALL[(ordinal() + 1) % ALL.length];
+	}
+
+	/**
+	 * @return where the lines from top to bottom are, for a picture of that size
+	 */
+	double[] across(int width, int height) {
+		if (this != UPRIGHT) {
+			return lines;
+		}
+		final double part = height * UPRIGHT_SHAPE / width;
+		return part >= 1.0 ? NO_LINES : new double[]{0.5 - part / 2.0, 0.5 + part / 2.0};
+	}
+
+	/**
+	 * @return where the lines from side to side are
+	 */
+	double[] up() {
+		return lines;
+	}
+
+	/**
+	 * @return the points of a curve over the picture, from its left and from its bottom
+	 */
+	double[][] curve() {
+		return this == SPIRAL ? SPIRAL_CURVE : NO_CURVE;
+	}
+
+	/**
+	 * @return how far in from each edge of the picture its frames are
+	 */
+	double[] frames() {
+		return this == SAFE ? SAFE_FRAMES : NO_LINES;
 	}
 }

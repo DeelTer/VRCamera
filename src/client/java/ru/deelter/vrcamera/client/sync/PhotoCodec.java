@@ -25,7 +25,7 @@ public final class PhotoCodec {
 	private static final int SENT_WIDTH = 256;
 	private static final float[] QUALITIES = {0.72F, 0.6F, 0.48F, 0.36F, 0.25F};
 
-	public record Picture(int width, int height, int[] argb) {
+	private PhotoCodec() {
 	}
 
 	/**
@@ -102,6 +102,6 @@ public final class PhotoCodec {
 		return scaled;
 	}
 
-	private PhotoCodec() {
+	public record Picture(int width, int height, int[] argb) {
 	}
 }

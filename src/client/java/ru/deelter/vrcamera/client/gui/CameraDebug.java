@@ -16,6 +16,9 @@ import java.util.Locale;
  */
 public final class CameraDebug {
 
+	private CameraDebug() {
+	}
+
 	public static List<String> lines(CameraController controller) {
 		final Mode mode = controller.mode();
 		final Director director = controller.director();
@@ -68,8 +71,5 @@ public final class CameraDebug {
 
 	private static String format(String format, Object... args) {
 		return String.format(Locale.ROOT, format, args);
-	}
-
-	private CameraDebug() {
 	}
 }

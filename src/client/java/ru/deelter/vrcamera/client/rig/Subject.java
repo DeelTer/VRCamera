@@ -14,6 +14,16 @@ import ru.deelter.vrcamera.client.math.SmoothVec;
  * per frame snapshot of the player the camera films
  */
 public final class Subject {
+	private static final double PARTNER_REACH = 24.0;
+	private static final double JUMP_HEIGHT = 1.3;
+	private static final double SETTLED_SPEED = 0.3;
+	private static final double SETTLE_AFTER = 0.12;
+	private static final double GROUND_LAG = 0.15;
+	private static final double HOP_GAP = 0.3;
+	private static final double HOP_EASE = 0.3;
+	private static final double LOOSE_TIME = 0.4;
+	private final SmoothVec velocitySmooth = new SmoothVec();
+	private final SmoothAngle facingSmooth = new SmoothAngle();
 	public Player player;
 	/**
 	 * how far the current frame is between two game ticks, to get where entities are drawn
@@ -51,12 +61,10 @@ public final class Subject {
 	 * the player moved further than they could have, cameras need to jump
 	 */
 	public boolean teleported;
-
 	/**
 	 * middle of the inventory or chest menu the player has open, null without one
 	 */
 	public Vec3 guiCenter;
-
 	public Entity target;
 	/**
 	 * someone to have in the picture next to the player while there is no fight: a friend they film with. Null for
@@ -67,24 +75,7 @@ public final class Subject {
 	 * middle of the {@link #target}, null without one
 	 */
 	public Vec3 targetCenter;
-
-	private static final double PARTNER_REACH = 24.0;
-
-	private final SmoothVec velocitySmooth = new SmoothVec();
-	private final SmoothAngle facingSmooth = new SmoothAngle();
 	private boolean first = true;
-
-	private static final double JUMP_HEIGHT = 1.3;
-
-	private static final double SETTLED_SPEED = 0.3;
-	private static final double SETTLE_AFTER = 0.12;
-	private static final double GROUND_LAG = 0.15;
-
-	private static final double HOP_GAP = 0.3;
-	private static final double HOP_EASE = 0.3;
-
-	private static final double LOOSE_TIME = 0.4;
-
 	private double rest;
 	private double ground;
 	private double groundSpeed;

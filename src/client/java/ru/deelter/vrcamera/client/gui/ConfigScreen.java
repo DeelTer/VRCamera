@@ -26,6 +26,10 @@ public final class ConfigScreen {
 			{1280, 720}, {1920, 1080}, {2560, 1440}, {3840, 2160}, {1080, 1920}, {1440, 2560}};
 	private final ConfigEntryBuilder entries;
 
+	private ConfigScreen(ConfigEntryBuilder entries) {
+		this.entries = entries;
+	}
+
 	public static boolean isAvailable() {
 		return FabricLoader.getInstance().isModLoaded("cloth-config");
 	}
@@ -255,10 +259,6 @@ public final class ConfigScreen {
 
 	private static int toStep(double value, double min, double step, int steps) {
 		return Math.clamp(Math.round((value - min) / step), 0, steps);
-	}
-
-	private ConfigScreen(ConfigEntryBuilder entries) {
-		this.entries = entries;
 	}
 
 	/**

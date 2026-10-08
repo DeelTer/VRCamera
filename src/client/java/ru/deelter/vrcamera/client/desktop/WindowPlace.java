@@ -8,36 +8,9 @@ import ru.deelter.vrcamera.client.config.CameraConfig;
  * asked where it is and told where to go.
  */
 final class WindowPlace {
-	/**
-	 * the window of the camera, as the library the game makes its windows with has it
-	 */
-	interface Native {
-		Box place();
-
-		void move(Box to);
-
-		/**
-		 * @return the monitor the middle of that part of the desktop is on, null if it is on none
-		 */
-		Box monitorOf(Box place);
-
-		void setBordered(boolean bordered);
-
-		/**
-		 * @return how high the bar at the top of the window is, that it is moved by
-		 */
-		int barHeight();
-
-		/**
-		 * @return where the window of the game is
-		 */
-		Box gamePlace();
-	}
-
 	private final Native window;
 	private final int width;
 	private final int height;
-
 	private Box windowed;
 
 	/**
@@ -150,5 +123,31 @@ final class WindowPlace {
 		if (!fitted.equals(place)) {
 			window.move(fitted);
 		}
+	}
+
+	/**
+	 * the window of the camera, as the library the game makes its windows with has it
+	 */
+	interface Native {
+		Box place();
+
+		void move(Box to);
+
+		/**
+		 * @return the monitor the middle of that part of the desktop is on, null if it is on none
+		 */
+		Box monitorOf(Box place);
+
+		void setBordered(boolean bordered);
+
+		/**
+		 * @return how high the bar at the top of the window is, that it is moved by
+		 */
+		int barHeight();
+
+		/**
+		 * @return where the window of the game is
+		 */
+		Box gamePlace();
 	}
 }

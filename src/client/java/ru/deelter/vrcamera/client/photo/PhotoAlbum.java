@@ -78,10 +78,9 @@ public final class PhotoAlbum {
 			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
+	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
 	private long frameNanos;
 	private int nextTexture;
-	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
-
 	private boolean broken;
 
 	private boolean developing;
@@ -97,6 +96,115 @@ public final class PhotoAlbum {
 	private List<PhotoStore.Pinned> elsewhere = new ArrayList<>();
 	private boolean loaded;
 	private boolean unsaved;
+
+	private PhotoAlbum() {
+	}
+
+	/**
+	 * @return the pixels of the sheet as it is shown, null if they are gone
+	 */
+	@Nullable
+	private static PhotoCodec.Picture pixels(PhotoSheet sheet) {
+		final AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(sheet.texture);
+		if (!(texture instanceof DynamicTexture dynamic) || dynamic.getPixels() == null) {
+			return null;
+		}
+		final NativeImage image = dynamic.getPixels();
+		return new PhotoCodec.Picture(image.getWidth(), image.getHeight(), image.getPixels());
+	}
+
+	/**
+	 * @return the picture as the game wants it. A new one every time: each sheet owns its own
+	 */
+	public static NativeImage image(PhotoCodec.Picture picture) {
+		final NativeImage image = new NativeImage(picture.width(), picture.height(), false);
+		final int[] argb = picture.argb();
+		for (int y = 0, i = 0; y < picture.height(); y++) {
+			for (int x = 0; x < picture.width(); x++, i++) {
+				image.setPixel(x, y, argb[i] | 0xFF000000);
+			}
+		}
+		return image;
+	}
+
+	/**
+	 * The picture of a camera with a window of its own is drawn as large as the game window and squeezed into the
+	 * shape of its own. A photo of it has to be squeezed the same way.
+	 *
+	 * @param shape width and height of what the picture is shown in
+	 */
+	private static NativeImage reshape(NativeImage image, int[] shape) {
+		final int width = Math.min(image.getWidth(), Math.max(1, Math.round(image.getHeight() * shape[0] / (float) shape[1])));
+		final int height = Math.max(1, Math.round(width * shape[1] / (float) shape[0]));
+		if (width == image.getWidth() && height == image.getHeight()) {
+			return image;
+		}
+		final NativeImage shaped = new NativeImage(width, height, false);
+		try (image) {
+			image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), shaped);
+		} catch (RuntimeException e) {
+			shaped.close();
+			throw e;
+		}
+		return shaped;
+	}
+
+	private static void render(
+			PhotoSheet sheet, Level level, SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
+		final float printed = sheet.printed();
+		if (printed <= 0) {
+			return;
+		}
+		final BlockPos block = BlockPos.containing(sheet.center());
+		final int light = LightCoordsUtil.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
+				level.getBrightness(LightLayer.SKY, block));
+		float half = PhotoSheet.WIDTH / 2.0F;
+
+		final float bottom = -sheet.height() * printed;
+		final float topV = 1.0F - printed;
+
+		poseStack.pushPose();
+		poseStack.translate(sheet.position().x - viewPosition.x, sheet.position().y - viewPosition.y,
+				sheet.position().z - viewPosition.z);
+
+		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
+
+		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(sheet.texture), (pose, consumer) -> {
+			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
+			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
+			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
+			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
+		});
+		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(WHITE), (pose, consumer) -> {
+			vertex(consumer, pose, -half, 0, 0, 0, 0, light, 1.0F);
+			vertex(consumer, pose, half, 0, 0, 1, 0, light, 1.0F);
+			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
+			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
+		});
+		final float veil = sheet.veil();
+		if (veil > 0.01F) {
+
+			output.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(WHITE), (pose, consumer) -> {
+				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
+				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
+				vertex(consumer, pose, half, 0, VEIL_GAP, 1, 0, light, veil);
+				vertex(consumer, pose, -half, 0, VEIL_GAP, 0, 0, light, veil);
+			});
+		}
+		poseStack.popPose();
+	}
+
+	private static void vertex(
+			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light,
+			float alpha) {
+		consumer.addVertex(pose, x, y, z)
+				.setColor(1.0F, 1.0F, 1.0F, alpha)
+				.setUv(u, v)
+				.setOverlay(OverlayTexture.NO_OVERLAY)
+				.setLight(light)
+
+				.setNormal(0, 1, 0);
+	}
 
 	/**
 	 * @return if a photo is on its way out of the camera, the next one has to wait for it
@@ -216,22 +324,6 @@ public final class PhotoAlbum {
 			}
 		}
 		return nearest;
-	}
-
-	/**
-	 * @return the pixels of the sheet as it is shown, null if they are gone
-	 */
-	@Nullable
-	private static PhotoCodec.Picture pixels(PhotoSheet sheet) {
-		final AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(sheet.texture);
-		if (!(texture instanceof DynamicTexture dynamic) || dynamic.getPixels() == null) {
-			return null;
-		}
-		final NativeImage image = dynamic.getPixels();
-		return new PhotoCodec.Picture(image.getWidth(), image.getHeight(), image.getPixels());
-	}
-
-	private PhotoAlbum() {
 	}
 
 	/**
@@ -464,15 +556,6 @@ public final class PhotoAlbum {
 		CompletableFuture.runAsync(() -> PhotoStore.savePinned(cache, pinned));
 	}
 
-	/**
-	 * where the hands of a player in VR are
-	 */
-	public interface Hands {
-		Vec3 position(int hand);
-
-		Quaternionf rotation(int hand);
-	}
-
 	public void grab(PhotoSheet sheet, int hand, Hands hands) {
 		final boolean wasPinned = sheet.isPinned();
 		final boolean wasGhost = sheet.isGhost();
@@ -625,20 +708,6 @@ public final class PhotoAlbum {
 		sheet.makeGhost(looseId, position, rotation);
 		sheet.packed = packed;
 		return sheet;
-	}
-
-	/**
-	 * @return the picture as the game wants it. A new one every time: each sheet owns its own
-	 */
-	public static NativeImage image(PhotoCodec.Picture picture) {
-		final NativeImage image = new NativeImage(picture.width(), picture.height(), false);
-		final int[] argb = picture.argb();
-		for (int y = 0, i = 0; y < picture.height(); y++) {
-			for (int x = 0; x < picture.width(); x++, i++) {
-				image.setPixel(x, y, argb[i] | 0xFF000000);
-			}
-		}
-		return image;
 	}
 
 	/**
@@ -832,85 +901,6 @@ public final class PhotoAlbum {
 		}
 	}
 
-	/**
-	 * The picture of a camera with a window of its own is drawn as large as the game window and squeezed into the
-	 * shape of its own. A photo of it has to be squeezed the same way.
-	 *
-	 * @param shape width and height of what the picture is shown in
-	 */
-	private static NativeImage reshape(NativeImage image, int[] shape) {
-		final int width = Math.min(image.getWidth(), Math.max(1, Math.round(image.getHeight() * shape[0] / (float) shape[1])));
-		final int height = Math.max(1, Math.round(width * shape[1] / (float) shape[0]));
-		if (width == image.getWidth() && height == image.getHeight()) {
-			return image;
-		}
-		final NativeImage shaped = new NativeImage(width, height, false);
-		try (image) {
-			image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), shaped);
-		} catch (RuntimeException e) {
-			shaped.close();
-			throw e;
-		}
-		return shaped;
-	}
-
-	private static void render(
-			PhotoSheet sheet, Level level, SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
-		final float printed = sheet.printed();
-		if (printed <= 0) {
-			return;
-		}
-		final BlockPos block = BlockPos.containing(sheet.center());
-		final int light = LightCoordsUtil.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
-				level.getBrightness(LightLayer.SKY, block));
-		float half = PhotoSheet.WIDTH / 2.0F;
-
-		final float bottom = -sheet.height() * printed;
-		final float topV = 1.0F - printed;
-
-		poseStack.pushPose();
-		poseStack.translate(sheet.position().x - viewPosition.x, sheet.position().y - viewPosition.y,
-				sheet.position().z - viewPosition.z);
-
-		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
-
-		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(sheet.texture), (pose, consumer) -> {
-			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
-			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
-			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
-			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
-		});
-		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(WHITE), (pose, consumer) -> {
-			vertex(consumer, pose, -half, 0, 0, 0, 0, light, 1.0F);
-			vertex(consumer, pose, half, 0, 0, 1, 0, light, 1.0F);
-			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
-			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
-		});
-		final float veil = sheet.veil();
-		if (veil > 0.01F) {
-
-			output.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(WHITE), (pose, consumer) -> {
-				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
-				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
-				vertex(consumer, pose, half, 0, VEIL_GAP, 1, 0, light, veil);
-				vertex(consumer, pose, -half, 0, VEIL_GAP, 0, 0, light, veil);
-			});
-		}
-		poseStack.popPose();
-	}
-
-	private static void vertex(
-			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light,
-			float alpha) {
-		consumer.addVertex(pose, x, y, z)
-				.setColor(1.0F, 1.0F, 1.0F, alpha)
-				.setUv(u, v)
-				.setOverlay(OverlayTexture.NO_OVERLAY)
-				.setLight(light)
-
-				.setNormal(0, 1, 0);
-	}
-
 	@Nullable
 	private PhotoSheet held(int hand) {
 		for (PhotoSheet sheet : sheets) {
@@ -919,5 +909,14 @@ public final class PhotoAlbum {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * where the hands of a player in VR are
+	 */
+	public interface Hands {
+		Vec3 position(int hand);
+
+		Quaternionf rotation(int hand);
 	}
 }

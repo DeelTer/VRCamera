@@ -23,6 +23,9 @@ import java.util.List;
  */
 public final class Vive {
 
+	private Vive() {
+	}
+
 	static boolean isRunning() {
 		return CameraController.isVRRunning();
 	}
@@ -106,8 +109,5 @@ public final class Vive {
 	 */
 	public static RenderType pictureLayer(RenderTarget picture) {
 		return VRRenderTypes.entityCutoutNoCardinalLightLinear(picture.getColorTextureView(), false, false);
-	}
-
-	private Vive() {
 	}
 }

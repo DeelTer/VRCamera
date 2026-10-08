@@ -12,6 +12,9 @@ import java.util.function.UnaryOperator;
  */
 final class ViewBob {
 
+	private ViewBob() {
+	}
+
 	/**
 	 * @param eye where the game looks from, and which way and how it is turned
 	 * @return where to draw something for it to be seen where it is, with the sway of this frame taken back
@@ -44,8 +47,5 @@ final class ViewBob {
 			final double noddedZ = rolledY * nodSin + z * nodCos;
 			return eye.add(right.scale(rolledX)).add(up.scale(noddedY)).add(forward.scale(-noddedZ));
 		};
-	}
-
-	private ViewBob() {
 	}
 }

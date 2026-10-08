@@ -28,19 +28,29 @@ public final class Rig {
 	private final Smooth fov = new Smooth();
 	private final SmoothVec look = new SmoothVec();
 	private final SmoothVec anchor = new SmoothVec();
-
+	private final boolean zoomIsCloseness;
+	private final Quaternionf rotation = new Quaternionf();
 	private double arm = 1.0;
-
 	private double softTime;
-
 	private boolean softArmed;
 	private double sinceTransition = BLEND_TIME;
 	private boolean ready;
-
 	private Vec3 position = Vec3.ZERO;
 
-	private final boolean zoomIsCloseness;
-	private final Quaternionf rotation = new Quaternionf();
+	/**
+	 * @return if something thin is between the camera and the player right now, and the camera waits for it to pass
+	 */
+	public Rig() {
+		this(false);
+	}
+
+	/**
+	 * @param zoomIsCloseness if a camera that is zoomed in is taken to be as close as it looks to be, for what of
+	 *                        the player it shows: zoomed in from far away it fits as little of them as from close by
+	 */
+	public Rig(boolean zoomIsCloseness) {
+		this.zoomIsCloseness = zoomIsCloseness;
+	}
 
 	public Vec3 position() {
 		return position;
@@ -56,21 +66,6 @@ public final class Rig {
 
 	public double arm() {
 		return arm;
-	}
-
-	/**
-	 * @return if something thin is between the camera and the player right now, and the camera waits for it to pass
-	 */
-	public Rig() {
-		this(false);
-	}
-
-	/**
-	 * @param zoomIsCloseness if a camera that is zoomed in is taken to be as close as it looks to be, for what of
-	 *                        the player it shows: zoomed in from far away it fits as little of them as from close by
-	 */
-	public Rig(boolean zoomIsCloseness) {
-		this.zoomIsCloseness = zoomIsCloseness;
 	}
 
 	public boolean lookingPast() {

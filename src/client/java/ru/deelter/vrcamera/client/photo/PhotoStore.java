@@ -44,16 +44,7 @@ public final class PhotoStore {
 
 	private static final int REMOTE_FILES = 1000;
 
-	/**
-	 * a sheet pinned to a block, as it is written to disk
-	 */
-	public static final class Pinned {
-		public String file;
-		public String dimension;
-		public double x, y, z;
-		public float qx, qy, qz, qw;
-		public float aspect;
-		public boolean custom;
+	private PhotoStore() {
 	}
 
 	/**
@@ -275,6 +266,15 @@ public final class PhotoStore {
 		}
 	}
 
-	private PhotoStore() {
+	/**
+	 * a sheet pinned to a block, as it is written to disk
+	 */
+	public static final class Pinned {
+		public String file;
+		public String dimension;
+		public double x, y, z;
+		public float qx, qy, qz, qw;
+		public float aspect;
+		public boolean custom;
 	}
 }

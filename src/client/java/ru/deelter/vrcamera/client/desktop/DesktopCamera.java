@@ -51,105 +51,131 @@ import java.util.function.UnaryOperator;
  */
 public final class DesktopCamera {
 	public static final DesktopCamera INSTANCE = new DesktopCamera();
-
-	public enum Mode {
-		OFF, DIRECTOR, FOLLOW, FREE
-	}
-
-	/**
-	 * where the camera is and how it looks, for one frame
-	 */
-	public record Pose(Vec3 position, Quaternionf rotation, float fov) {
-	}
-
 	private static final double MAX_FRAME_TIME = 0.25;
 	private static final double MAX_GAP = 1.0;
 	private static final float DEFAULT_FOV = 70.0F;
-
 	private static final double STEER_TURN = 70.0;
 	private static final double STEER_RISE = 40.0;
 	private static final double STEER_ZOOM = 1.1;
-
 	private static final double STEER_MIN_DISTANCE = 1.0;
-
 	private static final double MIN_SHOT_DISTANCE = 0.3;
-
 	private static final double FOV_WHEEL = 0.08;
-
 	private static final double MOUSE_TURN = 0.15;
 	private static final double DRAG_TURN = 0.12;
-
 	private static final double FREE_AROUND = 64.0;
-
 	private static final double THROW_SPEED = 4.0;
-
 	private static final double GAZE_NEAR = 1.5;
-
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
-
 	private static final double MARKER_JUMP = 1.5;
-
 	private static final int FROM_SERVER_WAITING = 64;
-
 	private static final double LENT_LONGEST = 600.0;
-
 	private static final double STICK_REACH = 0.5;
-
 	private static final double NAME_SIZE = 0.75;
-
 	private static final double ICON_FULL = 8.0;
 	private static final double ICON_SMALLEST = 0.3;
-
 	private static final String CAMERA_ICON = "";
-
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig(true);
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
-	private Mode mode = Mode.OFF;
-
-	private boolean ownView;
-
 	private final List<Runnable> fromServer = new ArrayList<>();
+	private Mode mode = Mode.OFF;
+	private boolean ownView;
 	private ClientLevel fromServerLevel;
-
 	private String lentId;
 	private long lentUntil;
 	private boolean lentShown;
 	private Mode lentFrom;
 	private String lentBefore;
-
 	private String toldFilming;
-
 	private Mode lastMode = Mode.DIRECTOR;
-
 	private ShotType askedFor;
 	private CameraConfig config;
 	private Director director;
 	private Shot followShot;
-
 	private Shot steered;
 	private boolean flying;
-
 	private boolean filmsSelf = true;
 	private boolean steeredFromWindow;
-
 	private int digitDown = -1;
-
 	private ClientLevel freeLevel;
-
 	private int gazeAt = -1;
 	private double gazeTime;
 	private boolean inside;
 	private CameraType viewBefore;
 	private long lastNanos;
 	private Pose pose;
-
 	private long poseNanos;
 	private double poseStep;
 	private Vec3 poseSpeed = Vec3.ZERO;
 	private int shareTicks;
+
+	private DesktopCamera() {
+	}
+
+	private static void say(String key, Object... args) {
+		CameraHints.spoke();
+		final LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null) {
+			player.sendOverlayMessage(Component.translatable(key, args));
+		}
+	}
+
+	private static float partialTick() {
+		return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+	}
+
+	/**
+	 * @return the player of that name the game knows of right now, null if there is none or the name is empty
+	 */
+	@Nullable
+	private static Player find(Minecraft mc, String name) {
+		if (name == null || name.isBlank() || mc.level == null) {
+			return null;
+		}
+		for (final Player other : mc.level.players()) {
+			if (other.isAlive() && other.getGameProfile().name().equalsIgnoreCase(name)) {
+				return other;
+			}
+		}
+		return null;
+	}
+
+	private static double ownFov() {
+		return Minecraft.getInstance().options.fov().get();
+	}
+
+	/**
+	 * @return the entity a camera that is let go of there is put onto: the nearest one it touches, null for none.
+	 * Never the player themselves, a camera that goes with them is what following is for
+	 */
+	@Nullable
+	private static Entity touched(Vec3 at) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null) {
+			return null;
+		}
+		Entity nearest = null;
+		double closest = STICK_REACH * STICK_REACH;
+		for (final Entity entity : player.level().getEntities(player, new AABB(at, at).inflate(STICK_REACH),
+				entity -> entity.isAlive() && !entity.isSpectator() && entity.isPickable())) {
+			final double away = entity.getBoundingBox().distanceToSqr(at);
+			if (away < closest) {
+				closest = away;
+				nearest = entity;
+			}
+		}
+		return nearest;
+	}
+
+	/**
+	 * @return how large the icon of a camera that far away is. It gets a bit smaller with the distance, to tell the
+	 * near cameras from the far ones, but stays large enough to be read and pointed at
+	 */
+	private static double farSize(Vec3 eye, Vec3 camera) {
+		return Math.clamp(Math.sqrt(ICON_FULL / Math.max(eye.distanceTo(camera), 1.0E-3)), ICON_SMALLEST, 1.0);
+	}
 
 	public Mode mode() {
 		return mode;
@@ -810,72 +836,6 @@ public final class DesktopCamera {
 		}
 	}
 
-	private static void say(String key, Object... args) {
-		CameraHints.spoke();
-		final LocalPlayer player = Minecraft.getInstance().player;
-		if (player != null) {
-			player.sendOverlayMessage(Component.translatable(key, args));
-		}
-	}
-
-	private static float partialTick() {
-		return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-	}
-
-	/**
-	 * @return the player of that name the game knows of right now, null if there is none or the name is empty
-	 */
-	@Nullable
-	private static Player find(Minecraft mc, String name) {
-		if (name == null || name.isBlank() || mc.level == null) {
-			return null;
-		}
-		for (final Player other : mc.level.players()) {
-			if (other.isAlive() && other.getGameProfile().name().equalsIgnoreCase(name)) {
-				return other;
-			}
-		}
-		return null;
-	}
-
-	private static double ownFov() {
-		return Minecraft.getInstance().options.fov().get();
-	}
-
-	/**
-	 * @return the entity a camera that is let go of there is put onto: the nearest one it touches, null for none.
-	 * Never the player themselves, a camera that goes with them is what following is for
-	 */
-	@Nullable
-	private static Entity touched(Vec3 at) {
-		final LocalPlayer player = Minecraft.getInstance().player;
-		if (player == null) {
-			return null;
-		}
-		Entity nearest = null;
-		double closest = STICK_REACH * STICK_REACH;
-		for (final Entity entity : player.level().getEntities(player, new AABB(at, at).inflate(STICK_REACH),
-				entity -> entity.isAlive() && !entity.isSpectator() && entity.isPickable())) {
-			final double away = entity.getBoundingBox().distanceToSqr(at);
-			if (away < closest) {
-				closest = away;
-				nearest = entity;
-			}
-		}
-		return nearest;
-	}
-
-	/**
-	 * @return how large the icon of a camera that far away is. It gets a bit smaller with the distance, to tell the
-	 * near cameras from the far ones, but stays large enough to be read and pointed at
-	 */
-	private static double farSize(Vec3 eye, Vec3 camera) {
-		return Math.clamp(Math.sqrt(ICON_FULL / Math.max(eye.distanceTo(camera), 1.0E-3)), ICON_SMALLEST, 1.0);
-	}
-
-	private DesktopCamera() {
-	}
-
 	private void sayMode() {
 		if (mode == Mode.DIRECTOR && CameraConfig.current().directorManual) {
 
@@ -1419,5 +1379,15 @@ public final class DesktopCamera {
 		}
 		final double since = Math.min((System.nanoTime() - poseNanos) / 1.0E9, poseStep * 1.5);
 		return pose.position().add(poseSpeed.scale(Math.max(0.0, since)));
+	}
+
+	public enum Mode {
+		OFF, DIRECTOR, FOLLOW, FREE
+	}
+
+	/**
+	 * where the camera is and how it looks, for one frame
+	 */
+	public record Pose(Vec3 position, Quaternionf rotation, float fov) {
 	}
 }

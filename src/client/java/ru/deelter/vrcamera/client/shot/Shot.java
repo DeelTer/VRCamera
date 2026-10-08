@@ -22,7 +22,7 @@ public final class Shot {
 	 * -1 or 1, which side of the player the shot is on
 	 */
 	public final int side;
-
+	private final SmoothVec aim = new SmoothVec();
 	/**
 	 * seconds this shot is running
 	 */
@@ -36,24 +36,18 @@ public final class Shot {
 	 * asked for by the player, stays even if it does not fit what they are doing
 	 */
 	public boolean forced;
-
 	public double azimuth;
 	public double elevation;
 	public double distance;
 	public double fov;
 	public Vec3 lookTarget = Vec3.ZERO;
-
 	/**
 	 * fixed camera position, only for shots that don't move with the player
 	 */
 	public Vec3 worldPos;
 	private double maxRange;
-
 	private double stillTime;
-
 	private boolean hadTarget;
-
-	private final SmoothVec aim = new SmoothVec();
 
 	public Shot(ShotType type, ShotConfig config, int side) {
 		this.type = type;

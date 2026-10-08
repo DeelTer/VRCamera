@@ -49,18 +49,12 @@ public final class RemoteCameras {
 	private static final int LABEL_COLOR = 0xFFFFFFFF;
 
 	private static final String CAMERA_ICON = "";
-
-	private static final class Camera {
-		private String ownerName;
-		private final PoseTrail trail = new PoseTrail(DELAY_NANOS, MIN_SPACING_NANOS, MAX_AHEAD_NANOS, 0, 0);
-		private Vec3 position;
-		private final Quaternionf rotation = new Quaternionf();
-		private long heardNanos;
-	}
-
 	private final Map<UUID, Camera> cameras = new HashMap<>();
 	private final ItemStackRenderState model = new ItemStackRenderState();
 	private boolean broken;
+
+	private RemoteCameras() {
+	}
 
 	public void clear() {
 		cameras.clear();
@@ -150,9 +144,6 @@ public final class RemoteCameras {
 		}
 	}
 
-	private RemoteCameras() {
-	}
-
 	/**
 	 * puts every camera where it was a moment ago
 	 */
@@ -202,5 +193,13 @@ public final class RemoteCameras {
 		poseStack.translate(0.0F, MODEL_UP, MODEL_BACK);
 		model.submit(poseStack, output, light, OverlayTexture.NO_OVERLAY, 0);
 		poseStack.popPose();
+	}
+
+	private static final class Camera {
+		private final PoseTrail trail = new PoseTrail(DELAY_NANOS, MIN_SPACING_NANOS, MAX_AHEAD_NANOS, 0, 0);
+		private final Quaternionf rotation = new Quaternionf();
+		private String ownerName;
+		private Vec3 position;
+		private long heardNanos;
 	}
 }

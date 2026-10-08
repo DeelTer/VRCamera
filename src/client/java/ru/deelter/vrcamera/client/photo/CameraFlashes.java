@@ -31,11 +31,20 @@ public final class CameraFlashes {
 	private static final double DRAW_DISTANCE = 48.0;
 
 	private static final double TOO_CLOSE = 0.3;
+	private final List<Flash> flashes = new ArrayList<>();
 
-	private record Flash(Vec3 position, long nanos) {
+	private CameraFlashes() {
 	}
 
-	private final List<Flash> flashes = new ArrayList<>();
+	private static void vertex(
+			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v, float alpha) {
+		consumer.addVertex(pose, x, y, 0)
+				.setColor(1.0F, 1.0F, 1.0F, alpha)
+				.setUv(u, v)
+				.setOverlay(OverlayTexture.NO_OVERLAY)
+				.setLight(FULL_LIGHT)
+				.setNormal(0, 1, 0);
+	}
 
 	public void add(Vec3 position) {
 		if (flashes.size() < MAX_FLASHES) {
@@ -77,16 +86,6 @@ public final class CameraFlashes {
 		}
 	}
 
-	private static void vertex(
-			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v, float alpha) {
-		consumer.addVertex(pose, x, y, 0)
-				.setColor(1.0F, 1.0F, 1.0F, alpha)
-				.setUv(u, v)
-				.setOverlay(OverlayTexture.NO_OVERLAY)
-				.setLight(FULL_LIGHT)
-				.setNormal(0, 1, 0);
-	}
-
-	private CameraFlashes() {
+	private record Flash(Vec3 position, long nanos) {
 	}
 }

@@ -34,6 +34,9 @@ public final class EyeContact {
 	private long lookUntil;
 	private long nextGlance;
 
+	private EyeContact() {
+	}
+
 	/**
 	 * @return where the lens is that the player looks into right now, null if they look at none
 	 */
@@ -90,9 +93,6 @@ public final class EyeContact {
 		final double pitch = -Math.toDegrees(Math.atan2(to.y, Math.sqrt(to.x * to.x + to.z * to.z)));
 		return new double[]{Mth.wrapDegrees(yaw - player.getViewYRot(partialTick)),
 				player.getViewXRot(partialTick) - pitch};
-	}
-
-	private EyeContact() {
 	}
 
 	private long pause() {

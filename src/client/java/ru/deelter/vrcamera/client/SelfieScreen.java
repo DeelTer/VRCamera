@@ -30,6 +30,9 @@ public final class SelfieScreen {
 
 	private static boolean broken;
 
+	private SelfieScreen() {
+	}
+
 	/**
 	 * @param viewPosition where the pass looks from, the pose stack is relative to that
 	 * @param model        how Vivecraft places the model of the camera
@@ -75,8 +78,5 @@ public final class SelfieScreen {
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(FULL_LIGHT)
 				.setNormal(0.0F, 1.0F, 0.0F);
-	}
-
-	private SelfieScreen() {
 	}
 }

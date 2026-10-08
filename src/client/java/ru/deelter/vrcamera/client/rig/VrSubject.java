@@ -11,6 +11,9 @@ import ru.deelter.vrcamera.client.config.CameraConfig;
  */
 public final class VrSubject {
 
+	private VrSubject() {
+	}
+
 	/**
 	 * @param dt     seconds since the last update, limited to a sane step size
 	 * @param realDt actual seconds since the last update
@@ -31,8 +34,5 @@ public final class VrSubject {
 		subject.tracksHands = true;
 
 		subject.turn(player, partialTick, vr.getBodyYawRad(), dt);
-	}
-
-	private VrSubject() {
 	}
 }

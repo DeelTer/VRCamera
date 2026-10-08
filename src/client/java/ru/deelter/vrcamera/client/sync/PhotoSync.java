@@ -57,17 +57,9 @@ public final class PhotoSync {
 	private static final float MIN_ASPECT = 0.25F;
 
 	private static final long CAMERA_KEEP_ALIVE_NANOS = 1_000_000_000L;
-	private boolean connected;
-
-	private Vec3 sharedAt;
 	private final Quaternionf sharedTurn = new Quaternionf();
-	private long sharedNanos;
-	private Protocol.Limits limits;
-
 	private final Map<Long, Protocol.Sheet> known = new HashMap<>();
-
 	private final Set<Long> loaded = new HashSet<>();
-
 	private final Map<Long, Integer> waiting = new HashMap<>();
 	private final Set<Long> askedServer = new HashSet<>();
 	private final Map<Long, byte[]> packed = new LinkedHashMap<>(32, 0.75F, true) {
@@ -76,19 +68,53 @@ public final class PhotoSync {
 			return size() > PACKED_CACHE;
 		}
 	};
-
 	private final Map<Long, PhotoSheet> pinning = new HashMap<>();
 	private final Map<Long, Integer> pinningSince = new HashMap<>();
-
 	private final Map<Long, Protocol.Loose> looseKnown = new HashMap<>();
 	private final Set<Long> ghosts = new HashSet<>();
-
 	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
+	private boolean connected;
+	private Vec3 sharedAt;
+	private long sharedNanos;
+	private Protocol.Limits limits;
 	private int hellos;
 	private boolean shownCustom;
 	private long nextReference = 1;
 	private int ticks;
+
+	private PhotoSync() {
+	}
+
+	private static void send(byte[] message) {
+		ClientPlayNetworking.send(new SyncPayload(message));
+	}
+
+	@NotNull
+	private static Protocol.Pose pose(PhotoSheet sheet) {
+		return new Protocol.Pose(sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
+				sheet.rotation().y, sheet.rotation().z, sheet.rotation().w);
+	}
+
+	/**
+	 * @return the picture as the game wants it. A new one every time: each sheet owns its own, also if two show
+	 * the same
+	 */
+	private static NativeImage black() {
+		final NativeImage pixels = new NativeImage(2, 2, false);
+		for (int i = 0; i < 4; i++) {
+			pixels.setPixel(i % 2, i / 2, 0xFF000000);
+		}
+		return pixels;
+	}
+
+	private static void refuse(PhotoSheet sheet, String message) {
+		PhotoAlbum.INSTANCE.pinRefused(sheet);
+		final LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null) {
+			player.sendOverlayMessage(Component.translatable(message));
+		}
+	}
 
 	public void init() {
 		PayloadTypeRegistry.serverboundPlay().register(SyncPayload.TYPE, SyncPayload.CODEC);
@@ -390,39 +416,6 @@ public final class PhotoSync {
 		if (connected) {
 			send(Protocol.unpin(id));
 		}
-	}
-
-	private static void send(byte[] message) {
-		ClientPlayNetworking.send(new SyncPayload(message));
-	}
-
-	@NotNull
-	private static Protocol.Pose pose(PhotoSheet sheet) {
-		return new Protocol.Pose(sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
-				sheet.rotation().y, sheet.rotation().z, sheet.rotation().w);
-	}
-
-	/**
-	 * @return the picture as the game wants it. A new one every time: each sheet owns its own, also if two show
-	 * the same
-	 */
-	private static NativeImage black() {
-		final NativeImage pixels = new NativeImage(2, 2, false);
-		for (int i = 0; i < 4; i++) {
-			pixels.setPixel(i % 2, i / 2, 0xFF000000);
-		}
-		return pixels;
-	}
-
-	private static void refuse(PhotoSheet sheet, String message) {
-		PhotoAlbum.INSTANCE.pinRefused(sheet);
-		final LocalPlayer player = Minecraft.getInstance().player;
-		if (player != null) {
-			player.sendOverlayMessage(Component.translatable(message));
-		}
-	}
-
-	private PhotoSync() {
 	}
 
 	private void reset() {

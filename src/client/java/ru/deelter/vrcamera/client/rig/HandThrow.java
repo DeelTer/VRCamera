@@ -16,10 +16,6 @@ public final class HandThrow {
 
 	private static final double RANGE = 0.3;
 	private static final double MAX_DISTANCE = 24.0;
-
-	private record Sample(Vec3 pos, long nanos) {
-	}
-
 	private final Deque<Sample> trail = new ArrayDeque<>();
 
 	/**
@@ -71,5 +67,8 @@ public final class HandThrow {
 			return Vec3.ZERO;
 		}
 		return last.pos.subtract(first.pos).scale(1.0 / seconds).subtract(drift);
+	}
+
+	private record Sample(Vec3 pos, long nanos) {
 	}
 }

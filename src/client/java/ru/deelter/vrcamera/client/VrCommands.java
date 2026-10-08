@@ -15,6 +15,9 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 final class VrCommands {
 	private static final int DONE = 1;
 
+	private VrCommands() {
+	}
+
 	static void register(LiteralArgumentBuilder<FabricClientCommandSource> root) {
 		final CameraController controller = CameraController.INSTANCE;
 		for (final CameraController.Mode mode : CameraController.Mode.values()) {
@@ -75,8 +78,5 @@ final class VrCommands {
 					return DONE;
 				})));
 
-	}
-
-	private VrCommands() {
 	}
 }

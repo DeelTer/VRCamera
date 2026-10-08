@@ -42,6 +42,9 @@ public final class DirectorPass {
 	private static int frames;
 	private static long countedSince;
 
+	private DirectorPass() {
+	}
+
 	/**
 	 * @return if what is drawn right now is the picture of the camera, not the view of the player
 	 */
@@ -212,8 +215,5 @@ public final class DirectorPass {
 			target.destroyBuffers();
 			target = null;
 		}
-	}
-
-	private DirectorPass() {
 	}
 }

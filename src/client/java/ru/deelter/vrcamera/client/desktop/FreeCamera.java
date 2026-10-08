@@ -59,62 +59,45 @@ final class FreeCamera {
 
 	private static final int FROM_SERVER_MOST = 8;
 	private static final Gson GSON = new Gson();
-
-	/**
-	 * where a camera stands: degrees the way the game counts them for a player
-	 */
-	private static final class Spot {
-
-		private String name;
-		private double x;
-		private double y;
-		private double z;
-		private double yaw;
-		private double pitch;
-		private double fov;
-
-		private String id;
-
-		private transient Entity carrier;
-		private transient Vec3 seat;
-		private transient double carrierYaw;
-
-		private @NotNull
-		Vec3 position() {
-			return new Vec3(x, y, z);
-		}
-
-		private Vec3 forward() {
-			return FreeCamera.forward(yaw, pitch);
-		}
-	}
-
-	/**
-	 * what is written down of a world, where there is more to it than the cameras
-	 */
-	private static final class Kept {
-		private Spot[] cameras;
-		private String[] declined;
-	}
-
 	private final List<Spot> spots = new ArrayList<>();
-
 	private final Set<String> declined = new LinkedHashSet<>();
 	private int active;
 	private Path file;
-
 	private Vec3 position = Vec3.ZERO;
 	private Vec3 velocity = Vec3.ZERO;
 	private Vec3 push = Vec3.ZERO;
 	private Vec3 glide = Vec3.ZERO;
 	private double glided;
-
 	private Spot flightFrom;
 	private double flight = 1.0;
 	private double flightSeconds;
 	private double yaw;
 	private double pitch;
 	private double fov = 70.0;
+
+	/**
+	 * @return the name of the file the cameras of a dimension are kept in
+	 */
+	static String fileName(String dimension) {
+		return FILES + dimension + ".json";
+	}
+
+	private static double bodyYaw(Entity entity, float partialTick) {
+		return entity instanceof LivingEntity living ?
+				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
+	}
+
+	@NotNull
+	private static Vec3 forward(double yaw, double pitch) {
+		final double yawRad = Math.toRadians(yaw);
+		final double pitchRad = Math.toRadians(pitch);
+		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
+				Math.cos(yawRad) * Math.cos(pitchRad));
+	}
+
+	private static double ease(double rate, double dt) {
+		return 1.0 - Math.exp(-rate * dt);
+	}
 
 	boolean isEmpty() {
 		return spots.isEmpty();
@@ -293,13 +276,6 @@ final class FreeCamera {
 			show(0);
 		}
 		save();
-	}
-
-	/**
-	 * @return the name of the file the cameras of a dimension are kept in
-	 */
-	static String fileName(String dimension) {
-		return FILES + dimension + ".json";
 	}
 
 	/**
@@ -586,23 +562,6 @@ final class FreeCamera {
 		}
 	}
 
-	private static double bodyYaw(Entity entity, float partialTick) {
-		return entity instanceof LivingEntity living ?
-				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
-	}
-
-	@NotNull
-	private static Vec3 forward(double yaw, double pitch) {
-		final double yawRad = Math.toRadians(yaw);
-		final double pitchRad = Math.toRadians(pitch);
-		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
-				Math.cos(yawRad) * Math.cos(pitchRad));
-	}
-
-	private static double ease(double rate, double dt) {
-		return 1.0 - Math.exp(-rate * dt);
-	}
-
 	/**
 	 * @return the first letter no camera has
 	 */
@@ -636,5 +595,42 @@ final class FreeCamera {
 			spot.y = position.y;
 			spot.z = position.z;
 		}
+	}
+
+	/**
+	 * where a camera stands: degrees the way the game counts them for a player
+	 */
+	private static final class Spot {
+
+		private String name;
+		private double x;
+		private double y;
+		private double z;
+		private double yaw;
+		private double pitch;
+		private double fov;
+
+		private String id;
+
+		private transient Entity carrier;
+		private transient Vec3 seat;
+		private transient double carrierYaw;
+
+		private @NotNull
+		Vec3 position() {
+			return new Vec3(x, y, z);
+		}
+
+		private Vec3 forward() {
+			return FreeCamera.forward(yaw, pitch);
+		}
+	}
+
+	/**
+	 * what is written down of a world, where there is more to it than the cameras
+	 */
+	private static final class Kept {
+		private Spot[] cameras;
+		private String[] declined;
 	}
 }

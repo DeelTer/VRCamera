@@ -82,6 +82,9 @@ public final class DesktopGui {
 	private static float frameBottom;
 	private static float frameTop = 1.0F;
 
+	private DesktopGui() {
+	}
+
 	/**
 	 * @return if what the game draws right now is the menu alone, for the screen in the world
 	 */
@@ -277,8 +280,5 @@ public final class DesktopGui {
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(FULL_LIGHT)
 				.setNormal(0.0F, 1.0F, 0.0F);
-	}
-
-	private DesktopGui() {
 	}
 }

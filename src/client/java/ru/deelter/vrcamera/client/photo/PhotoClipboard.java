@@ -19,24 +19,7 @@ final class PhotoClipboard {
 	private static final int HEADER = 40;
 	private static boolean broken;
 
-	private interface User32 extends StdCallLibrary {
-		boolean OpenClipboard(Pointer window);
-
-		boolean EmptyClipboard();
-
-		Pointer SetClipboardData(int format, Pointer memory);
-
-		boolean CloseClipboard();
-	}
-
-	private interface Kernel32 extends StdCallLibrary {
-		Pointer GlobalAlloc(int flags, long bytes);
-
-		Pointer GlobalLock(Pointer memory);
-
-		boolean GlobalUnlock(Pointer memory);
-
-		Pointer GlobalFree(Pointer memory);
+	private PhotoClipboard() {
 	}
 
 	/**
@@ -99,6 +82,23 @@ final class PhotoClipboard {
 		}
 	}
 
-	private PhotoClipboard() {
+	private interface User32 extends StdCallLibrary {
+		boolean OpenClipboard(Pointer window);
+
+		boolean EmptyClipboard();
+
+		Pointer SetClipboardData(int format, Pointer memory);
+
+		boolean CloseClipboard();
+	}
+
+	private interface Kernel32 extends StdCallLibrary {
+		Pointer GlobalAlloc(int flags, long bytes);
+
+		Pointer GlobalLock(Pointer memory);
+
+		boolean GlobalUnlock(Pointer memory);
+
+		Pointer GlobalFree(Pointer memory);
 	}
 }

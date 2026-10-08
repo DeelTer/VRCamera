@@ -40,11 +40,7 @@ public final class CustomPictures {
 
 	private static final float[] SHAPES = {9.0F / 16.0F, 1.0F, 16.0F / 9.0F};
 
-	/**
-	 * @param original the file as it was downloaded, to keep
-	 * @param format   what kind of file that is, for its name
-	 */
-	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {
+	private CustomPictures() {
 	}
 
 	@NotNull
@@ -161,6 +157,10 @@ public final class CustomPictures {
 		return new PhotoCodec.Picture(width, height, fitted.getRGB(0, 0, width, height, null, 0, width));
 	}
 
-	private CustomPictures() {
+	/**
+	 * @param original the file as it was downloaded, to keep
+	 * @param format   what kind of file that is, for its name
+	 */
+	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {
 	}
 }

@@ -1,25 +1,15 @@
 package ru.deelter.vrcamera.sync.plugin;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * All pinned photos of the server, and where they are on disk. Only used from the server thread, except for what
@@ -30,295 +20,295 @@ import org.jetbrains.annotations.Nullable;
  */
 public final class SheetStore {
 
-    private static final int FILE_VERSION = 2;
+	private static final int FILE_VERSION = 2;
 
-    private static final int CACHED_IMAGES = 256;
+	private static final int CACHED_IMAGES = 256;
 
-    private final Logger logger;
-    private final Path listFile;
-    private final Path backupFile;
-    private final Path imageDir;
+	private final Logger logger;
+	private final Path listFile;
+	private final Path backupFile;
+	private final Path imageDir;
 
-    private final Map<Long, StoredSheet> byId = new HashMap<>();
-    private final Map<StoredSheet.ChunkKey, List<StoredSheet>> byChunk = new HashMap<>();
-    private final Map<StoredSheet.BlockKey, List<StoredSheet>> byBlock = new HashMap<>();
-    private final Map<UUID, Integer> owned = new HashMap<>();
-    private final Map<Long, Integer> imageUses = new HashMap<>();
-    private final Map<Long, byte[]> imageCache = new LinkedHashMap<>(64, 0.75F, true) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Long, byte[]> eldest) {
-            return size() > CACHED_IMAGES;
-        }
-    };
-    private long nextId = 1;
-    private boolean dirty;
+	private final Map<Long, StoredSheet> byId = new HashMap<>();
+	private final Map<StoredSheet.ChunkKey, List<StoredSheet>> byChunk = new HashMap<>();
+	private final Map<StoredSheet.BlockKey, List<StoredSheet>> byBlock = new HashMap<>();
+	private final Map<UUID, Integer> owned = new HashMap<>();
+	private final Map<Long, Integer> imageUses = new HashMap<>();
+	private final Map<Long, byte[]> imageCache = new LinkedHashMap<>(64, 0.75F, true) {
+		@Override
+		protected boolean removeEldestEntry(Map.Entry<Long, byte[]> eldest) {
+			return size() > CACHED_IMAGES;
+		}
+	};
+	private long nextId = 1;
+	private boolean dirty;
 
-    public SheetStore(Path dataDir, Logger logger) {
-        this.logger = logger;
-        listFile = dataDir.resolve("sheets.dat");
-        backupFile = dataDir.resolve("sheets.dat.bak");
-        imageDir = dataDir.resolve("images");
-    }
+	public SheetStore(Path dataDir, Logger logger) {
+		this.logger = logger;
+		listFile = dataDir.resolve("sheets.dat");
+		backupFile = dataDir.resolve("sheets.dat.bak");
+		imageDir = dataDir.resolve("images");
+	}
 
-    public int size() {
-        return byId.size();
-    }
+	private static <K> void drop(Map<K, List<StoredSheet>> index, K key, StoredSheet sheet) {
+		final List<StoredSheet> sheets = index.get(key);
+		if (sheets != null) {
+			sheets.remove(sheet);
+			if (sheets.isEmpty()) {
+				index.remove(key);
+			}
+		}
+	}
 
-    public Collection<StoredSheet> all() {
-        return byId.values();
-    }
+	public int size() {
+		return byId.size();
+	}
 
-    public StoredSheet get(long id) {
-        return byId.get(id);
-    }
+	public Collection<StoredSheet> all() {
+		return byId.values();
+	}
 
-    public List<StoredSheet> inChunk(StoredSheet.ChunkKey chunk) {
-        return byChunk.getOrDefault(chunk, List.of());
-    }
+	public StoredSheet get(long id) {
+		return byId.get(id);
+	}
 
-    public List<StoredSheet> onBlock(StoredSheet.BlockKey block) {
-        return byBlock.getOrDefault(block, List.of());
-    }
+	public List<StoredSheet> inChunk(StoredSheet.ChunkKey chunk) {
+		return byChunk.getOrDefault(chunk, List.of());
+	}
 
-    public int ownedBy(UUID player) {
-        return owned.getOrDefault(player, 0);
-    }
+	public List<StoredSheet> onBlock(StoredSheet.BlockKey block) {
+		return byBlock.getOrDefault(block, List.of());
+	}
 
-    public long newId() {
-        return nextId++;
-    }
+	public int ownedBy(UUID player) {
+		return owned.getOrDefault(player, 0);
+	}
 
-    public boolean isDirty() {
-        return dirty;
-    }
+	public long newId() {
+		return nextId++;
+	}
 
-    public void add(StoredSheet sheet) {
-        index(sheet);
-        dirty = true;
-    }
+	public boolean isDirty() {
+		return dirty;
+	}
 
-    /**
-     * @return the hash of a picture nothing uses anymore and that can be deleted, 0 if it is still used
-     */
-    public long remove(StoredSheet sheet) {
-        if (byId.remove(sheet.id()) == null) {
-            return 0;
-        }
-        drop(byChunk, sheet.chunk(), sheet);
-        drop(byBlock, sheet.block(), sheet);
-        owned.computeIfPresent(sheet.owner(), (owner, count) -> count > 1 ? count - 1 : null);
-        dirty = true;
-        final Integer left = imageUses.computeIfPresent(sheet.imageHash(), (hash, count) -> count > 1 ? count - 1 : null);
-        if (left != null) {
-            return 0;
-        }
-        imageCache.remove(sheet.imageHash());
-        return sheet.imageHash();
-    }
+	public void add(StoredSheet sheet) {
+		index(sheet);
+		dirty = true;
+	}
 
-    public boolean hasImage(long hash) {
-        return imageUses.containsKey(hash);
-    }
+	/**
+	 * @return the hash of a picture nothing uses anymore and that can be deleted, 0 if it is still used
+	 */
+	public long remove(StoredSheet sheet) {
+		if (byId.remove(sheet.id()) == null) {
+			return 0;
+		}
+		drop(byChunk, sheet.chunk(), sheet);
+		drop(byBlock, sheet.block(), sheet);
+		owned.computeIfPresent(sheet.owner(), (owner, count) -> count > 1 ? count - 1 : null);
+		dirty = true;
+		final Integer left = imageUses.computeIfPresent(sheet.imageHash(), (hash, count) -> count > 1 ? count - 1 : null);
+		if (left != null) {
+			return 0;
+		}
+		imageCache.remove(sheet.imageHash());
+		return sheet.imageHash();
+	}
 
-    /**
-     * @return the picture, null if it is not there
-     */
-    @Nullable
-    public byte[] image(long hash) {
-        final byte[] cached = imageCache.get(hash);
-        if (cached != null) {
-            return cached;
-        }
-        try {
-            final byte[] image = Files.readAllBytes(imageFile(hash));
-            imageCache.put(hash, image);
-            return image;
-        } catch (IOException e) {
-            return null;
-        }
-    }
+	public boolean hasImage(long hash) {
+		return imageUses.containsKey(hash);
+	}
 
-    public void cacheImage(long hash, byte[] image) {
-        imageCache.put(hash, image);
-    }
+	/**
+	 * @return the picture, null if it is not there
+	 */
+	@Nullable
+	public byte[] image(long hash) {
+		final byte[] cached = imageCache.get(hash);
+		if (cached != null) {
+			return cached;
+		}
+		try {
+			final byte[] image = Files.readAllBytes(imageFile(hash));
+			imageCache.put(hash, image);
+			return image;
+		} catch (IOException e) {
+			return null;
+		}
+	}
 
-    /**
-     * may be called from any thread
-     */
-    public void writeImage(long hash, byte[] image) throws IOException {
-        Files.createDirectories(imageDir);
-        final Path file = imageFile(hash);
-        if (!Files.exists(file)) {
-            Files.write(file, image);
-        }
-    }
+	public void cacheImage(long hash, byte[] image) {
+		imageCache.put(hash, image);
+	}
 
-    /**
-     * may be called from any thread
-     */
-    public void deleteImage(long hash) {
-        try {
-            Files.deleteIfExists(imageFile(hash));
-        } catch (IOException e) {
-            logger.log(Level.WARNING, "Can't remove the picture " + Long.toHexString(hash), e);
-        }
-    }
+	/**
+	 * may be called from any thread
+	 */
+	public void writeImage(long hash, byte[] image) throws IOException {
+		Files.createDirectories(imageDir);
+		final Path file = imageFile(hash);
+		if (!Files.exists(file)) {
+			Files.write(file, image);
+		}
+	}
 
-    /**
-     * Reads the list. One that can't be read is never written over: it is put aside under another name, and the
-     * copy of the save before it is tried instead.
-     */
-    public void load() {
-        if (!Files.isRegularFile(listFile) && !Files.isRegularFile(backupFile)) {
-            return;
-        }
-        if (Files.isRegularFile(listFile)) {
-            try {
-                read(listFile);
-                return;
-            } catch (IOException e) {
-                logger.log(Level.SEVERE, "Can't read " + listFile, e);
-                putAside();
-            }
-        }
-        if (!Files.isRegularFile(backupFile)) {
-            logger.severe("Starting without pinned photos");
-            return;
-        }
-        try {
-            read(backupFile);
+	/**
+	 * may be called from any thread
+	 */
+	public void deleteImage(long hash) {
+		try {
+			Files.deleteIfExists(imageFile(hash));
+		} catch (IOException e) {
+			logger.log(Level.WARNING, "Can't remove the picture " + Long.toHexString(hash), e);
+		}
+	}
 
-            dirty = true;
-            logger.warning("Loaded " + size() + " pinned photos from the copy " + backupFile.getFileName() +
-                    ", what was pinned after it was written is lost");
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Can't read " + backupFile + " either, starting without pinned photos",
-                    e);
-        }
-    }
+	/**
+	 * Reads the list. One that can't be read is never written over: it is put aside under another name, and the
+	 * copy of the save before it is tried instead.
+	 */
+	public void load() {
+		if (!Files.isRegularFile(listFile) && !Files.isRegularFile(backupFile)) {
+			return;
+		}
+		if (Files.isRegularFile(listFile)) {
+			try {
+				read(listFile);
+				return;
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "Can't read " + listFile, e);
+				putAside();
+			}
+		}
+		if (!Files.isRegularFile(backupFile)) {
+			logger.severe("Starting without pinned photos");
+			return;
+		}
+		try {
+			read(backupFile);
 
-    /**
-     * @return what has to be written, taken on the server thread to be written on another one
-     */
-    @NotNull
-    public List<StoredSheet> snapshot() {
-        dirty = false;
-        return new ArrayList<>(byId.values());
-    }
+			dirty = true;
+			logger.warning("Loaded " + size() + " pinned photos from the copy " + backupFile.getFileName() +
+					", what was pinned after it was written is lost");
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Can't read " + backupFile + " either, starting without pinned photos",
+					e);
+		}
+	}
 
-    public long nextIdSnapshot() {
-        return nextId;
-    }
+	/**
+	 * @return what has to be written, taken on the server thread to be written on another one
+	 */
+	@NotNull
+	public List<StoredSheet> snapshot() {
+		dirty = false;
+		return new ArrayList<>(byId.values());
+	}
 
-    /**
-     * may be called from any thread, with what {@link #snapshot} gave
-     */
-    public void save(List<StoredSheet> sheets, long nextId) {
-        try {
-            Files.createDirectories(listFile.getParent());
+	public long nextIdSnapshot() {
+		return nextId;
+	}
 
-            final Path temp = listFile.resolveSibling("sheets.dat.tmp");
-            try (final DataOutputStream out = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(temp)))) {
-                out.writeInt(FILE_VERSION);
-                out.writeLong(nextId);
-                out.writeInt(sheets.size());
-                for (final StoredSheet sheet : sheets) {
-                    out.writeLong(sheet.id());
-                    out.writeLong(sheet.world().getMostSignificantBits());
-                    out.writeLong(sheet.world().getLeastSignificantBits());
-                    out.writeLong(sheet.owner().getMostSignificantBits());
-                    out.writeLong(sheet.owner().getLeastSignificantBits());
-                    out.writeUTF(sheet.ownerName());
-                    out.writeInt(sheet.blockX());
-                    out.writeInt(sheet.blockY());
-                    out.writeInt(sheet.blockZ());
-                    out.writeDouble(sheet.x());
-                    out.writeDouble(sheet.y());
-                    out.writeDouble(sheet.z());
-                    out.writeFloat(sheet.qx());
-                    out.writeFloat(sheet.qy());
-                    out.writeFloat(sheet.qz());
-                    out.writeFloat(sheet.qw());
-                    out.writeFloat(sheet.aspect());
-                    out.writeLong(sheet.imageHash());
-                    out.writeBoolean(sheet.custom());
-                }
-            }
-            if (Files.isRegularFile(listFile)) {
-                Files.copy(listFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
-            }
-            Files.move(temp, listFile, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Can't save the pinned photos to " + listFile, e);
-        }
-    }
+	/**
+	 * may be called from any thread, with what {@link #snapshot} gave
+	 */
+	public void save(List<StoredSheet> sheets, long nextId) {
+		try {
+			Files.createDirectories(listFile.getParent());
 
-    private static <K> void drop(Map<K, List<StoredSheet>> index, K key, StoredSheet sheet) {
-        final List<StoredSheet> sheets = index.get(key);
-        if (sheets != null) {
-            sheets.remove(sheet);
-            if (sheets.isEmpty()) {
-                index.remove(key);
-            }
-        }
-    }
+			final Path temp = listFile.resolveSibling("sheets.dat.tmp");
+			try (final DataOutputStream out = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(temp)))) {
+				out.writeInt(FILE_VERSION);
+				out.writeLong(nextId);
+				out.writeInt(sheets.size());
+				for (final StoredSheet sheet : sheets) {
+					out.writeLong(sheet.id());
+					out.writeLong(sheet.world().getMostSignificantBits());
+					out.writeLong(sheet.world().getLeastSignificantBits());
+					out.writeLong(sheet.owner().getMostSignificantBits());
+					out.writeLong(sheet.owner().getLeastSignificantBits());
+					out.writeUTF(sheet.ownerName());
+					out.writeInt(sheet.blockX());
+					out.writeInt(sheet.blockY());
+					out.writeInt(sheet.blockZ());
+					out.writeDouble(sheet.x());
+					out.writeDouble(sheet.y());
+					out.writeDouble(sheet.z());
+					out.writeFloat(sheet.qx());
+					out.writeFloat(sheet.qy());
+					out.writeFloat(sheet.qz());
+					out.writeFloat(sheet.qw());
+					out.writeFloat(sheet.aspect());
+					out.writeLong(sheet.imageHash());
+					out.writeBoolean(sheet.custom());
+				}
+			}
+			if (Files.isRegularFile(listFile)) {
+				Files.copy(listFile, backupFile, StandardCopyOption.REPLACE_EXISTING);
+			}
+			Files.move(temp, listFile, StandardCopyOption.REPLACE_EXISTING);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Can't save the pinned photos to " + listFile, e);
+		}
+	}
 
-    private void index(StoredSheet sheet) {
-        byId.put(sheet.id(), sheet);
-        byChunk.computeIfAbsent(sheet.chunk(), key -> new ArrayList<>()).add(sheet);
-        byBlock.computeIfAbsent(sheet.block(), key -> new ArrayList<>()).add(sheet);
-        owned.merge(sheet.owner(), 1, Integer::sum);
-        imageUses.merge(sheet.imageHash(), 1, Integer::sum);
-    }
+	private void index(StoredSheet sheet) {
+		byId.put(sheet.id(), sheet);
+		byChunk.computeIfAbsent(sheet.chunk(), key -> new ArrayList<>()).add(sheet);
+		byBlock.computeIfAbsent(sheet.block(), key -> new ArrayList<>()).add(sheet);
+		owned.merge(sheet.owner(), 1, Integer::sum);
+		imageUses.merge(sheet.imageHash(), 1, Integer::sum);
+	}
 
-    private Path imageFile(long hash) {
-        return imageDir.resolve(Long.toHexString(hash) + ".jpg");
-    }
+	private Path imageFile(long hash) {
+		return imageDir.resolve(Long.toHexString(hash) + ".jpg");
+	}
 
-    private void putAside() {
-        final Path aside = listFile.resolveSibling("sheets.dat.broken-" + System.currentTimeMillis());
-        try {
-            Files.move(listFile, aside);
-            logger.severe("It was kept as " + aside.getFileName());
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Can't put it aside, it will be written over", e);
-        }
-    }
+	private void putAside() {
+		final Path aside = listFile.resolveSibling("sheets.dat.broken-" + System.currentTimeMillis());
+		try {
+			Files.move(listFile, aside);
+			logger.severe("It was kept as " + aside.getFileName());
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Can't put it aside, it will be written over", e);
+		}
+	}
 
-    private void read(Path file) throws IOException {
-        try (final DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(file)))) {
-            final int version = in.readInt();
-            if (version < 1 || version > FILE_VERSION) {
-                throw new IOException("unknown file version " + version);
-            }
-            final long nextId = in.readLong();
-            final int count = in.readInt();
-            if (count < 0) {
-                throw new IOException("a list of " + count + " photos");
-            }
+	private void read(Path file) throws IOException {
+		try (final DataInputStream in = new DataInputStream(new BufferedInputStream(Files.newInputStream(file)))) {
+			final int version = in.readInt();
+			if (version < 1 || version > FILE_VERSION) {
+				throw new IOException("unknown file version " + version);
+			}
+			final long nextId = in.readLong();
+			final int count = in.readInt();
+			if (count < 0) {
+				throw new IOException("a list of " + count + " photos");
+			}
 
-            final List<StoredSheet> sheets = new ArrayList<>();
-            for (int i = 0; i < count; i++) {
-                sheets.add(new StoredSheet(in.readLong(), new UUID(in.readLong(), in.readLong()),
-                        new UUID(in.readLong(), in.readLong()), in.readUTF(), in.readInt(), in.readInt(), in.readInt(),
-                        in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
-                        in.readFloat(), in.readFloat(), in.readFloat(), in.readLong(),
-                        version >= 2 && in.readBoolean()));
-            }
-            this.nextId = nextId;
-            int missing = 0;
-            for (final StoredSheet sheet : sheets) {
+			final List<StoredSheet> sheets = new ArrayList<>();
+			for (int i = 0; i < count; i++) {
+				sheets.add(new StoredSheet(in.readLong(), new UUID(in.readLong(), in.readLong()),
+						new UUID(in.readLong(), in.readLong()), in.readUTF(), in.readInt(), in.readInt(), in.readInt(),
+						in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
+						in.readFloat(), in.readFloat(), in.readFloat(), in.readLong(),
+						version >= 2 && in.readBoolean()));
+			}
+			this.nextId = nextId;
+			int missing = 0;
+			for (final StoredSheet sheet : sheets) {
 
-                if (Files.isRegularFile(imageFile(sheet.imageHash()))) {
-                    index(sheet);
-                } else {
-                    missing++;
-                }
-            }
-            if (missing > 0) {
-                logger.warning(missing + " pinned photos were dropped, their pictures are gone");
-                dirty = true;
-            }
-        }
-    }
+				if (Files.isRegularFile(imageFile(sheet.imageHash()))) {
+					index(sheet);
+				} else {
+					missing++;
+				}
+			}
+			if (missing > 0) {
+				logger.warning(missing + " pinned photos were dropped, their pictures are gone");
+				dirty = true;
+			}
+		}
+	}
 }

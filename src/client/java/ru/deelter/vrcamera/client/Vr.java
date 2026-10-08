@@ -10,6 +10,9 @@ import net.fabricmc.loader.api.FabricLoader;
 public final class Vr {
 	public static final boolean INSTALLED = FabricLoader.getInstance().isModLoaded("vivecraft");
 
+	private Vr() {
+	}
+
 	/**
 	 * @return if the player is in VR right now
 	 */
@@ -23,8 +26,5 @@ public final class Vr {
 	 */
 	public static boolean isVanillaPass() {
 		return !INSTALLED || Vive.isVanillaPass();
-	}
-
-	private Vr() {
 	}
 }

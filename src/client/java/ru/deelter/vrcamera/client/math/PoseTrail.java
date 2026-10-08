@@ -14,10 +14,6 @@ import java.util.Iterator;
  */
 public final class PoseTrail {
 	private static final int CAPACITY = 8;
-
-	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {
-	}
-
 	private final ArrayDeque<Sample> samples = new ArrayDeque<>();
 	private final long delay;
 	private final long minSpacing;
@@ -97,5 +93,8 @@ public final class PoseTrail {
 		final Iterator<Sample> all = samples.iterator();
 		all.next();
 		return all.next();
+	}
+
+	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {
 	}
 }

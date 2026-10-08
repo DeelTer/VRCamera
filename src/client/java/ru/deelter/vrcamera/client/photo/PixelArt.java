@@ -22,6 +22,9 @@ public final class PixelArt {
 
 	private static int[] palette;
 
+	private PixelArt() {
+	}
+
 	/**
 	 * @param picture  closed if another one is returned in its place
 	 * @param strength 0 = leave it as it is, 1 = as few pixels as it gets
@@ -121,8 +124,5 @@ public final class PixelArt {
 			palette = colors.stream().mapToInt(Integer::intValue).toArray();
 		}
 		return palette;
-	}
-
-	private PixelArt() {
 	}
 }

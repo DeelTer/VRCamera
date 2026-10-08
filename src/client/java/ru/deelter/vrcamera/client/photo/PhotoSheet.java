@@ -64,15 +64,6 @@ public final class PhotoSheet {
 
 	private static final double DEVELOP_DELAY = 0.8;
 	private static final double DEVELOP_TIME = 5.0;
-
-	private enum State {
-		PRINTING, HELD, FALLING, LYING, PINNED,
-		/**
-		 * someone else's loose sheet: shown where their client says it is, not moved here
-		 */
-		GHOST
-	}
-
 	public final Identifier texture;
 	public final int textureSlot;
 	/**
@@ -83,30 +74,13 @@ public final class PhotoSheet {
 	 * name of its small picture in the cache of the world, null if that could not be written
 	 */
 	public final String file;
-
-	private State state = State.PRINTING;
-	private double age;
-	private Vec3 position = Vec3.ZERO;
-	private Vec3 velocity = Vec3.ZERO;
 	private final Quaternionf rotation = new Quaternionf();
 	private final float restYaw = (float) (Math.random() * Math.PI * 2.0);
-	private boolean gone;
-
-	private boolean hung = true;
-	private double supportCheck = Math.random() * SUPPORT_CHECK_TIME;
-
-	private long looseId;
-
 	private final PoseTrail ghostTrail = new PoseTrail(GHOST_DELAY_NANOS, GHOST_STEP_NANOS / 2, GHOST_STEP_NANOS,
 			GHOST_REST_NANOS, GHOST_STEP_NANOS);
-	private Vec3 sharedPosition;
 	private final Quaternionf sharedRotation = new Quaternionf();
-
-	private long remoteId;
-
-	private boolean awaitingServer;
-	private boolean removable = true;
-	private BlockPos support = BlockPos.ZERO;
+	private final Vector3f gripOffset = new Vector3f();
+	private final Quaternionf gripRotation = new Quaternionf();
 	/**
 	 * the picture as it went over the network, kept to pin the sheet again without packing it once more
 	 */
@@ -120,16 +94,60 @@ public final class PhotoSheet {
 	 * picture, which was not even fetched
 	 */
 	public boolean placeholder;
-
+	private State state = State.PRINTING;
+	private double age;
+	private Vec3 position = Vec3.ZERO;
+	private Vec3 velocity = Vec3.ZERO;
+	private boolean gone;
+	private boolean hung = true;
+	private double supportCheck = Math.random() * SUPPORT_CHECK_TIME;
+	private long looseId;
+	private Vec3 sharedPosition;
+	private long remoteId;
+	private boolean awaitingServer;
+	private boolean removable = true;
+	private BlockPos support = BlockPos.ZERO;
 	private int hand = -1;
-	private final Vector3f gripOffset = new Vector3f();
-	private final Quaternionf gripRotation = new Quaternionf();
 
 	public PhotoSheet(Identifier texture, int textureSlot, float aspect, String file) {
 		this.texture = texture;
 		this.textureSlot = textureSlot;
 		this.aspect = aspect;
 		this.file = file;
+	}
+
+	/**
+	 * @return what a sheet can be pinned to on the way, null if there is nothing
+	 */
+	@Nullable
+	private static BlockHitResult surface(Level level, Vec3 from, Vec3 to) {
+
+		final BlockHitResult outline = level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE,
+				ClipContext.Fluid.NONE, CollisionContext.empty()));
+		if (outline.getType() != HitResult.Type.MISS && holds(level, outline.getBlockPos())) {
+			return outline;
+		}
+
+		final BlockHitResult solid = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, CollisionContext.empty()));
+		if (solid.getType() == HitResult.Type.MISS) {
+			return null;
+		}
+		final BlockPos block = solid.getBlockPos();
+		final VoxelShape seen = level.getBlockState(block).getShape(level, block);
+		return !seen.isEmpty() && seen.bounds().move(block).inflate(0.02).contains(solid.getLocation()) ? solid : null;
+	}
+
+	/**
+	 * @return if sheets can be pinned to that block. Everything that is in the way of a player, and of what can
+	 * be walked through the things made to be on a wall. Not every block with an outline, or sheets would stick
+	 * to grass
+	 */
+	private static boolean holds(Level level, BlockPos block) {
+		final BlockState state = level.getBlockState(block);
+		return !state.getCollisionShape(level, block).isEmpty() || state.is(BlockTags.ALL_SIGNS) ||
+				state.is(BlockTags.BANNERS) || state.is(BlockTags.BUTTONS) || state.is(Blocks.LEVER) ||
+				state.is(Blocks.TRIPWIRE_HOOK);
 	}
 
 	/**
@@ -380,40 +398,6 @@ public final class PhotoSheet {
 		}
 	}
 
-	/**
-	 * @return what a sheet can be pinned to on the way, null if there is nothing
-	 */
-	@Nullable
-	private static BlockHitResult surface(Level level, Vec3 from, Vec3 to) {
-
-		final BlockHitResult outline = level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE,
-				ClipContext.Fluid.NONE, CollisionContext.empty()));
-		if (outline.getType() != HitResult.Type.MISS && holds(level, outline.getBlockPos())) {
-			return outline;
-		}
-
-		final BlockHitResult solid = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
-				ClipContext.Fluid.NONE, CollisionContext.empty()));
-		if (solid.getType() == HitResult.Type.MISS) {
-			return null;
-		}
-		final BlockPos block = solid.getBlockPos();
-		final VoxelShape seen = level.getBlockState(block).getShape(level, block);
-		return !seen.isEmpty() && seen.bounds().move(block).inflate(0.02).contains(solid.getLocation()) ? solid : null;
-	}
-
-	/**
-	 * @return if sheets can be pinned to that block. Everything that is in the way of a player, and of what can
-	 * be walked through the things made to be on a wall. Not every block with an outline, or sheets would stick
-	 * to grass
-	 */
-	private static boolean holds(Level level, BlockPos block) {
-		final BlockState state = level.getBlockState(block);
-		return !state.getCollisionShape(level, block).isEmpty() || state.is(BlockTags.ALL_SIGNS) ||
-				state.is(BlockTags.BANNERS) || state.is(BlockTags.BUTTONS) || state.is(Blocks.LEVER) ||
-				state.is(Blocks.TRIPWIRE_HOOK);
-	}
-
 	private boolean pin(Level level) {
 		if (velocity.length() > PIN_MAX_SPEED) {
 			return false;
@@ -534,5 +518,13 @@ public final class PhotoSheet {
 	private BlockHitResult clip(Level level, Vec3 step) {
 		return level.clip(new ClipContext(position, position.add(step).add(0, -GROUND_GAP, 0),
 				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, CollisionContext.empty()));
+	}
+
+	private enum State {
+		PRINTING, HELD, FALLING, LYING, PINNED,
+		/**
+		 * someone else's loose sheet: shown where their client says it is, not moved here
+		 */
+		GHOST
 	}
 }

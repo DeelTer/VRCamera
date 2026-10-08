@@ -48,62 +48,40 @@ public final class Director {
 	private static final double CROSSED_LINE_PENALTY = 0.35;
 
 	private static final double SIMILAR_VIEW_DOT = Math.cos(Math.toRadians(30));
-
-	/**
-	 * something happening to the player, that gets its own shot for as long as it lasts
-	 */
-	public enum Event {
-		NONE(null),
-		DEATH(ShotType.DEATH),
-		FALL(ShotType.FALL),
-		/**
-		 * the player has an inventory or chest open
-		 */
-		MENU(ShotType.MENU);
-
-		final ShotType shot;
-
-		Event(ShotType shot) {
-			this.shot = shot;
-		}
-	}
-
 	private final CameraConfig config;
 	private final Random random = new Random();
-
 	private Shot current;
 	private ShotType lastType;
 	private boolean hold;
 	private boolean forceNext;
-
 	private ShotType forceType;
 	private double occludedTime;
 	private String lastReason = "";
-
 	private Context context = Context.IDLE;
-
 	private Context shotContext = Context.IDLE;
 	private Event event = Event.NONE;
-
 	private ShotType boost;
 	private boolean tight;
 	private boolean atScreen;
 	private boolean partnered;
-
 	private int asides;
 	private double tightTimer;
 	private double combatTimer;
-
 	private double mineTime;
 	private double fallTimer;
-
 	private Event dismissed = Event.NONE;
 	private double stillTime;
-
 	private Entity attacked;
 
 	public Director(CameraConfig config) {
 		this.config = config;
+	}
+
+	/**
+	 * @return the context, with all the regular moving around on foot counted as one
+	 */
+	private static Context activity(Context context) {
+		return context == Context.IDLE || context == Context.RUN ? Context.WALK : context;
 	}
 
 	public Shot current() {
@@ -281,13 +259,6 @@ public final class Director {
 			choose(subject, rig, cut, reason);
 		}
 		current.update(subject, config, dt);
-	}
-
-	/**
-	 * @return the context, with all the regular moving around on foot counted as one
-	 */
-	private static Context activity(Context context) {
-		return context == Context.IDLE || context == Context.RUN ? Context.WALK : context;
 	}
 
 	private Event detectEvent(Subject subject, double dt) {
@@ -512,6 +483,105 @@ public final class Director {
 		return random.nextBoolean() ? 1 : -1;
 	}
 
+	private boolean wantsBlend(Shot next) {
+		return switch (config.transition) {
+			case CUT -> false;
+			case BLEND -> true;
+
+			case AUTO -> random.nextDouble() < config.blendChance &&
+					Math.abs(CamMath.wrap(next.azimuth - current.azimuth)) < Math.toRadians(130);
+		};
+	}
+
+	private void updateContext(Subject subject, double dt) {
+		final Minecraft mc = Minecraft.getInstance();
+		final Player player = subject.player;
+		partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
+
+		combatTimer -= dt;
+		final Entity attacked = this.attacked;
+		this.attacked = null;
+		if (attacked instanceof LivingEntity && attacked.isAlive()) {
+
+			combatTimer = 5.0;
+			subject.target = attacked;
+		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
+
+			final DamageSource source = player.getLastDamageSource();
+			final Entity attacker = source == null ? null : source.getEntity();
+			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
+				combatTimer = 5.0;
+				subject.target = attacker;
+			}
+		}
+		if (player.isDeadOrDying() && subject.target != null) {
+
+			combatTimer = 5.0;
+		}
+		if (subject.target != null && (combatTimer <= 0 ||
+				subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
+		)) {
+			subject.target = null;
+		}
+
+		if (mc.gameMode != null && mc.gameMode.isDestroying()) {
+			mineTime = Math.min(3.0, mineTime + dt);
+		} else {
+			mineTime = Math.max(0.0, mineTime - 0.5 * dt);
+		}
+		stillTime = subject.speed > 0.5 ? 0 : stillTime + dt;
+
+		final Context previous = context;
+		if (player.isFallFlying()) {
+			context = Context.FLY;
+		} else if (player.isPassenger()) {
+			context = Context.RIDE;
+		} else if (combatTimer > 0) {
+			context = Context.COMBAT;
+		} else if (mineTime > 1.0) {
+			context = Context.MINE;
+		} else if (player.isSwimming() || player.isInWater()) {
+			context = Context.SWIM;
+		} else if (subject.speed > 4.8) {
+			context = Context.RUN;
+		} else if (stillTime > 1.2) {
+			context = Context.IDLE;
+		} else if (subject.speed > 0.5 || context != Context.IDLE) {
+
+			context = Context.WALK;
+		}
+		if (context == Context.FLY && previous != Context.FLY) {
+
+			boost = ShotType.FLYBY;
+		}
+
+		tightTimer -= dt;
+		if (tightTimer <= 0) {
+			tightTimer = 0.5;
+			tight = WorldProbe.openness(subject) < 0.55;
+		}
+		atScreen = !subject.tracksHands;
+	}
+
+	/**
+	 * something happening to the player, that gets its own shot for as long as it lasts
+	 */
+	public enum Event {
+		NONE(null),
+		DEATH(ShotType.DEATH),
+		FALL(ShotType.FALL),
+		/**
+		 * the player has an inventory or chest open
+		 */
+		MENU(ShotType.MENU);
+
+		final ShotType shot;
+
+		Event(ShotType shot) {
+			this.shot = shot;
+		}
+	}
+
 	/**
 	 * rates the shots that could come next, and keeps the best one
 	 */
@@ -601,86 +671,6 @@ public final class Director {
 			final double lateral = offset.dot(right) / length;
 			return Math.abs(lateral) < 0.2 ? 0 : (int) Math.signum(lateral);
 		}
-	}
-
-	private boolean wantsBlend(Shot next) {
-		return switch (config.transition) {
-			case CUT -> false;
-			case BLEND -> true;
-
-			case AUTO -> random.nextDouble() < config.blendChance &&
-					Math.abs(CamMath.wrap(next.azimuth - current.azimuth)) < Math.toRadians(130);
-		};
-	}
-
-	private void updateContext(Subject subject, double dt) {
-		final Minecraft mc = Minecraft.getInstance();
-		final Player player = subject.player;
-		partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
-
-		combatTimer -= dt;
-		final Entity attacked = this.attacked;
-		this.attacked = null;
-		if (attacked instanceof LivingEntity && attacked.isAlive()) {
-
-			combatTimer = 5.0;
-			subject.target = attacked;
-		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
-
-			final DamageSource source = player.getLastDamageSource();
-			final Entity attacker = source == null ? null : source.getEntity();
-			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
-				combatTimer = 5.0;
-				subject.target = attacker;
-			}
-		}
-		if (player.isDeadOrDying() && subject.target != null) {
-
-			combatTimer = 5.0;
-		}
-		if (subject.target != null && (combatTimer <= 0 ||
-				subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
-		)) {
-			subject.target = null;
-		}
-
-		if (mc.gameMode != null && mc.gameMode.isDestroying()) {
-			mineTime = Math.min(3.0, mineTime + dt);
-		} else {
-			mineTime = Math.max(0.0, mineTime - 0.5 * dt);
-		}
-		stillTime = subject.speed > 0.5 ? 0 : stillTime + dt;
-
-		final Context previous = context;
-		if (player.isFallFlying()) {
-			context = Context.FLY;
-		} else if (player.isPassenger()) {
-			context = Context.RIDE;
-		} else if (combatTimer > 0) {
-			context = Context.COMBAT;
-		} else if (mineTime > 1.0) {
-			context = Context.MINE;
-		} else if (player.isSwimming() || player.isInWater()) {
-			context = Context.SWIM;
-		} else if (subject.speed > 4.8) {
-			context = Context.RUN;
-		} else if (stillTime > 1.2) {
-			context = Context.IDLE;
-		} else if (subject.speed > 0.5 || context != Context.IDLE) {
-
-			context = Context.WALK;
-		}
-		if (context == Context.FLY && previous != Context.FLY) {
-
-			boost = ShotType.FLYBY;
-		}
-
-		tightTimer -= dt;
-		if (tightTimer <= 0) {
-			tightTimer = 0.5;
-			tight = WorldProbe.openness(subject) < 0.55;
-		}
-		atScreen = !subject.tracksHands;
 	}
 
 }
