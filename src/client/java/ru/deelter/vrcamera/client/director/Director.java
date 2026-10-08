@@ -598,18 +598,18 @@ public final class Director {
 		}
 
 		void considerBothSides(ShotType type, double weight, double distanceScale) {
-			final ShotConfig shotConfig = Director.this.config.shot(type);
+			final ShotConfig shotConfig = config.shot(type);
 			consider(new Shot(type, shotConfig, -1), weight, distanceScale);
 			consider(new Shot(type, shotConfig, 1), weight, distanceScale);
 		}
 
 		void consider(Shot shot, double weight, double distanceScale) {
 			shot.distanceScale = distanceScale;
-			shot.start(subject, Director.this.config);
+			shot.start(subject, config);
 
 			final Vec3 center = subject.center;
 			final Vec3 wanted = shot.desiredPosition(subject);
-			final double free = WorldProbe.armFraction(subject, center, wanted, Director.this.config);
+			final double free = WorldProbe.armFraction(subject, center, wanted, config);
 
 			if (shot.isWorld() && free < 0.9) {
 				return;
@@ -619,7 +619,7 @@ public final class Director {
 				return;
 			}
 
-			double score = weight * (0.35 + 0.65 * free) * (0.8 + 0.4 * Director.this.random.nextDouble());
+			double score = weight * (0.35 + 0.65 * free) * (0.8 + 0.4 * random.nextDouble());
 			if (!WorldProbe.visible(subject, actual, subject.head)) {
 				score *= HIDDEN_HEAD_PENALTY;
 			}
@@ -627,7 +627,7 @@ public final class Director {
 			if (WorldProbe.inFluid(subject, actual) != headInFluid) {
 				score *= ACROSS_WATER_PENALTY;
 			}
-			if (shot.type == Director.this.lastType) {
+			if (shot.type == lastType) {
 				score *= SAME_TYPE_PENALTY;
 			}
 

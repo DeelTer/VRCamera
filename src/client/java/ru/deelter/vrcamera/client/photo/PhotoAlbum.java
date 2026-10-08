@@ -106,7 +106,7 @@ public final class PhotoAlbum {
 	@Nullable
 	private static PhotoCodec.Picture pixels(PhotoSheet sheet) {
 		final AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(sheet.texture);
-		if (!(texture instanceof DynamicTexture dynamic) || dynamic.getPixels() == null) {
+		if (!(texture instanceof DynamicTexture dynamic)) {
 			return null;
 		}
 		final NativeImage image = dynamic.getPixels();
@@ -134,7 +134,7 @@ public final class PhotoAlbum {
 	 * @param shape width and height of what the picture is shown in
 	 */
 	private static NativeImage reshape(NativeImage image, int[] shape) {
-		final int width = Math.min(image.getWidth(), Math.max(1, Math.round(image.getHeight() * shape[0] / (float) shape[1])));
+		final int width = Math.clamp(Math.round(image.getHeight() * shape[0] / (float) shape[1]), 1, image.getWidth());
 		final int height = Math.max(1, Math.round(width * shape[1] / (float) shape[0]));
 		if (width == image.getWidth() && height == image.getHeight()) {
 			return image;
@@ -465,8 +465,8 @@ public final class PhotoAlbum {
 
 		PhotoSync.INSTANCE.sheetsDropped();
 		this.level = level;
-		this.cache = PhotoStore.worldCache();
-		this.dimension = level.dimension().toString();
+		cache = PhotoStore.worldCache();
+		dimension = level.dimension().toString();
 
 		final int session = ++this.session;
 		final Path cache = this.cache;
@@ -717,7 +717,7 @@ public final class PhotoAlbum {
 	 * @param feedback told how it went, on the game thread
 	 */
 	public void loadCustom(String address, Consumer<Component> feedback) {
-		if (this.level == null || loadingCustom) {
+		if (level == null || loadingCustom) {
 			feedback.accept(Component.translatable("vrcamera.message.load.busy"));
 			return;
 		}
@@ -787,7 +787,7 @@ public final class PhotoAlbum {
 							TextGizmo.Style.forColorAndCentered(0xFFC0C0C0).withScale(0.03F));
 				}
 			}
-		} catch (IllegalStateException e) {
+		} catch (IllegalStateException _) {
 
 		}
 	}
