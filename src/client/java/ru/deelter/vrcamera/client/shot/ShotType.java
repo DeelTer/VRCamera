@@ -63,7 +63,6 @@ public enum ShotType {
 	 */
 	CUSTOM(null, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);
 
-	private final ShotConfig defaults;
 	/**
 	 * weight multiplier in tight spaces
 	 */
@@ -72,6 +71,7 @@ public enum ShotType {
 	 * closest the camera may get to the player, in player scales, before the shot is not worth showing
 	 */
 	public final double minDistance;
+	private final ShotConfig defaults;
 	private final double[] contextWeights;
 
 	ShotType(ShotConfig defaults, double tightFactor, double minDistance, double... contextWeights) {

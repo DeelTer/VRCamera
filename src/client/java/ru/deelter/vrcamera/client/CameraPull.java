@@ -45,6 +45,10 @@ public final class CameraPull implements HeldInteractModule {
 		this.controller = controller;
 	}
 
+	private static double angle(Vec3 a, Vec3 b) {
+		return Math.acos(CamMath.clamp(a.normalize().dot(b.normalize()), -1.0, 1.0));
+	}
+
 	@Override
 	public ResourceLocation getId() {
 		return ID;
@@ -93,10 +97,6 @@ public final class CameraPull implements HeldInteractModule {
 		Vec3 fromHead = camera.subtract(vr.hmd.getPosition());
 		return angle(fromHand, new Vec3(vr.getController(hand.ordinal()).getDirection())) < HAND_ANGLE * slack &&
 				angle(fromHead, new Vec3(vr.hmd.getDirection())) < HEAD_ANGLE * slack;
-	}
-
-	private static double angle(Vec3 a, Vec3 b) {
-		return Math.acos(CamMath.clamp(a.normalize().dot(b.normalize()), -1.0, 1.0));
 	}
 
 	@Override

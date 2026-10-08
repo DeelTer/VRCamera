@@ -9,7 +9,6 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
-import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -19,6 +18,7 @@ import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraIndicator;
 import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -49,17 +49,6 @@ import java.util.function.UnaryOperator;
  */
 public final class DesktopCamera {
 	public static final DesktopCamera INSTANCE = new DesktopCamera();
-
-	public enum Mode {
-		OFF, DIRECTOR, FOLLOW, FREE
-	}
-
-	/**
-	 * where the camera is and how it looks, for one frame
-	 */
-	public record Pose(Vec3 position, Quaternionf rotation, float fov) {
-	}
-
 	// a gap between frames this long means the game stood still, not a slow frame
 	private static final double MAX_FRAME_TIME = 0.25;
 	private static final double MAX_GAP = 1.0;
@@ -102,17 +91,16 @@ public final class DesktopCamera {
 	private static final double ICON_SMALLEST = 0.3;
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
 	private static final String CAMERA_ICON = "";
-
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig(true);
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
-	private Mode mode = Mode.OFF;
-	// if the window of the camera shows the view of the player for now, because they asked for that
-	private boolean ownView;
 	// What a server did with the cameras it gives, while those of the world were not open: done when they are. And
 	// the world that was meant for
 	private final List<Runnable> fromServer = new ArrayList<>();
+	private Mode mode = Mode.OFF;
+	// if the window of the camera shows the view of the player for now, because they asked for that
+	private boolean ownView;
 	private ClientLevel fromServerLevel;
 	// A camera a server has film for a while: what the server calls it, until when, if it got to film at all, and
 	// the mode and the camera the player had before
@@ -152,8 +140,68 @@ public final class DesktopCamera {
 	private double poseStep;
 	private Vec3 poseSpeed = Vec3.ZERO;
 	private int shareTicks;
-
 	private DesktopCamera() {
+	}
+
+	private static void say(String key, Object... args) {
+		CameraHints.spoke();
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null) {
+			player.displayClientMessage(Component.translatable(key, args), true);
+		}
+	}
+
+	private static float partialTick() {
+		return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
+	}
+
+	/**
+	 * @return the player of that name the game knows of right now, null if there is none or the name is empty
+	 */
+	private static Player find(Minecraft mc, String name) {
+		if (name == null || name.isBlank() || mc.level == null) {
+			return null;
+		}
+		for (Player other : mc.level.players()) {
+			if (other.isAlive() && other.getGameProfile().getName().equalsIgnoreCase(name)) {
+				return other;
+			}
+		}
+		return null;
+	}
+
+	private static double ownFov() {
+		return Minecraft.getInstance().options.fov().get();
+	}
+
+	/**
+	 * @return the entity a camera that is let go of there is put onto: the nearest one it touches, null for none.
+	 * Never the player themselves, a camera that goes with them is what following is for
+	 */
+	private static Entity touched(Vec3 at) {
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null) {
+			return null;
+		}
+		Entity nearest = null;
+		double closest = STICK_REACH * STICK_REACH;
+		for (Entity entity : player.level().getEntities(player, new AABB(at, at).inflate(STICK_REACH),
+				entity -> entity.isAlive() && !entity.isSpectator() && entity.isPickable())) {
+			double away = entity.getBoundingBox().distanceToSqr(at);
+			if (away < closest) {
+				closest = away;
+				nearest = entity;
+			}
+		}
+		return nearest;
+	}
+
+	/**
+	 * @return how large the icon of a camera that far away is. It gets a bit smaller with the distance, to tell the
+	 * near cameras from the far ones, but stays large enough to be read and pointed at
+	 */
+	private static double farSize(Vec3 eye, Vec3 camera) {
+		return Math.clamp(Math.sqrt(ICON_FULL / Math.max(eye.distanceTo(camera), 1.0E-3)), ICON_SMALLEST, 1.0);
 	}
 
 	public Mode mode() {
@@ -259,6 +307,8 @@ public final class DesktopCamera {
 		say(message);
 	}
 
+	// ---- who is filmed
+
 	public void nextShot() {
 		// asked for a shot, the player wants to see it
 		this.ownView = false;
@@ -273,20 +323,6 @@ public final class DesktopCamera {
 			say(this.director.toggleHold() ? "vrcamera.message.hold" : "vrcamera.message.release");
 		}
 	}
-
-	private static void say(String key, Object... args) {
-		CameraHints.spoke();
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (player != null) {
-			player.displayClientMessage(Component.translatable(key, args), true);
-		}
-	}
-
-	private static float partialTick() {
-		return Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-	}
-
-	// ---- who is filmed
 
 	/**
 	 * The director and the follow camera film another player in place of the one at the keyboard, for as long as
@@ -331,6 +367,8 @@ public final class DesktopCamera {
 		return true;
 	}
 
+	// ---- the free cameras
+
 	/**
 	 * @return the names of the other players around, to pick one to film
 	 */
@@ -342,23 +380,6 @@ public final class DesktopCamera {
 		return mc.level.players().stream().filter(other -> other != mc.player)
 				.map(other -> other.getGameProfile().getName()).toList();
 	}
-
-	/**
-	 * @return the player of that name the game knows of right now, null if there is none or the name is empty
-	 */
-	private static Player find(Minecraft mc, String name) {
-		if (name == null || name.isBlank() || mc.level == null) {
-			return null;
-		}
-		for (Player other : mc.level.players()) {
-			if (other.isAlive() && other.getGameProfile().getName().equalsIgnoreCase(name)) {
-				return other;
-			}
-		}
-		return null;
-	}
-
-	// ---- the free cameras
 
 	/**
 	 * puts the free camera that films at the eyes of the player: it films what they look at right now, and stays
@@ -389,10 +410,6 @@ public final class DesktopCamera {
 
 	private boolean addAtEyes(LocalPlayer player, float partialTick) {
 		return this.free.add(player.getEyePosition(partialTick), player.getViewVector(partialTick), ownFov());
-	}
-
-	private static double ownFov() {
-		return Minecraft.getInstance().options.fov().get();
 	}
 
 	/**
@@ -1046,28 +1063,6 @@ public final class DesktopCamera {
 		handOver(shot);
 	}
 
-	/**
-	 * @return the entity a camera that is let go of there is put onto: the nearest one it touches, null for none.
-	 * Never the player themselves, a camera that goes with them is what following is for
-	 */
-	private static Entity touched(Vec3 at) {
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (player == null) {
-			return null;
-		}
-		Entity nearest = null;
-		double closest = STICK_REACH * STICK_REACH;
-		for (Entity entity : player.level().getEntities(player, new AABB(at, at).inflate(STICK_REACH),
-				entity -> entity.isAlive() && !entity.isSpectator() && entity.isPickable())) {
-			double away = entity.getBoundingBox().distanceToSqr(at);
-			if (away < closest) {
-				closest = away;
-				nearest = entity;
-			}
-		}
-		return nearest;
-	}
-
 	private Pose filmFree(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
 		this.free.ride(partialTick, dt);
 		if (this.flying) {
@@ -1274,14 +1269,14 @@ public final class DesktopCamera {
 		}
 	}
 
-	// ---- what the camera films, and where it is
-
 	/**
 	 * @return if the one who is filmed is the player themselves
 	 */
 	public boolean filmsSelf() {
 		return this.filmsSelf;
 	}
+
+	// ---- what the camera films, and where it is
 
 	/**
 	 * @return which of the free cameras films, counted from 0, or -1 if none of them does
@@ -1356,11 +1351,11 @@ public final class DesktopCamera {
 		return lines;
 	}
 
-	// ---- shown to the player: where the cameras are, while they film into a window and can't be told from the view
-
 	private boolean showsMarker() {
 		return hasOwnWindow() && this.pose != null && !DirectorPass.isActive() && !showsOwnView();
 	}
+
+	// ---- shown to the player: where the cameras are, while they film into a window and can't be told from the view
 
 	/**
 	 * @return where the camera is right now. It is moved once per picture it takes, the game draws more frames
@@ -1391,14 +1386,6 @@ public final class DesktopCamera {
 						this.free.rotation(camera));
 			}
 		}
-	}
-
-	/**
-	 * @return how large the icon of a camera that far away is. It gets a bit smaller with the distance, to tell the
-	 * near cameras from the far ones, but stays large enough to be read and pointed at
-	 */
-	private static double farSize(Vec3 eye, Vec3 camera) {
-		return Math.clamp(Math.sqrt(ICON_FULL / Math.max(eye.distanceTo(camera), 1.0E-3)), ICON_SMALLEST, 1.0);
 	}
 
 	/**
@@ -1435,5 +1422,15 @@ public final class DesktopCamera {
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
 		}
+	}
+
+	public enum Mode {
+		OFF, DIRECTOR, FOLLOW, FREE
+	}
+
+	/**
+	 * where the camera is and how it looks, for one frame
+	 */
+	public record Pose(Vec3 position, Quaternionf rotation, float fov) {
 	}
 }

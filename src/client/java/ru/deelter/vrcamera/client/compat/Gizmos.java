@@ -23,30 +23,6 @@ public final class Gizmos {
 	private static final int FULL_LIGHT = 0xF000F0;
 	private static final List<Text> TEXTS = new ArrayList<>();
 
-	/**
-	 * a text in the world, as it was asked for
-	 */
-	public static final class Text {
-		private final String text;
-		private final Vec3 at;
-		private final TextGizmo.Style style;
-		private boolean alwaysOnTop;
-
-		private Text(String text, Vec3 at, TextGizmo.Style style) {
-			this.text = text;
-			this.at = at;
-			this.style = style;
-		}
-
-		/**
-		 * seen through walls
-		 */
-		public Text setAlwaysOnTop() {
-			this.alwaysOnTop = true;
-			return this;
-		}
-	}
-
 	private Gizmos() {
 	}
 
@@ -93,5 +69,29 @@ public final class Gizmos {
 	 */
 	public static void discard() {
 		TEXTS.clear();
+	}
+
+	/**
+	 * a text in the world, as it was asked for
+	 */
+	public static final class Text {
+		private final String text;
+		private final Vec3 at;
+		private final TextGizmo.Style style;
+		private boolean alwaysOnTop;
+
+		private Text(String text, Vec3 at, TextGizmo.Style style) {
+			this.text = text;
+			this.at = at;
+			this.style = style;
+		}
+
+		/**
+		 * seen through walls
+		 */
+		public Text setAlwaysOnTop() {
+			this.alwaysOnTop = true;
+			return this;
+		}
 	}
 }

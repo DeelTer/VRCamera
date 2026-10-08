@@ -7,19 +7,16 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.player.LocalPlayer;
-import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
-import ru.deelter.vrcamera.client.compat.Gizmos;
-import ru.deelter.vrcamera.client.compat.TextGizmo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.phys.Vec3;
@@ -30,6 +27,9 @@ import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraEffects;
 import ru.deelter.vrcamera.client.Vive;
 import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
@@ -78,9 +78,9 @@ public final class PhotoAlbum {
 			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
+	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
 	private long frameNanos;
 	private int nextTexture;
-	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
 	// set when drawing failed once. A broken sheet must not take the whole frame of the headset with it every time
 	private boolean broken;
 	// a photo was taken and its picture has not arrived yet
@@ -99,6 +99,114 @@ public final class PhotoAlbum {
 	private boolean unsaved;
 
 	private PhotoAlbum() {
+	}
+
+	/**
+	 * @return the pixels of the sheet as it is shown, null if they are gone
+	 */
+	private static PhotoCodec.Picture pixels(PhotoSheet sheet) {
+		AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(sheet.texture);
+		if (!(texture instanceof DynamicTexture dynamic) || dynamic.getPixels() == null) {
+			return null;
+		}
+		NativeImage image = dynamic.getPixels();
+		return new PhotoCodec.Picture(image.getWidth(), image.getHeight(), image.getPixels());
+	}
+
+	/**
+	 * @return the picture as the game wants it. A new one every time: each sheet owns its own
+	 */
+	public static NativeImage image(PhotoCodec.Picture picture) {
+		NativeImage image = new NativeImage(picture.width(), picture.height(), false);
+		int[] argb = picture.argb();
+		for (int y = 0, i = 0; y < picture.height(); y++) {
+			for (int x = 0; x < picture.width(); x++, i++) {
+				image.setPixel(x, y, argb[i] | 0xFF000000);
+			}
+		}
+		return image;
+	}
+
+	/**
+	 * The picture of a camera with a window of its own is drawn as large as the game window and squeezed into the
+	 * shape of its own. A photo of it has to be squeezed the same way.
+	 *
+	 * @param shape width and height of what the picture is shown in
+	 */
+	private static NativeImage reshape(NativeImage image, int[] shape) {
+		int width = Math.min(image.getWidth(), Math.max(1, Math.round(image.getHeight() * shape[0] / (float) shape[1])));
+		int height = Math.max(1, Math.round(width * shape[1] / (float) shape[0]));
+		if (width == image.getWidth() && height == image.getHeight()) {
+			return image;
+		}
+		NativeImage shaped = new NativeImage(width, height, false);
+		try (image) {
+			image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), shaped);
+		} catch (RuntimeException e) {
+			shaped.close();
+			throw e;
+		}
+		return shaped;
+	}
+
+	private static void render(
+			PhotoSheet sheet, Level level, SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
+		float printed = sheet.printed();
+		if (printed <= 0) {
+			return;
+		}
+		BlockPos block = BlockPos.containing(sheet.center());
+		int light = LightTexture.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
+				level.getBrightness(LightLayer.SKY, block));
+		float half = PhotoSheet.WIDTH / 2.0F;
+		// Only what is out of the camera, the lower edge comes first and takes the picture with it
+		float bottom = -sheet.height() * printed;
+		float topV = 1.0F - printed;
+
+		poseStack.pushPose();
+		poseStack.translate(sheet.position().x - viewPosition.x, sheet.position().y - viewPosition.y,
+				sheet.position().z - viewPosition.z);
+		// as a matrix, a quaternion is not taken by every supported Minecraft version
+		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
+		// Each side only seen from its own: the picture from the front, which is what faces away from a block the
+		// sheet is pinned to, and blank paper from behind
+		output.submitCustomGeometry(poseStack, RenderType.entityCutout(sheet.texture), (pose, consumer) -> {
+			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
+			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
+			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
+			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
+		});
+		output.submitCustomGeometry(poseStack, RenderType.entityCutout(WHITE), (pose, consumer) -> {
+			vertex(consumer, pose, -half, 0, 0, 0, 0, light, 1.0F);
+			vertex(consumer, pose, half, 0, 0, 1, 0, light, 1.0F);
+			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
+			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
+		});
+		float veil = sheet.veil();
+		if (veil > 0.01F) {
+			// A fresh photo is blank and the picture comes through, like from an instant camera: white paper
+			// over it that fades. Only over the side with the picture, a hair in front of it
+			output.submitCustomGeometry(poseStack, RenderType.entityTranslucent(WHITE), (pose, consumer) -> {
+				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
+				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
+				vertex(consumer, pose, half, 0, VEIL_GAP, 1, 0, light, veil);
+				vertex(consumer, pose, -half, 0, VEIL_GAP, 0, 0, light, veil);
+			});
+		}
+		poseStack.popPose();
+	}
+
+	private static void vertex(
+			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light,
+			float alpha) {
+		consumer.addVertex(pose, x, y, z)
+				.setColor(1.0F, 1.0F, 1.0F, alpha)
+				.setUv(u, v)
+				.setOverlay(OverlayTexture.NO_OVERLAY)
+				.setLight(light)
+				// facing up whichever way the sheet is turned: the game shades by this, and a photo on a wall or
+				// face down would be up to half as bright
+				.setNormal(0, 1, 0);
 	}
 
 	/**
@@ -378,18 +486,6 @@ public final class PhotoAlbum {
 	}
 
 	/**
-	 * @return the pixels of the sheet as it is shown, null if they are gone
-	 */
-	private static PhotoCodec.Picture pixels(PhotoSheet sheet) {
-		AbstractTexture texture = Minecraft.getInstance().getTextureManager().getTexture(sheet.texture);
-		if (!(texture instanceof DynamicTexture dynamic) || dynamic.getPixels() == null) {
-			return null;
-		}
-		NativeImage image = dynamic.getPixels();
-		return new PhotoCodec.Picture(image.getWidth(), image.getHeight(), image.getPixels());
-	}
-
-	/**
 	 * A server keeps the pinned sheets from here on. What this client kept for this server itself, from before
 	 * the server had the plugin, is not shown: the server would not know about it and nobody else would see it
 	 */
@@ -463,15 +559,6 @@ public final class PhotoAlbum {
 			}
 		}
 		return nearest;
-	}
-
-	/**
-	 * where the hands of a player in VR are
-	 */
-	public interface Hands {
-		Vec3 position(int hand);
-
-		Quaternionf rotation(int hand);
 	}
 
 	public void grab(PhotoSheet sheet, int hand, Hands hands) {
@@ -637,20 +724,6 @@ public final class PhotoAlbum {
 	}
 
 	/**
-	 * @return the picture as the game wants it. A new one every time: each sheet owns its own
-	 */
-	public static NativeImage image(PhotoCodec.Picture picture) {
-		NativeImage image = new NativeImage(picture.width(), picture.height(), false);
-		int[] argb = picture.argb();
-		for (int y = 0, i = 0; y < picture.height(); y++) {
-			for (int x = 0; x < picture.width(); x++, i++) {
-				image.setPixel(x, y, argb[i] | 0xFF000000);
-			}
-		}
-		return image;
-	}
-
-	/**
 	 * Puts a picture from the internet on a sheet and drops it in front of the player. The address is opened
 	 * by this client alone.
 	 *
@@ -810,28 +883,6 @@ public final class PhotoAlbum {
 	}
 
 	/**
-	 * The picture of a camera with a window of its own is drawn as large as the game window and squeezed into the
-	 * shape of its own. A photo of it has to be squeezed the same way.
-	 *
-	 * @param shape width and height of what the picture is shown in
-	 */
-	private static NativeImage reshape(NativeImage image, int[] shape) {
-		int width = Math.min(image.getWidth(), Math.max(1, Math.round(image.getHeight() * shape[0] / (float) shape[1])));
-		int height = Math.max(1, Math.round(width * shape[1] / (float) shape[0]));
-		if (width == image.getWidth() && height == image.getHeight()) {
-			return image;
-		}
-		NativeImage shaped = new NativeImage(width, height, false);
-		try (image) {
-			image.resizeSubRectTo(0, 0, image.getWidth(), image.getHeight(), shaped);
-		} catch (RuntimeException e) {
-			shaped.close();
-			throw e;
-		}
-		return shaped;
-	}
-
-	/**
 	 * @param visitor gets the middle of every sheet that lies around or falls
 	 */
 	public void forEachLoose(Consumer<Vec3> visitor) {
@@ -864,63 +915,12 @@ public final class PhotoAlbum {
 		}
 	}
 
-	private static void render(
-			PhotoSheet sheet, Level level, SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
-		float printed = sheet.printed();
-		if (printed <= 0) {
-			return;
-		}
-		BlockPos block = BlockPos.containing(sheet.center());
-		int light = LightTexture.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
-				level.getBrightness(LightLayer.SKY, block));
-		float half = PhotoSheet.WIDTH / 2.0F;
-		// Only what is out of the camera, the lower edge comes first and takes the picture with it
-		float bottom = -sheet.height() * printed;
-		float topV = 1.0F - printed;
+	/**
+	 * where the hands of a player in VR are
+	 */
+	public interface Hands {
+		Vec3 position(int hand);
 
-		poseStack.pushPose();
-		poseStack.translate(sheet.position().x - viewPosition.x, sheet.position().y - viewPosition.y,
-				sheet.position().z - viewPosition.z);
-		// as a matrix, a quaternion is not taken by every supported Minecraft version
-		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
-		// Each side only seen from its own: the picture from the front, which is what faces away from a block the
-		// sheet is pinned to, and blank paper from behind
-		output.submitCustomGeometry(poseStack, RenderType.entityCutout(sheet.texture), (pose, consumer) -> {
-			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
-			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
-			vertex(consumer, pose, half, 0, 0, 1, topV, light, 1.0F);
-			vertex(consumer, pose, -half, 0, 0, 0, topV, light, 1.0F);
-		});
-		output.submitCustomGeometry(poseStack, RenderType.entityCutout(WHITE), (pose, consumer) -> {
-			vertex(consumer, pose, -half, 0, 0, 0, 0, light, 1.0F);
-			vertex(consumer, pose, half, 0, 0, 1, 0, light, 1.0F);
-			vertex(consumer, pose, half, bottom, 0, 1, 1, light, 1.0F);
-			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
-		});
-		float veil = sheet.veil();
-		if (veil > 0.01F) {
-			// A fresh photo is blank and the picture comes through, like from an instant camera: white paper
-			// over it that fades. Only over the side with the picture, a hair in front of it
-			output.submitCustomGeometry(poseStack, RenderType.entityTranslucent(WHITE), (pose, consumer) -> {
-				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
-				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
-				vertex(consumer, pose, half, 0, VEIL_GAP, 1, 0, light, veil);
-				vertex(consumer, pose, -half, 0, VEIL_GAP, 0, 0, light, veil);
-			});
-		}
-		poseStack.popPose();
-	}
-
-	private static void vertex(
-			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float z, float u, float v, int light,
-			float alpha) {
-		consumer.addVertex(pose, x, y, z)
-				.setColor(1.0F, 1.0F, 1.0F, alpha)
-				.setUv(u, v)
-				.setOverlay(OverlayTexture.NO_OVERLAY)
-				.setLight(light)
-				// facing up whichever way the sheet is turned: the game shades by this, and a photo on a wall or
-				// face down would be up to half as bright
-				.setNormal(0, 1, 0);
+		Quaternionf rotation(int hand);
 	}
 }

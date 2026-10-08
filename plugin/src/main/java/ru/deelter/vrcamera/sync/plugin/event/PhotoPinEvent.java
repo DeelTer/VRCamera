@@ -27,6 +27,10 @@ public final class PhotoPinEvent extends PlayerEvent implements Cancellable {
 		this.custom = custom;
 	}
 
+	public static @NotNull HandlerList getHandlerList() {
+		return HANDLERS;
+	}
+
 	/**
 	 * @return where the middle of the sheet is
 	 */
@@ -60,10 +64,6 @@ public final class PhotoPinEvent extends PlayerEvent implements Cancellable {
 
 	@Override
 	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
-	}
-
-	public static @NotNull HandlerList getHandlerList() {
 		return HANDLERS;
 	}
 }

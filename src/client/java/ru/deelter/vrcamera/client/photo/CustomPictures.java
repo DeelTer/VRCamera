@@ -40,13 +40,6 @@ public final class CustomPictures {
 	// The shapes a sheet can have, height by width: wide, square and tall. A picture is cut to the nearest one
 	private static final float[] SHAPES = {9.0F / 16.0F, 1.0F, 16.0F / 9.0F};
 
-	/**
-	 * @param original the file as it was downloaded, to keep
-	 * @param format   what kind of file that is, for its name
-	 */
-	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {
-	}
-
 	private CustomPictures() {
 	}
 
@@ -176,5 +169,12 @@ public final class CustomPictures {
 				throw new UncheckedIOException(e);
 			}
 		});
+	}
+
+	/**
+	 * @param original the file as it was downloaded, to keep
+	 * @param format   what kind of file that is, for its name
+	 */
+	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {
 	}
 }

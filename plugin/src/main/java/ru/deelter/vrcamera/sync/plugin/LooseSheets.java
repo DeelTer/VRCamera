@@ -11,43 +11,6 @@ import java.util.*;
  */
 public final class LooseSheets {
 
-	public static final class Sheet {
-		public final long id;
-		public final UUID world;
-		public final float aspect;
-		public final long imageHash;
-		public final boolean custom;
-		public UUID owner;
-		public String ownerName;
-		public Protocol.Pose pose;
-		// when its owner last said something about it
-		public long touched = System.currentTimeMillis();
-
-		Sheet(long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash,
-		      boolean custom) {
-			this.custom = custom;
-			this.id = id;
-			this.world = world;
-			this.owner = owner;
-			this.ownerName = ownerName;
-			this.pose = pose;
-			this.aspect = aspect;
-			this.imageHash = imageHash;
-		}
-
-		public Protocol.Loose toProtocol() {
-			return new Protocol.Loose(this.id, this.owner, this.ownerName, this.pose, this.aspect, this.imageHash,
-					this.custom);
-		}
-
-		public double distanceSquared(double x, double y, double z) {
-			double dx = this.pose.x() - x;
-			double dy = this.pose.y() - y;
-			double dz = this.pose.z() - z;
-			return dx * dx + dy * dy + dz * dz;
-		}
-	}
-
 	// in the order they were made, the oldest first
 	private final Map<Long, Sheet> byId = new LinkedHashMap<>();
 	private final Map<Long, byte[]> images = new HashMap<>();
@@ -96,5 +59,42 @@ public final class LooseSheets {
 			}
 		}
 		return sheets;
+	}
+
+	public static final class Sheet {
+		public final long id;
+		public final UUID world;
+		public final float aspect;
+		public final long imageHash;
+		public final boolean custom;
+		public UUID owner;
+		public String ownerName;
+		public Protocol.Pose pose;
+		// when its owner last said something about it
+		public long touched = System.currentTimeMillis();
+
+		Sheet(long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash,
+		      boolean custom) {
+			this.custom = custom;
+			this.id = id;
+			this.world = world;
+			this.owner = owner;
+			this.ownerName = ownerName;
+			this.pose = pose;
+			this.aspect = aspect;
+			this.imageHash = imageHash;
+		}
+
+		public Protocol.Loose toProtocol() {
+			return new Protocol.Loose(this.id, this.owner, this.ownerName, this.pose, this.aspect, this.imageHash,
+					this.custom);
+		}
+
+		public double distanceSquared(double x, double y, double z) {
+			double dx = this.pose.x() - x;
+			double dy = this.pose.y() - y;
+			double dz = this.pose.z() - z;
+			return dx * dx + dy * dy + dz * dz;
+		}
 	}
 }

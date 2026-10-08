@@ -4,8 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
-import ru.deelter.vrcamera.client.compat.Gizmos;
-import ru.deelter.vrcamera.client.compat.TextGizmo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.InteractionHand;
@@ -28,6 +26,8 @@ import org.vivecraft.client_vr.gameplay.screenhandlers.GuiHandler;
 import org.vivecraft.client_vr.gameplay.trackers.CameraTracker;
 import org.vivecraft.common.utils.MathUtils;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
 import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
@@ -47,30 +47,6 @@ import java.util.function.UnaryOperator;
  */
 public final class CameraController implements Tracker {
 	public static final CameraController INSTANCE = new CameraController();
-
-	public enum Mode {
-		/**
-		 * the camera is left alone
-		 */
-		OFF,
-		/**
-		 * shots are picked and switched automatically
-		 */
-		DIRECTOR,
-		/**
-		 * the camera stays where it was placed by hand, relative to the player
-		 */
-		FOLLOW,
-		/**
-		 * the camera is carried in the hand, and falls to the ground when let go of
-		 */
-		PHYSICS;
-
-		public Component label() {
-			return Component.translatable("vrcamera.mode." + name().toLowerCase(Locale.ROOT));
-		}
-	}
-
 	private static final int MARKER_COLOR = 0xFFFF2020;
 	// The camera icon of the default font, see assets/minecraft/font/default.json. From the private use area,
 	// to not collide with a real character
@@ -112,44 +88,42 @@ public final class CameraController implements Tracker {
 	private static final double PARK_SECONDS = 20.0;
 	// a gap between frames this long means VR was paused, not a slow frame
 	private static final double RESUME_GAP = 0.5;
-
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig();
-
+	private final HandThrow handThrow = new HandThrow();
+	private final DroppedCamera dropped = new DroppedCamera();
+	private final HandheldShake shake = new HandheldShake();
+	private final LimbStrikes limbs = new LimbStrikes();
+	private final SecondButton secondButton = new SecondButton();
+	private final Quaternionf handRotation = new Quaternionf();
+	private final HandStabilizer stabilizer = new HandStabilizer();
+	private final SmoothVec pullGlide = new SmoothVec();
+	private final Smooth underwater = new Smooth();
+	private final SmoothVec glide = new SmoothVec();
 	private Mode mode = Mode.OFF;
 	private CameraConfig config = CameraConfig.current();
 	private Director director = new Director(this.config);
 	private Shot followShot;
-
 	// Vivecraft state that gets changed while the camera is on, and is put back after
 	private boolean engaged;
 	private boolean previousMirror;
 	private float previousFov;
 	private boolean shownByUs;
-
 	private boolean wasGrabbed;
 	// if the held camera was where it can be put up on a wall or an entity, the last time that was looked at
 	private boolean couldPutUp;
 	private ResourceKey<Level> dimension;
 	private boolean changedDimension;
 	private double putUpCheck;
-	private final HandThrow handThrow = new HandThrow();
-	private final DroppedCamera dropped = new DroppedCamera();
-	private final HandheldShake shake = new HandheldShake();
-	private final LimbStrikes limbs = new LimbStrikes();
 	// the other hand that holds on to a camera in the first one, it takes the camera if the first lets go. -1 for none
 	private int offeredHand = -1;
 	private long albumNanos;
-	private final SecondButton secondButton = new SecondButton();
 	private int shutterTicks;
 	private int shareTicks;
 	private boolean shutterTaken;
 	private Vec3 handPosition;
-	private final Quaternionf handRotation = new Quaternionf();
-	private final HandStabilizer stabilizer = new HandStabilizer();
 	// hand the camera is flying to after it was pulled, null when it is not
 	private InteractionHand pullHand;
-	private final SmoothVec pullGlide = new SmoothVec();
 	// drawn to the hand over the whole time the button is held, and not sent there at the end of it
 	private boolean pullDrawn;
 	private boolean pullLifted;
@@ -160,7 +134,6 @@ public final class CameraController implements Tracker {
 	private Vec3 pullVelocity = Vec3.ZERO;
 	private double frameDt;
 	private double shutter;
-	private final Smooth underwater = new Smooth();
 	private boolean wasInWater;
 	private boolean wasDead;
 	// who killed the player, the camera on the ground tries to get them into the picture as well
@@ -168,13 +141,16 @@ public final class CameraController implements Tracker {
 	// for throwing the camera of Vivecraft while this mod is off: where it is flying to, null when it is not flying
 	private Vec3 glideTarget;
 	private boolean plainHeld;
-	private final SmoothVec glide = new SmoothVec();
 	private long glideNanos;
 	// seconds the camera still waits in front of the player, to be picked up by hand
 	private double parkedTime;
 	private long lastNanos;
-
 	private CameraController() {
+	}
+
+	public static boolean isVRRunning() {
+		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		return VRState.VR_RUNNING && dh.vrPlayer != null && dh.vrPlayer.vrdata_world_render != null;
 	}
 
 	public Mode mode() {
@@ -429,11 +405,6 @@ public final class CameraController implements Tracker {
 		} else {
 			this.director.showManual(shot);
 		}
-	}
-
-	public static boolean isVRRunning() {
-		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		return VRState.VR_RUNNING && dh.vrPlayer != null && dh.vrPlayer.vrdata_world_render != null;
 	}
 
 	public void cycleMode() {
@@ -1281,6 +1252,29 @@ public final class CameraController implements Tracker {
 			this.followShot = shot;
 		} else {
 			this.director.showManual(shot);
+		}
+	}
+
+	public enum Mode {
+		/**
+		 * the camera is left alone
+		 */
+		OFF,
+		/**
+		 * shots are picked and switched automatically
+		 */
+		DIRECTOR,
+		/**
+		 * the camera stays where it was placed by hand, relative to the player
+		 */
+		FOLLOW,
+		/**
+		 * the camera is carried in the hand, and falls to the ground when let go of
+		 */
+		PHYSICS;
+
+		public Component label() {
+			return Component.translatable("vrcamera.mode." + name().toLowerCase(Locale.ROOT));
 		}
 	}
 }

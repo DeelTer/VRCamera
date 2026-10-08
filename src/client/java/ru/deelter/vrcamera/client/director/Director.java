@@ -50,29 +50,8 @@ public final class Director {
 	private static final double CROSSED_LINE_PENALTY = 0.35;
 	// a view has to turn by more than 30 degrees to count as a different one
 	private static final double SIMILAR_VIEW_DOT = Math.cos(Math.toRadians(30));
-
-	/**
-	 * something happening to the player, that gets its own shot for as long as it lasts
-	 */
-	public enum Event {
-		NONE(null),
-		DEATH(ShotType.DEATH),
-		FALL(ShotType.FALL),
-		/**
-		 * the player has an inventory or chest open
-		 */
-		MENU(ShotType.MENU);
-
-		final ShotType shot;
-
-		Event(ShotType shot) {
-			this.shot = shot;
-		}
-	}
-
 	private final CameraConfig config;
 	private final Random random = new Random();
-
 	private Shot current;
 	private ShotType lastType;
 	private boolean hold;
@@ -81,7 +60,6 @@ public final class Director {
 	private ShotType forceType;
 	private double occludedTime;
 	private String lastReason = "";
-
 	private Context context = Context.IDLE;
 	// context the current shot was picked for
 	private Context shotContext = Context.IDLE;
@@ -103,9 +81,15 @@ public final class Director {
 	private double stillTime;
 	// what the player hit since the last update
 	private Entity attacked;
-
 	public Director(CameraConfig config) {
 		this.config = config;
+	}
+
+	/**
+	 * @return the context, with all the regular moving around on foot counted as one
+	 */
+	private static Context activity(Context context) {
+		return context == Context.IDLE || context == Context.RUN ? Context.WALK : context;
 	}
 
 	public Shot current() {
@@ -285,13 +269,6 @@ public final class Director {
 			choose(subject, rig, cut, reason);
 		}
 		this.current.update(subject, this.config, dt);
-	}
-
-	/**
-	 * @return the context, with all the regular moving around on foot counted as one
-	 */
-	private static Context activity(Context context) {
-		return context == Context.IDLE || context == Context.RUN ? Context.WALK : context;
 	}
 
 	private Event detectEvent(Subject subject, double dt) {
@@ -505,6 +482,105 @@ public final class Director {
 		return this.random.nextBoolean() ? 1 : -1;
 	}
 
+	private boolean wantsBlend(Shot next) {
+		return switch (this.config.transition) {
+			case CUT -> false;
+			case BLEND -> true;
+			// swinging more than a third around the player takes too long
+			case AUTO -> this.random.nextDouble() < this.config.blendChance &&
+					Math.abs(CamMath.wrap(next.azimuth - this.current.azimuth)) < Math.toRadians(130);
+		};
+	}
+
+	private void updateContext(Subject subject, double dt) {
+		Minecraft mc = Minecraft.getInstance();
+		Player player = subject.player;
+		this.partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
+
+		this.combatTimer -= dt;
+		Entity attacked = this.attacked;
+		this.attacked = null;
+		if (attacked instanceof LivingEntity && attacked.isAlive()) {
+			// hitting a boat or an item frame is no fight
+			this.combatTimer = 5.0;
+			subject.target = attacked;
+		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
+			// only what was done by someone is a fight, not falling or burning
+			DamageSource source = player.getLastDamageSource();
+			Entity attacker = source == null ? null : source.getEntity();
+			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
+				this.combatTimer = 5.0;
+				subject.target = attacker;
+			}
+		}
+		if (player.isDeadOrDying() && subject.target != null) {
+			// keep the killer for the death shot
+			this.combatTimer = 5.0;
+		}
+		if (subject.target != null && (this.combatTimer <= 0 ||
+				subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
+		)) {
+			subject.target = null;
+		}
+		// counts as mining after a second of it, breaking one block on the way is not worth a change of shot
+		if (mc.gameMode != null && mc.gameMode.isDestroying()) {
+			this.mineTime = Math.min(3.0, this.mineTime + dt);
+		} else {
+			this.mineTime = Math.max(0.0, this.mineTime - 0.5 * dt);
+		}
+		this.stillTime = subject.speed > 0.5 ? 0 : this.stillTime + dt;
+
+		Context previous = this.context;
+		if (player.isFallFlying()) {
+			this.context = Context.FLY;
+		} else if (player.isPassenger()) {
+			this.context = Context.RIDE;
+		} else if (this.combatTimer > 0) {
+			this.context = Context.COMBAT;
+		} else if (this.mineTime > 1.0) {
+			this.context = Context.MINE;
+		} else if (player.isSwimming() || player.isInWater()) {
+			this.context = Context.SWIM;
+		} else if (subject.speed > 4.8) {
+			this.context = Context.RUN;
+		} else if (this.stillTime > 1.2) {
+			this.context = Context.IDLE;
+		} else if (subject.speed > 0.5 || this.context != Context.IDLE) {
+			// short stops while walking don't count as standing around
+			this.context = Context.WALK;
+		}
+		if (this.context == Context.FLY && previous != Context.FLY) {
+			// show the take off from the ground
+			this.boost = ShotType.FLYBY;
+		}
+
+		this.tightTimer -= dt;
+		if (this.tightTimer <= 0) {
+			this.tightTimer = 0.5;
+			this.tight = WorldProbe.openness(subject) < 0.55;
+		}
+		this.atScreen = !subject.tracksHands;
+	}
+
+	/**
+	 * something happening to the player, that gets its own shot for as long as it lasts
+	 */
+	public enum Event {
+		NONE(null),
+		DEATH(ShotType.DEATH),
+		FALL(ShotType.FALL),
+		/**
+		 * the player has an inventory or chest open
+		 */
+		MENU(ShotType.MENU);
+
+		final ShotType shot;
+
+		Event(ShotType shot) {
+			this.shot = shot;
+		}
+	}
+
 	/**
 	 * rates the shots that could come next, and keeps the best one
 	 */
@@ -596,86 +672,6 @@ public final class Director {
 			double lateral = offset.dot(this.right) / length;
 			return Math.abs(lateral) < 0.2 ? 0 : (int) Math.signum(lateral);
 		}
-	}
-
-	private boolean wantsBlend(Shot next) {
-		return switch (this.config.transition) {
-			case CUT -> false;
-			case BLEND -> true;
-			// swinging more than a third around the player takes too long
-			case AUTO -> this.random.nextDouble() < this.config.blendChance &&
-					Math.abs(CamMath.wrap(next.azimuth - this.current.azimuth)) < Math.toRadians(130);
-		};
-	}
-
-	private void updateContext(Subject subject, double dt) {
-		Minecraft mc = Minecraft.getInstance();
-		Player player = subject.player;
-		this.partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
-
-		this.combatTimer -= dt;
-		Entity attacked = this.attacked;
-		this.attacked = null;
-		if (attacked instanceof LivingEntity && attacked.isAlive()) {
-			// hitting a boat or an item frame is no fight
-			this.combatTimer = 5.0;
-			subject.target = attacked;
-		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
-			// only what was done by someone is a fight, not falling or burning
-			DamageSource source = player.getLastDamageSource();
-			Entity attacker = source == null ? null : source.getEntity();
-			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
-				this.combatTimer = 5.0;
-				subject.target = attacker;
-			}
-		}
-		if (player.isDeadOrDying() && subject.target != null) {
-			// keep the killer for the death shot
-			this.combatTimer = 5.0;
-		}
-		if (subject.target != null && (this.combatTimer <= 0 ||
-				subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
-		)) {
-			subject.target = null;
-		}
-		// counts as mining after a second of it, breaking one block on the way is not worth a change of shot
-		if (mc.gameMode != null && mc.gameMode.isDestroying()) {
-			this.mineTime = Math.min(3.0, this.mineTime + dt);
-		} else {
-			this.mineTime = Math.max(0.0, this.mineTime - 0.5 * dt);
-		}
-		this.stillTime = subject.speed > 0.5 ? 0 : this.stillTime + dt;
-
-		Context previous = this.context;
-		if (player.isFallFlying()) {
-			this.context = Context.FLY;
-		} else if (player.isPassenger()) {
-			this.context = Context.RIDE;
-		} else if (this.combatTimer > 0) {
-			this.context = Context.COMBAT;
-		} else if (this.mineTime > 1.0) {
-			this.context = Context.MINE;
-		} else if (player.isSwimming() || player.isInWater()) {
-			this.context = Context.SWIM;
-		} else if (subject.speed > 4.8) {
-			this.context = Context.RUN;
-		} else if (this.stillTime > 1.2) {
-			this.context = Context.IDLE;
-		} else if (subject.speed > 0.5 || this.context != Context.IDLE) {
-			// short stops while walking don't count as standing around
-			this.context = Context.WALK;
-		}
-		if (this.context == Context.FLY && previous != Context.FLY) {
-			// show the take off from the ground
-			this.boost = ShotType.FLYBY;
-		}
-
-		this.tightTimer -= dt;
-		if (this.tightTimer <= 0) {
-			this.tightTimer = 0.5;
-			this.tight = WorldProbe.openness(subject) < 0.55;
-		}
-		this.atScreen = !subject.tracksHands;
 	}
 
 }

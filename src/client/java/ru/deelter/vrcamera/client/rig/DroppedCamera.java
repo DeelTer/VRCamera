@@ -85,38 +85,21 @@ public final class DroppedCamera {
 	// wider than this part of its height an entity is taken to walk on four legs
 	private static final double FOUR_LEGS_SHAPE = 0.5;
 	private static final double STRIKE_BOUNCE = 0.6;
-
-	/**
-	 * the camera ran into something
-	 *
-	 * @param speed how fast it hit, in blocks per second
-	 * @param block the block that was hit, null if it was an entity
-	 */
-	public record Impact(Vec3 position, Vec3 normal, double speed, BlockPos block) {
-	}
-
-	/**
-	 * @param entity the entity that was hit, null for a block
-	 */
-	private record Hit(Vec3 location, Vec3 normal, Entity entity) {
-	}
-
 	private final Random random = new Random();
-
+	private final Quaternionf rotation = new Quaternionf();
+	private final Vector3f spinAxis = new Vector3f(1, 0, 0);
+	// how it would lie on the ground if it did not care about the player, different on every drop
+	private final Quaternionf randomRest = new Quaternionf();
+	private final Vector3f attachedOffset = new Vector3f();
+	private final Quaternionf attachedRotation = new Quaternionf();
 	private Vec3 position = Vec3.ZERO;
 	private Vec3 velocity = Vec3.ZERO;
-	private final Quaternionf rotation = new Quaternionf();
 	private boolean falling;
 	private boolean resting;
 	// resting against a wall or under a ceiling, where the player put it. Pointing away from that block
 	private Vec3 mountedOn;
 	private double settleTime;
-
-	private final Vector3f spinAxis = new Vector3f(1, 0, 0);
 	private double spinSpeed;
-	// how it would lie on the ground if it did not care about the player, different on every drop
-	private final Quaternionf randomRest = new Quaternionf();
-
 	// the entity the camera is lying on, null on the ground. Where on it, and how the entity was turned when it landed
 	private Entity carrier;
 	private Vec3 carrierOffset = Vec3.ZERO;
@@ -131,18 +114,108 @@ public final class DroppedCamera {
 	private boolean selfAllowed = true;
 	// where the carrier was in the last frame
 	private Vec3 attachedOrigin;
-	private final Vector3f attachedOffset = new Vector3f();
-	private final Quaternionf attachedRotation = new Quaternionf();
-
 	// what kicked the camera, it does not collide with that for a moment
 	private Entity kicker;
 	private double kickIgnoreTime;
-
 	private Impact impact;
 	private double fovKick;
 	private double fovKickAge;
 	private boolean sinking;
 	private double sinkTime;
+
+	/**
+	 * @return if the camera collides with the entity: everything with a hitbox that can be hit, so not items or arrows
+	 */
+	private static boolean isSolid(Entity entity) {
+		return entity.isPickable() && !entity.isSpectator();
+	}
+
+	/**
+	 * @return if the camera is held to the head of that entity: around the way from its neck to where it looks
+	 */
+	private static boolean atHead(Entity entity, Subject subject, Vec3 position) {
+		if (!(entity instanceof LivingEntity)) {
+			return false;
+		}
+		Vec3 neck = neck(entity, subject);
+		Vec3 along = entity.getViewVector(subject.partialTick).scale(entity.getBbWidth() * HEAD_LENGTH);
+		double part = CamMath.clamp(position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
+		return position.distanceTo(neck.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
+	}
+
+	/**
+	 * @return if the head of that entity is in front of its body and not on top of it, like the one of a sheep.
+	 * Told by its shape: what walks on four legs is about as long as it is high
+	 */
+	private static boolean headInFront(Entity entity) {
+		return entity.getBbWidth() > entity.getBbHeight() * FOUR_LEGS_SHAPE;
+	}
+
+	/**
+	 * @return the point the head of that entity turns around. For one that walks upright that is between its
+	 * eyes. For one on four legs it is at the front of its body: turned around its middle, a camera on its head
+	 * would swing past the head
+	 */
+	private static Vec3 neck(Entity entity, Subject subject) {
+		Vec3 eyes = entity.getEyePosition(subject.partialTick);
+		if (!(entity instanceof LivingEntity living) || !headInFront(entity)) {
+			return eyes;
+		}
+		float bodyYaw = Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) * Mth.DEG_TO_RAD;
+		double forward = entity.getBbWidth() * 0.5;
+		return eyes.add(-Math.sin(bodyYaw) * forward, 0, Math.cos(bodyYaw) * forward);
+	}
+
+	private static boolean swims(Entity entity) {
+		MobCategory kind = entity.getType().getCategory();
+		return entity instanceof LivingEntity && (kind == MobCategory.WATER_CREATURE ||
+				kind == MobCategory.WATER_AMBIENT || kind == MobCategory.UNDERGROUND_WATER_CREATURE ||
+				kind == MobCategory.AXOLOTLS);
+	}
+
+	private static Vec3 frameOrigin(Entity entity, Subject subject, boolean head) {
+		if (!head) {
+			return entity.getPosition(subject.partialTick);
+		}
+		// the head of the player in VR is where the headset is, not where the game has the eyes
+		return entity == subject.player ? subject.head : neck(entity, subject);
+	}
+
+	private static Quaternionf frameRotation(Entity entity, Subject subject, boolean head) {
+		if (head && entity == subject.player) {
+			Quaternionf look = new Quaternionf();
+			CamMath.lookRotation(subject.headDir, look);
+			return look;
+		}
+		float yaw = entity instanceof LivingEntity living && !head ?
+				Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) :
+				entity.getViewYRot(subject.partialTick);
+		// yaw of entities goes the other way around than rotations around the y axis
+		Quaternionf frame = new Quaternionf().rotationY(-yaw * Mth.DEG_TO_RAD);
+		return head ? frame.rotateX(entity.getViewXRot(subject.partialTick) * Mth.DEG_TO_RAD) : frame;
+	}
+
+	/**
+	 * @return which way the side of the box points, that the point is on
+	 */
+	private static Vec3 faceNormal(AABB box, Vec3 point) {
+		Vec3 normal = new Vec3(0, 1, 0);
+		double nearest = Math.abs(point.y - box.maxY);
+		double[] distances = {
+				Math.abs(point.y - box.minY), Math.abs(point.x - box.minX), Math.abs(point.x - box.maxX),
+				Math.abs(point.z - box.minZ), Math.abs(point.z - box.maxZ)
+		};
+		Vec3[] normals = {
+				new Vec3(0, -1, 0), new Vec3(-1, 0, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, 0, 1)
+		};
+		for (int i = 0; i < distances.length; i++) {
+			if (distances[i] < nearest) {
+				nearest = distances[i];
+				normal = normals[i];
+			}
+		}
+		return normal;
+	}
 
 	public Vec3 position() {
 		return this.position;
@@ -382,6 +455,10 @@ public final class DroppedCamera {
 		return this.resting && this.mountedOn != null;
 	}
 
+	/**
+	 * @param entity what the camera came to rest on, null for a block
+	 */
+
 	private void startFalling() {
 		this.resting = false;
 		this.mountedOn = null;
@@ -463,13 +540,6 @@ public final class DroppedCamera {
 		}
 	}
 
-	/**
-	 * @return if the camera collides with the entity: everything with a hitbox that can be hit, so not items or arrows
-	 */
-	private static boolean isSolid(Entity entity) {
-		return entity.isPickable() && !entity.isSpectator();
-	}
-
 	private void fall(Subject subject, double dt) {
 		boolean inFluid = WorldProbe.inFluid(subject, this.position);
 		this.sinking = inFluid;
@@ -530,9 +600,6 @@ public final class DroppedCamera {
 	}
 
 	/**
-	 * @param entity what the camera came to rest on, null for a block
-	 */
-	/**
 	 * @param allowed if the camera can be put on the head of the player themselves
 	 */
 	public void allowSelf(boolean allowed) {
@@ -567,49 +634,6 @@ public final class DroppedCamera {
 			}
 		}
 		return nearest;
-	}
-
-	/**
-	 * @return if the camera is held to the head of that entity: around the way from its neck to where it looks
-	 */
-	private static boolean atHead(Entity entity, Subject subject, Vec3 position) {
-		if (!(entity instanceof LivingEntity)) {
-			return false;
-		}
-		Vec3 neck = neck(entity, subject);
-		Vec3 along = entity.getViewVector(subject.partialTick).scale(entity.getBbWidth() * HEAD_LENGTH);
-		double part = CamMath.clamp(position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
-		return position.distanceTo(neck.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
-	}
-
-	/**
-	 * @return if the head of that entity is in front of its body and not on top of it, like the one of a sheep.
-	 * Told by its shape: what walks on four legs is about as long as it is high
-	 */
-	private static boolean headInFront(Entity entity) {
-		return entity.getBbWidth() > entity.getBbHeight() * FOUR_LEGS_SHAPE;
-	}
-
-	/**
-	 * @return the point the head of that entity turns around. For one that walks upright that is between its
-	 * eyes. For one on four legs it is at the front of its body: turned around its middle, a camera on its head
-	 * would swing past the head
-	 */
-	private static Vec3 neck(Entity entity, Subject subject) {
-		Vec3 eyes = entity.getEyePosition(subject.partialTick);
-		if (!(entity instanceof LivingEntity living) || !headInFront(entity)) {
-			return eyes;
-		}
-		float bodyYaw = Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) * Mth.DEG_TO_RAD;
-		double forward = entity.getBbWidth() * 0.5;
-		return eyes.add(-Math.sin(bodyYaw) * forward, 0, Math.cos(bodyYaw) * forward);
-	}
-
-	private static boolean swims(Entity entity) {
-		MobCategory kind = entity.getType().getCategory();
-		return entity instanceof LivingEntity && (kind == MobCategory.WATER_CREATURE ||
-				kind == MobCategory.WATER_AMBIENT || kind == MobCategory.UNDERGROUND_WATER_CREATURE ||
-				kind == MobCategory.AXOLOTLS);
 	}
 
 	/**
@@ -651,28 +675,6 @@ public final class DroppedCamera {
 		Vec3 offset = this.position.subtract(frameOrigin(entity, subject, this.attachedToHead));
 		inverse.transform(this.attachedOffset.set((float) offset.x, (float) offset.y, (float) offset.z));
 		inverse.mul(this.rotation, this.attachedRotation);
-	}
-
-	private static Vec3 frameOrigin(Entity entity, Subject subject, boolean head) {
-		if (!head) {
-			return entity.getPosition(subject.partialTick);
-		}
-		// the head of the player in VR is where the headset is, not where the game has the eyes
-		return entity == subject.player ? subject.head : neck(entity, subject);
-	}
-
-	private static Quaternionf frameRotation(Entity entity, Subject subject, boolean head) {
-		if (head && entity == subject.player) {
-			Quaternionf look = new Quaternionf();
-			CamMath.lookRotation(subject.headDir, look);
-			return look;
-		}
-		float yaw = entity instanceof LivingEntity living && !head ?
-				Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) :
-				entity.getViewYRot(subject.partialTick);
-		// yaw of entities goes the other way around than rotations around the y axis
-		Quaternionf frame = new Quaternionf().rotationY(-yaw * Mth.DEG_TO_RAD);
-		return head ? frame.rotateX(entity.getViewXRot(subject.partialTick) * Mth.DEG_TO_RAD) : frame;
 	}
 
 	/**
@@ -746,28 +748,6 @@ public final class DroppedCamera {
 	}
 
 	/**
-	 * @return which way the side of the box points, that the point is on
-	 */
-	private static Vec3 faceNormal(AABB box, Vec3 point) {
-		Vec3 normal = new Vec3(0, 1, 0);
-		double nearest = Math.abs(point.y - box.maxY);
-		double[] distances = {
-				Math.abs(point.y - box.minY), Math.abs(point.x - box.minX), Math.abs(point.x - box.maxX),
-				Math.abs(point.z - box.minZ), Math.abs(point.z - box.maxZ)
-		};
-		Vec3[] normals = {
-				new Vec3(0, -1, 0), new Vec3(-1, 0, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, 0, 1)
-		};
-		for (int i = 0; i < distances.length; i++) {
-			if (distances[i] < nearest) {
-				nearest = distances[i];
-				normal = normals[i];
-			}
-		}
-		return normal;
-	}
-
-	/**
 	 * starts spinning around some new axis, faster the faster the camera moves
 	 */
 	private void tumble(double speed) {
@@ -800,5 +780,20 @@ public final class DroppedCamera {
 			return new Quaternionf(this.randomRest);
 		}
 		return this.randomRest.slerp(atFocus, (float) CamMath.clamp(config.physicsAim, 0.0, 1.0), new Quaternionf());
+	}
+
+	/**
+	 * the camera ran into something
+	 *
+	 * @param speed how fast it hit, in blocks per second
+	 * @param block the block that was hit, null if it was an entity
+	 */
+	public record Impact(Vec3 position, Vec3 normal, double speed, BlockPos block) {
+	}
+
+	/**
+	 * @param entity the entity that was hit, null for a block
+	 */
+	private record Hit(Vec3 location, Vec3 normal, Entity entity) {
 	}
 }

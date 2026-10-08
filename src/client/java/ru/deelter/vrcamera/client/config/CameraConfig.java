@@ -20,8 +20,8 @@ public class CameraConfig {
 
 	// number of the last change of defaults this file has seen, see migrate
 	private static final int VERSION = 6;
+	private static CameraConfig current;
 	public int version = VERSION;
-
 	/**
 	 * show the camera view on the desktop mirror while the camera is on
 	 */
@@ -190,7 +190,6 @@ public class CameraConfig {
 	 * show what the director is doing on the hud
 	 */
 	public boolean debugOverlay = false;
-
 	/**
 	 * where on the body the camera aims, 0 = feet, 1 = head
 	 */
@@ -228,7 +227,6 @@ public class CameraConfig {
 	 * most the aim moves away from the player because of leadRoom, in player sizes
 	 */
 	public double leadRoomMax = 0.8;
-
 	/**
 	 * blocks the camera keeps away from walls
 	 */
@@ -246,7 +244,6 @@ public class CameraConfig {
 	 * ...for this many seconds
 	 */
 	public double occlusionCutTime = 0.6;
-
 	/**
 	 * the pace that was picked last. Picking one sets the lengths of the shots and how readily the camera moves,
 	 * which can all be changed after that: this only says where they came from
@@ -277,7 +274,6 @@ public class CameraConfig {
 	 * special shots for dying and for long falls
 	 */
 	public boolean events = true;
-
 	/**
 	 * hand placed shots, the active one is used by the follow mode
 	 */
@@ -289,11 +285,58 @@ public class CameraConfig {
 	public boolean customInRotation = false;
 	public boolean povHome = false;
 	public double povHomeSeconds = 60;
-
 	public Map<String, ShotConfig> shots = new LinkedHashMap<>();
-
 	// from before there were presets, only read to carry it over
 	private ShotConfig custom;
+
+	/**
+	 * @return a hand placed shot as it is before it was placed anywhere: in front of the player
+	 */
+	public static ShotConfig defaultPreset() {
+		return new ShotConfig(1.0, 0, 5, 4.0, 70, 8, 12);
+	}
+
+	private static String key(ShotType type) {
+		return type.name().toLowerCase(Locale.ROOT);
+	}
+
+	public static CameraConfig current() {
+		if (current == null) {
+			current = load();
+		}
+		return current;
+	}
+
+	/**
+	 * reads the settings from their file again
+	 */
+	public static CameraConfig reload() {
+		current = load();
+		return current;
+	}
+
+	private static CameraConfig load() {
+		CameraConfig config = null;
+		if (Files.exists(PATH)) {
+			try (Reader reader = Files.newBufferedReader(PATH)) {
+				JsonObject json = GSON.fromJson(reader, JsonObject.class);
+				config = GSON.fromJson(json, CameraConfig.class);
+				if (config != null && !json.has("version")) {
+					// from before files had a version
+					config.version = 1;
+				}
+			} catch (Exception e) {
+				Vrcamera.LOGGER.error("VRCamera: failed to read {}, using defaults", PATH, e);
+			}
+		}
+		if (config == null) {
+			config = new CameraConfig();
+		}
+		config.fillDefaults();
+		config.migrate(config.version);
+		config.save();
+		return config;
+	}
 
 	/**
 	 * @return settings of the shot, for the hand placed shot those of the active one
@@ -313,15 +356,8 @@ public class CameraConfig {
 	}
 
 	/**
-	 * @return a hand placed shot as it is before it was placed anywhere: in front of the player
+	 * @return the settings in use
 	 */
-	public static ShotConfig defaultPreset() {
-		return new ShotConfig(1.0, 0, 5, 4.0, 70, 8, 12);
-	}
-
-	private static String key(ShotType type) {
-		return type.name().toLowerCase(Locale.ROOT);
-	}
 
 	private void fillDefaults() {
 		if (this.shots == null) {
@@ -439,54 +475,11 @@ public class CameraConfig {
 		}
 	}
 
-	private static CameraConfig current;
-
-	/**
-	 * @return the settings in use
-	 */
 	/**
 	 * @return if the picture of the camera has a size of its own, and not the one of the game window
 	 */
 	public boolean hasOutputSize() {
 		return this.outputWidth > 0 && this.outputHeight > 0;
-	}
-
-	public static CameraConfig current() {
-		if (current == null) {
-			current = load();
-		}
-		return current;
-	}
-
-	/**
-	 * reads the settings from their file again
-	 */
-	public static CameraConfig reload() {
-		current = load();
-		return current;
-	}
-
-	private static CameraConfig load() {
-		CameraConfig config = null;
-		if (Files.exists(PATH)) {
-			try (Reader reader = Files.newBufferedReader(PATH)) {
-				JsonObject json = GSON.fromJson(reader, JsonObject.class);
-				config = GSON.fromJson(json, CameraConfig.class);
-				if (config != null && !json.has("version")) {
-					// from before files had a version
-					config.version = 1;
-				}
-			} catch (Exception e) {
-				Vrcamera.LOGGER.error("VRCamera: failed to read {}, using defaults", PATH, e);
-			}
-		}
-		if (config == null) {
-			config = new CameraConfig();
-		}
-		config.fillDefaults();
-		config.migrate(config.version);
-		config.save();
-		return config;
 	}
 
 	public void save() {

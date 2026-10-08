@@ -27,6 +27,10 @@ public final class CameraSwitchEvent extends PlayerEvent {
 		this.camera = camera;
 	}
 
+	public static @NotNull HandlerList getHandlerList() {
+		return HANDLERS;
+	}
+
 	/**
 	 * @return the letter the player knows the camera by
 	 */
@@ -50,10 +54,6 @@ public final class CameraSwitchEvent extends PlayerEvent {
 
 	@Override
 	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
-	}
-
-	public static @NotNull HandlerList getHandlerList() {
 		return HANDLERS;
 	}
 }

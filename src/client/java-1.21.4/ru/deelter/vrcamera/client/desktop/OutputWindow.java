@@ -25,83 +25,6 @@ import ru.deelter.vrcamera.Vrcamera;
 public final class OutputWindow {
 	private static final int WIDTH = 1280;
 	private static final int HEIGHT = 720;
-
-	private static final class Handle implements WindowPlace.Native, WindowInput.Native {
-		@Override
-		public Box place() {
-			return placeOf(window);
-		}
-
-		@Override
-		public void move(Box to) {
-			GLFW.glfwSetWindowPos(window, to.x(), to.y());
-			GLFW.glfwSetWindowSize(window, to.width(), to.height());
-		}
-
-		@Override
-		public Box monitorOf(Box place) {
-			PointerBuffer monitors = GLFW.glfwGetMonitors();
-			for (int i = 0; monitors != null && i < monitors.limit(); i++) {
-				long monitor = monitors.get(i);
-				GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
-				int[] left = new int[1];
-				int[] top = new int[1];
-				GLFW.glfwGetMonitorPos(monitor, left, top);
-				if (mode != null) {
-					Box whole = new Box(left[0], top[0], mode.width(), mode.height());
-					if (whole.has(place.middleX(), place.middleY())) {
-						return whole;
-					}
-				}
-			}
-			return null;
-		}
-
-		@Override
-		public void setBordered(boolean bordered) {
-			GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, bordered ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
-		}
-
-		@Override
-		public int barHeight() {
-			int[] bar = new int[1];
-			GLFW.glfwGetWindowFrameSize(window, null, bar, null, null);
-			return bar[0];
-		}
-
-		@Override
-		public Box gamePlace() {
-			return placeOf(Minecraft.getInstance().getWindow().getWindow());
-		}
-
-		@Override
-		public boolean isKeyDown(int key) {
-			return OutputWindow.isKeyDown(key);
-		}
-
-		@Override
-		public boolean isLeftButtonDown() {
-			return GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
-		}
-
-		@Override
-		public void setMouseCaptured(boolean captured) {
-			moving = false;
-			GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR,
-					captured ? GLFW.GLFW_CURSOR_DISABLED : GLFW.GLFW_CURSOR_NORMAL);
-		}
-
-		private static Box placeOf(long ofWindow) {
-			int[] x = new int[1];
-			int[] y = new int[1];
-			int[] width = new int[1];
-			int[] height = new int[1];
-			GLFW.glfwGetWindowPos(ofWindow, x, y);
-			GLFW.glfwGetWindowSize(ofWindow, width, height);
-			return new Box(x[0], y[0], width[0], height[0]);
-		}
-	}
-
 	private static long window;
 	// The window of the last time, hidden and not shown. It is never thrown away: a program that records it has
 	// it by what the system calls that very window, and would have to be shown a new one every time
@@ -116,7 +39,6 @@ public final class OutputWindow {
 	private static boolean moving;
 	private static double mouseX;
 	private static double mouseY;
-
 	private OutputWindow() {
 	}
 
@@ -359,5 +281,81 @@ public final class OutputWindow {
 		mouseX = x[0];
 		mouseY = y[0];
 		return moved;
+	}
+
+	private static final class Handle implements WindowPlace.Native, WindowInput.Native {
+		private static Box placeOf(long ofWindow) {
+			int[] x = new int[1];
+			int[] y = new int[1];
+			int[] width = new int[1];
+			int[] height = new int[1];
+			GLFW.glfwGetWindowPos(ofWindow, x, y);
+			GLFW.glfwGetWindowSize(ofWindow, width, height);
+			return new Box(x[0], y[0], width[0], height[0]);
+		}
+
+		@Override
+		public Box place() {
+			return placeOf(window);
+		}
+
+		@Override
+		public void move(Box to) {
+			GLFW.glfwSetWindowPos(window, to.x(), to.y());
+			GLFW.glfwSetWindowSize(window, to.width(), to.height());
+		}
+
+		@Override
+		public Box monitorOf(Box place) {
+			PointerBuffer monitors = GLFW.glfwGetMonitors();
+			for (int i = 0; monitors != null && i < monitors.limit(); i++) {
+				long monitor = monitors.get(i);
+				GLFWVidMode mode = GLFW.glfwGetVideoMode(monitor);
+				int[] left = new int[1];
+				int[] top = new int[1];
+				GLFW.glfwGetMonitorPos(monitor, left, top);
+				if (mode != null) {
+					Box whole = new Box(left[0], top[0], mode.width(), mode.height());
+					if (whole.has(place.middleX(), place.middleY())) {
+						return whole;
+					}
+				}
+			}
+			return null;
+		}
+
+		@Override
+		public void setBordered(boolean bordered) {
+			GLFW.glfwSetWindowAttrib(window, GLFW.GLFW_DECORATED, bordered ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+		}
+
+		@Override
+		public int barHeight() {
+			int[] bar = new int[1];
+			GLFW.glfwGetWindowFrameSize(window, null, bar, null, null);
+			return bar[0];
+		}
+
+		@Override
+		public Box gamePlace() {
+			return placeOf(Minecraft.getInstance().getWindow().getWindow());
+		}
+
+		@Override
+		public boolean isKeyDown(int key) {
+			return OutputWindow.isKeyDown(key);
+		}
+
+		@Override
+		public boolean isLeftButtonDown() {
+			return GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+		}
+
+		@Override
+		public void setMouseCaptured(boolean captured) {
+			moving = false;
+			GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR,
+					captured ? GLFW.GLFW_CURSOR_DISABLED : GLFW.GLFW_CURSOR_NORMAL);
+		}
 	}
 }

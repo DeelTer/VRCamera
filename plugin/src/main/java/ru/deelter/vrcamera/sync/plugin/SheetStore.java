@@ -47,6 +47,16 @@ public final class SheetStore {
 		this.imageDir = dataDir.resolve("images");
 	}
 
+	private static <K> void drop(Map<K, List<StoredSheet>> index, K key, StoredSheet sheet) {
+		List<StoredSheet> sheets = index.get(key);
+		if (sheets != null) {
+			sheets.remove(sheet);
+			if (sheets.isEmpty()) {
+				index.remove(key);
+			}
+		}
+	}
+
 	public int size() {
 		return this.byId.size();
 	}
@@ -109,16 +119,6 @@ public final class SheetStore {
 		}
 		this.imageCache.remove(sheet.imageHash());
 		return sheet.imageHash();
-	}
-
-	private static <K> void drop(Map<K, List<StoredSheet>> index, K key, StoredSheet sheet) {
-		List<StoredSheet> sheets = index.get(key);
-		if (sheets != null) {
-			sheets.remove(sheet);
-			if (sheets.isEmpty()) {
-				index.remove(key);
-			}
-		}
 	}
 
 	private Path imageFile(long hash) {

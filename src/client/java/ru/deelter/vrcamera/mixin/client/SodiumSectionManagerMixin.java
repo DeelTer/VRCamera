@@ -32,6 +32,13 @@ public class SodiumSectionManagerMixin {
 	@Unique
 	private Object[] vrcamera$ofPlayer;
 
+	@Unique
+	private static void vrcamera$failed(Exception cause) {
+		vrcamera$broken = true;
+		Vrcamera.LOGGER.warn("VRCamera: can't keep the view of the player apart from the one of the camera for Sodium, "
+				+ "chunks may be missing for a moment while the camera films", cause);
+	}
+
 	// Sodium has chunks built in the background and gives that one frame of time: what it asks for in one frame it
 	// waits for in the next, and builds itself whatever is not done by then. The chunks are asked for once per
 	// frame, with the view of the player, which has them built all around and not only where the player looks
@@ -99,12 +106,5 @@ public class SodiumSectionManagerMixin {
 		} catch (ReflectiveOperationException | RuntimeException e) {
 			vrcamera$failed(e);
 		}
-	}
-
-	@Unique
-	private static void vrcamera$failed(Exception cause) {
-		vrcamera$broken = true;
-		Vrcamera.LOGGER.warn("VRCamera: can't keep the view of the player apart from the one of the camera for Sodium, "
-				+ "chunks may be missing for a moment while the camera films", cause);
 	}
 }

@@ -69,35 +69,10 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	// the largest message a client can send at all
 	private static final int MAX_MESSAGE_BYTES = 32767;
 	private static final float[] QUALITIES = {0.8F, 0.65F, 0.5F, 0.35F, 0.25F};
-
-	/**
-	 * what is known about a player that has the mod
-	 */
-	private static final class Client {
-		// the photos this client was told about and not told to forget
-		final Set<Long> known = new HashSet<>();
-		// the same for the sheets that are not pinned, its own included
-		final Set<Long> knownLoose = new HashSet<>();
-		boolean sharingLoose;
-		long lastLoose;
-		long lastShutter;
-		long lastSwitch;
-		long lastPrint;
-		final ArrayDeque<Long> wantedImages = new ArrayDeque<>();
-		long lastPin;
-		// one pin at a time is looked at, the rest of them wait in the client
-		boolean pinning;
-		// messages it may still send, filled up again over time
-		double allowance = MESSAGES_BURST;
-		long allowanceAt = System.nanoTime();
-		int dropped;
-		long ignoredUntil;
-	}
-
-	private SheetStore store;
 	private final LooseSheets loose = new LooseSheets();
 	private final Map<UUID, Client> clients = new HashMap<>();
-
+	private final Set<String> worlds = new HashSet<>();
+	private SheetStore store;
 	private int maxPerPlayer;
 	private int maxPerChunk;
 	private int maxTotal;
@@ -114,8 +89,68 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private boolean allowCustom;
 	private boolean protectBlocks;
 	private boolean worldsListed;
-	private final Set<String> worlds = new HashSet<>();
 	private long looseLifetime;
+
+	/**
+	 * Every client near the sheet will get this picture and unpack it. So no client ever gets the bytes another
+	 * client sent: the picture is unpacked here and packed again. What comes out is a plain small JPEG, whatever
+	 * went in, without anything hidden in or appended to the file. Its size in pixels is looked at before it
+	 * is unpacked, a few bytes can claim to be a picture of a billion pixels.
+	 *
+	 * @return null if it is not a small JPEG
+	 */
+	private static CleanPicture clean(byte[] image, int maxBytes) {
+		try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(image))) {
+			Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+			if (!readers.hasNext()) {
+				return null;
+			}
+			ImageReader reader = readers.next();
+			BufferedImage read;
+			try {
+				reader.setInput(in);
+				int width = reader.getWidth(0);
+				int height = reader.getHeight(0);
+				if (!reader.getFormatName().toLowerCase().contains("jp") || width < 8 || height < 8 ||
+						width > Protocol.MAX_IMAGE_SIDE || height > Protocol.MAX_IMAGE_SIDE) {
+					return null;
+				}
+				read = reader.read(0);
+			} finally {
+				reader.dispose();
+			}
+			BufferedImage plain = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_RGB);
+			plain.getGraphics().drawImage(read, 0, 0, null);
+			for (float quality : QUALITIES) {
+				byte[] jpeg = Jpeg.encode(plain, quality);
+				if (jpeg.length <= maxBytes) {
+					return new CleanPicture(jpeg, plain.getHeight() / (float) plain.getWidth());
+				}
+			}
+			return null;
+		} catch (IOException | RuntimeException e) {
+			// the readers of Java throw all kinds of things at broken files
+			return null;
+		}
+	}
+
+	private static long hash(byte[] image) {
+		try {
+			long hash = ByteBuffer.wrap(MessageDigest.getInstance("SHA-256").digest(image)).getLong();
+			// 0 stands for no picture
+			return hash == 0 ? 1 : hash;
+		} catch (NoSuchAlgorithmException e) {
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private static void sound(StoredSheet sheet, Sound sound) {
+		World world = Bukkit.getWorld(sheet.world());
+		if (world != null) {
+			world.playSound(new Location(world, sheet.x(), sheet.y(), sheet.z()), sound, SoundCategory.PLAYERS, 0.6F,
+					1.3F);
+		}
+	}
 
 	@Override
 	public void onEnable() {
@@ -295,6 +330,11 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		sendHello(player);
 	}
 
+	/**
+	 * passes what a camera does on to the players around who have the mod: the click and flash of a photo, the
+	 * whirr of printing it
+	 */
+
 	private void sendHello(Player player) {
 		send(player, Protocol.serverHello(new Protocol.Limits(Protocol.VERSION, this.maxPerPlayer, this.maxPerChunk,
 				this.maxImageBytes)));
@@ -325,10 +365,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		watchers.forEach(watcher -> send(watcher, message));
 	}
 
-	/**
-	 * passes what a camera does on to the players around who have the mod: the click and flash of a photo, the
-	 * whirr of printing it
-	 */
+	// ---- free cameras other plugins give players
+
 	/**
 	 * @return false if the camera is too far from its player to be theirs, and nobody was told
 	 */
@@ -366,8 +404,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		return watchers;
 	}
-
-	// ---- free cameras other plugins give players
 
 	@Override
 	public boolean hasMod(@NonNull Player player) {
@@ -773,55 +809,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	/**
-	 * a picture the server made itself, and its height by its width
-	 */
-	private record CleanPicture(byte[] jpeg, float aspect) {
-	}
-
-	/**
-	 * Every client near the sheet will get this picture and unpack it. So no client ever gets the bytes another
-	 * client sent: the picture is unpacked here and packed again. What comes out is a plain small JPEG, whatever
-	 * went in, without anything hidden in or appended to the file. Its size in pixels is looked at before it
-	 * is unpacked, a few bytes can claim to be a picture of a billion pixels.
-	 *
-	 * @return null if it is not a small JPEG
-	 */
-	private static CleanPicture clean(byte[] image, int maxBytes) {
-		try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(image))) {
-			Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
-			if (!readers.hasNext()) {
-				return null;
-			}
-			ImageReader reader = readers.next();
-			BufferedImage read;
-			try {
-				reader.setInput(in);
-				int width = reader.getWidth(0);
-				int height = reader.getHeight(0);
-				if (!reader.getFormatName().toLowerCase().contains("jp") || width < 8 || height < 8 ||
-						width > Protocol.MAX_IMAGE_SIDE || height > Protocol.MAX_IMAGE_SIDE) {
-					return null;
-				}
-				read = reader.read(0);
-			} finally {
-				reader.dispose();
-			}
-			BufferedImage plain = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_RGB);
-			plain.getGraphics().drawImage(read, 0, 0, null);
-			for (float quality : QUALITIES) {
-				byte[] jpeg = Jpeg.encode(plain, quality);
-				if (jpeg.length <= maxBytes) {
-					return new CleanPicture(jpeg, plain.getHeight() / (float) plain.getWidth());
-				}
-			}
-			return null;
-		} catch (IOException | RuntimeException e) {
-			// the readers of Java throw all kinds of things at broken files
-			return null;
-		}
-	}
-
-	/**
 	 * @return if the client did not send more than it may. One that keeps at it is not listened to for a while
 	 */
 	private boolean mayTalk(Player player, Client client) {
@@ -846,16 +833,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		return false;
 	}
 
-	private static long hash(byte[] image) {
-		try {
-			long hash = ByteBuffer.wrap(MessageDigest.getInstance("SHA-256").digest(image)).getLong();
-			// 0 stands for no picture
-			return hash == 0 ? 1 : hash;
-		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
 	private void unpin(Player player, long id) {
 		StoredSheet sheet = this.store.get(id);
 		if (sheet == null) {
@@ -867,14 +844,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				player.hasPermission("vrcamera.remove.others")) {
 			sound(sheet, Sound.ENTITY_ITEM_FRAME_REMOVE_ITEM);
 			remove(sheet, Protocol.REMOVED_TAKEN);
-		}
-	}
-
-	private static void sound(StoredSheet sheet, Sound sound) {
-		World world = Bukkit.getWorld(sheet.world());
-		if (world != null) {
-			world.playSound(new Location(world, sheet.x(), sheet.y(), sheet.z()), sound, SoundCategory.PLAYERS, 0.6F,
-					1.3F);
 		}
 	}
 
@@ -1020,9 +989,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				block.getX(), block.getY(), block.getZ())).isEmpty();
 	}
 
-	// With photos-protect-blocks, what a photo is pinned to only goes when a player breaks it. These run before
-	// the handlers below, which then find nothing that fell
-
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void protectFromFire(BlockBurnEvent event) {
 		if (holdsPhoto(event.getBlock())) {
@@ -1036,6 +1002,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			event.setCancelled(true);
 		}
 	}
+
+	// With photos-protect-blocks, what a photo is pinned to only goes when a player breaks it. These run before
+	// the handlers below, which then find nothing that fell
 
 	// the explosion still happens, it only leaves these blocks standing
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -1168,5 +1137,35 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		gone.forEach(sheet -> remove(sheet, Protocol.REMOVED_TAKEN));
 		return gone.size();
+	}
+
+	/**
+	 * what is known about a player that has the mod
+	 */
+	private static final class Client {
+		// the photos this client was told about and not told to forget
+		final Set<Long> known = new HashSet<>();
+		// the same for the sheets that are not pinned, its own included
+		final Set<Long> knownLoose = new HashSet<>();
+		final ArrayDeque<Long> wantedImages = new ArrayDeque<>();
+		boolean sharingLoose;
+		long lastLoose;
+		long lastShutter;
+		long lastSwitch;
+		long lastPrint;
+		long lastPin;
+		// one pin at a time is looked at, the rest of them wait in the client
+		boolean pinning;
+		// messages it may still send, filled up again over time
+		double allowance = MESSAGES_BURST;
+		long allowanceAt = System.nanoTime();
+		int dropped;
+		long ignoredUntil;
+	}
+
+	/**
+	 * a picture the server made itself, and its height by its width
+	 */
+	private record CleanPicture(byte[] jpeg, float aspect) {
 	}
 }

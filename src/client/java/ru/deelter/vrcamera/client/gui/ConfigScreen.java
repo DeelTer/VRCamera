@@ -6,18 +6,13 @@ import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.impl.builders.SubCategoryBuilder;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -256,6 +251,19 @@ public final class ConfigScreen {
 	}
 
 	/**
+	 * What an option does, shown next to the mouse. Only while Shift is held: these are whole sentences, and over
+	 * a slider they would cover the value that is being set
+	 */
+	private static Supplier<Optional<Component[]>> help(String key) {
+		return () -> Optional.of(new Component[]{Component.translatable(
+				Screen.hasShiftDown() ? key : "vrcamera.config.help")});
+	}
+
+	private static int toStep(double value, double min, double step, int steps) {
+		return Math.clamp(Math.round((value - min) / step), 0, steps);
+	}
+
+	/**
 	 * @param regular if this is a shot of the director, and not one placed by hand
 	 */
 	private void addShot(SubCategoryBuilder group, ShotConfig shot, ShotConfig defaults, boolean regular) {
@@ -274,15 +282,6 @@ public final class ConfigScreen {
 				value -> shot.minDuration = value));
 		group.add(shotSlider("maxDuration", shot.maxDuration, defaults.maxDuration, 1, 180, 0.5, "%.1f s",
 				value -> shot.maxDuration = value));
-	}
-
-	/**
-	 * What an option does, shown next to the mouse. Only while Shift is held: these are whole sentences, and over
-	 * a slider they would cover the value that is being set
-	 */
-	private static Supplier<Optional<Component[]>> help(String key) {
-		return () -> Optional.of(new Component[]{Component.translatable(
-				Screen.hasShiftDown() ? key : "vrcamera.config.help")});
 	}
 
 	private AbstractConfigListEntry<?> toggle(String field, boolean value, boolean def, Consumer<Boolean> save) {
@@ -368,9 +367,5 @@ public final class ConfigScreen {
 				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(index -> save.accept(min + index * step))
 				.build();
-	}
-
-	private static int toStep(double value, double min, double step, int steps) {
-		return Math.clamp(Math.round((value - min) / step), 0, steps);
 	}
 }

@@ -13,17 +13,12 @@ import java.util.Iterator;
  */
 public final class PoseTrail {
 	private static final int CAPACITY = 8;
-
-	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {
-	}
-
 	private final ArrayDeque<Sample> samples = new ArrayDeque<>();
 	private final long delay;
 	private final long minSpacing;
 	private final long maxAhead;
 	private final long restAfter;
 	private final long restStep;
-
 	/**
 	 * @param delay      how long ago the place is that is shown
 	 * @param minSpacing what arrives in a bunch was not sent in one: at least this far apart
@@ -94,5 +89,8 @@ public final class PoseTrail {
 		Iterator<Sample> all = this.samples.iterator();
 		all.next();
 		return all.next();
+	}
+
+	private record Sample(long nanos, Vec3 position, Quaternionf rotation) {
 	}
 }

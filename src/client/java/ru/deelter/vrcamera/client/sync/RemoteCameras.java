@@ -3,14 +3,11 @@ package ru.deelter.vrcamera.client.sync;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
-import ru.deelter.vrcamera.client.compat.Gizmos;
-import ru.deelter.vrcamera.client.compat.TextGizmo;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LightLayer;
@@ -18,6 +15,9 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.compat.Gizmos;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
+import ru.deelter.vrcamera.client.compat.TextGizmo;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.math.PoseTrail;
@@ -51,19 +51,9 @@ public final class RemoteCameras {
 	private static final int LABEL_COLOR = 0xFFFFFFFF;
 	// the camera glyph of the mod, see assets/minecraft/font/default.json
 	private static final String CAMERA_ICON = "";
-
-	private static final class Camera {
-		String ownerName;
-		final PoseTrail trail = new PoseTrail(DELAY_NANOS, MIN_SPACING_NANOS, MAX_AHEAD_NANOS, 0, 0);
-		Vec3 position;
-		final Quaternionf rotation = new Quaternionf();
-		long heardNanos;
-	}
-
 	private final Map<UUID, Camera> cameras = new HashMap<>();
 	private final ItemStackRenderState model = new ItemStackRenderState();
 	private boolean broken;
-
 	private RemoteCameras() {
 	}
 
@@ -204,5 +194,13 @@ public final class RemoteCameras {
 		} catch (IllegalStateException e) {
 			// no gizmo collection is running, nothing to draw into
 		}
+	}
+
+	private static final class Camera {
+		final PoseTrail trail = new PoseTrail(DELAY_NANOS, MIN_SPACING_NANOS, MAX_AHEAD_NANOS, 0, 0);
+		final Quaternionf rotation = new Quaternionf();
+		String ownerName;
+		Vec3 position;
+		long heardNanos;
 	}
 }

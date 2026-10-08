@@ -7,32 +7,13 @@ import com.mojang.blaze3d.platform.InputConstants;
  * which only differ in how a window is asked what is held down in it.
  */
 final class WindowInput {
-	/**
-	 * the window of the camera, as the library the game makes its windows with has it
-	 */
-	interface Native {
-		/**
-		 * @param key a key of the keyboard as the game numbers them
-		 */
-		boolean isKeyDown(int key);
-
-		boolean isLeftButtonDown();
-
-		/**
-		 * takes the mouse for the window, hidden and held inside of it, or lets it go again
-		 */
-		void setMouseCaptured(boolean captured);
-	}
-
 	// kept from one window to the next: whoever turned the lines off does not want them back with every window
 	private static FrameGuide guide = FrameGuide.THIRDS;
-
 	private final Native window;
 	private boolean fullKeyDown;
 	private boolean guideKeyDown;
 	private boolean captured;
 	private boolean letGo;
-
 	WindowInput(Native window) {
 		this.window = window;
 	}
@@ -82,5 +63,22 @@ final class WindowInput {
 
 	boolean hasMouse() {
 		return this.captured;
+	}
+
+	/**
+	 * the window of the camera, as the library the game makes its windows with has it
+	 */
+	interface Native {
+		/**
+		 * @param key a key of the keyboard as the game numbers them
+		 */
+		boolean isKeyDown(int key);
+
+		boolean isLeftButtonDown();
+
+		/**
+		 * takes the mouse for the window, hidden and held inside of it, or lets it go again
+		 */
+		void setMouseCaptured(boolean captured);
 	}
 }

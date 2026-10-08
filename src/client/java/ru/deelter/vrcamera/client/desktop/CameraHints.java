@@ -14,30 +14,12 @@ import java.util.Map;
  * own. Each time something else can be done with the camera, and not over and over: they are read once.
  */
 final class CameraHints {
-	/**
-	 * what the player is doing with the camera, and the keys of the mod its hint names
-	 */
-	enum Hint {
-		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_OTHER, HOLD, HOLD_FREE, STEER;
-
-		private final String[] keys;
-
-		Hint(String... keys) {
-			this.keys = keys;
-		}
-
-		private boolean isIdle() {
-			return this == IDLE || this == IDLE_FREE;
-		}
-	}
-
 	// the same hint is not shown again sooner than this, and none right after the camera said something else
 	private static final long AGAIN_NANOS = 30_000_000_000L;
 	private static final long QUIET_NANOS = 2_500_000_000L;
 	private static final Map<Hint, Long> SHOWN = new EnumMap<>(Hint.class);
 	private static Hint last;
 	private static long spoke;
-
 	private CameraHints() {
 	}
 
@@ -85,5 +67,22 @@ final class CameraHints {
 			}
 		}
 		return Component.literal("?");
+	}
+
+	/**
+	 * what the player is doing with the camera, and the keys of the mod its hint names
+	 */
+	enum Hint {
+		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_OTHER, HOLD, HOLD_FREE, STEER;
+
+		private final String[] keys;
+
+		Hint(String... keys) {
+			this.keys = keys;
+		}
+
+		private boolean isIdle() {
+			return this == IDLE || this == IDLE_FREE;
+		}
 	}
 }

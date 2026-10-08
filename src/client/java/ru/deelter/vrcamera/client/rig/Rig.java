@@ -27,7 +27,9 @@ public final class Rig {
 	private final Smooth fov = new Smooth();
 	private final SmoothVec look = new SmoothVec();
 	private final SmoothVec anchor = new SmoothVec();
-
+	// if a camera that is zoomed in counts as being that much closer
+	private final boolean zoomIsCloseness;
+	private final Quaternionf rotation = new Quaternionf();
 	// fraction of the way from the player to the wanted position the camera is at, lower when walls are in the way
 	private double arm = 1.0;
 	// seconds the camera is looking past something thin, instead of moving in front of it
@@ -36,11 +38,22 @@ public final class Rig {
 	private boolean softArmed;
 	private double sinceTransition = BLEND_TIME;
 	private boolean ready;
-
 	private Vec3 position = Vec3.ZERO;
-	// if a camera that is zoomed in counts as being that much closer
-	private final boolean zoomIsCloseness;
-	private final Quaternionf rotation = new Quaternionf();
+
+	/**
+	 * @return if something thin is between the camera and the player right now, and the camera waits for it to pass
+	 */
+	public Rig() {
+		this(false);
+	}
+
+	/**
+	 * @param zoomIsCloseness if a camera that is zoomed in is taken to be as close as it looks to be, for what of
+	 *                        the player it shows: zoomed in from far away it fits as little of them as from close by
+	 */
+	public Rig(boolean zoomIsCloseness) {
+		this.zoomIsCloseness = zoomIsCloseness;
+	}
 
 	public Vec3 position() {
 		return this.position;
@@ -56,21 +69,6 @@ public final class Rig {
 
 	public double arm() {
 		return this.arm;
-	}
-
-	/**
-	 * @return if something thin is between the camera and the player right now, and the camera waits for it to pass
-	 */
-	public Rig() {
-		this(false);
-	}
-
-	/**
-	 * @param zoomIsCloseness if a camera that is zoomed in is taken to be as close as it looks to be, for what of
-	 *                        the player it shows: zoomed in from far away it fits as little of them as from close by
-	 */
-	public Rig(boolean zoomIsCloseness) {
-		this.zoomIsCloseness = zoomIsCloseness;
 	}
 
 	public boolean lookingPast() {

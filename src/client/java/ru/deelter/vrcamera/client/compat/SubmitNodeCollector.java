@@ -11,16 +11,8 @@ import java.util.function.BiConsumer;
  * What the mod draws its own things into. Newer versions of the game collect what is to be drawn and draw it later,
  * under this name; this version draws right away, into the buffers of the game. The code that draws is the same.
  */
-public final class SubmitNodeCollector {
-	private final MultiBufferSource buffers;
+public record SubmitNodeCollector(MultiBufferSource buffers) {
 
-	public SubmitNodeCollector(MultiBufferSource buffers) {
-		this.buffers = buffers;
-	}
-
-	public MultiBufferSource buffers() {
-		return this.buffers;
-	}
 
 	public void submitCustomGeometry(
 			PoseStack poseStack, RenderType type, BiConsumer<PoseStack.Pose, VertexConsumer> geometry) {

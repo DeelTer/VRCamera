@@ -7,6 +7,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
@@ -21,6 +23,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.compat.WorldDrawing;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
@@ -32,16 +35,11 @@ import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
+import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import net.fabricmc.fabric.api.client.rendering.v1.HudLayerRegistrationCallback;
-import net.fabricmc.fabric.api.client.rendering.v1.IdentifiedLayer;
-import ru.deelter.vrcamera.client.compat.WorldDrawing;
-import ru.deelter.vrcamera.client.shot.ShotType;
-import java.util.List;
-import java.util.Locale;
 
 public class VrcameraClient implements ClientModInitializer {
 	private static final int PAUSE_BUTTON = 150;
@@ -55,6 +53,58 @@ public class VrcameraClient implements ClientModInitializer {
 	private final Map<KeyMapping, Runnable> keys = new LinkedHashMap<>();
 	private final Set<KeyMapping> heldInWindow = new HashSet<>();
 	private KeyMapping gameOnly;
+
+	private static Component screenModeLabel() {
+		return Component.translatable("vrcamera.gui.mode", Component.translatable(
+				"vrcamera.mode." + DesktopCamera.INSTANCE.mode().name().toLowerCase(Locale.ROOT)));
+	}
+
+	/**
+	 * the photo key: with the camera of Vivecraft where there is one, of what the screen shows where there is not
+	 */
+	public static void takePhoto() {
+		if (Vr.INSTALLED) {
+			CameraController.INSTANCE.takePhoto();
+			return;
+		}
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null && PhotoAlbum.INSTANCE.takeWithoutCamera(player, CameraConfig.current().photoSheet)) {
+			CameraEffects.ownShutter(player);
+		}
+	}
+
+	/**
+	 * Where a button of the camera goes in the pause menu without VR: in a column to the left of the menu while
+	 * there is room for one, and into the four corners of the screen on a large gui scale.
+	 *
+	 * @return x, y and width
+	 */
+	private static int[] pauseSlot(Screen pauseMenu, int index) {
+		// the buttons of the pause menu are 204 wide, in the middle
+		int beside = pauseMenu.width / 2 - 102 - 8;
+		if (beside >= PAUSE_BUTTON_MIN) {
+			return new int[]{4, 4 + 22 * index, Math.min(PAUSE_BUTTON, beside)};
+		}
+		// one row at the top and one at the bottom: the menu is as wide as the screen then, and between them
+		int width = Math.min(PAUSE_BUTTON, (pauseMenu.width - 8 - 60) / 2);
+		return new int[]{index % 2 == 0 ? 4 : pauseMenu.width - 4 - width, index < 2 ? 4 : pauseMenu.height - 24,
+				width};
+	}
+
+	/**
+	 * a button that goes through the colours of the green screen, and off after the last one
+	 */
+	private static Button chromaButton() {
+		return Button.builder(chromaLabel(), button -> {
+			ChromaKey.cycle();
+			button.setMessage(chromaLabel());
+		}).build();
+	}
+
+	private static Component chromaLabel() {
+		return Component.translatable("vrcamera.gui.chroma", Component.translatable(!ChromaKey.isOn() ?
+				"vrcamera.mode.off" : "vrcamera.gui.chroma." + ChromaKey.preset().name().toLowerCase(Locale.ROOT)));
+	}
 
 	@Override
 	public void onInitializeClient() {
@@ -162,11 +212,6 @@ public class VrcameraClient implements ClientModInitializer {
 		});
 	}
 
-	private static Component screenModeLabel() {
-		return Component.translatable("vrcamera.gui.mode", Component.translatable(
-				"vrcamera.mode." + DesktopCamera.INSTANCE.mode().name().toLowerCase(Locale.ROOT)));
-	}
-
 	private Component screenOutputLabel() {
 		return Component.translatable("vrcamera.gui.output", Component.translatable(
 				"vrcamera.option.screenOutput." + CameraConfig.current().screenOutput.name().toLowerCase(Locale.ROOT)));
@@ -174,20 +219,6 @@ public class VrcameraClient implements ClientModInitializer {
 
 	private boolean onScreen() {
 		return !Vr.isRunning() && (!Vr.INSTALLED || CameraController.INSTANCE.mode() == CameraController.Mode.OFF);
-	}
-
-	/**
-	 * the photo key: with the camera of Vivecraft where there is one, of what the screen shows where there is not
-	 */
-	public static void takePhoto() {
-		if (Vr.INSTALLED) {
-			CameraController.INSTANCE.takePhoto();
-			return;
-		}
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (player != null && PhotoAlbum.INSTANCE.takeWithoutCamera(player, CameraConfig.current().photoSheet)) {
-			CameraEffects.ownShutter(player);
-		}
 	}
 
 	/**
@@ -252,39 +283,6 @@ public class VrcameraClient implements ClientModInitializer {
 		Button chroma = chromaButton();
 		chroma.setRectangle(120, 20, 4, 48);
 		widgets.add(chroma);
-	}
-
-	/**
-	 * Where a button of the camera goes in the pause menu without VR: in a column to the left of the menu while
-	 * there is room for one, and into the four corners of the screen on a large gui scale.
-	 *
-	 * @return x, y and width
-	 */
-	private static int[] pauseSlot(Screen pauseMenu, int index) {
-		// the buttons of the pause menu are 204 wide, in the middle
-		int beside = pauseMenu.width / 2 - 102 - 8;
-		if (beside >= PAUSE_BUTTON_MIN) {
-			return new int[]{4, 4 + 22 * index, Math.min(PAUSE_BUTTON, beside)};
-		}
-		// one row at the top and one at the bottom: the menu is as wide as the screen then, and between them
-		int width = Math.min(PAUSE_BUTTON, (pauseMenu.width - 8 - 60) / 2);
-		return new int[]{index % 2 == 0 ? 4 : pauseMenu.width - 4 - width, index < 2 ? 4 : pauseMenu.height - 24,
-				width};
-	}
-
-	/**
-	 * a button that goes through the colours of the green screen, and off after the last one
-	 */
-	private static Button chromaButton() {
-		return Button.builder(chromaLabel(), button -> {
-			ChromaKey.cycle();
-			button.setMessage(chromaLabel());
-		}).build();
-	}
-
-	private static Component chromaLabel() {
-		return Component.translatable("vrcamera.gui.chroma", Component.translatable(!ChromaKey.isOn() ?
-				"vrcamera.mode.off" : "vrcamera.gui.chroma." + ChromaKey.preset().name().toLowerCase(Locale.ROOT)));
 	}
 
 	private Component modeLabel() {

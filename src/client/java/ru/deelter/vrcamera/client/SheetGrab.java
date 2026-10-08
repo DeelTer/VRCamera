@@ -20,6 +20,11 @@ public final class SheetGrab implements HeldInteractModule {
 	// blocks from the hand to the middle of a sheet
 	private static final double REACH = 0.22;
 
+	private static PhotoSheet nearest(Vec3 handPosition, InteractionHand hand) {
+		VRData vr = ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_pre;
+		return PhotoAlbum.INSTANCE.nearest(handPosition, hand.ordinal(), REACH * vr.worldScale);
+	}
+
 	@Override
 	public ResourceLocation getId() {
 		return ID;
@@ -40,11 +45,6 @@ public final class SheetGrab implements HeldInteractModule {
 	@Override
 	public boolean isActive(LocalPlayer player, InteractionHand hand, Vec3 handPosition) {
 		return nearest(handPosition, hand) != null;
-	}
-
-	private static PhotoSheet nearest(Vec3 handPosition, InteractionHand hand) {
-		VRData vr = ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_pre;
-		return PhotoAlbum.INSTANCE.nearest(handPosition, hand.ordinal(), REACH * vr.worldScale);
 	}
 
 	@Override

@@ -37,31 +37,16 @@ public final class ChromaKey {
 	// depth as OpenGL has it: 1 is far away, 0 is right at the lens
 	private static final double FAR = 1.0;
 	private static final double NEAR = 0.0;
-
-	/**
-	 * the colours to switch between while filming, without going to the settings
-	 */
-	public enum Preset {
-		CONFIG(null), GREEN(DEFAULT_COLOR), BLUE("#0047BB"), RED("#FF0000");
-
-		private final String color;
-
-		Preset(String color) {
-			this.color = color;
-		}
-	}
-
 	// When each entity was looked for last, by its id: positive if it was seen, negative if not
 	private static final Int2LongOpenHashMap SEEN = new Int2LongOpenHashMap();
 	private static final long SEEN_NANOS = 100_000_000L;
 	private static final int SEEN_MOST = 1024;
+	private static final Vector4f color = new Vector4f(0.0F, 0xB1 / 255.0F, 0x40 / 255.0F, 1.0F);
 	private static Preset preset = Preset.CONFIG;
 	private static boolean on;
 	private static boolean broken;
 	private static Boolean shadowsBefore;
 	private static String colorText;
-	private static final Vector4f color = new Vector4f(0.0F, 0xB1 / 255.0F, 0x40 / 255.0F, 1.0F);
-
 	private ChromaKey() {
 	}
 
@@ -244,5 +229,18 @@ public final class ChromaKey {
 	private static void failed(Throwable cause) {
 		broken = true;
 		Vrcamera.LOGGER.error("VRCamera: the green screen can't be drawn, it is off until it is turned on again", cause);
+	}
+
+	/**
+	 * the colours to switch between while filming, without going to the settings
+	 */
+	public enum Preset {
+		CONFIG(null), GREEN(DEFAULT_COLOR), BLUE("#0047BB"), RED("#FF0000");
+
+		private final String color;
+
+		Preset(String color) {
+			this.color = color;
+		}
 	}
 }

@@ -12,11 +12,11 @@ import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraEffects;
 import ru.deelter.vrcamera.client.config.CameraConfig;
+import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoSheet;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.sync.Protocol;
-import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -60,12 +60,7 @@ public final class PhotoSync {
 
 	// a camera that is not heard of for a second and a half is gone for the others
 	private static final long CAMERA_KEEP_ALIVE_NANOS = 1_000_000_000L;
-	private boolean connected;
-	// where and how the camera was when the server was told last, and when that was
-	private Vec3 sharedAt;
 	private final Quaternionf sharedTurn = new Quaternionf();
-	private long sharedNanos;
-	private Protocol.Limits limits;
 	// every sheet the server told about and did not take back
 	private final Map<Long, Protocol.Sheet> known = new HashMap<>();
 	// the ones that are in the album, with their picture
@@ -88,12 +83,46 @@ public final class PhotoSync {
 	// sheets of this player that were sent to be shared, by the number the answer will name
 	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
+	private boolean connected;
+	// where and how the camera was when the server was told last, and when that was
+	private Vec3 sharedAt;
+	private long sharedNanos;
+	private Protocol.Limits limits;
 	private int hellos;
 	private boolean shownCustom;
 	private long nextReference = 1;
 	private int ticks;
 
 	private PhotoSync() {
+	}
+
+	private static void send(byte[] message) {
+		ClientPlayNetworking.send(new SyncPayload(message));
+	}
+
+	private static Protocol.Pose pose(PhotoSheet sheet) {
+		return new Protocol.Pose(sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
+				sheet.rotation().y, sheet.rotation().z, sheet.rotation().w);
+	}
+
+	/**
+	 * @return the picture as the game wants it. A new one every time: each sheet owns its own, also if two show
+	 * the same
+	 */
+	private static NativeImage black() {
+		NativeImage pixels = new NativeImage(2, 2, false);
+		for (int i = 0; i < 4; i++) {
+			pixels.setPixel(i % 2, i / 2, 0xFF000000);
+		}
+		return pixels;
+	}
+
+	private static void refuse(PhotoSheet sheet, String message) {
+		PhotoAlbum.INSTANCE.pinRefused(sheet);
+		LocalPlayer player = Minecraft.getInstance().player;
+		if (player != null) {
+			player.displayClientMessage(Component.translatable(message), true);
+		}
 	}
 
 	public void init() {
@@ -191,10 +220,6 @@ public final class PhotoSync {
 			send(Protocol.cameraSwitch(
 					new Protocol.Switched(name, id == null ? "" : id, position.x, position.y, position.z)));
 		}
-	}
-
-	private static void send(byte[] message) {
-		ClientPlayNetworking.send(new SyncPayload(message));
 	}
 
 	private void receive(byte[] message) {
@@ -361,11 +386,6 @@ public final class PhotoSync {
 		}
 	}
 
-	private static Protocol.Pose pose(PhotoSheet sheet) {
-		return new Protocol.Pose(sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
-				sheet.rotation().y, sheet.rotation().z, sheet.rotation().w);
-	}
-
 	private void shared(Protocol.LooseResult result) {
 		PhotoSheet sheet = this.sharing.remove(result.reference());
 		if (sheet == null || result.id() == 0) {
@@ -403,6 +423,10 @@ public final class PhotoSync {
 			PhotoAlbum.INSTANCE.removeRemote(id, false);
 		}
 	}
+
+	/**
+	 * gets the picture with that hash, from where it is closest: memory, disk, server
+	 */
 
 	private void removed(long id, byte reason) {
 		this.known.remove(id);
@@ -549,9 +573,6 @@ public final class PhotoSync {
 	}
 
 	/**
-	 * gets the picture with that hash, from where it is closest: memory, disk, server
-	 */
-	/**
 	 * @return if {@link #fetch} would start to get that picture now
 	 */
 	private boolean canFetch(long hash) {
@@ -648,18 +669,6 @@ public final class PhotoSync {
 	}
 
 	/**
-	 * @return the picture as the game wants it. A new one every time: each sheet owns its own, also if two show
-	 * the same
-	 */
-	private static NativeImage black() {
-		NativeImage pixels = new NativeImage(2, 2, false);
-		for (int i = 0; i < 4; i++) {
-			pixels.setPixel(i % 2, i / 2, 0xFF000000);
-		}
-		return pixels;
-	}
-
-	/**
 	 * The player pinned a sheet. The server is asked to keep it, and may refuse.
 	 *
 	 * @param picture the pixels of the sheet, null if it still has what it was sent with before
@@ -719,14 +728,6 @@ public final class PhotoSync {
 					sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
 					sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect, result.imageHash(),
 					true, sheet.custom));
-		}
-	}
-
-	private static void refuse(PhotoSheet sheet, String message) {
-		PhotoAlbum.INSTANCE.pinRefused(sheet);
-		LocalPlayer player = Minecraft.getInstance().player;
-		if (player != null) {
-			player.displayClientMessage(Component.translatable(message), true);
 		}
 	}
 

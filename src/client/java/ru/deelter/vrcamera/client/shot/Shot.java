@@ -21,7 +21,8 @@ public final class Shot {
 	 * -1 or 1, which side of the player the shot is on
 	 */
 	public final int side;
-
+	// where the first person shot looks, follows the head with a delay to calm it down
+	private final SmoothVec aim = new SmoothVec();
 	/**
 	 * seconds this shot is running
 	 */
@@ -35,14 +36,12 @@ public final class Shot {
 	 * asked for by the player, stays even if it does not fit what they are doing
 	 */
 	public boolean forced;
-
 	// where the camera should be, on an orbit around the player, angles in radians
 	public double azimuth;
 	public double elevation;
 	public double distance;
 	public double fov;
 	public Vec3 lookTarget = Vec3.ZERO;
-
 	/**
 	 * fixed camera position, only for shots that don't move with the player
 	 */
@@ -52,8 +51,6 @@ public final class Shot {
 	private double stillTime;
 	// if a duel ever had an opponent, one that was asked for without any is not over right away
 	private boolean hadTarget;
-	// where the first person shot looks, follows the head with a delay to calm it down
-	private final SmoothVec aim = new SmoothVec();
 
 	public Shot(ShotType type, ShotConfig config, int side) {
 		this.type = type;

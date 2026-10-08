@@ -21,6 +21,10 @@ public final class PhotoTakeEvent extends PlayerEvent {
 		this.camera = camera;
 	}
 
+	public static @NotNull HandlerList getHandlerList() {
+		return HANDLERS;
+	}
+
 	/**
 	 * @return where the camera was, as the mod of the player says. Not checked beyond being near the player
 	 */
@@ -30,10 +34,6 @@ public final class PhotoTakeEvent extends PlayerEvent {
 
 	@Override
 	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
-	}
-
-	public static @NotNull HandlerList getHandlerList() {
 		return HANDLERS;
 	}
 }

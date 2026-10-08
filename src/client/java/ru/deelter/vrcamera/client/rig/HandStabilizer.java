@@ -17,10 +17,16 @@ public final class HandStabilizer {
 	// this far ahead of the camera the hand gets through twice as fast, in blocks and radians
 	private static final double SOFT_DISTANCE = 0.05;
 	private static final double SOFT_ANGLE = Math.toRadians(4);
-
-	private Vec3 position = Vec3.ZERO;
 	private final Quaternionf rotation = new Quaternionf();
+	private Vec3 position = Vec3.ZERO;
 	private boolean started;
+
+	/**
+	 * @return part of the way to go in this frame
+	 */
+	private static double follow(double dt, double lag) {
+		return 1.0 - Math.exp(-dt / lag);
+	}
 
 	public Vec3 position() {
 		return this.position;
@@ -57,12 +63,5 @@ public final class HandStabilizer {
 				this.rotation.z * handRotation.z() + this.rotation.w * handRotation.w();
 		double angle = 2.0 * Math.acos(Math.min(1.0, Math.abs(dot)));
 		this.rotation.slerp(handRotation, (float) follow(dt, lag / (1.0 + angle / SOFT_ANGLE)));
-	}
-
-	/**
-	 * @return part of the way to go in this frame
-	 */
-	private static double follow(double dt, double lag) {
-		return 1.0 - Math.exp(-dt / lag);
 	}
 }

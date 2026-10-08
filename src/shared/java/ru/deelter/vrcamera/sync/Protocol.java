@@ -77,113 +77,7 @@ public final class Protocol {
 	public static final byte PIN_NOT_ALLOWED = 6;
 	public static final byte PIN_SERVER_FULL = 7;
 
-	/**
-	 * a sheet as the server tells clients about it
-	 *
-	 * @param removable if the player it is sent to may take it off
-	 * @param custom    if its owner said it is not a photo taken in the game but a picture from somewhere else.
-	 *                  Clients do not show those unless their player asked for it
-	 */
-	public record Sheet(
-			long id, UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
-			float qw, float aspect, long imageHash, boolean removable, boolean custom) {
-	}
-
-	/**
-	 * a sheet a player pinned
-	 *
-	 * @param reference picked by the client, the answer names it again
-	 * @param blockX    the block it is pinned to, the sheet falls when that goes
-	 */
-	public record Pin(
-			long reference, int blockX, int blockY, int blockZ, double x, double y, double z, float qx, float qy,
-			float qz, float qw, float aspect, byte[] image, boolean custom) {
-	}
-
-	public record PinResult(long reference, byte result, long id, long imageHash) {
-	}
-
-	/**
-	 * where something is and how it is turned
-	 */
-	public record Pose(double x, double y, double z, float qx, float qy, float qz, float qw) {
-		public boolean isSane() {
-			float length = qx * qx + qy * qy + qz * qz + qw * qw;
-			return Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z) && Float.isFinite(length) &&
-					length > 1.0E-6F;
-		}
-
-		/**
-		 * @return the same with a unit quaternion, anything else would also scale what is turned by it
-		 */
-		public Pose normalized() {
-			float length = (float) Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
-			return new Pose(x, y, z, qx / length, qy / length, qz / length, qw / length);
-		}
-	}
-
-	/**
-	 * A sheet that is not pinned: in a hand, falling or lying somewhere. The server only keeps those in memory
-	 * and for a while, they are told about so the others see them and can pick them up
-	 */
-	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash,
-	                    boolean custom) {
-	}
-
-	public record NewLoose(long reference, Pose pose, byte[] image, boolean custom) {
-	}
-
-	/**
-	 * @param id 0 if the server did not take it
-	 */
-	public record LooseResult(long reference, long id, long imageHash) {
-	}
-
-	public record Limits(int version, int maxOwn, int maxPerChunk, int maxImageBytes) {
-	}
-
-	/**
-	 * where the camera of a player is. Sent a few times per second while it is on, nothing says that it is off:
-	 * a camera that is not heard of for a moment is gone
-	 */
-	public record Camera(UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
-	                     float qw) {
-	}
-
-	/**
-	 * a free camera a server gives a player: where it stands, where it looks in degrees as the game counts them,
-	 * and how far it is zoomed in
-	 *
-	 * @param anyway also if the player has moved or thrown away the one with this id
-	 * @param show   if it films right away
-	 */
-	public record Placed(String id, double x, double y, double z, float yaw, float pitch, float fov, boolean anyway,
-	                     boolean show) {
-		public boolean isSane() {
-			return !id.isEmpty() && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) && Double.isFinite(y) &&
-					Double.isFinite(z) && Float.isFinite(yaw) && Float.isFinite(pitch) && Float.isFinite(fov);
-		}
-	}
-
-	/**
-	 * the free camera a player went over to
-	 *
-	 * @param name the letter the player knows it by
-	 * @param id   what a server called it, empty for one the player made
-	 */
-	public record Switched(String name, String id, double x, double y, double z) {
-		public boolean isSane() {
-			return !name.isEmpty() && name.length() <= 16 && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) &&
-					Double.isFinite(y) && Double.isFinite(z);
-		}
-	}
-
 	private Protocol() {
-	}
-
-	@FunctionalInterface
-	private interface Body {
-		void write(DataOutputStream out) throws IOException;
 	}
 
 	private static byte[] message(byte type, Body body) {
@@ -548,5 +442,111 @@ public final class Protocol {
 	public static byte[] reset() {
 		return message(S_RESET, out -> {
 		});
+	}
+
+	@FunctionalInterface
+	private interface Body {
+		void write(DataOutputStream out) throws IOException;
+	}
+
+	/**
+	 * a sheet as the server tells clients about it
+	 *
+	 * @param removable if the player it is sent to may take it off
+	 * @param custom    if its owner said it is not a photo taken in the game but a picture from somewhere else.
+	 *                  Clients do not show those unless their player asked for it
+	 */
+	public record Sheet(
+			long id, UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
+			float qw, float aspect, long imageHash, boolean removable, boolean custom) {
+	}
+
+	/**
+	 * a sheet a player pinned
+	 *
+	 * @param reference picked by the client, the answer names it again
+	 * @param blockX    the block it is pinned to, the sheet falls when that goes
+	 */
+	public record Pin(
+			long reference, int blockX, int blockY, int blockZ, double x, double y, double z, float qx, float qy,
+			float qz, float qw, float aspect, byte[] image, boolean custom) {
+	}
+
+	public record PinResult(long reference, byte result, long id, long imageHash) {
+	}
+
+	/**
+	 * where something is and how it is turned
+	 */
+	public record Pose(double x, double y, double z, float qx, float qy, float qz, float qw) {
+		public boolean isSane() {
+			float length = qx * qx + qy * qy + qz * qz + qw * qw;
+			return Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z) && Float.isFinite(length) &&
+					length > 1.0E-6F;
+		}
+
+		/**
+		 * @return the same with a unit quaternion, anything else would also scale what is turned by it
+		 */
+		public Pose normalized() {
+			float length = (float) Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+			return new Pose(x, y, z, qx / length, qy / length, qz / length, qw / length);
+		}
+	}
+
+	/**
+	 * A sheet that is not pinned: in a hand, falling or lying somewhere. The server only keeps those in memory
+	 * and for a while, they are told about so the others see them and can pick them up
+	 */
+	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash,
+	                    boolean custom) {
+	}
+
+	public record NewLoose(long reference, Pose pose, byte[] image, boolean custom) {
+	}
+
+	/**
+	 * @param id 0 if the server did not take it
+	 */
+	public record LooseResult(long reference, long id, long imageHash) {
+	}
+
+	public record Limits(int version, int maxOwn, int maxPerChunk, int maxImageBytes) {
+	}
+
+	/**
+	 * where the camera of a player is. Sent a few times per second while it is on, nothing says that it is off:
+	 * a camera that is not heard of for a moment is gone
+	 */
+	public record Camera(UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
+	                     float qw) {
+	}
+
+	/**
+	 * a free camera a server gives a player: where it stands, where it looks in degrees as the game counts them,
+	 * and how far it is zoomed in
+	 *
+	 * @param anyway also if the player has moved or thrown away the one with this id
+	 * @param show   if it films right away
+	 */
+	public record Placed(String id, double x, double y, double z, float yaw, float pitch, float fov, boolean anyway,
+	                     boolean show) {
+		public boolean isSane() {
+			return !id.isEmpty() && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) && Double.isFinite(y) &&
+					Double.isFinite(z) && Float.isFinite(yaw) && Float.isFinite(pitch) && Float.isFinite(fov);
+		}
+	}
+
+	/**
+	 * the free camera a player went over to
+	 *
+	 * @param name the letter the player knows it by
+	 * @param id   what a server called it, empty for one the player made
+	 */
+	public record Switched(String name, String id, double x, double y, double z) {
+		public boolean isSane() {
+			return !name.isEmpty() && name.length() <= 16 && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) &&
+					Double.isFinite(y) && Double.isFinite(z);
+		}
 	}
 }

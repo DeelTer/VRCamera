@@ -2,7 +2,6 @@ package ru.deelter.vrcamera.client.photo;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -11,6 +10,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.compat.SubmitNodeCollector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,13 +32,19 @@ public final class CameraFlashes {
 	// Not for the one it comes from: it would fill the picture of the camera that took the photo, and the eyes of a
 	// player who took one without a camera
 	private static final double TOO_CLOSE = 0.3;
-
-	private record Flash(Vec3 position, long nanos) {
-	}
-
 	private final List<Flash> flashes = new ArrayList<>();
 
 	private CameraFlashes() {
+	}
+
+	private static void vertex(
+			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v, float alpha) {
+		consumer.addVertex(pose, x, y, 0)
+				.setColor(1.0F, 1.0F, 1.0F, alpha)
+				.setUv(u, v)
+				.setOverlay(OverlayTexture.NO_OVERLAY)
+				.setLight(FULL_LIGHT)
+				.setNormal(0, 1, 0);
 	}
 
 	public void add(Vec3 position) {
@@ -81,13 +87,6 @@ public final class CameraFlashes {
 		}
 	}
 
-	private static void vertex(
-			VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v, float alpha) {
-		consumer.addVertex(pose, x, y, 0)
-				.setColor(1.0F, 1.0F, 1.0F, alpha)
-				.setUv(u, v)
-				.setOverlay(OverlayTexture.NO_OVERLAY)
-				.setLight(FULL_LIGHT)
-				.setNormal(0, 1, 0);
+	private record Flash(Vec3 position, long nanos) {
 	}
 }

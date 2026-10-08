@@ -13,6 +13,24 @@ import ru.deelter.vrcamera.client.math.SmoothVec;
  * per frame snapshot of the player the camera films
  */
 public final class Subject {
+	// further away than this a partner is not in the picture anymore
+	private static final double PARTNER_REACH = 24.0;
+	// blocks a jump takes the feet up at most
+	private static final double JUMP_HEIGHT = 1.3;
+	// Having landed is going up or down slower than this, in blocks per second, for longer than this: longer than
+	// the top of a jump lasts, and than the one tick a player who hops on is on the ground. The camera then takes
+	// about that many seconds to come along
+	private static final double SETTLED_SPEED = 0.3;
+	private static final double SETTLE_AFTER = 0.12;
+	private static final double GROUND_LAG = 0.15;
+	// A jump follows another one if the player was on the ground for no longer than this in between. And the
+	// seconds it takes to go over from going along with jumps to holding still, and back
+	private static final double HOP_GAP = 0.3;
+	private static final double HOP_EASE = 0.3;
+	// seconds it takes to go over from one who jumps to one who flies or climbs, and back
+	private static final double LOOSE_TIME = 0.4;
+	private final SmoothVec velocitySmooth = new SmoothVec();
+	private final SmoothAngle facingSmooth = new SmoothAngle();
 	public Player player;
 	/**
 	 * how far the current frame is between two game ticks, to get where entities are drawn
@@ -50,12 +68,10 @@ public final class Subject {
 	 * the player moved further than they could have, cameras need to jump
 	 */
 	public boolean teleported;
-
 	/**
 	 * middle of the inventory or chest menu the player has open, null without one
 	 */
 	public Vec3 guiCenter;
-
 	public Entity target;
 	/**
 	 * someone to have in the picture next to the player while there is no fight: a friend they film with. Null for
@@ -66,28 +82,7 @@ public final class Subject {
 	 * middle of the {@link #target}, null without one
 	 */
 	public Vec3 targetCenter;
-
-	// further away than this a partner is not in the picture anymore
-	private static final double PARTNER_REACH = 24.0;
-
-	private final SmoothVec velocitySmooth = new SmoothVec();
-	private final SmoothAngle facingSmooth = new SmoothAngle();
 	private boolean first = true;
-
-	// blocks a jump takes the feet up at most
-	private static final double JUMP_HEIGHT = 1.3;
-	// Having landed is going up or down slower than this, in blocks per second, for longer than this: longer than
-	// the top of a jump lasts, and than the one tick a player who hops on is on the ground. The camera then takes
-	// about that many seconds to come along
-	private static final double SETTLED_SPEED = 0.3;
-	private static final double SETTLE_AFTER = 0.12;
-	private static final double GROUND_LAG = 0.15;
-	// A jump follows another one if the player was on the ground for no longer than this in between. And the
-	// seconds it takes to go over from going along with jumps to holding still, and back
-	private static final double HOP_GAP = 0.3;
-	private static final double HOP_EASE = 0.3;
-	// seconds it takes to go over from one who jumps to one who flies or climbs, and back
-	private static final double LOOSE_TIME = 0.4;
 	// The height a player at a screen is filmed from while they jump: where it belongs, where it is on its way
 	// there and how fast it goes. How far above it they are, and for how long they stayed at one height
 	private double rest;

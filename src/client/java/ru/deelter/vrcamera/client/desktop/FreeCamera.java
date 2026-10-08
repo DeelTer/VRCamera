@@ -59,44 +59,6 @@ final class FreeCamera {
 	// how many cameras of a world a server may have given
 	private static final int FROM_SERVER_MOST = 8;
 	private static final Gson GSON = new Gson();
-
-	/**
-	 * where a camera stands: degrees the way the game counts them for a player
-	 */
-	private static final class Spot {
-		// a letter. It stays with the camera for as long as there is one, whatever happens to the others
-		String name;
-		double x;
-		double y;
-		double z;
-		double yaw;
-		double pitch;
-		double fov;
-		// what a server that gave the camera calls it, null for one the player made
-		String id;
-		// What the camera sits on, where on it, and which way that faced when it was looked at last. Not kept
-		// with the world: an entity is not the same one the next time
-		transient Entity carrier;
-		transient Vec3 seat;
-		transient double carrierYaw;
-
-		Vec3 position() {
-			return new Vec3(this.x, this.y, this.z);
-		}
-
-		Vec3 forward() {
-			return FreeCamera.forward(this.yaw, this.pitch);
-		}
-	}
-
-	/**
-	 * what is written down of a world, where there is more to it than the cameras
-	 */
-	private static final class Kept {
-		Spot[] cameras;
-		String[] declined;
-	}
-
 	private final List<Spot> spots = new ArrayList<>();
 	// cameras of a server the player threw away: not to be given again
 	private final Set<String> declined = new LinkedHashSet<>();
@@ -116,6 +78,29 @@ final class FreeCamera {
 	private double yaw;
 	private double pitch;
 	private double fov = 70.0;
+
+	/**
+	 * @return the name of the file the cameras of a dimension are kept in
+	 */
+	static String fileName(String dimension) {
+		return FILES + dimension + ".json";
+	}
+
+	private static double bodyYaw(Entity entity, float partialTick) {
+		return entity instanceof LivingEntity living ?
+				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
+	}
+
+	private static Vec3 forward(double yaw, double pitch) {
+		double yawRad = Math.toRadians(yaw);
+		double pitchRad = Math.toRadians(pitch);
+		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
+				Math.cos(yawRad) * Math.cos(pitchRad));
+	}
+
+	private static double ease(double rate, double dt) {
+		return 1.0 - Math.exp(-rate * dt);
+	}
 
 	boolean isEmpty() {
 		return this.spots.isEmpty();
@@ -319,13 +304,6 @@ final class FreeCamera {
 	}
 
 	/**
-	 * @return the name of the file the cameras of a dimension are kept in
-	 */
-	static String fileName(String dimension) {
-		return FILES + dimension + ".json";
-	}
-
-	/**
 	 * puts the camera that films somewhere else, at once
 	 */
 	void place(Vec3 position, Vec3 forward, double fov) {
@@ -452,11 +430,6 @@ final class FreeCamera {
 				this.yaw += turn;
 			}
 		}
-	}
-
-	private static double bodyYaw(Entity entity, float partialTick) {
-		return entity instanceof LivingEntity living ?
-				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
 	}
 
 	/**
@@ -626,14 +599,40 @@ final class FreeCamera {
 		}
 	}
 
-	private static Vec3 forward(double yaw, double pitch) {
-		double yawRad = Math.toRadians(yaw);
-		double pitchRad = Math.toRadians(pitch);
-		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
-				Math.cos(yawRad) * Math.cos(pitchRad));
+	/**
+	 * where a camera stands: degrees the way the game counts them for a player
+	 */
+	private static final class Spot {
+		// a letter. It stays with the camera for as long as there is one, whatever happens to the others
+		String name;
+		double x;
+		double y;
+		double z;
+		double yaw;
+		double pitch;
+		double fov;
+		// what a server that gave the camera calls it, null for one the player made
+		String id;
+		// What the camera sits on, where on it, and which way that faced when it was looked at last. Not kept
+		// with the world: an entity is not the same one the next time
+		transient Entity carrier;
+		transient Vec3 seat;
+		transient double carrierYaw;
+
+		Vec3 position() {
+			return new Vec3(this.x, this.y, this.z);
+		}
+
+		Vec3 forward() {
+			return FreeCamera.forward(this.yaw, this.pitch);
+		}
 	}
 
-	private static double ease(double rate, double dt) {
-		return 1.0 - Math.exp(-rate * dt);
+	/**
+	 * what is written down of a world, where there is more to it than the cameras
+	 */
+	private static final class Kept {
+		Spot[] cameras;
+		String[] declined;
 	}
 }
