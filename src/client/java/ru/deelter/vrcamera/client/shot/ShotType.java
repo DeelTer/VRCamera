@@ -8,11 +8,11 @@ public enum ShotType {
 	/**
 	 * behind the player, looking over the shoulder
 	 */
-	SHOULDER(new ShotConfig(1.0, 152, 12, 3.0, 70, 9, 16), 1.0, 1.0, 0.6, 1.2, 1.2, 1.4, 1.2, 1.2, 1.2, 1.0),
+	SHOULDER(new ShotConfig(1.0, 152, 12, 6.0, 70, 9, 16), 1.0, 1.0, 0.6, 1.2, 1.2, 1.4, 1.2, 1.2, 1.2, 1.0),
 	/**
 	 * in front of the player, backing away from them, moves in closer while they stand still
 	 */
-	FRONT(new ShotConfig(1.0, 18, 4, 3.2, 60, 7, 12), 0.9, 1.0, 1.2, 1.0, 0.8, 0.6, 1.0, 1.0, 0.6, 0.8),
+	FRONT(new ShotConfig(1.0, 18, 4, 6.2, 60, 7, 12), 0.9, 1.0, 1.2, 1.0, 0.8, 0.6, 1.0, 1.0, 0.6, 0.8),
 	/**
 	 * slowly circles the player
 	 */
@@ -28,7 +28,7 @@ public enum ShotType {
 	/**
 	 * from the ground, looking up at the player
 	 */
-	LOW(new ShotConfig(0.8, 35, -8, 2.6, 78, 5, 8), 0.8, 1.0, 0.8, 0.8, 1.0, 0.0, 0.6, 0.0, 1.4, 0.6),
+	LOW(new ShotConfig(0.8, 35, -8, 5.6, 78, 5, 8), 0.8, 1.0, 0.8, 0.8, 1.0, 0.0, 0.6, 0.0, 1.4, 0.6),
 	/**
 	 * close up on the hands
 	 */

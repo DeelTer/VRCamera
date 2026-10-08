@@ -178,8 +178,7 @@ The director, own angles and events do not run in this mode.
 The director adjusts shot choices and distances to your activity: idle, walking, running, flying, riding,
 swimming, fighting or mining. Tight spaces favour closer angles.
 
-In open space, the first shot while standing, walking or running is `flyby`: 7 blocks away by default.
-If it is disabled or has no room, the director picks another angle. Manual choices and events take priority.
+Default distances for `shoulder`, `front` and `low` are 6, 6.2 and 5.6 blocks. Saved settings take precedence.
 
 A shot changes when its timer ends, walls push the camera too close, a new activity begins, or you press `F9`.
 Mining must last more than a second to trigger a change. Transitions are instant cuts or smooth fly-overs.

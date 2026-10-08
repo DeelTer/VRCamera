@@ -354,25 +354,23 @@ public final class Director {
 		} else if (isHome() && asides <= 0 && (current == null || current.type != ShotType.POV)) {
 			selection.considerBothSides(ShotType.POV, 1.0, distanceScale);
 		} else {
-			if (!considerOpeningShot(selection, distanceScale)) {
-				for (final ShotType type : ShotType.values()) {
-					final ShotConfig shotConfig = config.shot(type);
-					if (type == ShotType.CUSTOM || !shotConfig.enabled || (type == ShotType.POV && isHome()) ||
-							(type == ShotType.DUEL && subject.targetCenter == null) ||
-							(type == ShotType.HANDS && !subject.tracksHands)) {
-						continue;
-					}
-					final double weight = shotConfig.weight * fit(type) * (type == boost ? BOOST : 1.0);
-					if (weight > 0) {
-						selection.considerBothSides(type, weight, distanceScale);
-					}
+			for (final ShotType type : ShotType.values()) {
+				final ShotConfig shotConfig = config.shot(type);
+				if (type == ShotType.CUSTOM || !shotConfig.enabled || (type == ShotType.POV && isHome()) ||
+						(type == ShotType.DUEL && subject.targetCenter == null) ||
+						(type == ShotType.HANDS && !subject.tracksHands)) {
+					continue;
 				}
-				if (config.customInRotation) {
+				final double weight = shotConfig.weight * fit(type) * (type == boost ? BOOST : 1.0);
+				if (weight > 0) {
+					selection.considerBothSides(type, weight, distanceScale);
+				}
+			}
+			if (config.customInRotation) {
 
-					for (final ShotConfig preset : config.presets) {
-						if (preset.enabled && preset.weight > 0) {
-							selection.consider(new Shot(ShotType.CUSTOM, preset, 1), preset.weight, 1.0);
-						}
+				for (final ShotConfig preset : config.presets) {
+					if (preset.enabled && preset.weight > 0) {
+						selection.consider(new Shot(ShotType.CUSTOM, preset, 1), preset.weight, 1.0);
 					}
 				}
 			}
@@ -416,19 +414,6 @@ public final class Director {
 		forceType = null;
 		occludedTime = -OCCLUSION_GRACE;
 		lastReason = reason;
-	}
-
-	private boolean considerOpeningShot(Selection selection, double distanceScale) {
-		if (current != null || forceNext || tight || partnered || activity(context) != Context.WALK) {
-			return false;
-		}
-		final ShotConfig shotConfig = config.shot(ShotType.FLYBY);
-		if (!shotConfig.enabled || shotConfig.weight <= 0) {
-			return false;
-		}
-
-		selection.considerBothSides(ShotType.FLYBY, shotConfig.weight, distanceScale);
-		return selection.best != null;
 	}
 
 	/**
