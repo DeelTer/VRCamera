@@ -8,13 +8,13 @@ import net.minecraft.client.Minecraft;
  */
 final class GameFrame {
 
-    /**
-     * @param renderLevel false to draw the menus alone. What the newer game draws was said when it was extracted
-     */
-    static void render(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
-        mc.gameRenderer.render();
-    }
+	private GameFrame() {
+	}
 
-    private GameFrame() {
-    }
+	/**
+	 * @param renderLevel false to draw the menus alone. What the newer game draws was said when it was extracted
+	 */
+	static void render(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
+		mc.gameRenderer.render();
+	}
 }
