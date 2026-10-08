@@ -47,6 +47,7 @@ public final class ChromaKey {
 	private static boolean broken;
 	private static Boolean shadowsBefore;
 	private static String colorText;
+
 	private ChromaKey() {
 	}
 

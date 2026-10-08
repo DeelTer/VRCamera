@@ -19,6 +19,7 @@ public final class PoseTrail {
 	private final long maxAhead;
 	private final long restAfter;
 	private final long restStep;
+
 	/**
 	 * @param delay      how long ago the place is that is shown
 	 * @param minSpacing what arrives in a bunch was not sent in one: at least this far apart

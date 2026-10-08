@@ -20,6 +20,7 @@ final class CameraHints {
 	private static final Map<Hint, Long> SHOWN = new EnumMap<>(Hint.class);
 	private static Hint last;
 	private static long spoke;
+
 	private CameraHints() {
 	}
 

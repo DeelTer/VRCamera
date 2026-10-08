@@ -39,6 +39,7 @@ public final class OutputWindow {
 	private static boolean moving;
 	private static double mouseX;
 	private static double mouseY;
+
 	private OutputWindow() {
 	}
 

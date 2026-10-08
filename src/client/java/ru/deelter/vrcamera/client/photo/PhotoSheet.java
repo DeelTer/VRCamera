@@ -112,6 +112,7 @@ public final class PhotoSheet {
 	private boolean removable = true;
 	private BlockPos support = BlockPos.ZERO;
 	private int hand = -1;
+
 	public PhotoSheet(ResourceLocation texture, int textureSlot, float aspect, String file) {
 		this.texture = texture;
 		this.textureSlot = textureSlot;

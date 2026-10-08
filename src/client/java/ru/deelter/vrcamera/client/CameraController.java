@@ -145,6 +145,7 @@ public final class CameraController implements Tracker {
 	// seconds the camera still waits in front of the player, to be picked up by hand
 	private double parkedTime;
 	private long lastNanos;
+
 	private CameraController() {
 	}
 

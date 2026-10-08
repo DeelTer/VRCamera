@@ -54,6 +54,7 @@ public final class RemoteCameras {
 	private final Map<UUID, Camera> cameras = new HashMap<>();
 	private final ItemStackRenderState model = new ItemStackRenderState();
 	private boolean broken;
+
 	private RemoteCameras() {
 	}
 

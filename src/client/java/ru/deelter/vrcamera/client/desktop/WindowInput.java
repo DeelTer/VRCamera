@@ -14,6 +14,7 @@ final class WindowInput {
 	private boolean guideKeyDown;
 	private boolean captured;
 	private boolean letGo;
+
 	WindowInput(Native window) {
 		this.window = window;
 	}

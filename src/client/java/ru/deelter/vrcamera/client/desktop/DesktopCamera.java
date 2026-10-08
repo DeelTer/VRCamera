@@ -140,6 +140,7 @@ public final class DesktopCamera {
 	private double poseStep;
 	private Vec3 poseSpeed = Vec3.ZERO;
 	private int shareTicks;
+
 	private DesktopCamera() {
 	}
 

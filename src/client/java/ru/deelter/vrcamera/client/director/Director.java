@@ -81,6 +81,7 @@ public final class Director {
 	private double stillTime;
 	// what the player hit since the last update
 	private Entity attacked;
+
 	public Director(CameraConfig config) {
 		this.config = config;
 	}

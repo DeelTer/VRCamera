@@ -13,6 +13,7 @@ final class WindowPlace {
 	private final int height;
 	// where the window was and how large, while it fills a monitor. Null while it is a window
 	private Box windowed;
+
 	/**
 	 * @param width how wide the window is the first time
 	 */
