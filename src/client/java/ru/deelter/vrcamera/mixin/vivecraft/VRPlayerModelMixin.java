@@ -13,19 +13,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.vivecraft.client.extensions.EntityRenderStateExtension;
 import org.vivecraft.client.render.VRPlayerModel;
 import org.vivecraft.client.render.VRPlayerRenderData;
+
 import ru.deelter.vrcamera.client.CameraController;
 
 @Pseudo
 @Mixin(value = VRPlayerModel.class, remap = false)
 public class VRPlayerModelMixin {
 
-	// keeps the arm that holds the camera out of the picture, it is right next to the lens. And the head, if
-	// the camera sits on it
 	@Inject(method = "animateVRModel", at = @At("RETURN"), require = 0)
 	private static void vrcamera$hideHoldingArm(
 			PlayerModel model, AvatarRenderState renderState, Vector3f tempV, Vector3f tempV2, Matrix3f tempM,
 			CallbackInfo ci) {
-		VRPlayerRenderData data = ((EntityRenderStateExtension) renderState).vivecraft$getVRRenderData();
+		final VRPlayerRenderData data = ((EntityRenderStateExtension) renderState).vivecraft$getVRRenderData();
 		if (data == null || !data.isMainPlayer()) {
 			return;
 		}
@@ -33,7 +32,7 @@ public class VRPlayerModelMixin {
 			model.head.visible = false;
 			model.hat.visible = false;
 		}
-		HumanoidArm arm = CameraController.INSTANCE.armToHide();
+		final HumanoidArm arm = CameraController.INSTANCE.armToHide();
 		if (arm == null) {
 			return;
 		}

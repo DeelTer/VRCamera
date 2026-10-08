@@ -34,9 +34,9 @@ import java.util.Objects;
  */
 public final class ChromaKey {
 	public static final String DEFAULT_COLOR = "#00B140";
-	// what entities are lit with in front of it: full light from blocks and from the sky, the same at any hour
+
 	public static final int EVEN_LIGHT = 0xF000F0;
-	// the game keeps depth the other way around: 0 is far away, 1 is right at the lens
+
 	private static final double FAR = 0.0;
 	private static final double NEAR = 1.0;
 
@@ -53,7 +53,6 @@ public final class ChromaKey {
 		}
 	}
 
-	// When each entity was looked for last, by its id: positive if it was seen, negative if not
 	private static final Int2LongOpenHashMap SEEN = new Int2LongOpenHashMap();
 	private static final long SEEN_NANOS = 100_000_000L;
 	private static final int SEEN_MOST = 1024;
@@ -63,9 +62,6 @@ public final class ChromaKey {
 	private static Boolean shadowsBefore;
 	private static String colorText;
 	private static final Vector4f color = new Vector4f(0.0F, 0xB1 / 255.0F, 0x40 / 255.0F, 1.0F);
-
-	private ChromaKey() {
-	}
 
 	public static boolean isOn() {
 		return on;
@@ -79,7 +75,7 @@ public final class ChromaKey {
 	 * the next step of the button that works it: on, through its colours, and off after the last one
 	 */
 	public static void cycle() {
-		Preset[] presets = Preset.values();
+		final Preset[] presets = Preset.values();
 		if (!on) {
 			preset = presets[0];
 			set(true);
@@ -97,24 +93,23 @@ public final class ChromaKey {
 	 * @return if that entity belongs into it: near the player, and not behind blocks as the camera sees it
 	 */
 	public static boolean shows(Entity entity) {
-		Minecraft mc = Minecraft.getInstance();
-		LocalPlayer player = mc.player;
+		final Minecraft mc = Minecraft.getInstance();
+		final LocalPlayer player = mc.player;
 		if (player == null || entity == player || entity.getRootVehicle() == player.getRootVehicle()) {
 			return true;
 		}
-		double reach = CameraConfig.current().chromaDistance;
+		final double reach = CameraConfig.current().chromaDistance;
 		if (reach > 0 && entity.distanceToSqr(player) > reach * reach) {
 			return false;
 		}
-		// Asked for every entity in every picture, and answered with two rays through the world each. What was
-		// found a moment ago is still true
-		long now = System.nanoTime();
-		long known = SEEN.get(entity.getId());
+
+		final long now = System.nanoTime();
+		final long known = SEEN.get(entity.getId());
 		if (known != 0 && now - Math.abs(known) < SEEN_NANOS) {
 			return known > 0;
 		}
-		Vec3 lens = mc.gameRenderer.mainCamera().position();
-		boolean seen = sees(entity, lens, entity.getBoundingBox().getCenter()) ||
+		final Vec3 lens = mc.gameRenderer.mainCamera().position();
+		final boolean seen = sees(entity, lens, entity.getBoundingBox().getCenter()) ||
 				sees(entity, lens, entity.getEyePosition());
 		if (SEEN.size() >= SEEN_MOST) {
 			SEEN.clear();
@@ -123,20 +118,15 @@ public final class ChromaKey {
 		return seen;
 	}
 
-	private static boolean sees(Entity entity, Vec3 from, Vec3 to) {
-		return entity.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-				CollisionContext.empty())).getType() == HitResult.Type.MISS;
-	}
-
 	public static void set(boolean value) {
-		Minecraft mc = Minecraft.getInstance();
+		final Minecraft mc = Minecraft.getInstance();
 		if (value == on) {
 			return;
 		}
 		on = value;
 		broken = false;
 		SEEN.clear();
-		// the round shadow under an entity is drawn on the ground, and there is no ground
+
 		if (value) {
 			shadowsBefore = mc.options.entityShadows().get();
 			mc.options.entityShadows().set(false);
@@ -157,8 +147,7 @@ public final class ChromaKey {
 		if (Vr.isRunning()) {
 			return Vive.isCameraPass();
 		}
-		// without VR the same goes for a camera with a window of its own. Filming into the game window, or with
-		// no camera at all, the game window is what is keyed
+
 		return DirectorPass.isActive() || !DesktopCamera.INSTANCE.hasOwnWindow();
 	}
 
@@ -192,27 +181,32 @@ public final class ChromaKey {
 	}
 
 	/**
-	 * @return the colour of the settings, the default green if what is written there is not one
-	 */
-	private static Vector4fc background() {
-		String text = preset.color == null ? CameraConfig.current().chromaColor : preset.color;
-		if (!Objects.equals(text, colorText)) {
-			colorText = text;
-			int rgb = parse(text == null ? "" : text);
-			color.set((rgb >> 16 & 0xFF) / 255.0F, (rgb >> 8 & 0xFF) / 255.0F, (rgb & 0xFF) / 255.0F, 1.0F);
-		}
-		return color;
-	}
-
-	/**
 	 * @return the colour as RGB, the default if it is not six hex digits with or without a # in front
 	 */
 	public static int parse(String text) {
-		String hex = text.trim().startsWith("#") ? text.trim().substring(1) : text.trim();
+		final String hex = text.trim().startsWith("#") ? text.trim().substring(1) : text.trim();
 		if (hex.matches("[0-9a-fA-F]{6}")) {
 			return Integer.parseInt(hex, 16);
 		}
 		return Integer.parseInt(DEFAULT_COLOR.substring(1), 16);
+	}
+
+	private static boolean sees(Entity entity, Vec3 from, Vec3 to) {
+		return entity.level().clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+				CollisionContext.empty())).getType() == HitResult.Type.MISS;
+	}
+
+	/**
+	 * @return the colour of the settings, the default green if what is written there is not one
+	 */
+	private static Vector4fc background() {
+		final String text = preset.color == null ? CameraConfig.current().chromaColor : preset.color;
+		if (!Objects.equals(text, colorText)) {
+			colorText = text;
+			final int rgb = parse(text == null ? "" : text);
+			color.set((rgb >> 16 & 0xFF) / 255.0F, (rgb >> 8 & 0xFF) / 255.0F, (rgb & 0xFF) / 255.0F, 1.0F);
+		}
+		return color;
 	}
 
 	private static void clear(boolean color) {
@@ -220,7 +214,7 @@ public final class ChromaKey {
 			return;
 		}
 		try {
-			RenderTarget target = Minecraft.getInstance().gameRenderer.mainRenderTarget();
+			final RenderTarget target = Minecraft.getInstance().gameRenderer.mainRenderTarget();
 			if (color) {
 				RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(target.getColorTexture(),
 						background(), target.getDepthTexture(), FAR);
@@ -241,19 +235,19 @@ public final class ChromaKey {
 		if (!applies()) {
 			return;
 		}
-		try (MemoryStack stack = MemoryStack.stackPush()) {
-			boolean scissors = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
-			boolean depthMask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
-			double clearDepth = GL11.glGetDouble(GL11.GL_DEPTH_CLEAR_VALUE);
-			ByteBuffer colorMask = stack.malloc(4);
-			FloatBuffer clearColor = stack.mallocFloat(4);
+		try (final MemoryStack stack = MemoryStack.stackPush()) {
+			final boolean scissors = GL11.glIsEnabled(GL11.GL_SCISSOR_TEST);
+			final boolean depthMask = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+			final double clearDepth = GL11.glGetDouble(GL11.GL_DEPTH_CLEAR_VALUE);
+			final ByteBuffer colorMask = stack.malloc(4);
+			final FloatBuffer clearColor = stack.mallocFloat(4);
 			GL11.glGetBooleanv(GL11.GL_COLOR_WRITEMASK, colorMask);
 			GL11.glGetFloatv(GL11.GL_COLOR_CLEAR_VALUE, clearColor);
 
 			GL11.glDisable(GL11.GL_SCISSOR_TEST);
 			GL11.glDepthMask(true);
 			if (color) {
-				Vector4fc green = background();
+				final Vector4fc green = background();
 				GL11.glColorMask(true, true, true, true);
 				GL11.glClearColor(green.x(), green.y(), green.z(), green.w());
 				GL11.glClearDepth(FAR);
@@ -278,5 +272,8 @@ public final class ChromaKey {
 	private static void failed(Throwable cause) {
 		broken = true;
 		Vrcamera.LOGGER.error("VRCamera: the green screen can't be drawn, it is off until it is turned on again", cause);
+	}
+
+	private ChromaKey() {
 	}
 }

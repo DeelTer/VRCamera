@@ -4,7 +4,6 @@ import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Context;
 
 public enum ShotType {
-	// after the defaults: tightFactor, minDistance, then one weight per Context, in the order of that enum
 
 	/**
 	 * behind the player, looking over the shoulder
@@ -85,14 +84,14 @@ public enum ShotType {
 	 * @return a fresh copy of the default settings
 	 */
 	public ShotConfig defaults() {
-		return this.defaults.copy();
+		return defaults.copy();
 	}
 
 	/**
 	 * @return how well this shot fits the context, 0 means it should not be used
 	 */
 	public double weight(Context context) {
-		return this.contextWeights[context.ordinal()];
+		return contextWeights[context.ordinal()];
 	}
 
 	/**

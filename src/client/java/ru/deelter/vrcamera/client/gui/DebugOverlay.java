@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.gui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+
 import ru.deelter.vrcamera.client.Vive;
 import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
@@ -16,23 +17,23 @@ public final class DebugOverlay {
 	private static final int BACKGROUND_COLOR = 0x90000000;
 
 	public static void toggle() {
-		CameraConfig config = CameraConfig.current();
+		final CameraConfig config = CameraConfig.current();
 		config.debugOverlay = !config.debugOverlay;
 		config.save();
 	}
 
 	public static void extract(GuiGraphicsExtractor graphics) {
-		Minecraft mc = Minecraft.getInstance();
+		final Minecraft mc = Minecraft.getInstance();
 		if (!CameraConfig.current().debugOverlay || mc.player == null) {
 			return;
 		}
-		// without VR the camera on the screen is the one to tell about
-		boolean onScreen = DesktopCamera.INSTANCE.isOn();
+
+		final boolean onScreen = DesktopCamera.INSTANCE.isOn();
 		if (!onScreen && (!Vr.INSTALLED || !Vive.isCameraOn())) {
 			return;
 		}
 		int y = 4;
-		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
+		for (final String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
 			graphics.fill(2, y - 1, 6 + mc.font.width(line), y + LINE_HEIGHT - 1, BACKGROUND_COLOR);
 			graphics.text(mc.font, line, 4, y, TEXT_COLOR, false);
 			y += LINE_HEIGHT;

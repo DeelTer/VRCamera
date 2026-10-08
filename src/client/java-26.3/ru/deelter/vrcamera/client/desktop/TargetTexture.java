@@ -10,17 +10,17 @@ import net.minecraft.client.renderer.texture.AbstractTexture;
  * the way any texture is drawn.
  */
 final class TargetTexture extends AbstractTexture {
-	/**
-	 * the picture can be another one from frame to frame, when its size was changed
-	 */
-	void show(RenderTarget picture) {
-		this.texture = picture.getColorTexture();
-		this.textureView = picture.getColorTextureView();
-		this.sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
-	}
+    /**
+     * the picture can be another one from frame to frame, when its size was changed
+     */
+    void show(RenderTarget picture) {
+        texture = picture.getColorTexture();
+        textureView = picture.getColorTextureView();
+        sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+    }
 
-	@Override
-	public void close() {
-		// the picture is not this texture's to throw away
-	}
+    @Override
+    public void close() {
+
+    }
 }

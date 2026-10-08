@@ -13,47 +13,47 @@ import org.jetbrains.annotations.Nullable;
  * second.
  */
 public final class CameraSwitchEvent extends PlayerEvent {
-	private static final HandlerList HANDLERS = new HandlerList();
+    private static final HandlerList HANDLERS = new HandlerList();
 
-	private final String name;
-	private final String id;
-	private final Location camera;
+    private final String name;
+    private final String id;
+    private final Location camera;
 
-	public CameraSwitchEvent(@NotNull Player player, @NotNull String name, @Nullable String id,
-	                         @NotNull Location camera) {
-		super(player);
-		this.name = name;
-		this.id = id;
-		this.camera = camera;
-	}
+    public CameraSwitchEvent(@NotNull Player player, @NotNull String name, @Nullable String id,
+                             @NotNull Location camera) {
+        super(player);
+        this.name = name;
+        this.id = id;
+        this.camera = camera;
+    }
 
-	/**
-	 * @return the letter the player knows the camera by
-	 */
-	public @NotNull String getCameraName() {
-		return this.name;
-	}
+    /**
+     * @return the letter the player knows the camera by
+     */
+    public @NotNull String getCameraName() {
+        return name;
+    }
 
-	/**
-	 * @return the id a plugin gave the camera, null for one the player made themselves
-	 */
-	public @Nullable String getCameraId() {
-		return this.id;
-	}
+    /**
+     * @return the id a plugin gave the camera, null for one the player made themselves
+     */
+    public @Nullable String getCameraId() {
+        return id;
+    }
 
-	/**
-	 * @return where the camera is, as the mod of the player says. Not checked
-	 */
-	public @NotNull Location getCamera() {
-		return this.camera.clone();
-	}
+    /**
+     * @return where the camera is, as the mod of the player says. Not checked
+     */
+    public @NotNull Location getCamera() {
+        return camera.clone();
+    }
 
-	@Override
-	public @NotNull HandlerList getHandlers() {
-		return HANDLERS;
-	}
+    @Override
+    public @NotNull HandlerList getHandlers() {
+        return HANDLERS;
+    }
 
-	public static @NotNull HandlerList getHandlerList() {
-		return HANDLERS;
-	}
+    public static @NotNull HandlerList getHandlerList() {
+        return HANDLERS;
+    }
 }

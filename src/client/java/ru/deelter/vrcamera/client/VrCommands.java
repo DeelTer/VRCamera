@@ -5,6 +5,7 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
+
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 /**
@@ -14,12 +15,9 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 final class VrCommands {
 	private static final int DONE = 1;
 
-	private VrCommands() {
-	}
-
 	static void register(LiteralArgumentBuilder<FabricClientCommandSource> root) {
-		CameraController controller = CameraController.INSTANCE;
-		for (CameraController.Mode mode : CameraController.Mode.values()) {
+		final CameraController controller = CameraController.INSTANCE;
+		for (final CameraController.Mode mode : CameraController.Mode.values()) {
 			root.then(ClientCommands.literal(VrcamCommand.name(mode)).executes(context -> {
 				controller.setMode(mode);
 				return DONE;
@@ -41,9 +39,9 @@ final class VrCommands {
 			controller.summon();
 			return DONE;
 		}));
-		// one literal per shot, so they are all offered by tab completion
-		LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot");
-		for (ShotType type : ShotType.values()) {
+
+		final LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot");
+		for (final ShotType type : ShotType.values()) {
 			shot.then(ClientCommands.literal(VrcamCommand.name(type)).executes(context -> {
 				if (!controller.showShot(type)) {
 					context.getSource().sendError(Component.translatable("vrcamera.message.novr"));
@@ -68,7 +66,7 @@ final class VrCommands {
 					return DONE;
 				}))
 				.then(ClientCommands.argument("number", IntegerArgumentType.integer(1)).executes(context -> {
-					int number = IntegerArgumentType.getInteger(context, "number");
+					final int number = IntegerArgumentType.getInteger(context, "number");
 					if (!controller.selectPreset(number - 1)) {
 						context.getSource().sendError(
 								Component.translatable("vrcamera.command.nopreset", controller.presetLabel()));
@@ -77,5 +75,8 @@ final class VrCommands {
 					return DONE;
 				})));
 
+	}
+
+	private VrCommands() {
 	}
 }

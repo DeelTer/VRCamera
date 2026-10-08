@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
 import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
@@ -24,9 +25,6 @@ import ru.deelter.vrcamera.client.sync.RemoteCameras;
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin {
 
-	// For players that have the mod but are not in VR: photo sheets and the cameras of others are drawn into the
-	// regular picture. The same place Vivecraft draws its VR things from; in a VR pass those call into the mod
-	// themselves, and this stays out of it to not draw everything twice
 	@Inject(method = "submitFeatures*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;finalizeGizmoCollection()V"), require = 0)
 	private void vrcamera$drawWithoutVR(
 			CallbackInfo ci, @Local(argsOnly = true) LevelRenderState levelRenderState,
@@ -43,7 +41,6 @@ public class LevelRendererMixin {
 		}
 	}
 
-	// The green screen. See ChromaKey for why it is done with two clears
 	@Inject(method = "lambda$addMainPass$0", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;executeSolid()V"), require = 0)
 	private void vrcamera$greenBehindEntities(CallbackInfo ci) {
 		ChromaKey.paintOver();
@@ -54,9 +51,6 @@ public class LevelRendererMixin {
 		ChromaKey.shutOut();
 	}
 
-	// The same from 26.3 on. There the world and the entities are drawn in one go, and the clears happen in the
-	// middle of it. With the transparency that needs no sorting, the game is done with that go by the time it gets
-	// to what is see-through
 	@Inject(method = "executeSolid", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/FeatureRenderDispatcher$PreparedFrame;executeSolid(Lcom/mojang/renderpearl/api/commands/RenderPass;)V"), require = 0)
 	private void vrcamera$greenBehindEntitiesWhileDrawing(CallbackInfo ci) {
 		ChromaKey.paintOverWhileDrawing();
@@ -72,7 +66,6 @@ public class LevelRendererMixin {
 		ChromaKey.shutOut();
 	}
 
-	// what is drawn the way entities are without being one: chests and signs, particles, the outline of a block
 	@WrapWithCondition(method = "submitFeatures*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;submitBlockEntities(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/state/level/LevelRenderState;Lnet/minecraft/client/renderer/SubmitNodeCollector;)V"), require = 0)
 	private boolean vrcamera$noBlockEntities(
 			LevelRenderer self, PoseStack poseStack, LevelRenderState state, SubmitNodeCollector output) {

@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.client.photo;
 
+import org.jetbrains.annotations.NotNull;
 import ru.deelter.vrcamera.client.sync.PhotoCodec;
 
 import javax.imageio.ImageIO;
@@ -31,12 +32,12 @@ import java.util.concurrent.TimeoutException;
 public final class CustomPictures {
 	private static final int MAX_BYTES = 8 * 1024 * 1024;
 	private static final int DOWNLOAD_SECONDS = 30;
-	// what a file may claim to be before it is unpacked, a few bytes can claim a billion pixels
+
 	private static final int MAX_SIDE = 8192;
 	private static final long MAX_PIXELS = 40_000_000L;
-	// pixels along the longer side of a sheet, the same as for a photo
+
 	private static final int SHEET_PIXELS = 384;
-	// The shapes a sheet can have, height by width: wide, square and tall. A picture is cut to the nearest one
+
 	private static final float[] SHAPES = {9.0F / 16.0F, 1.0F, 16.0F / 9.0F};
 
 	/**
@@ -46,9 +47,7 @@ public final class CustomPictures {
 	public record Loaded(PhotoCodec.Picture picture, byte[] original, String format) {
 	}
 
-	private CustomPictures() {
-	}
-
+	@NotNull
 	public static Loaded load(String address) throws IOException {
 		URI uri;
 		try {
@@ -56,40 +55,40 @@ public final class CustomPictures {
 		} catch (IllegalArgumentException e) {
 			throw new IOException("not an address");
 		}
-		String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
-		// nothing but the web: not files of this computer, not whatever else Java knows how to open
+		final String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+
 		if (!scheme.equals("http") && !scheme.equals("https")) {
 			throw new IOException("only http and https addresses");
 		}
-		byte[] original = download(uri);
+		final byte[] original = download(uri);
 
-		try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(original))) {
-			Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+		try (final ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(original))) {
+			final Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
 			if (!readers.hasNext()) {
 				throw new IOException("not a picture this can read: PNG, JPEG or GIF");
 			}
-			ImageReader reader = readers.next();
+			final ImageReader reader = readers.next();
 			try {
 				reader.setInput(in);
-				int width = reader.getWidth(0);
-				int height = reader.getHeight(0);
+				final int width = reader.getWidth(0);
+				final int height = reader.getHeight(0);
 				if (width < 1 || height < 1 || width > MAX_SIDE || height > MAX_SIDE ||
 						(long) width * height > MAX_PIXELS) {
 					throw new IOException("picture of " + width + "x" + height + " is too large");
 				}
-				String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+				final String format = reader.getFormatName().toLowerCase(Locale.ROOT);
 				return new Loaded(fit(reader.read(0)), original, format.equals("jpeg") ? "jpg" : format);
 			} finally {
 				reader.dispose();
 			}
 		} catch (RuntimeException e) {
-			// the readers of Java throw all kinds of things at broken files
+
 			throw new IOException("broken picture");
 		}
 	}
 
 	private static byte[] download(URI uri) throws IOException {
-		HttpClient client = HttpClient.newBuilder()
+		final HttpClient client = HttpClient.newBuilder()
 				.connectTimeout(Duration.ofSeconds(8))
 				.followRedirects(HttpClient.Redirect.NORMAL)
 				.build();
@@ -104,11 +103,11 @@ public final class CustomPictures {
 			client.shutdownNow();
 			throw new IOException("not an address");
 		}
-		// The whole download has this long. A server that sends a byte now and then would hold it forever otherwise
-		CompletableFuture<HttpResponse<byte[]>> pending = client.sendAsync(request,
+
+		final CompletableFuture<HttpResponse<byte[]>> pending = client.sendAsync(request,
 				HttpResponse.BodyHandlers.limiting(HttpResponse.BodyHandlers.ofByteArray(), MAX_BYTES));
 		try {
-			HttpResponse<byte[]> response = pending.get(DOWNLOAD_SECONDS, TimeUnit.SECONDS);
+			final HttpResponse<byte[]> response = pending.get(DOWNLOAD_SECONDS, TimeUnit.SECONDS);
 			if (response.statusCode() != 200) {
 				throw new IOException("the server answered " + response.statusCode());
 			}
@@ -116,8 +115,8 @@ public final class CustomPictures {
 		} catch (TimeoutException e) {
 			throw new IOException("took longer than " + DOWNLOAD_SECONDS + " seconds");
 		} catch (ExecutionException e) {
-			Throwable cause = e.getCause() == null ? e : e.getCause();
-			String message = String.valueOf(cause.getMessage());
+			final Throwable cause = e.getCause() == null ? e : e.getCause();
+			final String message = String.valueOf(cause.getMessage());
 			if (message.contains("capacity")) {
 				throw new IOException("file is larger than " + MAX_BYTES / (1024 * 1024) + " MB");
 			}
@@ -135,29 +134,33 @@ public final class CustomPictures {
 	 * Cuts the picture to the nearest shape a sheet can have, from its middle, and scales it down. Cut and not
 	 * squeezed: a face stays a face.
 	 */
+	@NotNull
 	private static PhotoCodec.Picture fit(BufferedImage image) {
-		float aspect = image.getHeight() / (float) image.getWidth();
+		final float aspect = image.getHeight() / (float) image.getWidth();
 		float shape = SHAPES[0];
-		for (float candidate : SHAPES) {
+		for (final float candidate : SHAPES) {
 			if (Math.abs(Math.log(candidate / aspect)) < Math.abs(Math.log(shape / aspect))) {
 				shape = candidate;
 			}
 		}
-		int cutWidth = Math.min(image.getWidth(), Math.round(image.getHeight() / shape));
-		int cutHeight = Math.min(image.getHeight(), Math.round(cutWidth * shape));
-		int left = (image.getWidth() - cutWidth) / 2;
-		int top = (image.getHeight() - cutHeight) / 2;
+		final int cutWidth = Math.min(image.getWidth(), Math.round(image.getHeight() / shape));
+		final int cutHeight = Math.min(image.getHeight(), Math.round(cutWidth * shape));
+		final int left = (image.getWidth() - cutWidth) / 2;
+		final int top = (image.getHeight() - cutHeight) / 2;
 
-		int width = shape <= 1.0F ? SHEET_PIXELS : Math.round(SHEET_PIXELS / shape);
-		int height = Math.max(1, Math.round(width * shape));
-		BufferedImage fitted = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-		Graphics2D graphics = fitted.createGraphics();
+		final int width = shape <= 1.0F ? SHEET_PIXELS : Math.round(SHEET_PIXELS / shape);
+		final int height = Math.max(1, Math.round(width * shape));
+		final BufferedImage fitted = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+		final Graphics2D graphics = fitted.createGraphics();
 		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-		// on white: what is see-through in the picture is paper on a sheet
+
 		graphics.setColor(java.awt.Color.WHITE);
 		graphics.fillRect(0, 0, width, height);
 		graphics.drawImage(image, 0, 0, width, height, left, top, left + cutWidth, top + cutHeight, null);
 		graphics.dispose();
 		return new PhotoCodec.Picture(width, height, fitted.getRGB(0, 0, width, height, null, 0, width));
+	}
+
+	private CustomPictures() {
 	}
 }

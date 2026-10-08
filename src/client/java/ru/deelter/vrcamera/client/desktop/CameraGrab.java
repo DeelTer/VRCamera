@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.desktop;
 
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import ru.deelter.vrcamera.client.config.CameraConfig;
@@ -20,19 +21,18 @@ import java.util.function.IntPredicate;
  */
 final class CameraGrab {
 	private static final int NONE = -1;
-	// from how far a camera can be taken, and how well it has to be pointed at: blocks, plus blocks per block of
-	// distance
+
 	private static final double REACH = 192.0;
 	private static final double AIM = 0.3;
 	private static final double AIM_PER_BLOCK = 0.05;
-	// how near and far it can be held, and the part of the distance one notch of the wheel is
+
 	private static final double NEAR = 0.7;
 	private static final double FAR = 32.0;
 	private static final double WHEEL = 0.12;
-	// how fast it comes after the look and after the wheel, per second
+
 	private static final double EASE = 9.0;
 	private static final double WHEEL_EASE = 3.5;
-	// how much larger the icon of a camera is while it can be taken, how much of that it beats by, and how fast
+
 	private static final double ICON = 1.35;
 	private static final double ICON_BEAT = 0.2;
 	private static final double ICON_RATE = 9.0;
@@ -41,7 +41,7 @@ final class CameraGrab {
 	private final Quaternionf rotation = new Quaternionf();
 	private boolean holding;
 	private int aimedAt = NONE;
-	// how far in front of the eyes it should hang, and how far it does on its way there
+
 	private double wanted;
 	private double distance;
 	private Vec3 offset = Vec3.ZERO;
@@ -49,56 +49,58 @@ final class CameraGrab {
 	private Vec3 aim = Vec3.ZERO;
 
 	boolean isHolding() {
-		return this.holding;
+		return holding;
 	}
 
 	boolean isAiming() {
-		return this.aimedAt != NONE;
+		return aimedAt != NONE;
 	}
 
 	/**
 	 * @return which camera is pointed at, or was when it was taken
 	 */
 	int aimedAt() {
-		return this.aimedAt;
+		return aimedAt;
 	}
 
 	/**
 	 * @return if the use key belongs to a camera right now, and not to the game
 	 */
 	boolean wantsUseKey() {
-		return this.holding || isAiming();
+		return holding || isAiming();
 	}
 
 	Vec3 position() {
-		return this.position;
+		return position;
 	}
 
 	/**
 	 * @return what the held camera looks at
 	 */
 	Vec3 aim() {
-		return this.aim;
+		return aim;
 	}
 
+	@NotNull
 	Quaternionf rotation() {
-		return new Quaternionf(this.rotation);
+		return new Quaternionf(rotation);
 	}
 
+	@NotNull
 	Vec3 forward() {
-		return new Vec3(this.rotation.transform(new Vector3f(0, 0, -1)));
+		return new Vec3(rotation.transform(new Vector3f(0, 0, -1)));
 	}
 
 	/**
 	 * lets go of the camera without a word on where it lands
 	 */
 	void release() {
-		this.holding = false;
+		holding = false;
 	}
 
 	void reset() {
-		this.holding = false;
-		this.aimedAt = NONE;
+		holding = false;
+		aimedAt = NONE;
 	}
 
 	/**
@@ -108,16 +110,16 @@ final class CameraGrab {
 	 * @param takeable  which of them can be taken at all
 	 */
 	void aim(Vec3 eyes, Vec3 look, int cameras, IntFunction<Vec3> positions, IntPredicate takeable) {
-		this.aimedAt = NONE;
+		aimedAt = NONE;
 		double nearest = REACH;
 		for (int camera = 0; camera < cameras; camera++) {
-			Vec3 to = positions.apply(camera).subtract(eyes);
-			double along = to.dot(look);
-			// far off a camera is a few pixels, what is pointed at there is its icon: as large at any distance
+			final Vec3 to = positions.apply(camera).subtract(eyes);
+			final double along = to.dot(look);
+
 			if (along > 0 && along < nearest && takeable.test(camera) &&
 					to.subtract(look.scale(along)).length() < AIM + AIM_PER_BLOCK * along) {
 				nearest = along;
-				this.aimedAt = camera;
+				aimedAt = camera;
 			}
 		}
 	}
@@ -126,53 +128,52 @@ final class CameraGrab {
 	 * takes the camera from where and how it is right now, to not have it jump into the hand
 	 */
 	void take(DesktopCamera.Pose camera, Vec3 eyes) {
-		this.holding = true;
-		this.offset = camera.position().subtract(eyes);
-		this.distance = this.offset.length();
-		this.wanted = CamMath.clamp(this.distance, NEAR, FAR);
-		this.position = camera.position();
-		this.aim = eyes;
-		this.rotation.set(camera.rotation());
-		this.handThrow.clear();
+		holding = true;
+		offset = camera.position().subtract(eyes);
+		distance = offset.length();
+		wanted = CamMath.clamp(distance, NEAR, FAR);
+		position = camera.position();
+		aim = eyes;
+		rotation.set(camera.rotation());
+		handThrow.clear();
 	}
 
 	/**
 	 * moves the held camera on by one frame
 	 */
 	void hold(LocalPlayer player, Vec3 eyes, Vec3 look, Subject subject, CameraConfig config, double dt) {
-		// It comes after the look and the wheel, it is not nailed to them: a hand is not that steady, and a wheel
-		// goes in notches
-		double ease = 1.0 - Math.exp(-EASE * dt);
-		this.distance += (this.wanted - this.distance) * (1.0 - Math.exp(-WHEEL_EASE * dt));
-		this.offset = this.offset.lerp(look.scale(this.distance), ease);
-		this.position = shownAt(player, eyes);
-		// like a shot does: this close only part of the player fits, and the face is the part worth showing
-		double near = config.faceDistance * subject.unit;
-		double closeness = near <= 0 ? 0 :
-				1.0 - CamMath.smoothstep((this.position.distanceTo(subject.center) - near) / near);
-		this.aim = subject.center.lerp(subject.head, closeness);
-		Quaternionf facing = new Quaternionf(this.rotation);
-		if (CamMath.lookRotation(this.aim.subtract(this.position), facing)) {
-			this.rotation.slerp(facing, (float) ease);
+
+		final double ease = 1.0 - Math.exp(-EASE * dt);
+		distance += (wanted - distance) * (1.0 - Math.exp(-WHEEL_EASE * dt));
+		offset = offset.lerp(look.scale(distance), ease);
+		position = shownAt(player, eyes);
+
+		final double near = config.faceDistance * subject.unit;
+		final double closeness = near <= 0 ? 0 :
+				1.0 - CamMath.smoothstep((position.distanceTo(subject.center) - near) / near);
+		aim = subject.center.lerp(subject.head, closeness);
+		final Quaternionf facing = new Quaternionf(rotation);
+		if (CamMath.lookRotation(aim.subtract(position), facing)) {
+			rotation.slerp(facing, (float) ease);
 		}
-		this.handThrow.sample(this.position);
+		handThrow.sample(position);
 	}
 
 	/**
 	 * @return where the held camera is for a player whose eyes are there: in front of them, and not in a wall
 	 */
 	Vec3 shownAt(LocalPlayer player, Vec3 eyes) {
-		return WorldProbe.reach(player, eyes, eyes.add(this.offset));
+		return WorldProbe.reach(player, eyes, eyes.add(offset));
 	}
 
 	/**
 	 * @return false if no camera is held, and the wheel is for something else
 	 */
 	boolean scroll(double notches) {
-		if (!this.holding) {
+		if (!holding) {
 			return false;
 		}
-		this.wanted = CamMath.clamp(this.wanted * Math.exp(notches * WHEEL), NEAR, FAR);
+		wanted = CamMath.clamp(wanted * Math.exp(notches * WHEEL), NEAR, FAR);
 		return true;
 	}
 
@@ -181,14 +182,14 @@ final class CameraGrab {
 	 * @return how fast the camera was moved when it was let go of, in blocks per second
 	 */
 	Vec3 swing(Vec3 drift) {
-		return this.handThrow.velocity(drift);
+		return handThrow.velocity(drift);
 	}
 
 	/**
 	 * @return how far and where to the camera flies when it is let go of, {@link Vec3#ZERO} if it was not thrown
 	 */
 	Vec3 thrown(Vec3 drift, double power) {
-		return this.handThrow.release(drift, power);
+		return handThrow.release(drift, power);
 	}
 
 	/**
@@ -197,9 +198,9 @@ final class CameraGrab {
 	 * while it is held
 	 */
 	double iconSize(int camera, int filming) {
-		if (this.holding) {
+		if (holding) {
 			return camera == filming ? ICON : 1.0;
 		}
-		return camera == this.aimedAt ? ICON + ICON_BEAT * Math.sin(System.nanoTime() / 1.0E9 * ICON_RATE) : 1.0;
+		return camera == aimedAt ? ICON + ICON_BEAT * Math.sin(System.nanoTime() / 1.0E9 * ICON_RATE) : 1.0;
 	}
 }

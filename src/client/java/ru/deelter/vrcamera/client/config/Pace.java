@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.client.config;
 
 import com.google.gson.annotations.SerializedName;
+
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 /**
@@ -27,7 +28,6 @@ public enum Pace {
 	FASTER(3.0, 12, 25, 1.0, 14, 0.6, new double[][]{
 			{7, 13}, {6, 10}, {9, 16}, {4, 8}, {7, 11}, {4, 7}, {4, 8}, {5, 9}, {5, 11}, {7, 12}});
 
-	// the shots the lengths above are for, in that order. The shots of events keep their length
 	private static final ShotType[] SHOTS = {ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY,
 			ShotType.CRANE, ShotType.LOW, ShotType.HANDS, ShotType.DUEL, ShotType.POV, ShotType.MENU};
 
@@ -53,16 +53,16 @@ public enum Pace {
 
 	public void apply(CameraConfig config) {
 		config.pace = this;
-		config.minShotTime = this.minShotTime;
-		config.orbitSpeed = this.orbitSpeed;
-		config.manualHoldSeconds = this.manualHoldSeconds;
-		config.turnLag = this.turnLag;
-		config.turnDeadzone = this.turnDeadzone;
-		config.handStabilize = this.handStabilize;
+		config.minShotTime = minShotTime;
+		config.orbitSpeed = orbitSpeed;
+		config.manualHoldSeconds = manualHoldSeconds;
+		config.turnLag = turnLag;
+		config.turnDeadzone = turnDeadzone;
+		config.handStabilize = handStabilize;
 		for (int i = 0; i < SHOTS.length; i++) {
-			ShotConfig shot = config.shot(SHOTS[i]);
-			shot.minDuration = this.durations[i][0];
-			shot.maxDuration = this.durations[i][1];
+			final ShotConfig shot = config.shot(SHOTS[i]);
+			shot.minDuration = durations[i][0];
+			shot.maxDuration = durations[i][1];
 		}
 	}
 }

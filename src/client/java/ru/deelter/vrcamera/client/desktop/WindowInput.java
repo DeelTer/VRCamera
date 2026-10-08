@@ -24,7 +24,6 @@ final class WindowInput {
 		void setMouseCaptured(boolean captured);
 	}
 
-	// kept from one window to the next: whoever turned the lines off does not want them back with every window
 	private static FrameGuide guide = FrameGuide.THIRDS;
 
 	private final Native window;
@@ -46,16 +45,16 @@ final class WindowInput {
 	 * {@link FrameGuide}
 	 */
 	void handleKeys(Runnable toggleFullscreen) {
-		boolean full = this.window.isKeyDown(InputConstants.KEY_F11);
-		if (full && !this.fullKeyDown) {
+		final boolean full = window.isKeyDown(InputConstants.KEY_F11);
+		if (full && !fullKeyDown) {
 			toggleFullscreen.run();
 		}
-		this.fullKeyDown = full;
-		boolean next = this.window.isKeyDown(InputConstants.KEY_H);
-		if (next && !this.guideKeyDown) {
+		fullKeyDown = full;
+		final boolean next = window.isKeyDown(InputConstants.KEY_H);
+		if (next && !guideKeyDown) {
 			guide = guide.next();
 		}
-		this.guideKeyDown = next;
+		guideKeyDown = next;
 	}
 
 	/**
@@ -66,21 +65,21 @@ final class WindowInput {
 	 */
 	boolean capture(boolean wanted) {
 		if (!wanted) {
-			this.letGo = false;
-		} else if (this.window.isKeyDown(InputConstants.KEY_ESCAPE)) {
-			this.letGo = true;
-		} else if (this.window.isLeftButtonDown()) {
-			this.letGo = false;
+			letGo = false;
+		} else if (window.isKeyDown(InputConstants.KEY_ESCAPE)) {
+			letGo = true;
+		} else if (window.isLeftButtonDown()) {
+			letGo = false;
 		}
-		boolean held = wanted && !this.letGo;
-		if (held != this.captured) {
-			this.captured = held;
-			this.window.setMouseCaptured(held);
+		final boolean held = wanted && !letGo;
+		if (held != captured) {
+			captured = held;
+			window.setMouseCaptured(held);
 		}
 		return held;
 	}
 
 	boolean hasMouse() {
-		return this.captured;
+		return captured;
 	}
 }

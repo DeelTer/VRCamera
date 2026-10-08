@@ -29,8 +29,7 @@ public final class CameraFlashes {
 	private static final int FULL_LIGHT = 0xF000F0;
 	private static final int MAX_FLASHES = 16;
 	private static final double DRAW_DISTANCE = 48.0;
-	// Not for the one it comes from: it would fill the picture of the camera that took the photo, and the eyes of a
-	// player who took one without a camera
+
 	private static final double TOO_CLOSE = 0.3;
 
 	private record Flash(Vec3 position, long nanos) {
@@ -38,12 +37,9 @@ public final class CameraFlashes {
 
 	private final List<Flash> flashes = new ArrayList<>();
 
-	private CameraFlashes() {
-	}
-
 	public void add(Vec3 position) {
-		if (this.flashes.size() < MAX_FLASHES) {
-			this.flashes.add(new Flash(position, System.nanoTime()));
+		if (flashes.size() < MAX_FLASHES) {
+			flashes.add(new Flash(position, System.nanoTime()));
 		}
 	}
 
@@ -51,21 +47,21 @@ public final class CameraFlashes {
 	 * @param viewPosition where the pass looks from, the pose stack is relative to that
 	 */
 	public void render(SubmitNodeCollector output, Vec3 viewPosition, PoseStack poseStack) {
-		if (this.flashes.isEmpty()) {
+		if (flashes.isEmpty()) {
 			return;
 		}
-		long now = System.nanoTime();
-		this.flashes.removeIf(flash -> now - flash.nanos > DURATION_NANOS);
-		for (Flash flash : this.flashes) {
-			Vec3 toView = viewPosition.subtract(flash.position);
-			double distance = toView.length();
+		final long now = System.nanoTime();
+		flashes.removeIf(flash -> now - flash.nanos > DURATION_NANOS);
+		for (final Flash flash : flashes) {
+			final Vec3 toView = viewPosition.subtract(flash.position);
+			final double distance = toView.length();
 			if (distance < TOO_CLOSE || distance > DRAW_DISTANCE) {
 				continue;
 			}
-			float left = 1.0F - (now - flash.nanos) / (float) DURATION_NANOS;
-			float alpha = BRIGHTEST * left * left;
+			final float left = 1.0F - (now - flash.nanos) / (float) DURATION_NANOS;
+			final float alpha = BRIGHTEST * left * left;
 			float half = SIZE / 2.0F;
-			Vector3f facing = new Vector3f((float) (toView.x / distance), (float) (toView.y / distance),
+			final Vector3f facing = new Vector3f((float) (toView.x / distance), (float) (toView.y / distance),
 					(float) (toView.z / distance));
 			poseStack.pushPose();
 			poseStack.translate(flash.position.x - viewPosition.x, flash.position.y - viewPosition.y,
@@ -89,5 +85,8 @@ public final class CameraFlashes {
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(FULL_LIGHT)
 				.setNormal(0, 1, 0);
+	}
+
+	private CameraFlashes() {
 	}
 }

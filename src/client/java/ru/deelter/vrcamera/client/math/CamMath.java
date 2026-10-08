@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.client.math;
 
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix3f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -37,6 +38,7 @@ public class CamMath {
 	 * @param yaw yaw in radians, in the Minecraft convention, 0 is south
 	 * @return horizontal unit vector pointing along the yaw
 	 */
+	@NotNull
 	public static Vec3 forward(double yaw) {
 		return new Vec3(-Math.sin(yaw), 0, Math.cos(yaw));
 	}
@@ -44,8 +46,9 @@ public class CamMath {
 	/**
 	 * @return unit vector pointing from the orbit center to a point on the orbit
 	 */
+	@NotNull
 	public static Vec3 orbit(double azimuth, double elevation) {
-		double cos = Math.cos(elevation);
+		final double cos = Math.cos(elevation);
 		return new Vec3(-Math.sin(azimuth) * cos, Math.sin(elevation), Math.cos(azimuth) * cos);
 	}
 
@@ -54,7 +57,7 @@ public class CamMath {
 	}
 
 	public static double elevationOf(Vec3 dir) {
-		double length = dir.length();
+		final double length = dir.length();
 		return length < 1.0E-6 ? 0 : Math.asin(clamp(dir.y / length, -1, 1));
 	}
 
@@ -66,17 +69,17 @@ public class CamMath {
 	 * @return false if {@code dir} was too short to get a rotation from
 	 */
 	public static boolean lookRotation(Vec3 dir, Quaternionf dest) {
-		Vector3f forward = new Vector3f((float) dir.x, (float) dir.y, (float) dir.z);
+		final Vector3f forward = new Vector3f((float) dir.x, (float) dir.y, (float) dir.z);
 		if (forward.lengthSquared() < 1.0E-8F) {
 			return false;
 		}
 		forward.normalize();
-		// keep away from straight up/down, there the roll would be undefined
+
 		if (Math.abs(forward.y) > 0.995F) {
 			forward.add(0.1F, 0, 0).normalize();
 		}
-		Vector3f right = forward.cross(0, 1, 0, new Vector3f()).normalize();
-		Vector3f up = right.cross(forward, new Vector3f());
+		final Vector3f right = forward.cross(0, 1, 0, new Vector3f()).normalize();
+		final Vector3f up = right.cross(forward, new Vector3f());
 		dest.setFromNormalized(new Matrix3f(right, up, forward.negate(new Vector3f())));
 		return true;
 	}

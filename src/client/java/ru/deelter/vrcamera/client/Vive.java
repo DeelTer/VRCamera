@@ -3,6 +3,8 @@ package ru.deelter.vrcamera.client;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import org.vivecraft.api.client.VRClientAPI;
 import org.vivecraft.api.client.data.RenderPass;
@@ -20,8 +22,6 @@ import java.util.List;
  * that Vivecraft is installed: this class is not to be loaded without it.
  */
 public final class Vive {
-	private Vive() {
-	}
 
 	static boolean isRunning() {
 		return CameraController.isVRRunning();
@@ -56,7 +56,7 @@ public final class Vive {
 	 * what only the eyes of the player get to see: none of it should show up in the recording
 	 */
 	public static void drawHeadsetAids() {
-		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		if (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT) {
 			CameraController.INSTANCE.drawHeadsetAids(dh.vrPlayer.vrdata_world_render);
 		}
@@ -65,11 +65,13 @@ public final class Vive {
 	/**
 	 * @return the picture the camera films right now, null if there is none
 	 */
+	@Nullable
 	public static RenderTarget cameraPicture() {
-		ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
 		return dh.vrRenderer == null ? null : dh.vrRenderer.cameraFramebuffer;
 	}
 
+	@NotNull
 	public static PhotoAlbum.Hands hands(VRData vr) {
 		return new PhotoAlbum.Hands() {
 			@Override
@@ -104,5 +106,8 @@ public final class Vive {
 	 */
 	public static RenderType pictureLayer(RenderTarget picture) {
 		return VRRenderTypes.entityCutoutNoCardinalLightLinear(picture.getColorTextureView(), false, false);
+	}
+
+	private Vive() {
 	}
 }

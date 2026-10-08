@@ -8,6 +8,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.math.CamMath;
@@ -30,33 +31,32 @@ import java.util.stream.Stream;
  * They are kept with the world they stand in, one file per dimension.
  */
 final class FreeCamera {
-	// one letter of the alphabet for each
+
 	static final int MOST = 26;
 	private static final String FILES = "cameras-";
-	// blocks per second, and how many times that with the sprint key
+
 	private static final double SPEED = 6.0;
 	private static final double FAST = 3.0;
-	// how fast it comes after what is asked of it, per second
+
 	private static final double MOVE_EASE = 5.0;
 	private static final double TURN_EASE = 14.0;
 	private static final double FOV_EASE = 6.0;
-	// straight up and down the picture has no way to be level
+
 	private static final double MAX_PITCH = 84.0;
 	private static final double MIN_FOV = 10.0;
 	private static final double MAX_FOV = 120.0;
-	// the part of the field of view one notch of the wheel is
+
 	private static final double FOV_WHEEL = 0.08;
-	// Thrown, a camera glides on and slows down by this part of its speed per second. One that got further than
-	// this many blocks that way is gone
+
 	private static final double GLIDE_DRAG = 0.7;
 	private static final double GONE_AFTER = 48.0;
-	// a flight from one camera to another: blocks per second, and the seconds it takes at least and at most
+
 	private static final double FLIGHT_SPEED = 6.0;
 	private static final double FLIGHT_SHORTEST = 1.5;
 	private static final double FLIGHT_LONGEST = 8.0;
-	// how fast a camera on an entity comes after the turns of it, per second: a mob jerks its body around
+
 	private static final double CARRY_EASE = 6.0;
-	// how many cameras of a world a server may have given
+
 	private static final int FROM_SERVER_MOST = 8;
 	private static final Gson GSON = new Gson();
 
@@ -64,28 +64,28 @@ final class FreeCamera {
 	 * where a camera stands: degrees the way the game counts them for a player
 	 */
 	private static final class Spot {
-		// a letter. It stays with the camera for as long as there is one, whatever happens to the others
-		String name;
-		double x;
-		double y;
-		double z;
-		double yaw;
-		double pitch;
-		double fov;
-		// what a server that gave the camera calls it, null for one the player made
-		String id;
-		// What the camera sits on, where on it, and which way that faced when it was looked at last. Not kept
-		// with the world: an entity is not the same one the next time
-		transient Entity carrier;
-		transient Vec3 seat;
-		transient double carrierYaw;
 
+		private String name;
+		private double x;
+		private double y;
+		private double z;
+		private double yaw;
+		private double pitch;
+		private double fov;
+
+		private String id;
+
+		private transient Entity carrier;
+		private transient Vec3 seat;
+		private transient double carrierYaw;
+
+		private @NotNull
 		Vec3 position() {
-			return new Vec3(this.x, this.y, this.z);
+			return new Vec3(x, y, z);
 		}
 
-		Vec3 forward() {
-			return FreeCamera.forward(this.yaw, this.pitch);
+		private Vec3 forward() {
+			return FreeCamera.forward(yaw, pitch);
 		}
 	}
 
@@ -93,23 +93,22 @@ final class FreeCamera {
 	 * what is written down of a world, where there is more to it than the cameras
 	 */
 	private static final class Kept {
-		Spot[] cameras;
-		String[] declined;
+		private Spot[] cameras;
+		private String[] declined;
 	}
 
 	private final List<Spot> spots = new ArrayList<>();
-	// cameras of a server the player threw away: not to be given again
+
 	private final Set<String> declined = new LinkedHashSet<>();
 	private int active;
 	private Path file;
-	// the one that films, on its way to where its spot says
+
 	private Vec3 position = Vec3.ZERO;
 	private Vec3 velocity = Vec3.ZERO;
 	private Vec3 push = Vec3.ZERO;
 	private Vec3 glide = Vec3.ZERO;
 	private double glided;
-	// The flight from one camera to another: where it started, how far along it is from 0 to 1, and how long it
-	// takes. At 1 there is none
+
 	private Spot flightFrom;
 	private double flight = 1.0;
 	private double flightSeconds;
@@ -118,27 +117,27 @@ final class FreeCamera {
 	private double fov = 70.0;
 
 	boolean isEmpty() {
-		return this.spots.isEmpty();
+		return spots.isEmpty();
 	}
 
 	int count() {
-		return this.spots.size();
+		return spots.size();
 	}
 
 	/**
 	 * @return which of them films, starting at 0
 	 */
 	int active() {
-		return this.active;
+		return active;
 	}
 
 	Vec3 position(int camera) {
-		return camera == this.active ? this.position : this.spots.get(camera).position();
+		return camera == active ? position : spots.get(camera).position();
 	}
 
 	Quaternionf rotation(int camera) {
-		Quaternionf rotation = new Quaternionf();
-		CamMath.lookRotation(camera == this.active ? forward(this.yaw, this.pitch) : this.spots.get(camera).forward(),
+		final Quaternionf rotation = new Quaternionf();
+		CamMath.lookRotation(camera == active ? forward(yaw, pitch) : spots.get(camera).forward(),
 				rotation);
 		return rotation;
 	}
@@ -150,75 +149,53 @@ final class FreeCamera {
 	 * @return false if there are as many as there can be
 	 */
 	boolean add(Vec3 position, Vec3 forward, double fov) {
-		if (this.spots.size() >= MOST) {
+		if (spots.size() >= MOST) {
 			return false;
 		}
 		settle();
-		Spot spot = new Spot();
+		final Spot spot = new Spot();
 		spot.name = freeName();
-		// in the order of the alphabet, which is the order they are gone through in
+
 		int at = 0;
-		while (at < this.spots.size() && this.spots.get(at).name.compareTo(spot.name) < 0) {
+		while (at < spots.size() && spots.get(at).name.compareTo(spot.name) < 0) {
 			at++;
 		}
-		this.spots.add(at, spot);
-		this.active = -1;
+		spots.add(at, spot);
+		active = -1;
 		show(at);
 		place(position, forward, fov);
 		return true;
 	}
 
-	/**
-	 * @return the first letter no camera has
-	 */
-	private String freeName() {
-		for (char letter = 'A'; letter <= 'Z'; letter++) {
-			String name = String.valueOf(letter);
-			if (this.spots.stream().noneMatch(spot -> name.equals(spot.name))) {
-				return name;
-			}
-		}
-		throw new IllegalStateException("more cameras than letters");
-	}
-
 	String name(int camera) {
-		return this.spots.get(camera).name;
+		return spots.get(camera).name;
 	}
 
 	List<String> names() {
-		return this.spots.stream().map(spot -> spot.name).toList();
+		return spots.stream().map(spot -> spot.name).toList();
 	}
 
 	/**
 	 * takes all cameras of the world away, those of its other dimensions as well
 	 */
 	void clear() {
-		this.spots.forEach(this::decline);
-		this.spots.clear();
-		this.active = 0;
-		if (this.file == null) {
+		spots.forEach(this::decline);
+		spots.clear();
+		active = 0;
+		if (file == null) {
 			return;
 		}
-		try (Stream<Path> files = Files.list(this.file.getParent())) {
-			for (Path other : files.toList()) {
+		try (final Stream<Path> files = Files.list(file.getParent())) {
+			for (final Path other : files.toList()) {
 				if (other.getFileName().toString().startsWith(FILES)) {
 					Files.deleteIfExists(other);
 				}
 			}
 		} catch (IOException e) {
-			Vrcamera.LOGGER.warn("VRCamera: can't remove the cameras next to {}", this.file, e);
+			Vrcamera.LOGGER.warn("VRCamera: can't remove the cameras next to {}", file, e);
 		}
-		if (!this.declined.isEmpty()) {
+		if (!declined.isEmpty()) {
 			save();
-		}
-	}
-
-	/**
-	 * the player took a camera away themselves: one a server gave is not given again
-	 */
-	private void decline(Spot spot) {
-		if (spot.id != null) {
-			this.declined.add(spot.id);
 		}
 	}
 
@@ -226,8 +203,8 @@ final class FreeCamera {
 	 * @return which camera a server calls that, -1 if none
 	 */
 	int indexOf(String id) {
-		for (int camera = 0; camera < this.spots.size(); camera++) {
-			if (id.equals(this.spots.get(camera).id)) {
+		for (int camera = 0; camera < spots.size(); camera++) {
+			if (id.equals(spots.get(camera).id)) {
 				return camera;
 			}
 		}
@@ -238,7 +215,7 @@ final class FreeCamera {
 	 * @return what a server calls the camera, null for one the player made
 	 */
 	String id(int camera) {
-		return this.spots.get(camera).id;
+		return spots.get(camera).id;
 	}
 
 	/**
@@ -250,19 +227,19 @@ final class FreeCamera {
 	 */
 	int place(String id, Vec3 position, double yaw, double pitch, double fov, boolean anyway) {
 		if (anyway) {
-			this.declined.remove(id);
+			declined.remove(id);
 		}
 		int there = indexOf(id);
 		if (there >= 0 && !anyway) {
 			return there;
 		}
-		if (there < 0 && (this.declined.contains(id) || this.spots.size() >= MOST ||
-				this.spots.stream().filter(spot -> spot.id != null).count() >= FROM_SERVER_MOST)) {
+		if (there < 0 && (declined.contains(id) || spots.size() >= MOST ||
+				spots.stream().filter(spot -> spot.id != null).count() >= FROM_SERVER_MOST)) {
 			return -1;
 		}
 		settle();
-		Spot filming = this.spots.isEmpty() ? null : this.spots.get(this.active);
-		Spot spot = there >= 0 ? this.spots.get(there) : new Spot();
+		final Spot filming = spots.isEmpty() ? null : spots.get(active);
+		final Spot spot = there >= 0 ? spots.get(there) : new Spot();
 		spot.id = id;
 		spot.x = position.x;
 		spot.y = position.y;
@@ -274,16 +251,16 @@ final class FreeCamera {
 		if (there < 0) {
 			spot.name = freeName();
 			there = 0;
-			while (there < this.spots.size() && this.spots.get(there).name.compareTo(spot.name) < 0) {
+			while (there < spots.size() && spots.get(there).name.compareTo(spot.name) < 0) {
 				there++;
 			}
-			this.spots.add(there, spot);
+			spots.add(there, spot);
 		}
 		if (filming == null || filming == spot) {
-			this.active = -1;
+			active = -1;
 			show(there);
 		} else {
-			this.active = this.spots.indexOf(filming);
+			active = spots.indexOf(filming);
 		}
 		save();
 		return there;
@@ -296,23 +273,23 @@ final class FreeCamera {
 	 * @param exact true for the one with that id, false for all whose id starts with it
 	 */
 	void takeBack(String id, boolean exact) {
-		Predicate<String> meant = given -> given != null && (exact ? given.equals(id) : given.startsWith(id));
-		boolean forgotten = this.declined.removeIf(meant);
+		final Predicate<String> meant = given -> given != null && (exact ? given.equals(id) : given.startsWith(id));
+		final boolean forgotten = declined.removeIf(meant);
 		settle();
-		Spot filming = this.spots.isEmpty() ? null : this.spots.get(this.active);
-		if (!this.spots.removeIf(spot -> meant.test(spot.id))) {
+		final Spot filming = spots.isEmpty() ? null : spots.get(active);
+		if (!spots.removeIf(spot -> meant.test(spot.id))) {
 			if (forgotten) {
 				save();
 			}
 			return;
 		}
-		int kept = this.spots.indexOf(filming);
-		if (this.spots.isEmpty()) {
-			this.active = 0;
+		int kept = spots.indexOf(filming);
+		if (spots.isEmpty()) {
+			active = 0;
 		} else if (kept >= 0) {
-			this.active = kept;
+			active = kept;
 		} else {
-			this.active = -1;
+			active = -1;
 			show(0);
 		}
 		save();
@@ -329,17 +306,17 @@ final class FreeCamera {
 	 * puts the camera that films somewhere else, at once
 	 */
 	void place(Vec3 position, Vec3 forward, double fov) {
-		if (this.spots.isEmpty()) {
+		if (spots.isEmpty()) {
 			return;
 		}
-		Vec3 look = forward.normalize();
-		Spot spot = this.spots.get(this.active);
-		this.flight = 1.0;
+		final Vec3 look = forward.normalize();
+		final Spot spot = spots.get(active);
+		flight = 1.0;
 		this.position = position;
 		spot.yaw = Math.toDegrees(Math.atan2(-look.x, look.z));
 		spot.pitch = CamMath.clamp(Math.toDegrees(-Math.asin(CamMath.clamp(look.y, -1.0, 1.0))), -MAX_PITCH, MAX_PITCH);
 		spot.fov = CamMath.clamp(fov, MIN_FOV, MAX_FOV);
-		show(this.active);
+		show(active);
 		save();
 	}
 
@@ -348,16 +325,16 @@ final class FreeCamera {
 	 */
 	void show(int camera) {
 		settle();
-		this.active = camera;
-		this.flight = 1.0;
-		Spot spot = this.spots.get(camera);
-		this.position = spot.position();
-		this.velocity = Vec3.ZERO;
-		this.glide = Vec3.ZERO;
-		this.glided = 0;
-		this.yaw = spot.yaw;
-		this.pitch = spot.pitch;
-		this.fov = spot.fov;
+		active = camera;
+		flight = 1.0;
+		final Spot spot = spots.get(camera);
+		position = spot.position();
+		velocity = Vec3.ZERO;
+		glide = Vec3.ZERO;
+		glided = 0;
+		yaw = spot.yaw;
+		pitch = spot.pitch;
+		fov = spot.fov;
 	}
 
 	/**
@@ -366,24 +343,24 @@ final class FreeCamera {
 	 */
 	void flyTo(int camera) {
 		settle();
-		this.flightFrom = new Spot();
-		this.flightFrom.x = this.position.x;
-		this.flightFrom.y = this.position.y;
-		this.flightFrom.z = this.position.z;
-		this.flightFrom.yaw = this.yaw;
-		this.flightFrom.pitch = this.pitch;
-		this.flightFrom.fov = this.fov;
-		this.active = camera;
-		this.flight = 0;
-		this.flightSeconds = CamMath.clamp(this.position.distanceTo(this.spots.get(camera).position()) / FLIGHT_SPEED,
+		flightFrom = new Spot();
+		flightFrom.x = position.x;
+		flightFrom.y = position.y;
+		flightFrom.z = position.z;
+		flightFrom.yaw = yaw;
+		flightFrom.pitch = pitch;
+		flightFrom.fov = fov;
+		active = camera;
+		flight = 0;
+		flightSeconds = CamMath.clamp(position.distanceTo(spots.get(camera).position()) / FLIGHT_SPEED,
 				FLIGHT_SHORTEST, FLIGHT_LONGEST);
-		this.velocity = Vec3.ZERO;
-		this.glide = Vec3.ZERO;
-		this.glided = 0;
+		velocity = Vec3.ZERO;
+		glide = Vec3.ZERO;
+		glided = 0;
 	}
 
 	boolean isInFlight() {
-		return this.flight < 1.0;
+		return flight < 1.0;
 	}
 
 	/**
@@ -392,8 +369,8 @@ final class FreeCamera {
 	 * @param velocity blocks per second, {@link Vec3#ZERO} stops it where it is
 	 */
 	void fling(Vec3 velocity) {
-		this.glide = velocity;
-		this.glided = 0;
+		glide = velocity;
+		glided = 0;
 		if (velocity.lengthSqr() == 0) {
 			save();
 		}
@@ -405,19 +382,19 @@ final class FreeCamera {
 	 */
 	void stick(Entity entity, float partialTick) {
 		settle();
-		Spot spot = this.spots.get(this.active);
+		final Spot spot = spots.get(active);
 		spot.carrier = entity;
 		spot.seat = spot.position().subtract(entity.getPosition(partialTick));
 		spot.carrierYaw = bodyYaw(entity, partialTick);
-		this.glide = Vec3.ZERO;
+		glide = Vec3.ZERO;
 	}
 
 	/**
 	 * takes the camera that films off what it sits on, it stays where it is
 	 */
 	void unstick() {
-		if (!this.spots.isEmpty()) {
-			this.spots.get(this.active).carrier = null;
+		if (!spots.isEmpty()) {
+			spots.get(active).carrier = null;
 		}
 	}
 
@@ -425,54 +402,49 @@ final class FreeCamera {
 	 * moves every camera that sits on an entity along with it, also the ones that do not film
 	 */
 	void ride(float partialTick, double dt) {
-		for (int camera = 0; camera < this.spots.size(); camera++) {
-			Spot spot = this.spots.get(camera);
-			Entity carrier = spot.carrier;
+		for (int camera = 0; camera < spots.size(); camera++) {
+			final Spot spot = spots.get(camera);
+			final Entity carrier = spot.carrier;
 			if (carrier == null) {
 				continue;
 			}
 			if (!carrier.isAlive() || carrier.isRemoved()) {
-				// gone, or too far away to be known of: the camera stays where it was last
+
 				spot.carrier = null;
 				continue;
 			}
-			double turn = Mth.wrapDegrees(bodyYaw(carrier, partialTick) - spot.carrierYaw) * ease(CARRY_EASE, dt);
-			double sin = Math.sin(Math.toRadians(turn));
-			double cos = Math.cos(Math.toRadians(turn));
+			final double turn = Mth.wrapDegrees(bodyYaw(carrier, partialTick) - spot.carrierYaw) * ease(CARRY_EASE, dt);
+			final double sin = Math.sin(Math.toRadians(turn));
+			final double cos = Math.cos(Math.toRadians(turn));
 			spot.carrierYaw += turn;
 			spot.seat = new Vec3(spot.seat.x * cos - spot.seat.z * sin, spot.seat.y,
 					spot.seat.x * sin + spot.seat.z * cos);
 			spot.yaw += turn;
-			Vec3 position = carrier.getPosition(partialTick).add(spot.seat);
+			final Vec3 position = carrier.getPosition(partialTick).add(spot.seat);
 			spot.x = position.x;
 			spot.y = position.y;
 			spot.z = position.z;
-			if (camera == this.active && !isInFlight()) {
+			if (camera == active && !isInFlight()) {
 				this.position = position;
-				this.yaw += turn;
+				yaw += turn;
 			}
 		}
-	}
-
-	private static double bodyYaw(Entity entity, float partialTick) {
-		return entity instanceof LivingEntity living ?
-				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
 	}
 
 	/**
 	 * @return if the camera that films was thrown too far to be kept
 	 */
 	boolean isGone() {
-		return this.glided > GONE_AFTER;
+		return glided > GONE_AFTER;
 	}
 
 	/**
 	 * takes the camera that films away, the one before it films then
 	 */
 	void remove() {
-		int before = Math.max(0, this.active - 1);
-		decline(this.spots.remove(this.active));
-		this.active = -1;
+		final int before = Math.max(0, active - 1);
+		decline(spots.remove(active));
+		active = -1;
 		show(before);
 		save();
 	}
@@ -481,14 +453,14 @@ final class FreeCamera {
 	 * @param keys what is held, from -1 to 1: to the right, up, and ahead
 	 */
 	void fly(Vec3 keys, boolean fast) {
-		Vec3 ahead = forward(this.yaw, this.pitch);
-		Vec3 right = new Vec3(-ahead.z, 0, ahead.x);
-		Vec3 way = ahead.scale(keys.z).add(right.lengthSqr() < 1.0E-6 ? Vec3.ZERO : right.normalize().scale(keys.x))
+		final Vec3 ahead = forward(yaw, pitch);
+		final Vec3 right = new Vec3(-ahead.z, 0, ahead.x);
+		final Vec3 way = ahead.scale(keys.z).add(right.lengthSqr() < 1.0E-6 ? Vec3.ZERO : right.normalize().scale(keys.x))
 				.add(0, keys.y, 0);
-		this.push = way.lengthSqr() < 1.0E-6 ? Vec3.ZERO : way.normalize().scale(SPEED * (fast ? FAST : 1.0));
-		if (this.push.lengthSqr() > 0) {
-			this.glide = Vec3.ZERO;
-			// flown, it leaves what it sat on
+		push = way.lengthSqr() < 1.0E-6 ? Vec3.ZERO : way.normalize().scale(SPEED * (fast ? FAST : 1.0));
+		if (push.lengthSqr() > 0) {
+			glide = Vec3.ZERO;
+
 			unstick();
 		}
 	}
@@ -498,8 +470,8 @@ final class FreeCamera {
 	 * @param pitch degrees down
 	 */
 	void turn(double yaw, double pitch) {
-		if (!this.spots.isEmpty()) {
-			Spot spot = this.spots.get(this.active);
+		if (!spots.isEmpty()) {
+			final Spot spot = spots.get(active);
 			spot.yaw += yaw;
 			spot.pitch = CamMath.clamp(spot.pitch + pitch, -MAX_PITCH, MAX_PITCH);
 		}
@@ -509,8 +481,8 @@ final class FreeCamera {
 	 * @param notches of the wheel, away from the player zooms in
 	 */
 	void zoom(double notches) {
-		if (!this.spots.isEmpty()) {
-			Spot spot = this.spots.get(this.active);
+		if (!spots.isEmpty()) {
+			final Spot spot = spots.get(active);
 			spot.fov = CamMath.clamp(spot.fov * Math.exp(-notches * FOV_WHEEL), MIN_FOV, MAX_FOV);
 		}
 	}
@@ -518,35 +490,36 @@ final class FreeCamera {
 	/**
 	 * moves the camera that films on by one frame
 	 */
+	@NotNull
 	DesktopCamera.Pose pose(double dt) {
-		Spot spot = this.spots.get(this.active);
+		final Spot spot = spots.get(active);
 		if (isInFlight()) {
-			this.flight = Math.min(1.0, this.flight + dt / this.flightSeconds);
-			double along = CamMath.smoothstep(this.flight);
-			Spot from = this.flightFrom;
-			this.position = from.position().lerp(spot.position(), along);
-			// the short way around, and by the end it is the number the spot has: a turn more or less looks the same
-			this.yaw = isInFlight() ? from.yaw + Mth.wrapDegrees(spot.yaw - from.yaw) * along : spot.yaw;
-			this.pitch = from.pitch + (spot.pitch - from.pitch) * along;
-			this.fov = from.fov + (spot.fov - from.fov) * along;
-			this.push = Vec3.ZERO;
-			return new DesktopCamera.Pose(this.position, rotation(this.active), (float) this.fov);
+			flight = Math.min(1.0, flight + dt / flightSeconds);
+			final double along = CamMath.smoothstep(flight);
+			final Spot from = flightFrom;
+			position = from.position().lerp(spot.position(), along);
+
+			yaw = isInFlight() ? from.yaw + Mth.wrapDegrees(spot.yaw - from.yaw) * along : spot.yaw;
+			pitch = from.pitch + (spot.pitch - from.pitch) * along;
+			fov = from.fov + (spot.fov - from.fov) * along;
+			push = Vec3.ZERO;
+			return new DesktopCamera.Pose(position, rotation(active), (float) fov);
 		}
-		this.velocity = this.velocity.lerp(this.push, ease(MOVE_EASE, dt));
-		this.push = Vec3.ZERO;
-		this.position = this.position.add(this.velocity.scale(dt));
-		if (this.glide.lengthSqr() > 0) {
-			this.position = this.position.add(this.glide.scale(dt));
-			this.glided += this.glide.length() * dt;
-			this.glide = this.glide.scale(Math.exp(-GLIDE_DRAG * dt));
-			if (this.glide.lengthSqr() < 0.01) {
+		velocity = velocity.lerp(push, ease(MOVE_EASE, dt));
+		push = Vec3.ZERO;
+		position = position.add(velocity.scale(dt));
+		if (glide.lengthSqr() > 0) {
+			position = position.add(glide.scale(dt));
+			glided += glide.length() * dt;
+			glide = glide.scale(Math.exp(-GLIDE_DRAG * dt));
+			if (glide.lengthSqr() < 0.01) {
 				fling(Vec3.ZERO);
 			}
 		}
-		this.yaw += (spot.yaw - this.yaw) * ease(TURN_EASE, dt);
-		this.pitch += (spot.pitch - this.pitch) * ease(TURN_EASE, dt);
-		this.fov += (spot.fov - this.fov) * ease(FOV_EASE, dt);
-		return new DesktopCamera.Pose(this.position, rotation(this.active), (float) this.fov);
+		yaw += (spot.yaw - yaw) * ease(TURN_EASE, dt);
+		pitch += (spot.pitch - pitch) * ease(TURN_EASE, dt);
+		fov += (spot.fov - fov) * ease(FOV_EASE, dt);
+		return new DesktopCamera.Pose(position, rotation(active), (float) fov);
 	}
 
 	/**
@@ -555,37 +528,37 @@ final class FreeCamera {
 	void open(Path file) {
 		save();
 		this.file = file;
-		this.spots.clear();
-		this.declined.clear();
-		this.active = 0;
+		spots.clear();
+		declined.clear();
+		active = 0;
 		if (Files.isRegularFile(file)) {
 			try {
-				// a list of cameras, or with more than cameras to it what is written down in save
+
 				JsonElement written = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
 				Spot[] kept;
 				if (written.isJsonObject()) {
-					Kept all = GSON.fromJson(written, Kept.class);
+					final Kept all = GSON.fromJson(written, Kept.class);
 					kept = all.cameras;
 					if (all.declined != null) {
-						this.declined.addAll(List.of(all.declined));
+						declined.addAll(List.of(all.declined));
 					}
 				} else {
 					kept = GSON.fromJson(written, Spot[].class);
 				}
 				if (kept != null) {
-					for (Spot spot : List.of(kept).subList(0, Math.min(kept.length, MOST))) {
+					for (final Spot spot : List.of(kept).subList(0, Math.min(kept.length, MOST))) {
 						if (spot.name == null) {
 							spot.name = freeName();
 						}
-						this.spots.add(spot);
+						spots.add(spot);
 					}
 				}
 			} catch (IOException | JsonParseException | NullPointerException e) {
 				Vrcamera.LOGGER.warn("VRCamera: can't read the cameras in {}", file, e);
 			}
 		}
-		if (!this.spots.isEmpty()) {
-			this.active = -1;
+		if (!spots.isEmpty()) {
+			active = -1;
 			show(0);
 		}
 	}
@@ -594,22 +567,61 @@ final class FreeCamera {
 	 * writes down where the cameras stand
 	 */
 	void save() {
-		if (this.file == null) {
+		if (file == null) {
 			return;
 		}
 		settle();
 		try {
-			Files.createDirectories(this.file.getParent());
-			Object written = this.spots;
-			if (!this.declined.isEmpty()) {
-				Kept all = new Kept();
-				all.cameras = this.spots.toArray(new Spot[0]);
-				all.declined = this.declined.toArray(new String[0]);
+			Files.createDirectories(file.getParent());
+			Object written = spots;
+			if (!declined.isEmpty()) {
+				final Kept all = new Kept();
+				all.cameras = spots.toArray(new Spot[0]);
+				all.declined = declined.toArray(new String[0]);
 				written = all;
 			}
-			Files.writeString(this.file, GSON.toJson(written), StandardCharsets.UTF_8);
+			Files.writeString(file, GSON.toJson(written), StandardCharsets.UTF_8);
 		} catch (IOException e) {
-			Vrcamera.LOGGER.warn("VRCamera: can't write the cameras to {}", this.file, e);
+			Vrcamera.LOGGER.warn("VRCamera: can't write the cameras to {}", file, e);
+		}
+	}
+
+	private static double bodyYaw(Entity entity, float partialTick) {
+		return entity instanceof LivingEntity living ?
+				Mth.rotLerp(partialTick, living.yBodyRotO, living.yBodyRot) : entity.getViewYRot(partialTick);
+	}
+
+	@NotNull
+	private static Vec3 forward(double yaw, double pitch) {
+		final double yawRad = Math.toRadians(yaw);
+		final double pitchRad = Math.toRadians(pitch);
+		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
+				Math.cos(yawRad) * Math.cos(pitchRad));
+	}
+
+	private static double ease(double rate, double dt) {
+		return 1.0 - Math.exp(-rate * dt);
+	}
+
+	/**
+	 * @return the first letter no camera has
+	 */
+	private String freeName() {
+		for (char letter = 'A'; letter <= 'Z'; letter++) {
+			final String name = String.valueOf(letter);
+			if (spots.stream().noneMatch(spot -> name.equals(spot.name))) {
+				return name;
+			}
+		}
+		throw new IllegalStateException("more cameras than letters");
+	}
+
+	/**
+	 * the player took a camera away themselves: one a server gave is not given again
+	 */
+	private void decline(Spot spot) {
+		if (spot.id != null) {
+			declined.add(spot.id);
 		}
 	}
 
@@ -617,23 +629,12 @@ final class FreeCamera {
 	 * the camera that films is where it was flown to, its spot has to hear of that
 	 */
 	private void settle() {
-		// on its way to another camera it is not where that one stands
-		if (!isInFlight() && this.active >= 0 && this.active < this.spots.size()) {
-			Spot spot = this.spots.get(this.active);
-			spot.x = this.position.x;
-			spot.y = this.position.y;
-			spot.z = this.position.z;
+
+		if (!isInFlight() && active >= 0 && active < spots.size()) {
+			final Spot spot = spots.get(active);
+			spot.x = position.x;
+			spot.y = position.y;
+			spot.z = position.z;
 		}
-	}
-
-	private static Vec3 forward(double yaw, double pitch) {
-		double yawRad = Math.toRadians(yaw);
-		double pitchRad = Math.toRadians(pitch);
-		return new Vec3(-Math.sin(yawRad) * Math.cos(pitchRad), -Math.sin(pitchRad),
-				Math.cos(yawRad) * Math.cos(pitchRad));
-	}
-
-	private static double ease(double rate, double dt) {
-		return 1.0 - Math.exp(-rate * dt);
 	}
 }

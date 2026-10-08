@@ -22,7 +22,7 @@ import java.lang.reflect.Field;
 		"me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager"
 }, remap = false)
 public class SodiumSectionManagerMixin {
-	// what Sodium found to draw and to build, and what it found that with. Not every version of it has all of them
+
 	@Unique
 	private static final String[] vrcamera$FOUND = {"renderLists", "taskLists", "renderTree"};
 	@Unique
@@ -32,9 +32,13 @@ public class SodiumSectionManagerMixin {
 	@Unique
 	private Object[] vrcamera$ofPlayer;
 
-	// Sodium has chunks built in the background and gives that one frame of time: what it asks for in one frame it
-	// waits for in the next, and builds itself whatever is not done by then. The chunks are asked for once per
-	// frame, with the view of the player, which has them built all around and not only where the player looks
+	@Unique
+	private static void vrcamera$failed(Exception cause) {
+		vrcamera$broken = true;
+		Vrcamera.LOGGER.warn("VRCamera: can't keep the view of the player apart from the one of the camera for Sodium, "
+				+ "chunks may be missing for a moment while the camera films", cause);
+	}
+
 	@Inject(method = "updateChunks", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$chunksOncePerFrame(CallbackInfo ci) {
 		if (DirectorPass.isActive()) {
@@ -42,8 +46,6 @@ public class SodiumSectionManagerMixin {
 		}
 	}
 
-	// What is seen is worked out in the background, for where the player is. Asked for the camera as well, each of
-	// the two would get what was worked out for the other one: chunks that are missing for a moment
 	@Inject(method = "prepareRenderTrees", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$seenForThePlayerOnly(CallbackInfo ci) {
 		if (DirectorPass.isActive()) {
@@ -55,26 +57,26 @@ public class SodiumSectionManagerMixin {
 
 	@Inject(method = "finalizeRenderLists", at = @At("HEAD"), require = 0)
 	private void vrcamera$keepWhatThePlayerSees(CallbackInfo ci) {
-		if (!DirectorPass.isActive() || this.vrcamera$ofPlayer != null || vrcamera$broken) {
+		if (!DirectorPass.isActive() || vrcamera$ofPlayer != null || vrcamera$broken) {
 			return;
 		}
 		try {
-			if (this.vrcamera$fields == null) {
-				this.vrcamera$fields = new Field[vrcamera$FOUND.length];
+			if (vrcamera$fields == null) {
+				vrcamera$fields = new Field[vrcamera$FOUND.length];
 				for (int i = 0; i < vrcamera$FOUND.length; i++) {
 					try {
-						this.vrcamera$fields[i] = getClass().getDeclaredField(vrcamera$FOUND[i]);
-						this.vrcamera$fields[i].setAccessible(true);
+						vrcamera$fields[i] = getClass().getDeclaredField(vrcamera$FOUND[i]);
+						vrcamera$fields[i].setAccessible(true);
 					} catch (NoSuchFieldException e) {
-						// a version of Sodium without it
+
 					}
 				}
 			}
-			Object[] kept = new Object[this.vrcamera$fields.length];
+			final Object[] kept = new Object[vrcamera$fields.length];
 			for (int i = 0; i < kept.length; i++) {
-				kept[i] = this.vrcamera$fields[i] == null ? null : this.vrcamera$fields[i].get(this);
+				kept[i] = vrcamera$fields[i] == null ? null : vrcamera$fields[i].get(this);
 			}
-			this.vrcamera$ofPlayer = kept;
+			vrcamera$ofPlayer = kept;
 		} catch (ReflectiveOperationException | RuntimeException e) {
 			vrcamera$failed(e);
 		}
@@ -85,26 +87,19 @@ public class SodiumSectionManagerMixin {
 	 */
 	@Unique
 	private void vrcamera$giveBack() {
-		Object[] kept = this.vrcamera$ofPlayer;
+		final Object[] kept = vrcamera$ofPlayer;
 		if (kept == null) {
 			return;
 		}
-		this.vrcamera$ofPlayer = null;
+		vrcamera$ofPlayer = null;
 		try {
 			for (int i = 0; i < kept.length; i++) {
-				if (this.vrcamera$fields[i] != null) {
-					this.vrcamera$fields[i].set(this, kept[i]);
+				if (vrcamera$fields[i] != null) {
+					vrcamera$fields[i].set(this, kept[i]);
 				}
 			}
 		} catch (ReflectiveOperationException | RuntimeException e) {
 			vrcamera$failed(e);
 		}
-	}
-
-	@Unique
-	private static void vrcamera$failed(Exception cause) {
-		vrcamera$broken = true;
-		Vrcamera.LOGGER.warn("VRCamera: can't keep the view of the player apart from the one of the camera for Sodium, "
-				+ "chunks may be missing for a moment while the camera films", cause);
 	}
 }

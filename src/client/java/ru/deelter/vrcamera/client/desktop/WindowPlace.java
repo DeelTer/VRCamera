@@ -37,7 +37,7 @@ final class WindowPlace {
 	private final Native window;
 	private final int width;
 	private final int height;
-	// where the window was and how large, while it fills a monitor. Null while it is a window
+
 	private Box windowed;
 
 	/**
@@ -54,16 +54,16 @@ final class WindowPlace {
 	 * Not if that monitor is gone: a window nobody sees is no help
 	 */
 	void putBack() {
-		CameraConfig config = CameraConfig.current();
-		Box place = Box.of(config.outputWindowPlace);
-		if (place != null && this.window.monitorOf(place) != null) {
-			this.window.move(place);
+		final CameraConfig config = CameraConfig.current();
+		final Box place = Box.of(config.outputWindowPlace);
+		if (place != null && window.monitorOf(place) != null) {
+			window.move(place);
 			keepReachable();
 			if (config.outputWindowFull) {
 				toggleFullscreen();
 			}
 		}
-		if (config.hasOutputSize() && this.windowed == null) {
+		if (config.hasOutputSize() && windowed == null) {
 			resize(config.outputWidth, config.outputHeight);
 		}
 	}
@@ -73,18 +73,18 @@ final class WindowPlace {
 	 * has: for a picture larger than the monitor, the window has to be larger than the monitor
 	 */
 	void resize(int width, int height) {
-		if (this.windowed != null) {
+		if (windowed != null) {
 			toggleFullscreen();
 		}
-		Box place = this.window.place();
-		this.window.move(new Box(place.x(), place.y(), width, height));
+		final Box place = window.place();
+		window.move(new Box(place.x(), place.y(), width, height));
 		keepReachable();
 	}
 
 	void remember() {
-		CameraConfig config = CameraConfig.current();
-		config.outputWindowFull = this.windowed != null;
-		config.outputWindowPlace = (this.windowed != null ? this.windowed : this.window.place()).toArray();
+		final CameraConfig config = CameraConfig.current();
+		config.outputWindowFull = windowed != null;
+		config.outputWindowPlace = (windowed != null ? windowed : window.place()).toArray();
 		config.save();
 	}
 
@@ -92,14 +92,14 @@ final class WindowPlace {
 	 * the window as it is the first time: its usual size, in the middle of the monitor the game is on
 	 */
 	void reset() {
-		if (this.windowed != null) {
+		if (windowed != null) {
 			toggleFullscreen();
 		}
-		Box monitor = this.window.monitorOf(this.window.gamePlace());
-		Box place = this.window.place();
-		this.window.move(monitor == null ? new Box(place.x(), place.y(), this.width, this.height) :
-				new Box(monitor.middleX() - this.width / 2, monitor.middleY() - this.height / 2, this.width,
-						this.height));
+		final Box monitor = window.monitorOf(window.gamePlace());
+		final Box place = window.place();
+		window.move(monitor == null ? new Box(place.x(), place.y(), width, height) :
+				new Box(monitor.middleX() - width / 2, monitor.middleY() - height / 2, width,
+						height));
 		keepReachable();
 	}
 
@@ -108,19 +108,19 @@ final class WindowPlace {
 	 * a game takes for itself: that one goes away as soon as another window is clicked, which is the game
 	 */
 	void toggleFullscreen() {
-		if (this.windowed != null) {
-			this.window.setBordered(true);
-			this.window.move(this.windowed);
-			this.windowed = null;
+		if (windowed != null) {
+			window.setBordered(true);
+			window.move(windowed);
+			windowed = null;
 			keepReachable();
 			return;
 		}
-		Box place = this.window.place();
-		Box monitor = this.window.monitorOf(place);
+		final Box place = window.place();
+		final Box monitor = window.monitorOf(place);
 		if (monitor != null) {
-			this.windowed = place;
-			this.window.setBordered(false);
-			this.window.move(monitor);
+			windowed = place;
+			window.setBordered(false);
+			window.move(monitor);
 		}
 	}
 
@@ -129,26 +129,26 @@ final class WindowPlace {
 	 * monitor, there is no getting hold of it anymore: it is made to fit, and its bar is brought back into view
 	 */
 	private void keepReachable() {
-		Box place = this.window.place();
-		Box monitor = this.window.monitorOf(place);
+		final Box place = window.place();
+		final Box monitor = window.monitorOf(place);
 		if (monitor == null) {
 			return;
 		}
-		int bar = this.window.barHeight();
+		final int bar = window.barHeight();
 		if (CameraConfig.current().hasOutputSize()) {
-			// as large as it was asked to be: only its bar is brought back
+
 			if (place.y() < monitor.y() + bar) {
-				this.window.move(new Box(place.x(), monitor.y() + bar, place.width(), place.height()));
+				window.move(new Box(place.x(), monitor.y() + bar, place.width(), place.height()));
 			}
 			return;
 		}
-		int fitWidth = Math.min(place.width(), monitor.width());
-		int fitHeight = Math.min(place.height(), monitor.height() - bar);
-		Box fitted = new Box(Math.clamp(place.x(), monitor.x(), monitor.x() + monitor.width() - fitWidth),
+		final int fitWidth = Math.min(place.width(), monitor.width());
+		final int fitHeight = Math.min(place.height(), monitor.height() - bar);
+		final Box fitted = new Box(Math.clamp(place.x(), monitor.x(), monitor.x() + monitor.width() - fitWidth),
 				Math.clamp(place.y(), monitor.y() + bar, monitor.y() + monitor.height() - fitHeight), fitWidth,
 				fitHeight);
 		if (!fitted.equals(place)) {
-			this.window.move(fitted);
+			window.move(fitted);
 		}
 	}
 }

@@ -38,9 +38,9 @@ public class ShotConfig {
 	}
 
 	public ShotConfig copy() {
-		ShotConfig copy = new ShotConfig(this.weight, this.azimuth, this.elevation, this.distance, this.fov,
-				this.minDuration, this.maxDuration);
-		copy.enabled = this.enabled;
+		final ShotConfig copy = new ShotConfig(weight, azimuth, elevation, distance, fov,
+				minDuration, maxDuration);
+		copy.enabled = enabled;
 		return copy;
 	}
 }

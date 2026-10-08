@@ -7,6 +7,7 @@ import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.gizmos.Gizmos;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 import ru.deelter.vrcamera.Vrcamera;
@@ -32,7 +33,7 @@ public final class DirectorPass {
 
 	private static boolean active;
 	private static RenderTarget target;
-	// width and height of the window of the camera, null to draw in the shape of the game window
+
 	private static int[] shape;
 	private static long lastNanos;
 	private static double drawMillis;
@@ -40,9 +41,6 @@ public final class DirectorPass {
 	private static double framesPerSecond;
 	private static int frames;
 	private static long countedSince;
-
-	private DirectorPass() {
-	}
 
 	/**
 	 * @return if what is drawn right now is the picture of the camera, not the view of the player
@@ -65,6 +63,7 @@ public final class DirectorPass {
 	/**
 	 * @return the picture of a camera with a window of its own, null if there is none
 	 */
+	@Nullable
 	public static RenderTarget picture() {
 		return DesktopCamera.INSTANCE.hasOwnWindow() ? target : null;
 	}
@@ -80,13 +79,13 @@ public final class DirectorPass {
 	 * Called once per frame, after the game drew the view of the player and before it shows it.
 	 */
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
-		DesktopCamera camera = DesktopCamera.INSTANCE;
+		final DesktopCamera camera = DesktopCamera.INSTANCE;
 		if (camera.isOn() && (mc.level == null || mc.player == null)) {
-			// the world was left: nothing to film, and a window that shows nothing is in the way
+
 			camera.setMode(DesktopCamera.Mode.OFF);
 		}
 		camera.keepView(mc);
-		boolean wanted = camera.isOn() && !Vr.isRunning() &&
+		final boolean wanted = camera.isOn() && !Vr.isRunning() &&
 				CameraConfig.current().screenOutput == ScreenOutput.WINDOW;
 		FlawlessFrames.set(wanted);
 		if (!wanted) {
@@ -96,7 +95,7 @@ public final class DirectorPass {
 		if (active) {
 			return;
 		}
-		// in every frame, also the ones without a picture of the camera: the window is asked if it was closed
+
 		if (!OutputWindow.open(mc)) {
 			camera.failed("vrcamera.message.output.failed");
 			return;
@@ -105,41 +104,40 @@ public final class DirectorPass {
 		if (!camera.isOn() || !renderLevel) {
 			return;
 		}
-		double fps = CameraConfig.current().outputFps;
-		long now = System.nanoTime();
-		// the world is drawn twice for this, less often than the game is half as bad
+		final double fps = CameraConfig.current().outputFps;
+		final long now = System.nanoTime();
+
 		if (fps > 0 && now - lastNanos < 1.0E9 / fps - 500_000L) {
 			return;
 		}
 		lastNanos = now;
 
-		RenderTarget own = mc.gameRenderer.mainRenderTarget();
+		final RenderTarget own = mc.gameRenderer.mainRenderTarget();
 		if (!camera.advance(deltaTracker.getGameTimeDeltaPartialTick(true))) {
-			// it could not be moved and turned itself off
+
 			return;
 		}
 		try {
 			if (camera.showsOwnView()) {
-				// No room for a camera around the player. What the player sees is the picture then, with their
-				// hand and everything on their screen, and it is there already
+
 				OutputWindow.show(mc, own, false, false);
 				return;
 			}
-			CameraConfig config = CameraConfig.current();
-			boolean ownSize = config.hasOutputSize();
-			int width = ownSize ? config.outputWidth : own.width;
-			int height = ownSize ? config.outputHeight : own.height;
+			final CameraConfig config = CameraConfig.current();
+			final boolean ownSize = config.hasOutputSize();
+			final int width = ownSize ? config.outputWidth : own.width;
+			final int height = ownSize ? config.outputHeight : own.height;
 			if (target == null) {
 				target = new MainTarget(width, height);
 			} else if (target.width != width || target.height != height) {
 				target.resize(width, height);
 			}
-			long started = System.nanoTime();
-			// a picture with a size of its own has the shape of that, whatever shape its window is pulled to
+			final long started = System.nanoTime();
+
 			shape = ownSize ? new int[]{width, height} : OutputWindow.size();
 			DesktopGui.draw(mc, deltaTracker, own);
 			draw(mc, deltaTracker, own);
-			long drawn = System.nanoTime();
+			final long drawn = System.nanoTime();
 			OutputWindow.show(mc, target, camera.showsGrid(), shape != null && !ownSize);
 			measure(started, drawn, System.nanoTime());
 		} catch (RuntimeException | LinkageError e) {
@@ -148,54 +146,11 @@ public final class DirectorPass {
 		}
 	}
 
-	private static void draw(Minecraft mc, DeltaTracker deltaTracker, RenderTarget own) {
-		CameraType view = mc.options.getCameraType();
-		try {
-			active = true;
-			setTarget(mc, target);
-			// from outside: the player is drawn, their hand in front of the lens is not
-			mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-			RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(target.getColorTexture(), BLACK,
-					target.getDepthTexture(), 0.0);
-			try (Gizmos.TemporaryCollection ignored = mc.levelExtractor.collectPerFrameMainThreadGizmos()) {
-				mc.gameRenderer.update(deltaTracker);
-				mc.gameRenderer.extract(deltaTracker, true);
-			}
-			try (Gizmos.TemporaryCollection ignored = mc.levelRenderer.collectPerFrameRenderThreadGizmos()) {
-				GameFrame.render(mc, deltaTracker, true);
-			}
-			mc.levelRenderer.endFrame();
-			mc.gameRenderer.renderBuffers().endFrame();
-		} finally {
-			active = false;
-			mc.options.setCameraType(view);
-			setTarget(mc, own);
-			// The camera of the game goes back to the player. Sounds are heard from where it is, and what happens
-			// between two frames takes it for the eyes of the player
-			try (Gizmos.TemporaryCollection ignored = mc.levelExtractor.collectPerFrameMainThreadGizmos()) {
-				mc.gameRenderer.update(deltaTracker);
-			}
-		}
-	}
-
-	private static void measure(long started, long drawn, long shown) {
-		// evened out, single frames jump around too much to read
-		drawMillis += ((drawn - started) / 1.0E6 - drawMillis) * 0.1;
-		showMillis += ((shown - drawn) / 1.0E6 - showMillis) * 0.1;
-		frames++;
-		if (shown - countedSince > 1_000_000_000L) {
-			framesPerSecond = frames * 1.0E9 / (shown - countedSince);
-			frames = 0;
-			countedSince = shown;
-		}
-	}
-
 	/**
 	 * @return what the second picture costs, for the debug overlay
 	 */
 	static List<String> debugLines() {
-		// Time on the processor only. What the graphics card does with it afterwards is not in here, the frame
-		// rate of the game itself tells about that
+
 		return List.of(String.format(Locale.ROOT, "camera window: %.0f fps, draw %.1f ms + show %.1f ms per picture",
 						framesPerSecond, drawMillis, showMillis),
 				String.format(Locale.ROOT, "that is %.0f%% of a second on the processor",
@@ -209,6 +164,47 @@ public final class DirectorPass {
 		}
 	}
 
+	private static void draw(Minecraft mc, DeltaTracker deltaTracker, RenderTarget own) {
+		final CameraType view = mc.options.getCameraType();
+		try {
+			active = true;
+			setTarget(mc, target);
+
+			mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
+			RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(target.getColorTexture(), BLACK,
+					target.getDepthTexture(), 0.0);
+			try (final Gizmos.TemporaryCollection ignored = mc.levelExtractor.collectPerFrameMainThreadGizmos()) {
+				mc.gameRenderer.update(deltaTracker);
+				mc.gameRenderer.extract(deltaTracker, true);
+			}
+			try (final Gizmos.TemporaryCollection ignored = mc.levelRenderer.collectPerFrameRenderThreadGizmos()) {
+				GameFrame.render(mc, deltaTracker, true);
+			}
+			mc.levelRenderer.endFrame();
+			mc.gameRenderer.renderBuffers().endFrame();
+		} finally {
+			active = false;
+			mc.options.setCameraType(view);
+			setTarget(mc, own);
+
+			try (final Gizmos.TemporaryCollection ignored = mc.levelExtractor.collectPerFrameMainThreadGizmos()) {
+				mc.gameRenderer.update(deltaTracker);
+			}
+		}
+	}
+
+	private static void measure(long started, long drawn, long shown) {
+
+		drawMillis += ((drawn - started) / 1.0E6 - drawMillis) * 0.1;
+		showMillis += ((shown - drawn) / 1.0E6 - showMillis) * 0.1;
+		frames++;
+		if (shown - countedSince > 1_000_000_000L) {
+			framesPerSecond = frames * 1.0E9 / (shown - countedSince);
+			frames = 0;
+			countedSince = shown;
+		}
+	}
+
 	private static void close() {
 		OutputWindow.close();
 		DesktopGui.close();
@@ -216,5 +212,8 @@ public final class DirectorPass {
 			target.destroyBuffers();
 			target = null;
 		}
+	}
+
+	private DirectorPass() {
 	}
 }

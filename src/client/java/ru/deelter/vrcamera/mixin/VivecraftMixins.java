@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.mixin;
 
 import net.fabricmc.loader.api.FabricLoader;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
@@ -23,6 +24,7 @@ public final class VivecraftMixins implements IMixinConfigPlugin {
 	public void onLoad(String mixinPackage) {
 	}
 
+	@Nullable
 	@Override
 	public String getRefMapperConfig() {
 		return null;
@@ -32,6 +34,7 @@ public final class VivecraftMixins implements IMixinConfigPlugin {
 	public void acceptTargets(Set<String> myTargets, Set<String> otherTargets) {
 	}
 
+	@Nullable
 	@Override
 	public List<String> getMixins() {
 		return null;

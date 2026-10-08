@@ -11,8 +11,6 @@ import java.util.function.UnaryOperator;
  * read like a part of the screen sways with it, and should not.
  */
 final class ViewBob {
-	private ViewBob() {
-	}
 
 	/**
 	 * @param eye where the game looks from, and which way and how it is turned
@@ -22,29 +20,32 @@ final class ViewBob {
 		if (!mc.options.bobView().get()) {
 			return UnaryOperator.identity();
 		}
-		// the numbers of GameRenderer#bobView: a shift, then a roll, then a nod
-		float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		double walk = player.avatarState().getBackwardsInterpolatedWalkDistance(partialTick) * Math.PI;
-		double bob = player.avatarState().getInterpolatedBob(partialTick);
-		double shiftX = Math.sin(walk) * bob * 0.5;
-		double shiftY = -Math.abs(Math.cos(walk) * bob);
-		double roll = -Math.toRadians(Math.sin(walk) * bob * 3.0);
-		double nod = -Math.toRadians(Math.abs(Math.cos(walk - 0.2) * bob) * 5.0);
-		double rollCos = Math.cos(roll);
-		double rollSin = Math.sin(roll);
-		double nodCos = Math.cos(nod);
-		double nodSin = Math.sin(nod);
-		Vec3 right = forward.cross(up);
+
+		final float partialTick = mc.getDeltaTracker().getGameTimeDeltaPartialTick(true);
+		final double walk = player.avatarState().getBackwardsInterpolatedWalkDistance(partialTick) * Math.PI;
+		final double bob = player.avatarState().getInterpolatedBob(partialTick);
+		final double shiftX = Math.sin(walk) * bob * 0.5;
+		final double shiftY = -Math.abs(Math.cos(walk) * bob);
+		final double roll = -Math.toRadians(Math.sin(walk) * bob * 3.0);
+		final double nod = -Math.toRadians(Math.abs(Math.cos(walk - 0.2) * bob) * 5.0);
+		final double rollCos = Math.cos(roll);
+		final double rollSin = Math.sin(roll);
+		final double nodCos = Math.cos(nod);
+		final double nodSin = Math.sin(nod);
+		final Vec3 right = forward.cross(up);
 		return point -> {
-			Vec3 to = point.subtract(eye);
-			double x = to.dot(right) - shiftX;
-			double y = to.dot(up) - shiftY;
-			double z = -to.dot(forward);
-			double rolledX = x * rollCos - y * rollSin;
-			double rolledY = x * rollSin + y * rollCos;
-			double noddedY = rolledY * nodCos - z * nodSin;
-			double noddedZ = rolledY * nodSin + z * nodCos;
+			final Vec3 to = point.subtract(eye);
+			final double x = to.dot(right) - shiftX;
+			final double y = to.dot(up) - shiftY;
+			final double z = -to.dot(forward);
+			final double rolledX = x * rollCos - y * rollSin;
+			final double rolledY = x * rollSin + y * rollCos;
+			final double noddedY = rolledY * nodCos - z * nodSin;
+			final double noddedZ = rolledY * nodSin + z * nodCos;
 			return eye.add(right.scale(rolledX)).add(up.scale(noddedY)).add(forward.scale(-noddedZ));
 		};
+	}
+
+	private ViewBob() {
 	}
 }

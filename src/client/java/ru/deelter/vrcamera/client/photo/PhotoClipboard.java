@@ -39,9 +39,6 @@ final class PhotoClipboard {
 		Pointer GlobalFree(Pointer memory);
 	}
 
-	private PhotoClipboard() {
-	}
-
 	/**
 	 * @param pixels the picture as ARGB, its first line at the top. Not used by anyone else afterwards
 	 */
@@ -49,7 +46,7 @@ final class PhotoClipboard {
 		if (!WINDOWS || broken) {
 			return;
 		}
-		// a full picture is a lot to copy, not on the thread that draws
+
 		CompletableFuture.runAsync(() -> {
 			try {
 				write(pixels, width, height);
@@ -61,16 +58,16 @@ final class PhotoClipboard {
 	}
 
 	private static void write(int[] pixels, int width, int height) {
-		User32 user = Native.load("user32", User32.class);
-		Kernel32 kernel = Native.load("kernel32", Kernel32.class);
-		Pointer memory = kernel.GlobalAlloc(GMEM_MOVEABLE, HEADER + pixels.length * 4L);
+		final User32 user = Native.load("user32", User32.class);
+		final Kernel32 kernel = Native.load("kernel32", Kernel32.class);
+		final Pointer memory = kernel.GlobalAlloc(GMEM_MOVEABLE, HEADER + pixels.length * 4L);
 		if (memory == null) {
 			return;
 		}
-		Pointer bitmap = kernel.GlobalLock(memory);
+		final Pointer bitmap = kernel.GlobalLock(memory);
 		bitmap.setInt(0, HEADER);
 		bitmap.setInt(4, width);
-		// its first line at the bottom, the way Windows keeps a bitmap
+
 		bitmap.setInt(8, height);
 		bitmap.setShort(12, (short) 1);
 		bitmap.setShort(14, (short) 32);
@@ -79,15 +76,15 @@ final class PhotoClipboard {
 		bitmap.setLong(24, 0);
 		bitmap.setLong(32, 0);
 		for (int line = 0; line < height; line++) {
-			int from = (height - 1 - line) * width;
-			// what was filmed through glass is not see-through in a picture
+			final int from = (height - 1 - line) * width;
+
 			for (int i = from; i < from + width; i++) {
 				pixels[i] |= 0xFF000000;
 			}
 			bitmap.write(HEADER + (long) line * width * 4, pixels, from, width);
 		}
 		kernel.GlobalUnlock(memory);
-		// The clipboard owns the memory once it has it. Until then it is this code's to give back
+
 		if (!user.OpenClipboard(null)) {
 			kernel.GlobalFree(memory);
 			return;
@@ -100,5 +97,8 @@ final class PhotoClipboard {
 		} finally {
 			user.CloseClipboard();
 		}
+	}
+
+	private PhotoClipboard() {
 	}
 }

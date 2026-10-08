@@ -13,11 +13,7 @@ import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -25,38 +21,34 @@ import java.util.function.Supplier;
  * Settings screen, built with Cloth Config. Only load this class when Cloth Config is installed.
  */
 public final class ConfigScreen {
-	// the sizes a picture is recorded in, wide and upright. Any other one is set with /vrcam screen size
+
 	private static final int[][] OUTPUT_SIZES = {
 			{1280, 720}, {1920, 1080}, {2560, 1440}, {3840, 2160}, {1080, 1920}, {1440, 2560}};
 	private final ConfigEntryBuilder entries;
-
-	private ConfigScreen(ConfigEntryBuilder entries) {
-		this.entries = entries;
-	}
 
 	public static boolean isAvailable() {
 		return FabricLoader.getInstance().isModLoaded("cloth-config");
 	}
 
 	public static Screen create(Screen parent) {
-		// the config the camera is using right now, changes apply as soon as they are saved
-		CameraConfig config = CameraConfig.current();
-		CameraConfig defaults = new CameraConfig();
-		Pace pace = config.pace;
 
-		ConfigBuilder builder = ConfigBuilder.create()
+		final CameraConfig config = CameraConfig.current();
+		final CameraConfig defaults = new CameraConfig();
+		final Pace pace = config.pace;
+
+		final ConfigBuilder builder = ConfigBuilder.create()
 				.setParentScreen(parent)
 				.setTitle(Component.translatable("vrcamera.config.title"))
 				.setSavingRunnable(() -> {
-					// After everything else was written: a new pace sets values that have entries of their own here
+
 					if (config.pace != pace) {
 						config.pace.apply(config);
 					}
 					config.save();
 				});
-		ConfigScreen screen = new ConfigScreen(builder.entryBuilder());
+		final ConfigScreen screen = new ConfigScreen(builder.entryBuilder());
 
-		ConfigCategory general = builder.getOrCreateCategory(Component.translatable("vrcamera.config.general"));
+		final ConfigCategory general = builder.getOrCreateCategory(Component.translatable("vrcamera.config.general"));
 		general.addEntry(screen.toggle("hints", config.hints, defaults.hints, value -> config.hints = value));
 		general.addEntry(screen.toggle("indicator", config.indicator, defaults.indicator,
 				value -> config.indicator = value));
@@ -79,8 +71,7 @@ public final class ConfigScreen {
 		general.addEntry(screen.toggle("debugOverlay", config.debugOverlay, defaults.debugOverlay,
 				value -> config.debugOverlay = value));
 
-		// what only a player at a screen has: where the picture goes, and the cameras of the free mode
-		ConfigCategory desktop = builder.getOrCreateCategory(Component.translatable("vrcamera.config.desktop"));
+		final ConfigCategory desktop = builder.getOrCreateCategory(Component.translatable("vrcamera.config.desktop"));
 		desktop.addEntry(screen.selector("screenOutput", ScreenOutput.values(), config.screenOutput,
 				defaults.screenOutput, value -> config.screenOutput = value));
 		desktop.addEntry(screen.outputSize(config));
@@ -111,8 +102,7 @@ public final class ConfigScreen {
 		desktop.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
 				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
 
-		// what only a player in VR has: the camera in their hands
-		ConfigCategory vr = builder.getOrCreateCategory(Component.translatable("vrcamera.config.vr"));
+		final ConfigCategory vr = builder.getOrCreateCategory(Component.translatable("vrcamera.config.vr"));
 		vr.addEntry(screen.toggle("forceMirror", config.forceMirror, defaults.forceMirror,
 				value -> config.forceMirror = value));
 		vr.addEntry(screen.selector("marker", Marker.values(), config.marker, defaults.marker,
@@ -150,8 +140,7 @@ public final class ConfigScreen {
 		vr.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,
 				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
 
-		// photos, and what is shared with the other players of a server
-		ConfigCategory photo = builder.getOrCreateCategory(Component.translatable("vrcamera.config.photo"));
+		final ConfigCategory photo = builder.getOrCreateCategory(Component.translatable("vrcamera.config.photo"));
 		photo.addEntry(screen.toggle("photoSheet", config.photoSheet, defaults.photoSheet,
 				value -> config.photoSheet = value));
 		photo.addEntry(screen.slider("photoBrightness", config.photoBrightness, defaults.photoBrightness, 0, 1,
@@ -173,7 +162,7 @@ public final class ConfigScreen {
 		photo.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
 				"%.0f", value -> config.othersCameras = value));
 
-		ConfigCategory motion = builder.getOrCreateCategory(Component.translatable("vrcamera.config.motion"));
+		final ConfigCategory motion = builder.getOrCreateCategory(Component.translatable("vrcamera.config.motion"));
 		motion.addEntry(screen.slider("aimHeight", config.aimHeight, defaults.aimHeight, 0, 1, 0.05, "%.2f",
 				value -> config.aimHeight = value));
 		motion.addEntry(screen.slider("faceDistance", config.faceDistance, defaults.faceDistance, 0, 4, 0.25,
@@ -195,7 +184,7 @@ public final class ConfigScreen {
 		motion.addEntry(screen.toggle("speedFov", config.speedFov, defaults.speedFov,
 				value -> config.speedFov = value));
 
-		ConfigCategory collision = builder.getOrCreateCategory(Component.translatable("vrcamera.config.collision"));
+		final ConfigCategory collision = builder.getOrCreateCategory(Component.translatable("vrcamera.config.collision"));
 		collision.addEntry(screen.slider("collisionRadius", config.collisionRadius, defaults.collisionRadius,
 				0.05, 0.5, 0.01, "%.2f", value -> config.collisionRadius = value));
 		collision.addEntry(screen.slider("collisionMargin", config.collisionMargin, defaults.collisionMargin,
@@ -207,7 +196,7 @@ public final class ConfigScreen {
 		collision.addEntry(screen.slider("occlusionCutTime", config.occlusionCutTime, defaults.occlusionCutTime,
 				0.1, 5, 0.1, "%.1f s", value -> config.occlusionCutTime = value));
 
-		ConfigCategory director = builder.getOrCreateCategory(Component.translatable("vrcamera.config.director"));
+		final ConfigCategory director = builder.getOrCreateCategory(Component.translatable("vrcamera.config.director"));
 		director.addEntry(screen.toggle("directorManual", config.directorManual, defaults.directorManual,
 				value -> config.directorManual = value));
 		director.addEntry(screen.selector("pace", Pace.values(), config.pace, defaults.pace,
@@ -227,25 +216,25 @@ public final class ConfigScreen {
 		director.addEntry(screen.slider("povHomeSeconds", config.povHomeSeconds, defaults.povHomeSeconds, 10, 300, 5,
 				"%.0f s", value -> config.povHomeSeconds = value));
 
-		ConfigCategory shots = builder.getOrCreateCategory(Component.translatable("vrcamera.config.shots"));
-		for (ShotType type : ShotType.values()) {
+		final ConfigCategory shots = builder.getOrCreateCategory(Component.translatable("vrcamera.config.shots"));
+		for (final ShotType type : ShotType.values()) {
 			if (type == ShotType.CUSTOM) {
 				continue;
 			}
-			ShotConfig shot = config.shot(type);
-			String name = type.name().toLowerCase(Locale.ROOT);
-			SubCategoryBuilder group = screen.entries.startSubCategory(Component.translatable("vrcamera.shot." + name))
+			final ShotConfig shot = config.shot(type);
+			final String name = type.name().toLowerCase(Locale.ROOT);
+			final SubCategoryBuilder group = screen.entries.startSubCategory(Component.translatable("vrcamera.shot." + name))
 					.setTooltip(Component.translatable("vrcamera.shot." + name + ".tooltip"));
 			screen.addShot(group, shot, type.defaults(), true);
 			shots.addEntry(group.build());
 		}
 
-		ConfigCategory presets = builder.getOrCreateCategory(Component.translatable("vrcamera.config.presets"));
+		final ConfigCategory presets = builder.getOrCreateCategory(Component.translatable("vrcamera.config.presets"));
 		presets.addEntry(screen.entries.startTextDescription(
 				Component.translatable("vrcamera.config.presets.description")).build());
-		ShotConfig presetDefaults = CameraConfig.defaultPreset();
+		final ShotConfig presetDefaults = CameraConfig.defaultPreset();
 		for (int i = 0; i < config.presets.size(); i++) {
-			SubCategoryBuilder group = screen.entries.startSubCategory(
+			final SubCategoryBuilder group = screen.entries.startSubCategory(
 							Component.translatable("vrcamera.config.preset", i + 1))
 					.setExpanded(i == config.activePreset);
 			screen.addShot(group, config.presets.get(i), presetDefaults, false);
@@ -256,13 +245,30 @@ public final class ConfigScreen {
 	}
 
 	/**
+	 * What an option does, shown next to the mouse. Only while Shift is held: these are whole sentences, and over
+	 * a slider they would cover the value that is being set
+	 */
+	private static Supplier<Optional<Component[]>> help(String key) {
+		return () -> Optional.of(new Component[]{Component.translatable(
+				Minecraft.getInstance().hasShiftDown() ? key : "vrcamera.config.help")});
+	}
+
+	private static int toStep(double value, double min, double step, int steps) {
+		return Math.clamp(Math.round((value - min) / step), 0, steps);
+	}
+
+	private ConfigScreen(ConfigEntryBuilder entries) {
+		this.entries = entries;
+	}
+
+	/**
 	 * @param regular if this is a shot of the director, and not one placed by hand
 	 */
 	private void addShot(SubCategoryBuilder group, ShotConfig shot, ShotConfig defaults, boolean regular) {
 		group.add(shotToggle("enabled", shot.enabled, defaults.enabled, value -> shot.enabled = value));
 		group.add(shotSlider("weight", shot.weight, defaults.weight, 0, 3, 0.1, "%.1f",
 				value -> shot.weight = value));
-		// hand placed shots can be on either side, the regular ones get mirrored on their own
+
 		group.add(shotSlider("azimuth", shot.azimuth, defaults.azimuth, regular ? 0 : -180, 180, 1, "%.0f°",
 				value -> shot.azimuth = value));
 		group.add(shotSlider("elevation", shot.elevation, defaults.elevation, -80, 85, 1, "%.0f°",
@@ -276,15 +282,6 @@ public final class ConfigScreen {
 				value -> shot.maxDuration = value));
 	}
 
-	/**
-	 * What an option does, shown next to the mouse. Only while Shift is held: these are whole sentences, and over
-	 * a slider they would cover the value that is being set
-	 */
-	private static Supplier<Optional<Component[]>> help(String key) {
-		return () -> Optional.of(new Component[]{Component.translatable(
-				Minecraft.getInstance().hasShiftDown() ? key : "vrcamera.config.help")});
-	}
-
 	private AbstractConfigListEntry<?> toggle(String field, boolean value, boolean def, Consumer<Boolean> save) {
 		return toggleEntry("vrcamera.option." + field, value, def, save);
 	}
@@ -294,7 +291,7 @@ public final class ConfigScreen {
 	}
 
 	private AbstractConfigListEntry<?> toggleEntry(String key, boolean value, boolean def, Consumer<Boolean> save) {
-		return this.entries.startBooleanToggle(Component.translatable(key), value)
+		return entries.startBooleanToggle(Component.translatable(key), value)
 				.setDefaultValue(def)
 				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(save)
@@ -303,8 +300,8 @@ public final class ConfigScreen {
 
 	private <T extends Enum<T>> AbstractConfigListEntry<?> selector(
 			String field, T[] values, T value, T def, Consumer<T> save) {
-		String key = "vrcamera.option." + field;
-		return this.entries.startSelector(Component.translatable(key), values, value)
+		final String key = "vrcamera.option." + field;
+		return entries.startSelector(Component.translatable(key), values, value)
 				.setDefaultValue(def)
 				.setNameProvider(option -> Component.translatable(key + "." + option.name().toLowerCase(Locale.ROOT)))
 				.setTooltipSupplier(help(key + ".tooltip"))
@@ -314,27 +311,27 @@ public final class ConfigScreen {
 
 	private AbstractConfigListEntry<?> outputSize(CameraConfig config) {
 		String key = "vrcamera.option.outputSize";
-		List<int[]> sizes = new ArrayList<>();
+		final List<int[]> sizes = new ArrayList<>();
 		sizes.add(new int[]{0, 0});
 		sizes.addAll(Arrays.asList(OUTPUT_SIZES));
-		int width = config.hasOutputSize() ? config.outputWidth : 0;
-		int height = config.hasOutputSize() ? config.outputHeight : 0;
+		final int width = config.hasOutputSize() ? config.outputWidth : 0;
+		final int height = config.hasOutputSize() ? config.outputHeight : 0;
 		int[] current = sizes.stream().filter(size -> size[0] == width && size[1] == height).findFirst().orElse(null);
 		if (current == null) {
-			// one that was set with the command
+
 			current = new int[]{width, height};
 			sizes.add(current);
 		}
-		return this.entries.startSelector(Component.translatable(key), sizes.toArray(new int[0][]), current)
+		return entries.startSelector(Component.translatable(key), sizes.toArray(new int[0][]), current)
 				.setDefaultValue(sizes.getFirst())
 				.setNameProvider(size -> size[0] > 0 ? Component.literal(size[0] + "×" + size[1]) :
 						Component.translatable(key + ".auto"))
 				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(size -> {
-					boolean changed = size[0] != width || size[1] != height;
+					final boolean changed = size[0] != width || size[1] != height;
 					config.outputWidth = size[0];
 					config.outputHeight = size[1];
-					// only when it was changed: a window the player pulled to another size stays as it is
+
 					if (changed && size[0] > 0) {
 						OutputWindow.setSize(size[0], size[1]);
 					}
@@ -361,16 +358,12 @@ public final class ConfigScreen {
 	private AbstractConfigListEntry<?> sliderEntry(
 			String key, double value, double def, double min, double max, double step, String format,
 			Consumer<Double> save) {
-		int steps = (int) Math.round((max - min) / step);
-		return this.entries.startIntSlider(Component.translatable(key), toStep(value, min, step, steps), 0, steps)
+		final int steps = (int) Math.round((max - min) / step);
+		return entries.startIntSlider(Component.translatable(key), toStep(value, min, step, steps), 0, steps)
 				.setDefaultValue(toStep(def, min, step, steps))
 				.setTextGetter(index -> Component.literal(String.format(Locale.ROOT, format, min + index * step)))
 				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(index -> save.accept(min + index * step))
 				.build();
-	}
-
-	private static int toStep(double value, double min, double step, int steps) {
-		return Math.clamp(Math.round((value - min) / step), 0, steps);
 	}
 }

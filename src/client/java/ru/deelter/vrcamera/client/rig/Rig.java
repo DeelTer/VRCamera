@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.rig;
 
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
+
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.math.Smooth;
@@ -14,11 +15,11 @@ import ru.deelter.vrcamera.client.shot.Shot;
  * and aims it at the player.
  */
 public final class Rig {
-	// seconds a blended transition is slowed down for
+
 	private static final double BLEND_TIME = 1.6;
-	// seconds the smoothed player position lags behind
+
 	private static final double ANCHOR_LAG = 0.18;
-	// half of the field of view distances are meant for, as how wide it makes a picture
+
 	private static final double USUAL_VIEW = Math.tan(Math.toRadians(35.0));
 
 	private final SmoothAngle azimuth = new SmoothAngle();
@@ -28,34 +29,33 @@ public final class Rig {
 	private final SmoothVec look = new SmoothVec();
 	private final SmoothVec anchor = new SmoothVec();
 
-	// fraction of the way from the player to the wanted position the camera is at, lower when walls are in the way
 	private double arm = 1.0;
-	// seconds the camera is looking past something thin, instead of moving in front of it
+
 	private double softTime;
-	// looking past things is only allowed once the camera had a clear view, not right after a jump to a new place
+
 	private boolean softArmed;
 	private double sinceTransition = BLEND_TIME;
 	private boolean ready;
 
 	private Vec3 position = Vec3.ZERO;
-	// if a camera that is zoomed in counts as being that much closer
+
 	private final boolean zoomIsCloseness;
 	private final Quaternionf rotation = new Quaternionf();
 
 	public Vec3 position() {
-		return this.position;
+		return position;
 	}
 
 	public Quaternionf rotation() {
-		return this.rotation;
+		return rotation;
 	}
 
 	public double fov() {
-		return this.fov.get();
+		return fov.get();
 	}
 
 	public double arm() {
-		return this.arm;
+		return arm;
 	}
 
 	/**
@@ -74,53 +74,53 @@ public final class Rig {
 	}
 
 	public boolean lookingPast() {
-		return this.softTime > 0;
+		return softTime > 0;
 	}
 
 	/**
 	 * @return if the rig has a valid camera position, that could be blended from
 	 */
 	public boolean ready() {
-		return this.ready;
+		return ready;
 	}
 
 	public void reset() {
-		this.ready = false;
+		ready = false;
 	}
 
 	/**
 	 * hard cut, the camera is at the shots position on the next update
 	 */
 	public void snap(Shot shot, Subject subject) {
-		this.anchor.reset(subject.center);
-		this.azimuth.reset(shot.azimuth);
-		this.elevation.reset(shot.elevation);
-		this.distance.reset(shot.distance);
-		this.fov.reset(shot.fov);
-		this.look.reset(shot.lookTarget);
-		this.arm = 1.0;
-		this.softTime = 0;
-		this.softArmed = false;
-		this.sinceTransition = BLEND_TIME;
-		this.ready = true;
+		anchor.reset(subject.center);
+		azimuth.reset(shot.azimuth);
+		elevation.reset(shot.elevation);
+		distance.reset(shot.distance);
+		fov.reset(shot.fov);
+		look.reset(shot.lookTarget);
+		arm = 1.0;
+		softTime = 0;
+		softArmed = false;
+		sinceTransition = BLEND_TIME;
+		ready = true;
 	}
 
 	/**
 	 * the player jumped to a new place, jump with them and keep the framing
 	 */
 	public void rebase(Subject subject) {
-		this.anchor.reset(subject.center);
-		this.look.reset(subject.center);
-		this.arm = 1.0;
-		this.softTime = 0;
-		this.softArmed = false;
+		anchor.reset(subject.center);
+		look.reset(subject.center);
+		arm = 1.0;
+		softTime = 0;
+		softArmed = false;
 	}
 
 	/**
 	 * the camera swings over to the next shot, instead of jumping there
 	 */
 	public void blend() {
-		this.sinceTransition = 0;
+		sinceTransition = 0;
 	}
 
 	/**
@@ -128,10 +128,10 @@ public final class Rig {
 	 */
 	public void adopt(Vec3 cameraPos, Shot shot, Subject subject) {
 		snap(shot, subject);
-		Vec3 offset = cameraPos.subtract(subject.center);
-		this.azimuth.reset(CamMath.azimuthOf(offset));
-		this.elevation.reset(CamMath.elevationOf(offset));
-		this.distance.reset(offset.length());
+		final Vec3 offset = cameraPos.subtract(subject.center);
+		azimuth.reset(CamMath.azimuthOf(offset));
+		elevation.reset(CamMath.elevationOf(offset));
+		distance.reset(offset.length());
 	}
 
 	/**
@@ -139,75 +139,70 @@ public final class Rig {
 	 *              over from the middle of the player
 	 */
 	public void lookFrom(Vec3 point) {
-		this.look.reset(point);
+		look.reset(point);
 	}
 
 	public void update(Shot shot, Subject subject, double dt, CameraConfig config) {
-		this.sinceTransition += dt;
-		// take it slow right after a blend started, so the swing is a visible move and not a jerk
-		double lag = config.positionLag * (1.0 + 2.5 * (1.0 - CamMath.smoothstep(this.sinceTransition / BLEND_TIME)));
+		sinceTransition += dt;
 
-		// smooth the player position, to not pass on every head bob. The smoothing lags behind a moving player,
-		// adding the way they move in that time makes up for it
-		Vec3 center = this.anchor.update(subject.center, ANCHOR_LAG, dt).add(subject.velocity.scale(ANCHOR_LAG));
+		final double lag = config.positionLag * (1.0 + 2.5 * (1.0 - CamMath.smoothstep(sinceTransition / BLEND_TIME)));
+
+		final Vec3 center = anchor.update(subject.center, ANCHOR_LAG, dt).add(subject.velocity.scale(ANCHOR_LAG));
 
 		Vec3 wanted;
 		if (shot.isWorld()) {
 			wanted = shot.worldPos;
 		} else {
-			// smoothing the orbit instead of the position makes the camera swing around the player, and not through them
+
 			wanted = shot.position(center, subject,
-					this.azimuth.update(shot.azimuth, lag, dt),
-					this.elevation.update(shot.elevation, lag, dt),
-					this.distance.update(shot.distance, lag, dt));
+					azimuth.update(shot.azimuth, lag, dt),
+					elevation.update(shot.elevation, lag, dt),
+					distance.update(shot.distance, lag, dt));
 		}
 
-		// pull the camera in front of anything between it and the player, that is instant, moving back out is slow.
-		// this also guarantees a free line of sight to the player
-		double free = WorldProbe.armFraction(subject, subject.center, wanted, config);
-		if (free < this.arm) {
-			Vec3 current = subject.center.lerp(wanted, this.arm);
-			// a tree or post passing through the view is over in a moment, jumping in front of it would look worse.
-			// only when the camera itself is in the open, it never stays inside a block
-			if (this.softArmed && this.softTime < config.softOcclusionTime &&
+		final double free = WorldProbe.armFraction(subject, subject.center, wanted, config);
+		if (free < arm) {
+			final Vec3 current = subject.center.lerp(wanted, arm);
+
+			if (softArmed && softTime < config.softOcclusionTime &&
 					WorldProbe.spotFree(subject, current, config) && WorldProbe.thin(subject, subject.center, current)) {
-				this.softTime += dt;
+				softTime += dt;
 			} else {
-				this.arm = free;
+				arm = free;
 			}
 		} else {
-			this.softTime = 0;
-			this.softArmed = true;
+			softTime = 0;
+			softArmed = true;
 			if (dt > 0) {
-				this.arm += (free - this.arm) * (1.0 - Math.exp(-dt / 0.6));
+				arm += (free - arm) * (1.0 - Math.exp(-dt / 0.6));
 			}
 		}
-		this.position = subject.center.lerp(wanted, this.arm);
+		position = subject.center.lerp(wanted, arm);
 
 		Vec3 aim = shot.lookTarget;
 		if (config.faceDistance > 0 && !shot.exactAim()) {
-			// this close only part of the player fits into the picture, and the face is the part worth showing
-			double near = config.faceDistance * subject.unit;
-			double away = this.position.distanceTo(subject.center);
-			if (this.zoomIsCloseness) {
-				away *= Math.tan(Math.toRadians(this.fov.get()) / 2.0) / USUAL_VIEW;
+
+			final double near = config.faceDistance * subject.unit;
+			double away = position.distanceTo(subject.center);
+			if (zoomIsCloseness) {
+				away *= Math.tan(Math.toRadians(fov.get()) / 2.0) / USUAL_VIEW;
 			}
-			double closeness = 1.0 - CamMath.smoothstep((away - near) / near);
+			final double closeness = 1.0 - CamMath.smoothstep((away - near) / near);
 			aim = aim.add(subject.head.subtract(subject.center).scale(closeness));
 		}
 		if (config.leadRoom > 0 && !shot.exactAim()) {
-			// aim a bit ahead of a moving player, so the frame has more room where they are going
+
 			Vec3 lead = new Vec3(subject.velocity.x, 0, subject.velocity.z).scale(config.leadRoom);
-			double max = config.leadRoomMax * subject.unit;
+			final double max = config.leadRoomMax * subject.unit;
 			if (lead.length() > max) {
 				lead = lead.normalize().scale(max);
 			}
 			aim = aim.add(lead);
 		}
-		Vec3 target = this.look.update(aim, config.lookLag, dt)
+		final Vec3 target = look.update(aim, config.lookLag, dt)
 				.add(subject.velocity.scale(config.lookLag));
-		CamMath.lookRotation(target.subtract(this.position), this.rotation);
+		CamMath.lookRotation(target.subtract(position), rotation);
 
-		this.fov.update(shot.fov, 0.5, dt);
+		fov.update(shot.fov, 0.5, dt);
 	}
 }

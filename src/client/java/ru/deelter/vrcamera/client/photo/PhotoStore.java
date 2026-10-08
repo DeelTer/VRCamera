@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.world.level.storage.LevelResource;
+import org.jetbrains.annotations.Nullable;
 import ru.deelter.vrcamera.Vrcamera;
 
 import java.io.IOException;
@@ -35,12 +36,12 @@ import java.util.stream.Stream;
 public final class PhotoStore {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final DateTimeFormatter FILE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss");
-	// Names the world a cache folder belongs to. The folder name itself can't, not every world name is a file name
+
 	private static final String OWNER_FILE = "world.txt";
 	private static final String PINNED_FILE = "pinned.json";
 	private static final String LOCAL = "local:";
 	private static final String SERVER = "server:";
-	// pictures of servers kept on disk, about 10 KB each
+
 	private static final int REMOTE_FILES = 1000;
 
 	/**
@@ -55,24 +56,13 @@ public final class PhotoStore {
 		public boolean custom;
 	}
 
-	private PhotoStore() {
-	}
-
-	private static Path gameDir() {
-		return Minecraft.getInstance().gameDirectory.toPath();
-	}
-
-	private static Path cacheRoot() {
-		return gameDir().resolve("vrcamera").resolve("sheets");
-	}
-
 	/**
 	 * @return a file for a photo taken now, that does not exist yet
 	 */
 	public static Path newPhoto() throws IOException {
-		Path dir = gameDir().resolve("screenshots").resolve("vrcamera");
+		final Path dir = gameDir().resolve("screenshots").resolve("vrcamera");
 		Files.createDirectories(dir);
-		String name = LocalDateTime.now().format(FILE_TIME);
+		final String name = LocalDateTime.now().format(FILE_TIME);
 		Path file = dir.resolve(name + ".png");
 		for (int i = 2; Files.exists(file); i++) {
 			file = dir.resolve(name + "_" + i + ".png");
@@ -85,10 +75,10 @@ public final class PhotoStore {
 	 */
 	public static void saveCustom(byte[] original, String format) {
 		try {
-			Path dir = gameDir().resolve("screenshots").resolve("vrcamera").resolve("custom");
+			final Path dir = gameDir().resolve("screenshots").resolve("vrcamera").resolve("custom");
 			Files.createDirectories(dir);
-			String name = LocalDateTime.now().format(FILE_TIME);
-			// what kind of file it is comes from its content, not from the address, but still only letters
+			final String name = LocalDateTime.now().format(FILE_TIME);
+
 			Path file = dir.resolve(name + "." + format.replaceAll("[^a-z0-9]", ""));
 			for (int i = 2; Files.exists(file); i++) {
 				file = dir.resolve(name + "_" + i + "." + format.replaceAll("[^a-z0-9]", ""));
@@ -103,8 +93,8 @@ public final class PhotoStore {
 	 * @return the cache folder of the world the player is in, which may not exist yet
 	 */
 	public static Path worldCache() {
-		String owner = currentWorld();
-		// with a hash, two names can end up the same once what is not allowed in a file name is taken out
+		final String owner = currentWorld();
+
 		return cacheRoot().resolve(owner.replaceAll("[^A-Za-z0-9._-]", "_") + "-" +
 				Integer.toHexString(owner.hashCode()));
 	}
@@ -119,23 +109,13 @@ public final class PhotoStore {
 		}
 	}
 
-	private static String currentWorld() {
-		Minecraft mc = Minecraft.getInstance();
-		IntegratedServer local = mc.getSingleplayerServer();
-		if (local != null) {
-			return LOCAL + local.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName();
-		}
-		ServerData server = mc.getCurrentServer();
-		return SERVER + (server == null ? "unknown" : server.ip);
-	}
-
 	public static List<Pinned> loadPinned(Path cache) {
 		Path file = cache.resolve(PINNED_FILE);
 		if (!Files.isRegularFile(file)) {
 			return new ArrayList<>();
 		}
-		try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-			List<Pinned> pinned = GSON.fromJson(reader, new TypeToken<List<Pinned>>() {
+		try (final Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+			final List<Pinned> pinned = GSON.fromJson(reader, new TypeToken<List<Pinned>>() {
 			}.getType());
 			if (pinned == null) {
 				return new ArrayList<>();
@@ -151,7 +131,7 @@ public final class PhotoStore {
 	public static void savePinned(Path cache, List<Pinned> pinned) {
 		try {
 			prepare(cache);
-			try (Writer writer = Files.newBufferedWriter(cache.resolve(PINNED_FILE), StandardCharsets.UTF_8)) {
+			try (final Writer writer = Files.newBufferedWriter(cache.resolve(PINNED_FILE), StandardCharsets.UTF_8)) {
 				GSON.toJson(pinned, writer);
 			}
 		} catch (IOException e) {
@@ -166,10 +146,10 @@ public final class PhotoStore {
 		if (!Files.isDirectory(cache)) {
 			return;
 		}
-		try (Stream<Path> files = Files.list(cache)) {
+		try (final Stream<Path> files = Files.list(cache)) {
 			for (Path file : files.toList()) {
-				String name = file.getFileName().toString();
-				// not what was printed since, this runs next to the game
+				final String name = file.getFileName().toString();
+
 				if (name.endsWith(".png") && !keep.contains(name) &&
 						Files.getLastModifiedTime(file).compareTo(before) < 0) {
 					Files.deleteIfExists(file);
@@ -188,13 +168,10 @@ public final class PhotoStore {
 		}
 	}
 
-	private static Path remoteFile(long hash) {
-		return gameDir().resolve("vrcamera").resolve("remote").resolve(Long.toHexString(hash) + ".jpg");
-	}
-
 	/**
 	 * @return a picture a server sent before, null if it is not on disk
 	 */
+	@Nullable
 	public static byte[] readRemote(long hash) {
 		try {
 			Path file = remoteFile(hash);
@@ -218,12 +195,12 @@ public final class PhotoStore {
 	 * Keeps the pictures of servers from piling up: only the ones used last stay.
 	 */
 	public static void trimRemote() {
-		Path dir = gameDir().resolve("vrcamera").resolve("remote");
+		final Path dir = gameDir().resolve("vrcamera").resolve("remote");
 		if (!Files.isDirectory(dir)) {
 			return;
 		}
-		try (Stream<Path> files = Files.list(dir)) {
-			List<Path> oldestLast = files.filter(file -> file.toString().endsWith(".jpg"))
+		try (final Stream<Path> files = Files.list(dir)) {
+			final List<Path> oldestLast = files.filter(file -> file.toString().endsWith(".jpg"))
 					.sorted(Comparator.comparingLong((Path file) -> file.toFile().lastModified()).reversed())
 					.toList();
 			for (Path file : oldestLast.subList(Math.min(REMOTE_FILES, oldestLast.size()), oldestLast.size())) {
@@ -239,25 +216,25 @@ public final class PhotoStore {
 	 * joined right now, so those stay.
 	 */
 	public static void removeDeletedWorlds() {
-		Path root = cacheRoot();
+		final Path root = cacheRoot();
 		if (!Files.isDirectory(root)) {
 			return;
 		}
 		List<Path> caches;
-		try (Stream<Path> dirs = Files.list(root)) {
+		try (final Stream<Path> dirs = Files.list(root)) {
 			caches = dirs.filter(Files::isDirectory).toList();
 		} catch (IOException e) {
 			Vrcamera.LOGGER.warn("VRCamera: can't look through {}", root, e);
 			return;
 		}
-		Path saves = gameDir().resolve("saves");
-		for (Path cache : caches) {
+		final Path saves = gameDir().resolve("saves");
+		for (final Path cache : caches) {
 			try {
-				Path ownerFile = cache.resolve(OWNER_FILE);
+				final Path ownerFile = cache.resolve(OWNER_FILE);
 				if (!Files.isRegularFile(ownerFile)) {
 					continue;
 				}
-				String owner = Files.readString(ownerFile, StandardCharsets.UTF_8).trim();
+				final String owner = Files.readString(ownerFile, StandardCharsets.UTF_8).trim();
 				if (owner.startsWith(LOCAL) && !Files.isDirectory(saves.resolve(owner.substring(LOCAL.length())))) {
 					deleteTree(cache);
 					Vrcamera.LOGGER.info("VRCamera: removed the photo sheets of the deleted world {}", owner);
@@ -268,11 +245,36 @@ public final class PhotoStore {
 		}
 	}
 
+	private static Path gameDir() {
+		return Minecraft.getInstance().gameDirectory.toPath();
+	}
+
+	private static Path cacheRoot() {
+		return gameDir().resolve("vrcamera").resolve("sheets");
+	}
+
+	private static String currentWorld() {
+		final Minecraft mc = Minecraft.getInstance();
+		final IntegratedServer local = mc.getSingleplayerServer();
+		if (local != null) {
+			return LOCAL + local.getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize().getFileName();
+		}
+		final ServerData server = mc.getCurrentServer();
+		return SERVER + (server == null ? "unknown" : server.ip);
+	}
+
+	private static Path remoteFile(long hash) {
+		return gameDir().resolve("vrcamera").resolve("remote").resolve(Long.toHexString(hash) + ".jpg");
+	}
+
 	private static void deleteTree(Path dir) throws IOException {
-		try (Stream<Path> files = Files.walk(dir)) {
+		try (final Stream<Path> files = Files.walk(dir)) {
 			for (Path file : files.sorted(Comparator.reverseOrder()).toList()) {
 				Files.delete(file);
 			}
 		}
+	}
+
+	private PhotoStore() {
 	}
 }

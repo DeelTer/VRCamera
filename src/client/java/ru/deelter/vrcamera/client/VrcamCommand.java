@@ -33,7 +33,7 @@ public final class VrcamCommand {
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
 
-		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
+		final LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
 				.executes(context -> status(context.getSource()));
 
 		if (Vr.INSTALLED) {
@@ -45,7 +45,7 @@ public final class VrcamCommand {
 		}));
 		root.then(ClientCommands.literal("load")
 				.then(ClientCommands.argument("address", StringArgumentType.greedyString()).executes(context -> {
-					FabricClientCommandSource source = context.getSource();
+					final FabricClientCommandSource source = context.getSource();
 					PhotoAlbum.INSTANCE.loadCustom(StringArgumentType.getString(context, "address"),
 							source::sendFeedback);
 					return DONE;
@@ -54,9 +54,9 @@ public final class VrcamCommand {
 			DebugOverlay.toggle();
 			return DONE;
 		}));
-		LiteralArgumentBuilder<FabricClientCommandSource> pace = ClientCommands.literal("pace");
-		for (Pace value : Pace.values()) {
-			String name = value.name().toLowerCase(Locale.ROOT);
+		final LiteralArgumentBuilder<FabricClientCommandSource> pace = ClientCommands.literal("pace");
+		for (final Pace value : Pace.values()) {
+			final String name = value.name().toLowerCase(Locale.ROOT);
 			pace.then(ClientCommands.literal(name).executes(context -> {
 				value.apply(CameraConfig.current());
 				CameraConfig.current().save();
@@ -66,9 +66,9 @@ public final class VrcamCommand {
 			}));
 		}
 		root.then(pace);
-		// the camera for a player without VR, in the game window
-		LiteralArgumentBuilder<FabricClientCommandSource> screen = ClientCommands.literal("screen");
-		for (DesktopCamera.Mode mode : DesktopCamera.Mode.values()) {
+
+		final LiteralArgumentBuilder<FabricClientCommandSource> screen = ClientCommands.literal("screen");
+		for (final DesktopCamera.Mode mode : DesktopCamera.Mode.values()) {
 			screen.then(ClientCommands.literal(mode.name().toLowerCase(Locale.ROOT)).executes(context -> {
 				if (mode != DesktopCamera.Mode.OFF && Vr.isRunning()) {
 					context.getSource().sendError(Component.translatable("vrcamera.command.screen.vr"));
@@ -78,8 +78,8 @@ public final class VrcamCommand {
 				return DONE;
 			}));
 		}
-		for (ScreenOutput output : ScreenOutput.values()) {
-			// where it films to: "window" gives it a window of its own and leaves the view of the player alone
+		for (final ScreenOutput output : ScreenOutput.values()) {
+
 			screen.then(ClientCommands.literal(output == ScreenOutput.WINDOW ? "window" : "here").executes(context -> {
 				CameraConfig.current().screenOutput = output;
 				CameraConfig.current().save();
@@ -92,7 +92,7 @@ public final class VrcamCommand {
 			OutputWindow.resetPlace();
 			return DONE;
 		}));
-		// how many pixels the picture has: a window can only be recorded as large as it is
+
 		screen.then(ClientCommands.literal("size")
 				.then(ClientCommands.literal("auto").executes(context -> outputSize(context.getSource(), 0, 0)))
 				.then(ClientCommands.argument("width", IntegerArgumentType.integer(320, 7680))
@@ -134,14 +134,14 @@ public final class VrcamCommand {
 				context.getSource().sendError(Component.translatable("vrcamera.command.nocloth"));
 				return 0;
 			}
-			// the chat screen is still closing, open the settings after that
-			Minecraft mc = context.getSource().getClient();
+
+			final Minecraft mc = context.getSource().getClient();
 			mc.schedule(() -> mc.gui.setScreen(ConfigScreen.create(mc.gui.screen())));
 			return DONE;
 		}));
 
 		dispatcher.register(root);
-		// short, for what is typed in the middle of a recording: the free cameras
+
 		dispatcher.register(ClientCommands.literal("cam")
 				.then(ClientCommands.literal("add").executes(context -> {
 					DesktopCamera.INSTANCE.addCamera();
@@ -171,7 +171,7 @@ public final class VrcamCommand {
 					DesktopCamera.INSTANCE.cameraNames().forEach(builder::suggest);
 					return builder.buildFuture();
 				}).executes(context -> {
-					String name = StringArgumentType.getString(context, "name");
+					final String name = StringArgumentType.getString(context, "name");
 					if (!DesktopCamera.INSTANCE.showCamera(name)) {
 						context.getSource().sendError(Component.translatable("vrcamera.command.cam.none", name));
 						return 0;
@@ -197,7 +197,7 @@ public final class VrcamCommand {
 			DesktopCamera.INSTANCE.playersAround().forEach(builder::suggest);
 			return builder.buildFuture();
 		}).executes(context -> {
-			String player = StringArgumentType.getString(context, "player");
+			final String player = StringArgumentType.getString(context, "player");
 			if (!pick.test(player)) {
 				context.getSource().sendError(Component.translatable("vrcamera.command.noplayer", player));
 				return 0;
@@ -207,8 +207,8 @@ public final class VrcamCommand {
 	}
 
 	private static int status(FabricClientCommandSource source) {
-		boolean onScreen = !Vr.INSTALLED || DesktopCamera.INSTANCE.isOn();
-		for (String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
+		final boolean onScreen = !Vr.INSTALLED || DesktopCamera.INSTANCE.isOn();
+		for (final String line : onScreen ? DesktopCamera.INSTANCE.debugLines() : Vive.debugLines()) {
 			source.sendFeedback(Component.literal(line));
 		}
 		return DONE;
@@ -218,11 +218,11 @@ public final class VrcamCommand {
 	 * the shots of the director by name, and the next one of its own choice without one
 	 */
 	private static LiteralArgumentBuilder<FabricClientCommandSource> shots() {
-		LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot").executes(context -> {
+		final LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot").executes(context -> {
 			DesktopCamera.INSTANCE.showShot(null);
 			return DONE;
 		});
-		for (ShotType type : ShotType.values()) {
+		for (final ShotType type : ShotType.values()) {
 			shot.then(ClientCommands.literal(name(type)).executes(context -> {
 				DesktopCamera.INSTANCE.showShot(type);
 				return DONE;
@@ -232,7 +232,7 @@ public final class VrcamCommand {
 	}
 
 	private static int manual(FabricClientCommandSource source) {
-		CameraConfig config = CameraConfig.current();
+		final CameraConfig config = CameraConfig.current();
 		config.directorManual = !config.directorManual;
 		config.save();
 		source.sendFeedback(Component.translatable(
@@ -241,7 +241,7 @@ public final class VrcamCommand {
 	}
 
 	private static int outputSize(FabricClientCommandSource source, int width, int height) {
-		CameraConfig config = CameraConfig.current();
+		final CameraConfig config = CameraConfig.current();
 		config.outputWidth = width;
 		config.outputHeight = height;
 		config.save();

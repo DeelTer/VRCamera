@@ -31,7 +31,7 @@ import java.util.Random;
  * particles and sounds around the camera. All of it only exists on this client
  */
 public final class CameraEffects {
-	// only played on this client, so it does not have to be in the registry the server knows
+
 	private static final SoundEvent SHUTTER = SoundEvent.createVariableRangeEvent(
 			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "shutter"));
 	private static final SoundEvent PRINTING = SoundEvent.createVariableRangeEvent(
@@ -49,25 +49,25 @@ public final class CameraEffects {
 	public static void impact(Level level, DroppedCamera.Impact impact, Vec3 lens) {
 		ParticleOptions particle = ParticleTypes.POOF;
 		if (impact.block() != null) {
-			BlockState state = level.getBlockState(impact.block());
+			final BlockState state = level.getBlockState(impact.block());
 			if (!state.isAir()) {
 				particle = new BlockParticleOption(ParticleTypes.BLOCK, state);
-				Vec3 at = impact.position();
+				final Vec3 at = impact.position();
 				level.playLocalSound(at.x, at.y, at.z, state.getSoundType().getHitSound(), SoundSource.PLAYERS,
 						(float) CamMath.clamp(impact.speed() * 0.08, 0.15, 0.8), 1.2F, false);
 			}
 		}
-		int count = (int) CamMath.clamp(2.0 + impact.speed() * 1.2, 3.0, 12.0);
+		final int count = (int) CamMath.clamp(2.0 + impact.speed() * 1.2, 3.0, 12.0);
 		for (int i = 0; i < count; i++) {
 			Vec3 direction = new Vec3(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5)
 					.normalize();
-			double ahead = direction.dot(lens);
+			final double ahead = direction.dot(lens);
 			if (ahead > 0) {
-				// mirror it to behind the lens
+
 				direction = direction.subtract(lens.scale(2.0 * ahead));
 			}
-			Vec3 position = impact.position().add(direction.scale(0.15));
-			Vec3 velocity = direction.scale(0.8).add(impact.normal().scale(0.6));
+			final Vec3 position = impact.position().add(direction.scale(0.15));
+			final Vec3 velocity = direction.scale(0.8).add(impact.normal().scale(0.6));
 			level.addParticle(particle, position.x, position.y, position.z, velocity.x, velocity.y, velocity.z);
 		}
 	}
@@ -79,7 +79,7 @@ public final class CameraEffects {
 		if (Vr.isRunning()) {
 			return Vive.cameraPosition();
 		}
-		DesktopCamera.Pose onScreen = DesktopCamera.INSTANCE.lens();
+		final DesktopCamera.Pose onScreen = DesktopCamera.INSTANCE.lens();
 		return onScreen == null ? player.getEyePosition() : onScreen.position();
 	}
 
@@ -87,7 +87,7 @@ public final class CameraEffects {
 	 * this player took a photo: the click and the flash, also for the players around
 	 */
 	public static void ownShutter(LocalPlayer player) {
-		Vec3 lens = lens(player);
+		final Vec3 lens = lens(player);
 		shutter(player.level(), lens);
 		PhotoSync.INSTANCE.shareCameraSound(Protocol.C_SHUTTER, lens);
 	}
@@ -96,7 +96,7 @@ public final class CameraEffects {
 	 * the camera of this player starts to push out a sheet
 	 */
 	public static void ownPrinting(LocalPlayer player) {
-		Vec3 lens = lens(player);
+		final Vec3 lens = lens(player);
 		printing(player.level(), lens);
 		PhotoSync.INSTANCE.shareCameraSound(Protocol.C_PRINT, lens);
 	}
@@ -110,12 +110,6 @@ public final class CameraEffects {
 		cameraSound(level, lens, PRINTING);
 	}
 
-	private static void cameraSound(Level level, Vec3 at, SoundEvent sound) {
-		if (CameraConfig.current().photoSounds) {
-			level.playLocalSound(at.x, at.y, at.z, sound, SoundSource.PLAYERS, 0.8F, 1.0F, false);
-		}
-	}
-
 	public static void pinned(Level level, Vec3 position) {
 		level.playLocalSound(position.x, position.y, position.z, SoundEvents.ITEM_FRAME_PLACE, SoundSource.PLAYERS,
 				0.6F, 1.3F, false);
@@ -126,7 +120,7 @@ public final class CameraEffects {
 	 */
 	public static void putOn(Level level, Entity host, Vec3 position) {
 		pinned(level, position);
-		SoundEvent voice = host instanceof Mob mob ? ((MobAccessor) mob).vrcamera$getAmbientSound() : null;
+		final SoundEvent voice = host instanceof Mob mob ? ((MobAccessor) mob).vrcamera$getAmbientSound() : null;
 		if (voice != null) {
 			level.playLocalSound(position.x, position.y, position.z, voice, host.getSoundSource(), 1.0F, 1.0F, false);
 		}
@@ -176,7 +170,7 @@ public final class CameraEffects {
 	public static void bubble(Level level, Vec3 position, Vec3 lens) {
 		Vec3 offset = new Vec3(RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5, RANDOM.nextDouble() - 0.5)
 				.scale(0.3);
-		double ahead = offset.dot(lens);
+		final double ahead = offset.dot(lens);
 		if (ahead > 0) {
 			offset = offset.subtract(lens.scale(2.0 * ahead));
 		}
@@ -209,6 +203,12 @@ public final class CameraEffects {
 		for (int i = 0; i < 6; i++) {
 			player.level().addParticle(ParticleTypes.ELECTRIC_SPARK, position.x, position.y, position.z,
 					(RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6);
+		}
+	}
+
+	private static void cameraSound(Level level, Vec3 at, SoundEvent sound) {
+		if (CameraConfig.current().photoSounds) {
+			level.playLocalSound(at.x, at.y, at.z, sound, SoundSource.PLAYERS, 0.8F, 1.0F, false);
 		}
 	}
 }

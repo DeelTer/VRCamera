@@ -8,12 +8,12 @@ public class Smooth {
 	protected double velocity;
 
 	public double get() {
-		return this.value;
+		return value;
 	}
 
 	public void reset(double value) {
 		this.value = value;
-		this.velocity = 0;
+		velocity = 0;
 	}
 
 	/**
@@ -23,19 +23,19 @@ public class Smooth {
 	 */
 	public double update(double target, double time, double dt) {
 		if (dt <= 0) {
-			return this.value;
+			return value;
 		}
 		if (time < 1.0E-4) {
 			reset(target);
-			return this.value;
+			return value;
 		}
-		double omega = 2.0 / time;
-		double x = omega * dt;
-		double exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
-		double change = this.value - target;
-		double temp = (this.velocity + omega * change) * dt;
-		this.velocity = (this.velocity - omega * temp) * exp;
-		this.value = target + (change + temp) * exp;
-		return this.value;
+		final double omega = 2.0 / time;
+		final double x = omega * dt;
+		final double exp = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+		final double change = value - target;
+		final double temp = (velocity + omega * change) * dt;
+		velocity = (velocity - omega * temp) * exp;
+		value = target + (change + temp) * exp;
+		return value;
 	}
 }

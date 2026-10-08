@@ -7,13 +7,12 @@ package ru.deelter.vrcamera.client.desktop;
 enum FrameGuide {
 	THIRDS(1.0 / 3.0, 2.0 / 3.0),
 	GOLDEN(0.382, 0.618),
-	// the golden spiral, stretched to the picture: what matters goes where it winds up
+
 	SPIRAL,
 	HALVES(0.5),
-	// what of a wide picture is left in an upright one, for a video that is cut to both
+
 	UPRIGHT,
-	// Frames and not lines: what is inside the outer one is seen on any screen, what is inside the inner one is not
-	// under the buttons and titles a player puts over a video
+
 	SAFE,
 	NONE;
 
@@ -21,7 +20,7 @@ enum FrameGuide {
 	private static final double[] NO_LINES = {};
 	private static final double[] SAFE_FRAMES = {0.05, 0.1};
 	private static final double[][] NO_CURVE = {};
-	// quarter turns the spiral is drawn with, and the points each of them is made of
+
 	private static final int SPIRAL_TURNS = 10;
 	private static final int TURN_POINTS = 48;
 	private static final double[][] SPIRAL_CURVE = spiral();
@@ -42,9 +41,9 @@ enum FrameGuide {
 	 */
 	double[] across(int width, int height) {
 		if (this != UPRIGHT) {
-			return this.lines;
+			return lines;
 		}
-		double part = height * UPRIGHT_SHAPE / width;
+		final double part = height * UPRIGHT_SHAPE / width;
 		return part >= 1.0 ? NO_LINES : new double[]{0.5 - part / 2.0, 0.5 + part / 2.0};
 	}
 
@@ -52,7 +51,7 @@ enum FrameGuide {
 	 * @return where the lines from side to side are
 	 */
 	double[] up() {
-		return this.lines;
+		return lines;
 	}
 
 	/**
@@ -63,16 +62,23 @@ enum FrameGuide {
 	}
 
 	/**
+	 * @return how far in from each edge of the picture its frames are
+	 */
+	double[] frames() {
+		return this == SAFE ? SAFE_FRAMES : NO_LINES;
+	}
+
+	/**
 	 * A golden rectangle has a square cut off its left, then off the top of what is left, off the right, off the
 	 * bottom, and so on around. A quarter circle through each square is the spiral.
 	 */
 	private static double[][] spiral() {
-		double golden = (1.0 + Math.sqrt(5.0)) / 2.0;
+		final double golden = (1.0 + Math.sqrt(5.0)) / 2.0;
 		double x = 0;
 		double y = 0;
 		double width = golden;
 		double height = 1.0;
-		double[][] points = new double[SPIRAL_TURNS * (TURN_POINTS + 1)][];
+		final double[][] points = new double[SPIRAL_TURNS * (TURN_POINTS + 1)][];
 		for (int turn = 0; turn < SPIRAL_TURNS; turn++) {
 			double side;
 			double centerX;
@@ -105,21 +111,14 @@ enum FrameGuide {
 					height -= side;
 				}
 			}
-			// each quarter starts where the one before it ended: to the left, above, to the right, below
-			double from = Math.PI - turn * Math.PI / 2.0;
+
+			final double from = Math.PI - turn * Math.PI / 2.0;
 			for (int point = 0; point <= TURN_POINTS; point++) {
-				double angle = from - Math.PI / 2.0 * point / TURN_POINTS;
+				final double angle = from - Math.PI / 2.0 * point / TURN_POINTS;
 				points[turn * (TURN_POINTS + 1) + point] = new double[]{
 						(centerX + side * Math.cos(angle)) / golden, centerY + side * Math.sin(angle)};
 			}
 		}
 		return points;
-	}
-
-	/**
-	 * @return how far in from each edge of the picture its frames are
-	 */
-	double[] frames() {
-		return this == SAFE ? SAFE_FRAMES : NO_LINES;
 	}
 }

@@ -11,12 +11,9 @@ import java.lang.reflect.Method;
  * frame it over it. Needs the OpenGL renderer of the game.
  */
 final class PictureBlit {
-	// lines over the picture are this many times thinner than it is high
+
 	private static final int LINE_PART = 360;
 	private static Method glId;
-
-	private PictureBlit() {
-	}
 
 	/**
 	 * @return what OpenGL calls the texture of the picture. The class that knows is not the same in every
@@ -24,7 +21,7 @@ final class PictureBlit {
 	 * @throws IllegalStateException if the game does not draw with OpenGL
 	 */
 	static int textureId(RenderTarget picture) {
-		Object texture = picture.getColorTexture();
+		final Object texture = picture.getColorTexture();
 		try {
 			if (glId == null || glId.getDeclaringClass() != texture.getClass()) {
 				glId = texture.getClass().getMethod("glId");
@@ -45,10 +42,10 @@ final class PictureBlit {
 	 */
 	static void draw(
 			RenderTarget picture, int texture, int frameBuffer, int width, int height, boolean fill, FrameGuide guide) {
-		double scale = Math.min(width / (double) picture.width, height / (double) picture.height);
-		int shownWidth = fill ? width : (int) Math.round(picture.width * scale);
-		int shownHeight = fill ? height : (int) Math.round(picture.height * scale);
-		Box shown = new Box((width - shownWidth) / 2, (height - shownHeight) / 2, shownWidth, shownHeight);
+		final double scale = Math.min(width / (double) picture.width, height / (double) picture.height);
+		final int shownWidth = fill ? width : (int) Math.round(picture.width * scale);
+		final int shownHeight = fill ? height : (int) Math.round(picture.height * scale);
+		final Box shown = new Box((width - shownWidth) / 2, (height - shownHeight) / 2, shownWidth, shownHeight);
 
 		GL30.glBindFramebuffer(GL30.GL_DRAW_FRAMEBUFFER, 0);
 		GL11.glViewport(0, 0, width, height);
@@ -71,32 +68,32 @@ final class PictureBlit {
 	 * @param shown where in the window the picture is, counted from its lower left corner
 	 */
 	private static void drawGuide(FrameGuide guide, Box shown) {
-		int thickness = Math.max(1, shown.height() / LINE_PART);
+		final int thickness = Math.max(1, shown.height() / LINE_PART);
 		GL11.glEnable(GL11.GL_SCISSOR_TEST);
 		GL11.glClearColor(1.0F, 1.0F, 1.0F, 1.0F);
-		for (double across : guide.across(shown.width(), shown.height())) {
+		for (final double across : guide.across(shown.width(), shown.height())) {
 			strip(shown.x() + (int) (shown.width() * across), shown.y(), thickness, shown.height());
 		}
-		for (double up : guide.up()) {
+		for (final double up : guide.up()) {
 			strip(shown.x(), shown.y() + (int) (shown.height() * up), shown.width(), thickness);
 		}
-		for (double in : guide.frames()) {
-			int x = shown.x() + (int) (shown.width() * in);
-			int y = shown.y() + (int) (shown.height() * in);
-			int width = shown.width() - 2 * (int) (shown.width() * in);
-			int height = shown.height() - 2 * (int) (shown.height() * in);
+		for (final double in : guide.frames()) {
+			final int x = shown.x() + (int) (shown.width() * in);
+			final int y = shown.y() + (int) (shown.height() * in);
+			final int width = shown.width() - 2 * (int) (shown.width() * in);
+			final int height = shown.height() - 2 * (int) (shown.height() * in);
 			strip(x, y, width, thickness);
 			strip(x, y + height - thickness, width, thickness);
 			strip(x, y, thickness, height);
 			strip(x + width - thickness, y, thickness, height);
 		}
-		// a curve is dots, one next to the other
+
 		double[] before = null;
-		for (double[] point : guide.curve()) {
-			double x = shown.x() + shown.width() * point[0];
-			double y = shown.y() + shown.height() * point[1];
+		for (final double[] point : guide.curve()) {
+			final double x = shown.x() + shown.width() * point[0];
+			final double y = shown.y() + shown.height() * point[1];
 			if (before != null) {
-				int dots = Math.max(1, (int) Math.ceil(Math.hypot(x - before[0], y - before[1]) / thickness));
+				final int dots = Math.max(1, (int) Math.ceil(Math.hypot(x - before[0], y - before[1]) / thickness));
 				for (int dot = 1; dot <= dots; dot++) {
 					strip((int) (before[0] + (x - before[0]) * dot / dots), (int) (before[1] + (y - before[1]) * dot / dots),
 							thickness, thickness);
@@ -110,5 +107,8 @@ final class PictureBlit {
 	private static void strip(int x, int y, int width, int height) {
 		GL11.glScissor(x, y, width, height);
 		GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+	}
+
+	private PictureBlit() {
 	}
 }

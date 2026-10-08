@@ -21,6 +21,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionResult;
+import org.jetbrains.annotations.NotNull;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
@@ -33,26 +34,31 @@ import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
+import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import ru.deelter.vrcamera.client.shot.ShotType;
-import java.util.List;
-import java.util.Locale;
 
 public class VrcameraClient implements ClientModInitializer {
+	private static final Runnable NO_ACTION = () -> {
+	};
 	private static final int PAUSE_BUTTON = 150;
 	private static final int PAUSE_BUTTON_MIN = 90;
+	private static final int BUTTON_HEIGHT = 20;
+	private static final int VR_BUTTON_WIDTH = 120;
+	private static final int EDGE_MARGIN = 4;
+	private static final int HORIZONTAL_GAP = 8;
 	private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(
 			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "main"));
 
-	// key codes are taken from the game, they are not the same in every Minecraft version
 	private static final int UNBOUND = InputConstants.UNKNOWN.getValue();
+	private static final List<ShotType> DIRECT_SHOTS = List.of(
+			ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY);
 
-	// what each key does. Regular key mappings, Vivecraft makes those bindable to VR controllers as well
 	private final Map<KeyMapping, Runnable> keys = new LinkedHashMap<>();
 	private final Set<KeyMapping> heldInWindow = new HashSet<>();
+
 	private KeyMapping gameOnly;
 
 	@Override
@@ -63,38 +69,40 @@ public class VrcameraClient implements ClientModInitializer {
 
 		PhotoSync.INSTANCE.init();
 
-		// Without VR the same keys work the camera on the screen. Not while the camera of VR is still on though:
-		// VR can go away at any time, and that one has to be turned off first
-		DesktopCamera desktop = DesktopCamera.INSTANCE;
-		key("mode", InputConstants.KEY_F8, desktop::cycleMode, () -> CameraController.INSTANCE.cycleMode());
-		key("next", InputConstants.KEY_F9, desktop::nextShot, () -> CameraController.INSTANCE.nextShot());
-		key("hold", InputConstants.KEY_F10, desktop::toggleHold, () -> CameraController.INSTANCE.toggleHold());
-		// the one key between the view of the player and the picture of the camera. Nothing in VR, where the eyes
-		// of the player are their view and the camera is in their hand
-		key("toggle", InputConstants.KEY_F4, desktop::toggle, () -> {
-		});
-		// straight to a shot, for a moment that will not wait for the right one to come around
-		for (ShotType shot : List.of(ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY)) {
+		final DesktopCamera desktop = DesktopCamera.INSTANCE;
+		key("mode", InputConstants.KEY_F8, desktop::cycleMode,
+				Vr.INSTALLED ? CameraController.INSTANCE::cycleMode : NO_ACTION);
+		key("next", InputConstants.KEY_F9, desktop::nextShot,
+				Vr.INSTALLED ? CameraController.INSTANCE::nextShot : NO_ACTION);
+		key("hold", InputConstants.KEY_F10, desktop::toggleHold,
+				Vr.INSTALLED ? CameraController.INSTANCE::toggleHold : NO_ACTION);
+
+		key("toggle", InputConstants.KEY_F4, desktop::toggle, NO_ACTION);
+
+		for (final ShotType shot : DIRECT_SHOTS) {
 			key("shot." + shot.name().toLowerCase(Locale.ROOT), UNBOUND, () -> desktop.showShot(shot),
 					() -> CameraController.INSTANCE.showShot(shot));
 		}
-		key("preset", InputConstants.KEY_F7, desktop::nextPoint, () -> CameraController.INSTANCE.nextPreset());
+		key("preset", InputConstants.KEY_F7, desktop::nextPoint,
+				Vr.INSTALLED ? CameraController.INSTANCE::nextPreset : NO_ACTION);
 		key("photo", InputConstants.KEY_F6, VrcameraClient::takePhoto);
-		key("preset.new", InputConstants.KEY_N, desktop::addCamera, () -> CameraController.INSTANCE.newPreset());
+		key("preset.new", InputConstants.KEY_N, desktop::addCamera,
+				Vr.INSTALLED ? CameraController.INSTANCE::newPreset : NO_ACTION);
 		key("preset.fly", UNBOUND, desktop::flyToNext);
-		key("summon", UNBOUND, desktop::summon, () -> CameraController.INSTANCE.summon());
+		key("summon", UNBOUND, desktop::summon,
+				Vr.INSTALLED ? CameraController.INSTANCE::summon : NO_ACTION);
 		key("debug", UNBOUND, DebugOverlay::toggle);
-		// not in the window of the camera: going there takes the camera over, and leaving it gives it back
-		this.gameOnly = key("steer", InputConstants.KEY_G, desktop::toggleSteering);
-		// the screen with everything on it: one place in the radial menu of Vivecraft is enough for the whole mod
+
+		gameOnly = key("steer", InputConstants.KEY_G, desktop::toggleSteering);
+
 		key("menu", UNBOUND, () -> {
-			Minecraft mc = Minecraft.getInstance();
+			final Minecraft mc = Minecraft.getInstance();
 			if (mc.gui.screen() == null && Vr.INSTALLED) {
 				mc.gui.setScreen(new CameraMenuScreen(null));
 			}
 		});
 		key("settings", UNBOUND, () -> {
-			Minecraft mc = Minecraft.getInstance();
+			final Minecraft mc = Minecraft.getInstance();
 			if (ConfigScreen.isAvailable()) {
 				mc.gui.setScreen(ConfigScreen.create(mc.gui.screen()));
 			}
@@ -109,24 +117,11 @@ public class VrcameraClient implements ClientModInitializer {
 			}
 			DesktopCamera.INSTANCE.tick();
 			PhotoSync.INSTANCE.tick();
-			// The game does not hear keys in the window of the camera. They work there all the same, to not have
-			// to go back to the game for them
-			boolean inWindow = OutputWindow.isFocused();
-			this.keys.forEach((key, action) -> {
-				while (key.consumeClick()) {
-					action.run();
-				}
-				boolean down = inWindow && key != this.gameOnly &&
-						OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue());
-				if (!down) {
-					this.heldInWindow.remove(key);
-				} else if (this.heldInWindow.add(key)) {
-					action.run();
-				}
-			});
+
+			final boolean inWindow = OutputWindow.isFocused();
+			keys.forEach((key, action) -> handleKey(key, action, inWindow));
 		});
 
-		// tells exactly what was hit, also for hits by swinging a controller, which don't go through the crosshair
 		AttackEntityCallback.EVENT.register((player, level, hand, entity, hitResult) -> {
 			if (Vr.INSTALLED && level.isClientSide() && player == Minecraft.getInstance().player) {
 				CameraController.INSTANCE.onAttack(entity);
@@ -134,7 +129,6 @@ public class VrcameraClient implements ClientModInitializer {
 			return InteractionResult.PASS;
 		});
 
-		// don't leave the changed camera settings behind in the Vivecraft config
 		ClientLifecycleEvents.CLIENT_STOPPING.register(mc -> {
 			if (Vr.INSTALLED) {
 				CameraController.INSTANCE.release();
@@ -159,20 +153,6 @@ public class VrcameraClient implements ClientModInitializer {
 		});
 	}
 
-	private static Component screenModeLabel() {
-		return Component.translatable("vrcamera.gui.mode", Component.translatable(
-				"vrcamera.mode." + DesktopCamera.INSTANCE.mode().name().toLowerCase(Locale.ROOT)));
-	}
-
-	private Component screenOutputLabel() {
-		return Component.translatable("vrcamera.gui.output", Component.translatable(
-				"vrcamera.option.screenOutput." + CameraConfig.current().screenOutput.name().toLowerCase(Locale.ROOT)));
-	}
-
-	private boolean onScreen() {
-		return !Vr.isRunning() && (!Vr.INSTALLED || CameraController.INSTANCE.mode() == CameraController.Mode.OFF);
-	}
-
 	/**
 	 * the photo key: with the camera of Vivecraft where there is one, of what the screen shows where there is not
 	 */
@@ -181,74 +161,15 @@ public class VrcameraClient implements ClientModInitializer {
 			CameraController.INSTANCE.takePhoto();
 			return;
 		}
-		LocalPlayer player = Minecraft.getInstance().player;
+		final LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null && PhotoAlbum.INSTANCE.takeWithoutCamera(player, CameraConfig.current().photoSheet)) {
 			CameraEffects.ownShutter(player);
 		}
 	}
 
-	/**
-	 * a key that works the camera on the screen without VR, and the one of Vivecraft with it
-	 */
-	private void key(String name, int keyCode, Runnable onScreen, Runnable inVR) {
-		key(name, keyCode, () -> (onScreen() ? onScreen : inVR).run());
-	}
-
-	private KeyMapping key(String name, int keyCode, Runnable action) {
-		KeyMapping key = new KeyMapping("key.vrcamera." + name, keyCode, CATEGORY);
-		KeyMappingHelper.registerKeyMapping(key);
-		this.keys.put(key, action);
-		return key;
-	}
-
-	/**
-	 * buttons in the pause menu, to be reachable from inside VR without a binding
-	 */
-	private void addPauseMenuButtons(Screen pauseMenu) {
-		List<AbstractWidget> widgets = Screens.getWidgets(pauseMenu);
-		// Without VR the buttons work the camera on the screen. Not while the camera of VR is still on though,
-		// to be able to turn that one off after VR went away
-		if (onScreen()) {
-			List<Button> buttons = new ArrayList<>();
-			buttons.add(Button.builder(screenModeLabel(), button -> {
-				DesktopCamera.INSTANCE.cycleMode();
-				button.setMessage(screenModeLabel());
-			}).build());
-			buttons.add(Button.builder(screenOutputLabel(), button -> {
-				CameraConfig config = CameraConfig.current();
-				config.screenOutput = config.screenOutput == ScreenOutput.WINDOW ? ScreenOutput.SCREEN :
-						ScreenOutput.WINDOW;
-				config.save();
-				button.setMessage(screenOutputLabel());
-			}).build());
-			if (ConfigScreen.isAvailable()) {
-				buttons.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
-						button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu))).build());
-			}
-			buttons.add(chromaButton());
-			for (int slot = 0; slot < buttons.size(); slot++) {
-				Button button = buttons.get(slot);
-				int[] at = pauseSlot(pauseMenu, slot);
-				button.setRectangle(at[2], 20, at[0], at[1]);
-				// the menu on the screen in the world is the pause menu, not these
-				DesktopGui.leaveOut(button);
-				widgets.add(button);
-			}
-			return;
-		}
-		if (!Vr.isRunning() && CameraController.INSTANCE.mode() == CameraController.Mode.OFF) {
-			return;
-		}
-		widgets.add(Button.builder(modeLabel(), button -> {
-			CameraController.INSTANCE.cycleMode();
-			button.setMessage(modeLabel());
-		}).bounds(4, 4, 120, 20).build());
-		widgets.add(Button.builder(Component.translatable("vrcamera.gui.menu"),
-						button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
-				.bounds(4, 26, 120, 20).build());
-		Button chroma = chromaButton();
-		chroma.setRectangle(120, 20, 4, 48);
-		widgets.add(chroma);
+	private static Component screenModeLabel() {
+		return Component.translatable("vrcamera.gui.mode", Component.translatable(
+				"vrcamera.mode." + DesktopCamera.INSTANCE.mode().name().toLowerCase(Locale.ROOT)));
 	}
 
 	/**
@@ -257,15 +178,17 @@ public class VrcameraClient implements ClientModInitializer {
 	 *
 	 * @return x, y and width
 	 */
-	private static int[] pauseSlot(Screen pauseMenu, int index) {
-		// the buttons of the pause menu are 204 wide, in the middle
-		int beside = pauseMenu.width / 2 - 102 - 8;
+	@NotNull
+	private static int[] pauseSlot(@NotNull Screen pauseMenu, int index) {
+
+		final int beside = pauseMenu.width / 2 - 102 - HORIZONTAL_GAP;
 		if (beside >= PAUSE_BUTTON_MIN) {
-			return new int[]{4, 4 + 22 * index, Math.min(PAUSE_BUTTON, beside)};
+			return new int[]{EDGE_MARGIN, EDGE_MARGIN + 22 * index, Math.min(PAUSE_BUTTON, beside)};
 		}
-		// one row at the top and one at the bottom: the menu is as wide as the screen then, and between them
-		int width = Math.min(PAUSE_BUTTON, (pauseMenu.width - 8 - 60) / 2);
-		return new int[]{index % 2 == 0 ? 4 : pauseMenu.width - 4 - width, index < 2 ? 4 : pauseMenu.height - 24,
+
+		final int width = Math.min(PAUSE_BUTTON, (pauseMenu.width - HORIZONTAL_GAP - 60) / 2);
+		return new int[]{index % 2 == 0 ? EDGE_MARGIN : pauseMenu.width - EDGE_MARGIN - width,
+				index < 2 ? EDGE_MARGIN : pauseMenu.height - 24,
 				width};
 	}
 
@@ -282,6 +205,95 @@ public class VrcameraClient implements ClientModInitializer {
 	private static Component chromaLabel() {
 		return Component.translatable("vrcamera.gui.chroma", Component.translatable(!ChromaKey.isOn() ?
 				"vrcamera.mode.off" : "vrcamera.gui.chroma." + ChromaKey.preset().name().toLowerCase(Locale.ROOT)));
+	}
+
+	private Component screenOutputLabel() {
+		return Component.translatable("vrcamera.gui.output", Component.translatable(
+				"vrcamera.option.screenOutput." + CameraConfig.current().screenOutput.name().toLowerCase(Locale.ROOT)));
+	}
+
+	private boolean onScreen() {
+		return !Vr.isRunning() && (!Vr.INSTALLED || CameraController.INSTANCE.mode() == CameraController.Mode.OFF);
+	}
+
+	/**
+	 * a key that works the camera on the screen without VR, and the one of Vivecraft with it
+	 */
+	private void key(@NotNull String name, int keyCode, @NotNull Runnable onScreen, @NotNull Runnable inVR) {
+		key(name, keyCode, () -> (onScreen() ? onScreen : inVR).run());
+	}
+
+	@NotNull
+	private KeyMapping key(@NotNull String name, int keyCode, @NotNull Runnable action) {
+		final KeyMapping key = new KeyMapping("key.vrcamera." + name, keyCode, CATEGORY);
+		KeyMappingHelper.registerKeyMapping(key);
+		keys.put(key, action);
+		return key;
+	}
+
+	private void handleKey(@NotNull KeyMapping key, @NotNull Runnable action, boolean inWindow) {
+		while (key.consumeClick()) {
+			action.run();
+		}
+		final boolean down = inWindow && key != gameOnly &&
+				OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue());
+		if (!down) {
+			heldInWindow.remove(key);
+		} else if (heldInWindow.add(key)) {
+			action.run();
+		}
+	}
+
+	/**
+	 * buttons in the pause menu, to be reachable from inside VR without a binding
+	 */
+	private void addPauseMenuButtons(@NotNull Screen pauseMenu) {
+		final List<AbstractWidget> widgets = Screens.getWidgets(pauseMenu);
+
+		if (onScreen()) {
+			final List<Button> buttons = new ArrayList<>();
+			buttons.add(Button.builder(screenModeLabel(), button -> {
+				DesktopCamera.INSTANCE.cycleMode();
+				button.setMessage(screenModeLabel());
+			}).build());
+			buttons.add(Button.builder(screenOutputLabel(), button -> {
+				final CameraConfig config = CameraConfig.current();
+				config.screenOutput = config.screenOutput == ScreenOutput.WINDOW ? ScreenOutput.SCREEN :
+						ScreenOutput.WINDOW;
+				config.save();
+				button.setMessage(screenOutputLabel());
+			}).build());
+			if (ConfigScreen.isAvailable()) {
+				buttons.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
+						button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu))).build());
+			}
+			buttons.add(chromaButton());
+			for (int slot = 0; slot < buttons.size(); slot++) {
+				final Button button = buttons.get(slot);
+				final int[] at = pauseSlot(pauseMenu, slot);
+				button.setRectangle(at[2], BUTTON_HEIGHT, at[0], at[1]);
+
+				DesktopGui.leaveOut(button);
+				widgets.add(button);
+			}
+			return;
+		}
+		if (!Vr.isRunning() && CameraController.INSTANCE.mode() == CameraController.Mode.OFF) {
+			return;
+		}
+		widgets.add(Button.builder(modeLabel(), button -> {
+					CameraController.INSTANCE.cycleMode();
+					button.setMessage(modeLabel());
+				})
+				.bounds(EDGE_MARGIN, EDGE_MARGIN, VR_BUTTON_WIDTH, BUTTON_HEIGHT)
+				.build());
+		widgets.add(Button.builder(Component.translatable("vrcamera.gui.menu"),
+						button -> Minecraft.getInstance().gui.setScreen(new CameraMenuScreen(pauseMenu)))
+				.bounds(EDGE_MARGIN, 26, VR_BUTTON_WIDTH, BUTTON_HEIGHT)
+				.build());
+		final Button chroma = chromaButton();
+		chroma.setRectangle(VR_BUTTON_WIDTH, BUTTON_HEIGHT, EDGE_MARGIN, 48);
+		widgets.add(chroma);
 	}
 
 	private Component modeLabel() {

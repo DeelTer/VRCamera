@@ -10,7 +10,7 @@ public class ModMenuIntegration implements ModMenuApi {
 
 	@Override
 	public ConfigScreenFactory<?> getModConfigScreenFactory() {
-		// a lambda and not a method reference, to not touch the screen class without Cloth Config
+
 		return parent -> ConfigScreen.isAvailable() ? ConfigScreen.create(parent) : null;
 	}
 }

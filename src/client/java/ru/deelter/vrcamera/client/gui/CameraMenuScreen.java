@@ -3,6 +3,7 @@ package ru.deelter.vrcamera.client.gui;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+
 import ru.deelter.vrcamera.client.CameraController;
 
 /**
@@ -17,7 +18,7 @@ public class CameraMenuScreen extends Screen {
 	private final CameraController controller = CameraController.INSTANCE;
 	private Button modeButton;
 	private Button presetButton;
-	// buttons placed so far
+
 	private int count;
 
 	public CameraMenuScreen(Screen parent) {
@@ -27,66 +28,66 @@ public class CameraMenuScreen extends Screen {
 
 	@Override
 	protected void init() {
-		this.count = 0;
-		this.modeButton = add(modeLabel(), button -> {
-			this.controller.cycleMode();
+		count = 0;
+		modeButton = add(modeLabel(), button -> {
+			controller.cycleMode();
 			refresh();
 		});
 		add(Component.translatable("vrcamera.gui.summon"), button -> {
-			this.controller.summon();
-			// back into the game, to grab it
-			this.minecraft.gui.setScreen(null);
+			controller.summon();
+
+			minecraft.gui.setScreen(null);
 		});
-		add(Component.translatable("vrcamera.gui.next"), button -> this.controller.nextShot());
-		add(Component.translatable("vrcamera.gui.hold"), button -> this.controller.toggleHold());
-		this.presetButton = add(presetLabel(), button -> {
-			this.controller.nextPreset();
+		add(Component.translatable("vrcamera.gui.next"), button -> controller.nextShot());
+		add(Component.translatable("vrcamera.gui.hold"), button -> controller.toggleHold());
+		presetButton = add(presetLabel(), button -> {
+			controller.nextPreset();
 			refresh();
 		});
 		add(Component.translatable("vrcamera.gui.preset.new"), button -> {
-			this.controller.newPreset();
+			controller.newPreset();
 			refresh();
 		});
 		add(Component.translatable("vrcamera.gui.preset.delete"), button -> {
-			this.controller.deletePreset();
+			controller.deletePreset();
 			refresh();
 		});
-		add(Component.translatable("vrcamera.gui.debug"), button -> this.controller.toggleDebug());
+		add(Component.translatable("vrcamera.gui.debug"), button -> controller.toggleDebug());
 		if (ConfigScreen.isAvailable()) {
 			add(Component.translatable("vrcamera.gui.settings"),
-					button -> this.minecraft.gui.setScreen(ConfigScreen.create(this)));
+					button -> minecraft.gui.setScreen(ConfigScreen.create(this)));
 		}
 		add(Component.translatable("gui.done"), button -> onClose());
+	}
+
+	@Override
+	public void onClose() {
+		minecraft.gui.setScreen(parent);
 	}
 
 	/**
 	 * adds a button to the next free spot, two columns in the middle of the screen
 	 */
 	private Button add(Component label, Button.OnPress onPress) {
-		int column = this.count % 2;
-		int row = this.count / 2;
-		this.count++;
-		int x = this.width / 2 - BUTTON_WIDTH - GAP / 2 + column * (BUTTON_WIDTH + GAP);
-		int y = Math.max(8, this.height / 2 - 70) + row * (BUTTON_HEIGHT + GAP);
+		final int column = count % 2;
+		final int row = count / 2;
+		count++;
+		final int x = width / 2 - BUTTON_WIDTH - GAP / 2 + column * (BUTTON_WIDTH + GAP);
+		final int y = Math.max(8, height / 2 - 70) + row * (BUTTON_HEIGHT + GAP);
 		return addRenderableWidget(
 				Button.builder(label, onPress).bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT).build());
 	}
 
 	private void refresh() {
-		this.modeButton.setMessage(modeLabel());
-		this.presetButton.setMessage(presetLabel());
+		modeButton.setMessage(modeLabel());
+		presetButton.setMessage(presetLabel());
 	}
 
 	private Component modeLabel() {
-		return Component.translatable("vrcamera.gui.mode", this.controller.mode().label());
+		return Component.translatable("vrcamera.gui.mode", controller.mode().label());
 	}
 
 	private Component presetLabel() {
-		return Component.translatable("vrcamera.gui.preset", this.controller.presetLabel());
-	}
-
-	@Override
-	public void onClose() {
-		this.minecraft.gui.setScreen(this.parent);
+		return Component.translatable("vrcamera.gui.preset", controller.presetLabel());
 	}
 }
