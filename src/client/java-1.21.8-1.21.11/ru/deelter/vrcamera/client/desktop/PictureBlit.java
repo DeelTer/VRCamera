@@ -1,10 +1,9 @@
 package ru.deelter.vrcamera.client.desktop;
 
+import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
-
-import java.lang.reflect.Method;
 
 /**
  * Copies the picture of the camera to the window that OpenGL draws into right now, with the lines that help to
@@ -13,26 +12,19 @@ import java.lang.reflect.Method;
 final class PictureBlit {
 
 	private static final int LINE_PART = 360;
-	private static Method glId;
 
 	private PictureBlit() {
 	}
 
 	/**
-	 * @return what OpenGL calls the texture of the picture. The class that knows is not the same in every
-	 * supported version of the game, its method is
+	 * @return what OpenGL calls the texture of the picture
 	 * @throws IllegalStateException if the game does not draw with OpenGL
 	 */
 	static int textureId(RenderTarget picture) {
-		final Object texture = picture.getColorTexture();
-		try {
-			if (glId == null || glId.getDeclaringClass() != texture.getClass()) {
-				glId = texture.getClass().getMethod("glId");
-			}
-			return (int) glId.invoke(texture);
-		} catch (ReflectiveOperationException e) {
-			throw new IllegalStateException("the camera window needs the OpenGL renderer of the game", e);
+		if (picture.getColorTexture() instanceof GlTexture texture) {
+			return texture.glId();
 		}
+		throw new IllegalStateException("the camera window needs the OpenGL renderer of the game");
 	}
 
 	/**

@@ -1012,6 +1012,8 @@ public final class DesktopCamera {
 		} else if (mode == Mode.DIRECTOR && config.directorManual) {
 
 			say("vrcamera.message.manual", CameraHints.keyName("next"), CameraHints.keyName("toggle"));
+		} else if (mode == Mode.FREE) {
+			say("vrcamera.message.free", CameraHints.keyName("steer"));
 		} else {
 			say("vrcamera.message.mode",
 					Component.translatable("vrcamera.mode." + mode.name().toLowerCase(Locale.ROOT)));

@@ -360,5 +360,6 @@
 	"vrcamera.gui.sets.deleted": "Набір видалено",
 	"vrcamera.gui.sets.delete.failed": "Звичайний набір видалити не можна",
 	"vrcamera.gui.sets.import.none": "У буфері немає скопійованих камер",
-	"vrcamera.message.free.lastHere": "Камера: поруч інших немає, ця лишається"
+	"vrcamera.message.free.lastHere": "Камера: поруч інших немає, ця лишається",
+	"vrcamera.message.free": "Вільна камера · %s — керувати · H — сітка"
 }

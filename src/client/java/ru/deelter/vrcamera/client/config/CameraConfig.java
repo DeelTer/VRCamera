@@ -60,7 +60,7 @@ public class CameraConfig {
 	 * The camera of a player at a screen stays where the shot has it also behind blocks, and shows the player
 	 * through a round hole in them. And how many blocks across half of that hole is
 	 */
-	public boolean seeThrough = true;
+	public boolean seeThrough = false;
 	public double seeThroughRadius = 2.0;
 	/**
 	 * if the director of a player at a screen leaves out the shots from close by and from the ground

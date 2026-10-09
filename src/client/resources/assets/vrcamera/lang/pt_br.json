@@ -360,5 +360,6 @@
 	"vrcamera.gui.sets.deleted": "Conjunto apagado",
 	"vrcamera.gui.sets.delete.failed": "O conjunto usual não pode ser apagado",
 	"vrcamera.gui.sets.import.none": "Não há câmeras copiadas na área de transferência",
-	"vrcamera.message.free.lastHere": "Câmera: nenhuma outra por perto, esta fica"
+	"vrcamera.message.free.lastHere": "Câmera: nenhuma outra por perto, esta fica",
+	"vrcamera.message.free": "Câmera livre · %s — controlar · H — grade"
 }
