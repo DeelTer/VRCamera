@@ -16,6 +16,9 @@ permissions:
   vrcamera.custom:
     description: Put up pictures loaded from the internet instead of photos
     default: true
+  vrcamera.photo.nocooldown:
+    description: Take photos without the wait of photos.cooldown-seconds
+    default: op
   vrcamera.remove.others:
     description: Take off photos other players pinned
     default: op

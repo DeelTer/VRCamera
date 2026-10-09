@@ -222,6 +222,9 @@ public final class DirectorPass {
 		final CameraType view = mc.options.getCameraType();
 		try {
 			GameFrame.begin();
+			final Camera before = mc.gameRenderer.getMainCamera();
+			PlayerEars.keep(before.getPosition(), before.getLookVector(), before.getUpVector(), before.getLeftVector(),
+					before.rotation(), before.getYRot(), before.getXRot());
 			active = true;
 			((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(target);
 			mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
@@ -238,6 +241,7 @@ public final class DirectorPass {
 			if (mc.level != null && mc.getCameraEntity() != null) {
 				gameCamera.setup(mc.level, mc.getCameraEntity(), !view.isFirstPerson(), view.isMirrored(), partialTick);
 			}
+			PlayerEars.letGo();
 		}
 	}
 

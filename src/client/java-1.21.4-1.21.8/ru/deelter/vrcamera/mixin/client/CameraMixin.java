@@ -1,5 +1,8 @@
 package ru.deelter.vrcamera.mixin.client;
 
+import ru.deelter.vrcamera.client.desktop.PlayerEars;
+import org.joml.Quaternionf;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.client.Camera;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
@@ -36,5 +39,47 @@ public abstract class CameraMixin {
 				(float) -Math.asin(Mth.clamp(forward.y, -1.0F, 1.0F)) * Mth.RAD_TO_DEG);
 		setPosition(pose.position());
 		detached = true;
+	}
+
+	@ModifyReturnValue(method = {"getPosition", "position"}, at = @At("RETURN"), require = 0)
+	private Vec3 vrcamera$earsPosition(Vec3 position) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? position : ears.position();
+	}
+
+	@ModifyReturnValue(method = "getLookVector", at = @At("RETURN"), require = 0)
+	private Vector3f vrcamera$earsForward(Vector3f forward) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? forward : ears.forward();
+	}
+
+	@ModifyReturnValue(method = "getUpVector", at = @At("RETURN"), require = 0)
+	private Vector3f vrcamera$earsUp(Vector3f up) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? up : ears.up();
+	}
+
+	@ModifyReturnValue(method = "getLeftVector", at = @At("RETURN"), require = 0)
+	private Vector3f vrcamera$earsLeft(Vector3f left) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? left : ears.left();
+	}
+
+	@ModifyReturnValue(method = "rotation", at = @At("RETURN"), require = 0)
+	private Quaternionf vrcamera$earsRotation(Quaternionf rotation) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? rotation : ears.rotation();
+	}
+
+	@ModifyReturnValue(method = "getYRot", at = @At("RETURN"), require = 0)
+	private float vrcamera$earsYRot(float yRot) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? yRot : ears.yRot();
+	}
+
+	@ModifyReturnValue(method = "getXRot", at = @At("RETURN"), require = 0)
+	private float vrcamera$earsXRot(float xRot) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? xRot : ears.xRot();
 	}
 }

@@ -361,5 +361,6 @@
 	"vrcamera.gui.sets.delete.failed": "O conjunto usual não pode ser apagado",
 	"vrcamera.gui.sets.import.none": "Não há câmeras copiadas na área de transferência",
 	"vrcamera.message.free.lastHere": "Câmera: nenhuma outra por perto, esta fica",
-	"vrcamera.message.free": "Câmera livre · %s — controlar · H — grade"
+	"vrcamera.message.free": "Câmera livre · %s — controlar · H — grade",
+	"vrcamera.message.photo.wait": "Câmera: próxima foto em %s s"
 }

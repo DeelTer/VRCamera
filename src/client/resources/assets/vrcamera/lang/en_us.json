@@ -361,5 +361,6 @@
 	"vrcamera.gui.sets.delete.failed": "The usual set can't be deleted",
 	"vrcamera.gui.sets.import.none": "No copied cameras in the clipboard",
 	"vrcamera.message.free.lastHere": "Camera: no other camera nearby, this one stays",
-	"vrcamera.message.free": "Free camera · %s — steer · H — grid"
+	"vrcamera.message.free": "Free camera · %s — steer · H — grid",
+	"vrcamera.message.photo.wait": "Camera: next photo in %s s"
 }

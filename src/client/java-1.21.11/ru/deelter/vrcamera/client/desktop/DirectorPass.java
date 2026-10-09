@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.client.desktop;
 
+import net.minecraft.client.Camera;
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -244,6 +245,9 @@ public final class DirectorPass {
 		final CameraType view = mc.options.getCameraType();
 		try {
 			GameFrame.begin();
+			final Camera before = mc.gameRenderer.getMainCamera();
+			PlayerEars.keep(before.position(), before.forwardVector(), before.upVector(), before.leftVector(),
+					before.rotation(), before.yRot(), before.xRot());
 			active = true;
 			setTarget(mc, target);
 
@@ -263,6 +267,7 @@ public final class DirectorPass {
 			setTarget(mc, own);
 			mc.gameRenderer.updateCamera(deltaTracker);
 			tellShaders(mc, deltaTracker, mc.getWindow().getWidth(), mc.getWindow().getHeight());
+			PlayerEars.letGo();
 		}
 	}
 

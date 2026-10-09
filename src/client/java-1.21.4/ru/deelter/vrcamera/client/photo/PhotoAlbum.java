@@ -216,6 +216,9 @@ public final class PhotoAlbum {
 		if (picture == null) {
 			return false;
 		}
+		if (!PhotoSync.INSTANCE.mayTakePhoto()) {
+			return false;
+		}
 		Minecraft mc = Minecraft.getInstance();
 		this.developing = true;
 		this.developingSince = System.nanoTime();
@@ -806,6 +809,9 @@ public final class PhotoAlbum {
 	 */
 	public boolean takeWithoutCamera(LocalPlayer player, boolean printSheet) {
 		if (isPrinting()) {
+			return false;
+		}
+		if (!PhotoSync.INSTANCE.mayTakePhoto()) {
 			return false;
 		}
 		Minecraft mc = Minecraft.getInstance();

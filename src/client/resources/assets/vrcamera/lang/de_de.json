@@ -361,5 +361,6 @@
 	"vrcamera.gui.sets.delete.failed": "Der übliche Satz lässt sich nicht löschen",
 	"vrcamera.gui.sets.import.none": "Keine kopierten Kameras in der Zwischenablage",
 	"vrcamera.message.free.lastHere": "Kamera: keine andere in der Nähe, diese bleibt",
-	"vrcamera.message.free": "Freie Kamera · %s — steuern · H — Raster"
+	"vrcamera.message.free": "Freie Kamera · %s — steuern · H — Raster",
+	"vrcamera.message.photo.wait": "Kamera: nächstes Foto in %s s"
 }

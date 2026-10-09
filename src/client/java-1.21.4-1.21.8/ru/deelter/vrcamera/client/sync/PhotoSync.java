@@ -69,6 +69,8 @@ public final class PhotoSync {
 	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
 	private boolean connected;
+	private float photoCooldown;
+	private long lastPhoto;
 	private Vec3 sharedAt;
 	private long sharedNanos;
 	private Protocol.Limits limits;
@@ -133,6 +135,7 @@ public final class PhotoSync {
 	private void reset() {
 		DesktopCamera.INSTANCE.serverGone();
 		this.connected = false;
+		photoCooldown = 0.0F;
 		this.limits = null;
 		this.known.clear();
 		this.loaded.clear();
@@ -212,6 +215,7 @@ public final class PhotoSync {
 			switch (message[0]) {
 				case Protocol.S_HELLO -> {
 					Protocol.Limits limits = Protocol.readLimits(in);
+					photoCooldown = Protocol.readPhotoCooldown(in);
 					if (this.connected) {
 						return;
 					}
@@ -704,5 +708,23 @@ public final class PhotoSync {
 		if (this.connected) {
 			send(Protocol.unpin(id));
 		}
+	}
+
+	/**
+	 * @return if the server lets the player take a photo right now. Says how long to wait where it does not
+	 */
+	public boolean mayTakePhoto() {
+		final long now = System.nanoTime();
+		final double left = connected && lastPhoto != 0 ? photoCooldown - (now - lastPhoto) / 1.0E9 : 0.0;
+		if (left > 0) {
+			final LocalPlayer player = Minecraft.getInstance().player;
+			if (player != null) {
+				player.displayClientMessage(Component.translatable("vrcamera.message.photo.wait",
+						String.format(Locale.ROOT, "%.1f", left)), true);
+			}
+			return false;
+		}
+		lastPhoto = now;
+		return true;
 	}
 }

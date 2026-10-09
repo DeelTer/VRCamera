@@ -21,6 +21,7 @@ public final class Protocol {
 	public static final int MAX_IMAGE_BYTES = 24_000;
 	public static final int MAX_IMAGE_SIDE = 320;
 	public static final int MAX_SHEETS_PER_MESSAGE = 48;
+	public static final float MAX_PHOTO_COOLDOWN = 3600.0F;
 
 	/**
 	 * to the server
@@ -142,13 +143,26 @@ public final class Protocol {
 		return message(C_IMAGE, out -> out.writeLong(imageHash));
 	}
 
-	public static byte[] serverHello(Limits limits) {
+	/**
+	 * @param photoCooldown seconds this player has to wait between two photos, 0 for none. At the end of the
+	 *                      message: a mod from before there was such a thing does not read that far
+	 */
+	public static byte[] serverHello(Limits limits, float photoCooldown) {
 		return message(S_HELLO, out -> {
 			out.writeInt(limits.version);
 			out.writeInt(limits.maxOwn);
 			out.writeInt(limits.maxPerChunk);
 			out.writeInt(limits.maxImageBytes);
+			out.writeFloat(photoCooldown);
 		});
+	}
+
+	/**
+	 * @return seconds between two photos, after {@link #readLimits}. 0 from a server that does not say
+	 */
+	public static float readPhotoCooldown(DataInputStream in) throws IOException {
+		final float seconds = in.available() >= Float.BYTES ? in.readFloat() : 0.0F;
+		return seconds > 0.0F && seconds <= MAX_PHOTO_COOLDOWN ? seconds : 0.0F;
 	}
 
 	@NotNull
