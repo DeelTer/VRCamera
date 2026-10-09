@@ -5,7 +5,6 @@ import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.impl.builders.SubCategoryBuilder;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -28,10 +27,6 @@ public final class ConfigScreen {
 
 	private ConfigScreen(ConfigEntryBuilder entries) {
 		this.entries = entries;
-	}
-
-	public static boolean isAvailable() {
-		return FabricLoader.getInstance().isModLoaded("cloth-config");
 	}
 
 	public static Screen create(Screen parent) {

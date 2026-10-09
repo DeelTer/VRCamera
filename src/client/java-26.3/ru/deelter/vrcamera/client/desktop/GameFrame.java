@@ -9,9 +9,6 @@ import net.minecraft.client.Minecraft;
  */
 final class GameFrame {
 
-	private GameFrame() {
-	}
-
 	/**
 	 * Pictures the mod had the game draw in this frame, on top of the one of the game itself. The game keeps
 	 * three sets of what a picture is drawn with and takes the next one for every picture, counting on one
@@ -19,6 +16,9 @@ final class GameFrame {
 	 * From the second picture of the mod on, the game is told that a frame is over before each of them
 	 */
 	private static int extraPictures;
+
+	private GameFrame() {
+	}
 
 	static void newFrame() {
 		extraPictures = 0;

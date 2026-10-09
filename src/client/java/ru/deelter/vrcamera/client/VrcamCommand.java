@@ -14,6 +14,7 @@ import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
+import ru.deelter.vrcamera.client.gui.ClothConfig;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
@@ -132,7 +133,7 @@ public final class VrcamCommand {
 		}));
 		root.then(ClientCommands.literal("status").executes(context -> status(context.getSource())));
 		root.then(ClientCommands.literal("settings").executes(context -> {
-			if (!ConfigScreen.isAvailable()) {
+			if (!ClothConfig.isInstalled()) {
 				context.getSource().sendError(Component.translatable("vrcamera.command.nocloth"));
 				return 0;
 			}

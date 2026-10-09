@@ -31,10 +31,7 @@ import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
-import ru.deelter.vrcamera.client.gui.CameraMenuScreen;
-import ru.deelter.vrcamera.client.gui.CameraSetsScreen;
-import ru.deelter.vrcamera.client.gui.ConfigScreen;
-import ru.deelter.vrcamera.client.gui.DebugOverlay;
+import ru.deelter.vrcamera.client.gui.*;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -173,7 +170,7 @@ public class VrcameraClient implements ClientModInitializer {
 		});
 		key("settings", UNBOUND, () -> {
 			final Minecraft mc = Minecraft.getInstance();
-			if (ConfigScreen.isAvailable()) {
+			if (ClothConfig.isInstalled()) {
 				mc.gui.setScreen(ConfigScreen.create(mc.gui.screen()));
 			}
 		});
@@ -288,7 +285,7 @@ public class VrcameraClient implements ClientModInitializer {
 				config.save();
 				button.setMessage(screenOutputLabel());
 			}).build());
-			if (ConfigScreen.isAvailable()) {
+			if (ClothConfig.isInstalled()) {
 				buttons.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
 						button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu))).build());
 			}

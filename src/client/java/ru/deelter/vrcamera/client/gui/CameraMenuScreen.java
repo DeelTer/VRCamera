@@ -53,7 +53,7 @@ public class CameraMenuScreen extends Screen {
 			refresh();
 		});
 		add(Component.translatable("vrcamera.gui.debug"), button -> controller.toggleDebug());
-		if (ConfigScreen.isAvailable()) {
+		if (ClothConfig.isInstalled()) {
 			add(Component.translatable("vrcamera.gui.settings"),
 					button -> minecraft.gui.setScreen(ConfigScreen.create(this)));
 		}
