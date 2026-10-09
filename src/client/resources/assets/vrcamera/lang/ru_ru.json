@@ -360,5 +360,6 @@
 	"vrcamera.gui.sets.deleted": "Набор удалён",
 	"vrcamera.gui.sets.delete.failed": "Обычный набор удалить нельзя",
 	"vrcamera.gui.sets.import.none": "В буфере нет скопированных камер",
-	"vrcamera.message.free.lastHere": "Камера: рядом других нет, эта остаётся"
+	"vrcamera.message.free.lastHere": "Камера: рядом других нет, эта остаётся",
+	"vrcamera.message.free": "Свободная камера · %s — управлять · H — сетка"
 }

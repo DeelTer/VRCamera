@@ -360,5 +360,6 @@
 	"vrcamera.gui.sets.deleted": "Conjunto borrado",
 	"vrcamera.gui.sets.delete.failed": "El conjunto habitual no se puede borrar",
 	"vrcamera.gui.sets.import.none": "No hay cámaras copiadas en el portapapeles",
-	"vrcamera.message.free.lastHere": "Cámara: no hay otra cerca, esta se queda"
+	"vrcamera.message.free.lastHere": "Cámara: no hay otra cerca, esta se queda",
+	"vrcamera.message.free": "Cámara libre · %s — manejar · H — cuadrícula"
 }
