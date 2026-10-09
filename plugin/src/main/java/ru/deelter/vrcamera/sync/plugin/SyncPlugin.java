@@ -78,6 +78,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private int maxTotal;
 	private int maxImageBytes;
 	private long pinCooldown;
+	private long photoCooldown;
 	private double sendRange;
 	private double forgetRange;
 	private int imageQueue;
@@ -234,7 +235,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				}
 				case Protocol.C_SHUTTER -> {
 					if (client != null) {
-						if (System.currentTimeMillis() - client.lastShutter >= SHUTTER_COOLDOWN) {
+						if (System.currentTimeMillis() - client.lastShutter >= photoWait(player)) {
 							client.lastShutter = System.currentTimeMillis();
 							double x = in.readDouble();
 							final double y = in.readDouble();
@@ -247,7 +248,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					}
 				}
 				case Protocol.C_PRINT -> {
-					if (client != null && System.currentTimeMillis() - client.lastPrint >= SHUTTER_COOLDOWN) {
+					if (client != null && System.currentTimeMillis() - client.lastPrint >= photoWait(player)) {
 						client.lastPrint = System.currentTimeMillis();
 						cameraSound(player, Protocol.S_PRINT, in.readDouble(), in.readDouble(), in.readDouble());
 					}
@@ -320,6 +321,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		maxImageBytes = Math.clamp(
 				getConfig().getInt("limits.image-bytes", 20000), 1024, Protocol.MAX_IMAGE_BYTES);
 		pinCooldown = Math.max(0, getConfig().getLong("limits.pin-cooldown-ms", 1500));
+		photoCooldown = Math.clamp(Math.round(getConfig().getDouble("photos.cooldown-seconds", 3.0) * 1000.0), 0L,
+				(long) (Protocol.MAX_PHOTO_COOLDOWN * 1000.0F));
 		sendRange = Math.max(8.0, getConfig().getDouble("range.send", 32));
 		forgetRange = Math.max(sendRange + 8.0, getConfig().getDouble("range.forget", 48));
 		imageQueue = Math.max(1, getConfig().getInt("network.image-queue", 32));
@@ -372,7 +375,19 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	private void sendHello(Player player) {
 		send(player, Protocol.serverHello(new Protocol.Limits(Protocol.VERSION, maxPerPlayer, maxPerChunk,
-				maxImageBytes)));
+				maxImageBytes), waitsBetweenPhotos(player) ? photoCooldown / 1000.0F : 0.0F));
+	}
+
+	private boolean waitsBetweenPhotos(Player player) {
+		return photoCooldown > 0 && !player.hasPermission("vrcamera.photo.nocooldown");
+	}
+
+	/**
+	 * @return milliseconds between two camera sounds of that player the others get to hear. A little less than
+	 * the mod of the player waits itself: its messages do not arrive as evenly as it sends them
+	 */
+	private long photoWait(Player player) {
+		return waitsBetweenPhotos(player) ? Math.max(SHUTTER_COOLDOWN, photoCooldown * 9 / 10) : SHUTTER_COOLDOWN;
 	}
 
 	/**
@@ -920,6 +935,12 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
 			readConfig();
+			for (final UUID id : clients.keySet()) {
+				final Player online = Bukkit.getPlayer(id);
+				if (online != null) {
+					sendHello(online);
+				}
+			}
 			sender.sendMessage("VRCameraSync: config read again. Limits apply to new pins, timings after a restart");
 			return true;
 		}

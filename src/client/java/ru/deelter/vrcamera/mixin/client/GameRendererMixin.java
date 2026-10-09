@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.mixin.client;
 
+import ru.deelter.vrcamera.client.desktop.PlayerEars;
 import com.llamalad7.mixinextras.injector.v2.WrapWithCondition;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
@@ -19,6 +20,11 @@ public class GameRendererMixin {
 	private boolean vrcamera$noHudForCamera(Gui gui, DeltaTracker deltaTracker, boolean renderLevel, boolean loaded) {
 
 		return !DirectorPass.isActive() || DesktopGui.isDrawing();
+	}
+
+	@Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/Profiler;get()Lnet/minecraft/util/profiling/ProfilerFiller;", ordinal = 0), require = 0)
+	private void vrcamera$listenersAreDone(CallbackInfo ci) {
+		PlayerEars.listenersDone();
 	}
 
 	@Inject(method = "bobView", at = @At("HEAD"), cancellable = true, require = 0)

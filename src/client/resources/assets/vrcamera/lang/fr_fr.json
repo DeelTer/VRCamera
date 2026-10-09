@@ -361,5 +361,6 @@
 	"vrcamera.gui.sets.delete.failed": "Le jeu habituel ne peut pas être supprimé",
 	"vrcamera.gui.sets.import.none": "Pas de caméras copiées dans le presse-papiers",
 	"vrcamera.message.free.lastHere": "Caméra : aucune autre à proximité, celle-ci reste",
-	"vrcamera.message.free": "Caméra libre · %s — piloter · H — grille"
+	"vrcamera.message.free": "Caméra libre · %s — piloter · H — grille",
+	"vrcamera.message.photo.wait": "Caméra : prochaine photo dans %s s"
 }

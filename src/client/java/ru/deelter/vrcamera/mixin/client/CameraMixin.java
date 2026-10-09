@@ -1,5 +1,8 @@
 package ru.deelter.vrcamera.mixin.client;
 
+import org.joml.Vector3fc;
+import ru.deelter.vrcamera.client.desktop.PlayerEars;
+import org.joml.Quaternionf;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.client.Camera;
@@ -65,5 +68,47 @@ public abstract class CameraMixin {
 	@ModifyExpressionValue(method = {"update", "createProjectionMatrixForCulling"}, at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;getHeight()I"), require = 0)
 	private int vrcamera$heightOfPicture(int height) {
 		return DirectorPass.height(height);
+	}
+
+	@ModifyReturnValue(method = "position", at = @At("RETURN"), require = 0)
+	private Vec3 vrcamera$earsPosition(Vec3 position) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? position : ears.position();
+	}
+
+	@ModifyReturnValue(method = "forwardVector", at = @At("RETURN"), require = 0)
+	private Vector3fc vrcamera$earsForward(Vector3fc forward) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? forward : ears.forward();
+	}
+
+	@ModifyReturnValue(method = "upVector", at = @At("RETURN"), require = 0)
+	private Vector3fc vrcamera$earsUp(Vector3fc up) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? up : ears.up();
+	}
+
+	@ModifyReturnValue(method = "leftVector", at = @At("RETURN"), require = 0)
+	private Vector3fc vrcamera$earsLeft(Vector3fc left) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? left : ears.left();
+	}
+
+	@ModifyReturnValue(method = "rotation", at = @At("RETURN"), require = 0)
+	private Quaternionf vrcamera$earsRotation(Quaternionf rotation) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? rotation : ears.rotation();
+	}
+
+	@ModifyReturnValue(method = "yRot", at = @At("RETURN"), require = 0)
+	private float vrcamera$earsYRot(float yRot) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? yRot : ears.yRot();
+	}
+
+	@ModifyReturnValue(method = "xRot", at = @At("RETURN"), require = 0)
+	private float vrcamera$earsXRot(float xRot) {
+		final PlayerEars.Kept ears = PlayerEars.now();
+		return ears == null ? xRot : ears.xRot();
 	}
 }

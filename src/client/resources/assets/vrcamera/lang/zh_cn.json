@@ -361,5 +361,6 @@
 	"vrcamera.gui.sets.delete.failed": "默认分组无法删除",
 	"vrcamera.gui.sets.import.none": "剪贴板中没有复制的摄像机",
 	"vrcamera.message.free.lastHere": "摄像机：附近没有其他摄像机，保留这一台",
-	"vrcamera.message.free": "自由摄像机 · %s — 操控 · H — 网格"
+	"vrcamera.message.free": "自由摄像机 · %s — 操控 · H — 网格",
+	"vrcamera.message.photo.wait": "摄像机：%s 秒后可再次拍照"
 }

@@ -17,6 +17,12 @@ limits:
   # milliseconds a player has to wait between two pins
   pin-cooldown-ms: 1500
 
+photos:
+  # Seconds a player has to wait between two photos. Their mod does not take one sooner, and the click of their
+  # camera is not passed on to the others sooner. 0 for no wait. Players with the permission
+  # vrcamera.photo.nocooldown (operators by default) never wait
+  cooldown-seconds: 3
+
 # Who may take a pinned photo off. false: the one who pinned it, and whoever has the permission
 # vrcamera.remove.others (operators by default). true: everyone
 anyone-takes-off: false
