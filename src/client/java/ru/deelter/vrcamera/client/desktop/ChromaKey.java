@@ -34,10 +34,8 @@ import java.util.Objects;
  */
 public final class ChromaKey {
 	public static final String DEFAULT_COLOR = "#00B140";
-	private static final Vector4fc NOTHING = new Vector4f(0.0F, 0.0F, 0.0F, 0.0F);
-
 	public static final int EVEN_LIGHT = 0xF000F0;
-
+	private static final Vector4fc NOTHING = new Vector4f(0.0F, 0.0F, 0.0F, 0.0F);
 	private static final double FAR = 0.0;
 	private static final double NEAR = 1.0;
 	private static final Int2LongOpenHashMap SEEN = new Int2LongOpenHashMap();

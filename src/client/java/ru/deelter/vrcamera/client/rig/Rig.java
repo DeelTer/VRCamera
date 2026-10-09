@@ -62,29 +62,6 @@ public final class Rig {
 		this.zoomIsCloseness = zoomIsCloseness;
 	}
 
-	public Vec3 position() {
-		return position;
-	}
-
-	public Quaternionf rotation() {
-		return rotation;
-	}
-
-	public double fov() {
-		return fov.get();
-	}
-
-	public double arm() {
-		return arm;
-	}
-
-	/**
-	 * @return if something is between the player and where the shot has the camera
-	 */
-	public boolean viewBlocked() {
-		return viewBlocked;
-	}
-
 	/**
 	 * For a camera that shows the player through what is in the way. It stays where the shot has it, behind
 	 * blocks and in leaves, glass or plants as well. Only not inside a block that nothing is seen through: there
@@ -106,6 +83,29 @@ public final class Rig {
 			}
 		}
 		return clear;
+	}
+
+	public Vec3 position() {
+		return position;
+	}
+
+	public Quaternionf rotation() {
+		return rotation;
+	}
+
+	public double fov() {
+		return fov.get();
+	}
+
+	public double arm() {
+		return arm;
+	}
+
+	/**
+	 * @return if something is between the player and where the shot has the camera
+	 */
+	public boolean viewBlocked() {
+		return viewBlocked;
 	}
 
 	public boolean lookingPast() {

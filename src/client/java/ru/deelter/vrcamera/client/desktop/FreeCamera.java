@@ -17,11 +17,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -107,14 +103,6 @@ final class FreeCamera {
 	}
 
 	/**
-	 * @return the cameras as text, to give to someone who plays on the same map
-	 */
-	String export() {
-		settle();
-		return SHARED + Base64.getEncoder().encodeToString(GSON.toJson(spots).getBytes(StandardCharsets.UTF_8));
-	}
-
-	/**
 	 * Writes cameras someone gave as text down as a set of their own.
 	 *
 	 * @return how many there are, 0 if the text is not cameras
@@ -159,6 +147,14 @@ final class FreeCamera {
 
 	private static double ease(double rate, double dt) {
 		return 1.0 - Math.exp(-rate * dt);
+	}
+
+	/**
+	 * @return the cameras as text, to give to someone who plays on the same map
+	 */
+	String export() {
+		settle();
+		return SHARED + Base64.getEncoder().encodeToString(GSON.toJson(spots).getBytes(StandardCharsets.UTF_8));
 	}
 
 	boolean isEmpty() {
@@ -492,14 +488,14 @@ final class FreeCamera {
 	 * takes one of the cameras away. The one that films goes on filming, unless it is the one
 	 */
 	void remove(int camera) {
-		if (camera == this.active) {
+		if (camera == active) {
 			remove();
 			return;
 		}
 		settle();
-		Spot filming = this.spots.get(this.active);
-		decline(this.spots.remove(camera));
-		this.active = this.spots.indexOf(filming);
+		Spot filming = spots.get(active);
+		decline(spots.remove(camera));
+		active = spots.indexOf(filming);
 		save();
 	}
 

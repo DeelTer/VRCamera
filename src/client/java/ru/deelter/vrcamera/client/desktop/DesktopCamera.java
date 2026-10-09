@@ -10,10 +10,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -201,6 +201,13 @@ public final class DesktopCamera {
 		return Math.clamp(Math.sqrt(ICON_FULL / Math.max(eye.distanceTo(camera), 1.0E-3)), ICON_SMALLEST, 1.0);
 	}
 
+	/**
+	 * takes away every free camera of the world the player is in, and puts a first one at their eyes
+	 */
+	private static String dimension(Minecraft mc) {
+		return mc.level.dimension().identifier().toDebugFileName();
+	}
+
 	public Mode mode() {
 		return mode;
 	}
@@ -250,17 +257,17 @@ public final class DesktopCamera {
 	 * the mode has nothing to film with then
 	 */
 	public void removeCamera() {
-		if (this.mode != Mode.FREE || this.freeLevel == null || this.free.isEmpty()) {
+		if (mode != Mode.FREE || freeLevel == null || free.isEmpty()) {
 			return;
 		}
-		if (this.free.count() == 1) {
+		if (free.count() == 1) {
 			say("vrcamera.message.free.last");
 			return;
 		}
-		int camera = this.grab.isAiming() ? this.grab.aimedAt() : this.free.active();
-		String name = this.free.name(camera);
-		this.grab.reset();
-		this.free.remove(camera);
+		int camera = grab.isAiming() ? grab.aimedAt() : free.active();
+		String name = free.name(camera);
+		grab.reset();
+		free.remove(camera);
 		say("vrcamera.message.free.removed", name);
 	}
 
@@ -452,13 +459,6 @@ public final class DesktopCamera {
 		}
 		cutTo(camera);
 		return true;
-	}
-
-	/**
-	 * takes away every free camera of the world the player is in, and puts a first one at their eyes
-	 */
-	private static String dimension(Minecraft mc) {
-		return mc.level.dimension().identifier().toDebugFileName();
 	}
 
 	/**
@@ -1365,18 +1365,6 @@ public final class DesktopCamera {
 	}
 
 	/**
-	 * what is between the camera and the player
-	 *
-	 * @param near  how far in front of the camera a picture without it begins: right behind the last block in the
-	 *              way, and never as far as the player
-	 * @param solid if there is next to nothing but solid blocks around the player, as in a narrow shaft. A picture
-	 *              that begins inside those is empty: there the player alone is shown through the blocks, and
-	 *              they are left whole
-	 */
-	public record Blocked(double near, boolean solid) {
-	}
-
-	/**
 	 * @return what is between the camera and the player. With nothing there the picture begins right before the
 	 * player, for the hole to close slowly after the last block is out of the way
 	 */
@@ -1600,11 +1588,11 @@ public final class DesktopCamera {
 		if (grab.isHolding()) {
 			return free ? CameraHints.Hint.HOLD_FREE : CameraHints.Hint.HOLD;
 		}
-		if (this.grab.isAiming()) {
+		if (grab.isAiming()) {
 			if (!free) {
 				return CameraHints.Hint.AIM;
 			}
-			return this.grab.aimedAt() != this.free.active() ? CameraHints.Hint.AIM_OTHER : CameraHints.Hint.AIM_FREE;
+			return grab.aimedAt() != this.free.active() ? CameraHints.Hint.AIM_OTHER : CameraHints.Hint.AIM_FREE;
 		}
 		return free ? CameraHints.Hint.IDLE_FREE : CameraHints.Hint.IDLE;
 	}
@@ -1630,6 +1618,18 @@ public final class DesktopCamera {
 
 	public enum Mode {
 		OFF, DIRECTOR, FOLLOW, DRONE, FREE
+	}
+
+	/**
+	 * what is between the camera and the player
+	 *
+	 * @param near  how far in front of the camera a picture without it begins: right behind the last block in the
+	 *              way, and never as far as the player
+	 * @param solid if there is next to nothing but solid blocks around the player, as in a narrow shaft. A picture
+	 *              that begins inside those is empty: there the player alone is shown through the blocks, and
+	 *              they are left whole
+	 */
+	public record Blocked(double near, boolean solid) {
 	}
 
 	/**

@@ -17,19 +17,6 @@ import ru.deelter.vrcamera.Vrcamera;
  * Drawn in the OpenGL context of the camera window, which nothing else draws in.
  */
 final class SeeThrough {
-	/**
-	 * @param texture what OpenGL calls the picture without what is in the way
-	 * @param x       where the player is in the picture from its left, from 0 to 1, and {@code y} from its bottom
-	 * @param radius  of the hole, in heights of the picture
-	 * @param aspect  how many times wider than high the picture is
-	 * @param amount  how far the hole is open, from 0 to 1
-	 * @param floor   where the feet of the player are in the picture, from its bottom. The hole ends there: below
-	 *                it is the ground in front of the player, which a picture that begins behind what is in the way
-	 *                has holes in
-	 */
-	record Hole(int texture, float x, float y, float radius, float aspect, float amount, float floor) {
-	}
-
 	private static final String VERTEX = """
 			#version 330 core
 			out vec2 uv;
@@ -64,7 +51,6 @@ final class SeeThrough {
 				color = vec4(seen.rgb, 1.0);
 			}
 			""";
-
 	private static Hole hole;
 	private static int program;
 	private static int vertices;
@@ -128,5 +114,18 @@ final class SeeThrough {
 			throw new IllegalStateException(GL20.glGetProgramInfoLog(linked));
 		}
 		return linked;
+	}
+
+	/**
+	 * @param texture what OpenGL calls the picture without what is in the way
+	 * @param x       where the player is in the picture from its left, from 0 to 1, and {@code y} from its bottom
+	 * @param radius  of the hole, in heights of the picture
+	 * @param aspect  how many times wider than high the picture is
+	 * @param amount  how far the hole is open, from 0 to 1
+	 * @param floor   where the feet of the player are in the picture, from its bottom. The hole ends there: below
+	 *                it is the ground in front of the player, which a picture that begins behind what is in the way
+	 *                has holes in
+	 */
+	record Hole(int texture, float x, float y, float radius, float aspect, float amount, float floor) {
 	}
 }

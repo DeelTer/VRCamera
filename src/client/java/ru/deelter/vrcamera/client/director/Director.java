@@ -1,12 +1,12 @@
 package ru.deelter.vrcamera.client.director;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.damagesource.DamageSource;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.core.Holder;
 import net.minecraft.tags.BiomeTags;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
