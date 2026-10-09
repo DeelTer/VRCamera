@@ -31,64 +31,61 @@ import java.util.Random;
  * the player while it comes to rest, so what is filmed after a drop is still worth watching.
  */
 public final class DroppedCamera {
-	// blocks per second squared
+
 	private static final double GRAVITY = 16.0;
-	// size of the camera, half of it, in blocks
+
 	private static final double RADIUS = 0.06;
-	// part of the speed that is left after bouncing off something, straight back and along the surface
+
 	private static final double BOUNCE = 0.35;
 	private static final double FRICTION = 0.55;
-	// slower than this on the ground it stops, blocks per second
+
 	private static final double REST_SPEED = 0.9;
-	// speed lost per second in the air and in a fluid, as an exponent
+
 	private static final double AIR_DRAG = 0.2;
 	private static final double FLUID_DRAG = 3.0;
 	private static final double FLUID_GRAVITY = 0.15;
-	// seconds it still turns to the player after it stopped moving
+
 	private static final double SETTLE_TIME = 1.5;
-	// radians per second of tumbling per block per second of speed
+
 	private static final double SPIN = 2.5;
 
-	// slower hits than this are not worth showing, blocks per second
 	private static final double IMPACT_MIN_SPEED = 1.0;
-	// the view jolts on a hit: degrees per block per second of the hit, most of it, how fast it is over and swings
+
 	private static final double FOV_KICK = 1.5;
 	private static final double FOV_KICK_MAX = 12.0;
 	private static final double FOV_KICK_TIME = 0.2;
 	private static final double FOV_KICK_FREQUENCY = 3.5;
 
-	// something has to move this fast to kick the camera away, blocks per second
 	private static final double KICK_MIN_SPEED = 1.5;
 	private static final double KICK_LIFT = 2.2;
-	// seconds a kicked camera passes through what kicked it, or it would land on its head
+
 	private static final double KICK_IGNORE_TIME = 0.6;
 	private static final double PLAYER_KICK_WIDTH = 0.6;
-	// a camera let go of slower than this, with a block this close below, is put down and not dropped
+
 	private static final double PLACE_MAX_SPEED = 0.8;
 	private static final double PLACE_REACH = 0.3;
-	// blocks from the middle of the camera to a wall it is put up on
+
 	private static final double MOUNT_REACH = 0.16;
-	// blocks from a wall or a ceiling to the middle of a camera put up on it
+
 	private static final double WALL_GAP = 0.12;
 	private static final double CEILING_GAP = 0.2;
-	// blocks around an entity in which a camera is put on it, and around the own head
+
 	private static final double ATTACH_REACH = 0.1;
 	private static final double SELF_ATTACH_REACH = 0.3;
-	// the part of an entity below its eyes that still counts as its head
+
 	private static final double HEAD_ZONE = 0.2;
-	// blocks around the head of an entity in which a camera is put on it, for one that is a block wide or less
+
 	private static final double HEAD_REACH = 0.35;
-	// further than this in one frame the carrier did not walk but was moved
+
 	private static final double MAX_LEAD = 0.5;
-	// how long a head is, in widths of its entity
+
 	private static final double HEAD_LENGTH = 0.8;
-	// wider than this part of its height an entity is taken to walk on four legs
+
 	private static final double FOUR_LEGS_SHAPE = 0.5;
 	private static final double STRIKE_BOUNCE = 0.6;
 	private final Random random = new Random();
 	private final Quaternionf rotation = new Quaternionf();
 	private final Vector3f spinAxis = new Vector3f(1, 0, 0);
-	// how it would lie on the ground if it did not care about the player, different on every drop
 	private final Quaternionf randomRest = new Quaternionf();
 	private final Vector3f attachedOffset = new Vector3f();
 	private final Quaternionf attachedRotation = new Quaternionf();
@@ -96,25 +93,21 @@ public final class DroppedCamera {
 	private Vec3 velocity = Vec3.ZERO;
 	private boolean falling;
 	private boolean resting;
-	// resting against a wall or under a ceiling, where the player put it. Pointing away from that block
 	private Vec3 mountedOn;
 	private double settleTime;
 	private double spinSpeed;
-	// the entity the camera is lying on, null on the ground. Where on it, and how the entity was turned when it landed
 	private Entity carrier;
 	private Vec3 carrierOffset = Vec3.ZERO;
 	private float carrierYaw;
 	private float carriedTurn;
-	// Put on the carrier by hand, not just lying on it: it stays where it was put, on the head it also nods and
-	// turns with the head. Where and how it sits, seen from the body or the head of the carrier
+
 	private boolean attached;
 	private boolean attachedToHead;
 	private boolean attachedToSelf;
 	private Entity newHost;
 	private boolean selfAllowed = true;
-	// where the carrier was in the last frame
+
 	private Vec3 attachedOrigin;
-	// what kicked the camera, it does not collide with that for a moment
 	private Entity kicker;
 	private double kickIgnoreTime;
 	private Impact impact;
@@ -137,9 +130,9 @@ public final class DroppedCamera {
 		if (!(entity instanceof LivingEntity)) {
 			return false;
 		}
-		Vec3 neck = neck(entity, subject);
-		Vec3 along = entity.getViewVector(subject.partialTick).scale(entity.getBbWidth() * HEAD_LENGTH);
-		double part = CamMath.clamp(position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
+		final Vec3 neck = neck(entity, subject);
+		final Vec3 along = entity.getViewVector(subject.partialTick).scale(entity.getBbWidth() * HEAD_LENGTH);
+		final double part = CamMath.clamp(position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
 		return position.distanceTo(neck.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
 	}
 
@@ -157,17 +150,17 @@ public final class DroppedCamera {
 	 * would swing past the head
 	 */
 	private static Vec3 neck(Entity entity, Subject subject) {
-		Vec3 eyes = entity.getEyePosition(subject.partialTick);
+		final Vec3 eyes = entity.getEyePosition(subject.partialTick);
 		if (!(entity instanceof LivingEntity living) || !headInFront(entity)) {
 			return eyes;
 		}
-		float bodyYaw = Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) * Mth.DEG_TO_RAD;
-		double forward = entity.getBbWidth() * 0.5;
+		final float bodyYaw = Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) * Mth.DEG_TO_RAD;
+		final double forward = entity.getBbWidth() * 0.5;
 		return eyes.add(-Math.sin(bodyYaw) * forward, 0, Math.cos(bodyYaw) * forward);
 	}
 
 	private static boolean swims(Entity entity) {
-		MobCategory kind = entity.getType().getCategory();
+		final MobCategory kind = entity.getType().getCategory();
 		return entity instanceof LivingEntity && (kind == MobCategory.WATER_CREATURE ||
 				kind == MobCategory.WATER_AMBIENT || kind == MobCategory.UNDERGROUND_WATER_CREATURE ||
 				kind == MobCategory.AXOLOTLS);
@@ -177,21 +170,21 @@ public final class DroppedCamera {
 		if (!head) {
 			return entity.getPosition(subject.partialTick);
 		}
-		// the head of the player in VR is where the headset is, not where the game has the eyes
+
 		return entity == subject.player ? subject.head : neck(entity, subject);
 	}
 
 	private static Quaternionf frameRotation(Entity entity, Subject subject, boolean head) {
 		if (head && entity == subject.player) {
-			Quaternionf look = new Quaternionf();
+			final Quaternionf look = new Quaternionf();
 			CamMath.lookRotation(subject.headDir, look);
 			return look;
 		}
-		float yaw = entity instanceof LivingEntity living && !head ?
+		final float yaw = entity instanceof LivingEntity living && !head ?
 				Mth.rotLerp(subject.partialTick, living.yBodyRotO, living.yBodyRot) :
 				entity.getViewYRot(subject.partialTick);
-		// yaw of entities goes the other way around than rotations around the y axis
-		Quaternionf frame = new Quaternionf().rotationY(-yaw * Mth.DEG_TO_RAD);
+
+		final Quaternionf frame = new Quaternionf().rotationY(-yaw * Mth.DEG_TO_RAD);
 		return head ? frame.rotateX(entity.getViewXRot(subject.partialTick) * Mth.DEG_TO_RAD) : frame;
 	}
 
@@ -201,11 +194,11 @@ public final class DroppedCamera {
 	private static Vec3 faceNormal(AABB box, Vec3 point) {
 		Vec3 normal = new Vec3(0, 1, 0);
 		double nearest = Math.abs(point.y - box.maxY);
-		double[] distances = {
+		final double[] distances = {
 				Math.abs(point.y - box.minY), Math.abs(point.x - box.minX), Math.abs(point.x - box.maxX),
 				Math.abs(point.z - box.minZ), Math.abs(point.z - box.maxZ)
 		};
-		Vec3[] normals = {
+		final Vec3[] normals = {
 				new Vec3(0, -1, 0), new Vec3(-1, 0, 0), new Vec3(1, 0, 0), new Vec3(0, 0, -1), new Vec3(0, 0, 1)
 		};
 		for (int i = 0; i < distances.length; i++) {
@@ -218,37 +211,37 @@ public final class DroppedCamera {
 	}
 
 	public Vec3 position() {
-		return this.position;
+		return position;
 	}
 
 	public Quaternionf rotation() {
-		return this.rotation;
+		return rotation;
 	}
 
 	/**
 	 * @return if the camera was let go of, and is falling or lying somewhere
 	 */
 	public boolean isDropped() {
-		return this.falling || this.resting;
+		return falling || resting;
 	}
 
 	public boolean isResting() {
-		return this.resting;
+		return resting;
 	}
 
 	/**
 	 * @return if the camera is lying on an entity that carries it along
 	 */
 	public boolean isCarried() {
-		return this.resting && this.carrier != null;
+		return resting && carrier != null;
 	}
 
 	/**
 	 * @return the last hit since this was asked the last time, null if there was none
 	 */
 	public Impact pollImpact() {
-		Impact last = this.impact;
-		this.impact = null;
+		final Impact last = impact;
+		impact = null;
 		return last;
 	}
 
@@ -256,26 +249,30 @@ public final class DroppedCamera {
 	 * @return degrees to add to the field of view, the jolt of a hit that swings out
 	 */
 	public double fovOffset() {
-		return this.fovKick * Math.exp(-this.fovKickAge / FOV_KICK_TIME) *
-				Math.cos(this.fovKickAge * Math.PI * 2.0 * FOV_KICK_FREQUENCY);
+		return fovKick * Math.exp(-fovKickAge / FOV_KICK_TIME) *
+				Math.cos(fovKickAge * Math.PI * 2.0 * FOV_KICK_FREQUENCY);
 	}
 
 	/**
 	 * lets a camera that lies still turn to its focus once more
 	 */
 	public void settleAgain() {
-		if (this.resting) {
-			this.settleTime = SETTLE_TIME;
+		if (resting) {
+			settleTime = SETTLE_TIME;
 		}
 	}
 
 	public void pickUp() {
-		this.falling = false;
-		this.resting = false;
-		this.mountedOn = null;
-		this.carrier = null;
-		this.fovKick = 0;
+		falling = false;
+		resting = false;
+		mountedOn = null;
+		carrier = null;
+		fovKick = 0;
 	}
+
+	/**
+	 * @param entity what the camera came to rest on, null for a block
+	 */
 
 	/**
 	 * @param velocity speed of the hand when it let go, a thrown camera flies
@@ -284,15 +281,15 @@ public final class DroppedCamera {
 		this.position = position;
 		this.velocity = velocity;
 		this.rotation.set(rotation);
-		this.falling = true;
-		this.resting = false;
-		this.carrier = null;
-		this.kicker = null;
-		this.sinking = false;
-		this.randomRest.rotationYXZ(
-				(float) (this.random.nextDouble() * Math.PI * 2.0),
-				(float) CamMath.lerp(-0.5, 0.3, this.random.nextDouble()),
-				(float) (CamMath.lerp(0.6, 1.4, this.random.nextDouble()) * (this.random.nextBoolean() ? 1 : -1)));
+		falling = true;
+		resting = false;
+		carrier = null;
+		kicker = null;
+		sinking = false;
+		randomRest.rotationYXZ(
+				(float) (random.nextDouble() * Math.PI * 2.0),
+				(float) CamMath.lerp(-0.5, 0.3, random.nextDouble()),
+				(float) (CamMath.lerp(0.6, 1.4, random.nextDouble()) * (random.nextBoolean() ? 1 : -1)));
 		tumble(Math.max(1.0, velocity.length()));
 	}
 
@@ -303,40 +300,40 @@ public final class DroppedCamera {
 		if (dt <= 0) {
 			return;
 		}
-		this.fovKickAge += dt;
-		this.kickIgnoreTime -= dt;
+		fovKickAge += dt;
+		kickIgnoreTime -= dt;
 
-		if (this.resting) {
-			if (this.carrier != null) {
+		if (resting) {
+			if (carrier != null) {
 				ride(subject);
 			} else if (!supported(subject)) {
 				startFalling();
-			} else if (this.mountedOn == null) {
-				// one that was put up on a wall is not knocked off by walking past it, only by a hit
+			} else if (mountedOn == null) {
+
 				getKicked(subject);
 			}
 		}
-		if (this.falling) {
+		if (falling) {
 			fall(subject, dt);
 		}
 
-		Quaternionf target = restRotation(focus, config);
-		if (this.falling) {
-			this.rotation.rotateAxis((float) (this.spinSpeed * dt), this.spinAxis);
-			if (this.sinking && config.underwaterLook) {
-				// water stops the tumbling, what is left is a slow roll from side to side while it turns
-				this.spinSpeed *= Math.exp(-4.0 * dt);
-				this.sinkTime += dt;
-				this.rotation.rotateZ((float) (Math.cos(this.sinkTime * 1.4) * 0.35 * dt))
+		final Quaternionf target = restRotation(focus, config);
+		if (falling) {
+			rotation.rotateAxis((float) (spinSpeed * dt), spinAxis);
+			if (sinking && config.underwaterLook) {
+
+				spinSpeed *= Math.exp(-4.0 * dt);
+				sinkTime += dt;
+				rotation.rotateZ((float) (Math.cos(sinkTime * 1.4) * 0.35 * dt))
 						.rotateLocalY((float) (0.25 * dt));
 			} else {
-				this.spinSpeed *= Math.exp(-0.5 * dt);
+				spinSpeed *= Math.exp(-0.5 * dt);
 			}
-			// already starts to turn the right way in the air, so the landing is not one sudden twist
-			this.rotation.slerp(target, (float) (config.physicsAim * (1.0 - Math.exp(-dt / 1.2))));
-		} else if (this.settleTime > 0) {
-			this.settleTime -= dt;
-			this.rotation.slerp(target, (float) (1.0 - Math.exp(-dt / 0.25)));
+
+			rotation.slerp(target, (float) (config.physicsAim * (1.0 - Math.exp(-dt / 1.2))));
+		} else if (settleTime > 0) {
+			settleTime -= dt;
+			rotation.slerp(target, (float) (1.0 - Math.exp(-dt / 0.25)));
 		}
 	}
 
@@ -351,14 +348,14 @@ public final class DroppedCamera {
 		if (!isDropped()) {
 			return false;
 		}
-		double closing = limbVelocity.subtract(this.velocity).dot(normal);
+		final double closing = limbVelocity.subtract(velocity).dot(normal);
 		if (closing < minSpeed) {
 			return false;
 		}
-		this.velocity = this.velocity.add(normal.scale(closing * (1.0 + STRIKE_BOUNCE) * power));
+		velocity = velocity.add(normal.scale(closing * (1.0 + STRIKE_BOUNCE) * power));
 		startFalling();
 		tumble(closing);
-		hit(new Impact(this.position, normal, closing, null));
+		hit(new Impact(position, normal, closing, null));
 		return true;
 	}
 
@@ -373,71 +370,38 @@ public final class DroppedCamera {
 		if (handVelocity.length() > PLACE_MAX_SPEED) {
 			return false;
 		}
-		Entity host = host(subject, position);
+		final Entity host = host(subject, position);
 		if (host != null) {
 			drop(position, rotation, Vec3.ZERO);
-			this.falling = false;
-			this.resting = true;
-			this.settleTime = 0;
+			falling = false;
+			resting = true;
+			settleTime = 0;
 			attach(host, subject);
 			return true;
 		}
-		BlockHitResult below = subject.player.level().clip(new ClipContext(position,
+		final BlockHitResult below = subject.player.level().clip(new ClipContext(position,
 				position.add(0, -PLACE_REACH, 0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 		if (below.getType() != HitResult.Type.MISS && below.getDirection() == Direction.UP) {
 			drop(new Vec3(position.x, below.getLocation().y + RADIUS, position.z), rotation, Vec3.ZERO);
-			this.falling = false;
-			this.resting = true;
-			this.settleTime = 0;
+			falling = false;
+			resting = true;
+			settleTime = 0;
 			return true;
 		}
-		// Held right against a wall or a ceiling: it stays up there, turned the way it was held
-		BlockHitResult wall = wall(subject, position, heldAt);
+
+		final BlockHitResult wall = wall(subject, position, heldAt);
 		if (wall == null) {
 			return false;
 		}
-		Direction face = wall.getDirection();
-		Vec3 out = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
-		// Far enough out for the whole camera to be in front of the block, whichever way it is turned. Under a
-		// ceiling there is the screen on top of it as well
-		drop(wall.getLocation().add(out.scale(face == Direction.DOWN ? CEILING_GAP : WALL_GAP)), rotation, Vec3.ZERO);
-		this.falling = false;
-		this.resting = true;
-		this.mountedOn = out;
-		this.settleTime = 0;
-		return true;
-	}
+		final Direction face = wall.getDirection();
+		final Vec3 out = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
 
-	/**
-	 * @return the wall or ceiling the camera is held against, null if there is none that close
-	 */
-	private BlockHitResult wall(Subject subject, Vec3 position, Vec3 heldAt) {
-		BlockHitResult nearest = null;
-		double nearestDistance = Double.MAX_VALUE;
-		List<Vec3> ways = new ArrayList<>();
-		for (Direction direction : Direction.values()) {
-			if (direction != Direction.DOWN) {
-				ways.add(position.add(new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ())
-						.scale(MOUNT_REACH)));
-			}
-		}
-		// A hand pushes the camera into the wall, and it is let go a bit in front of that: the wall is then
-		// further away than it would be looked for, but it is where the hand is
-		Vec3 pushed = heldAt.subtract(position);
-		if (pushed.lengthSqr() > 1.0E-6) {
-			ways.add(heldAt.add(pushed.normalize().scale(MOUNT_REACH)));
-		}
-		for (Vec3 way : ways) {
-			BlockHitResult hit = subject.player.level().clip(new ClipContext(position, way,
-					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
-			double distance = hit.getLocation().distanceToSqr(position);
-			if (hit.getType() != HitResult.Type.MISS && hit.getDirection() != Direction.UP &&
-					distance < nearestDistance) {
-				nearest = hit;
-				nearestDistance = distance;
-			}
-		}
-		return nearest;
+		drop(wall.getLocation().add(out.scale(face == Direction.DOWN ? CEILING_GAP : WALL_GAP)), rotation, Vec3.ZERO);
+		falling = false;
+		resting = true;
+		mountedOn = out;
+		settleTime = 0;
+		return true;
 	}
 
 	/**
@@ -452,141 +416,204 @@ public final class DroppedCamera {
 	 * @return if the camera was put up on a wall or a ceiling
 	 */
 	public boolean isMounted() {
-		return this.resting && this.mountedOn != null;
+		return resting && mountedOn != null;
 	}
 
 	/**
-	 * @param entity what the camera came to rest on, null for a block
+	 * @param allowed if the camera can be put on the head of the player themselves
 	 */
+	public void allowSelf(boolean allowed) {
+		selfAllowed = allowed;
+	}
+
+	/**
+	 * @return what the camera was put on since this was asked the last time, null if nothing
+	 */
+	public Entity pollHost() {
+		final Entity host = newHost;
+		newHost = null;
+		return host;
+	}
+
+	/**
+	 * @return how fast what the camera was put on moves, in blocks per second. 0 if it is not on anything
+	 */
+	public double attachedSpeed() {
+		if (!isAttached()) {
+			return 0;
+		}
+		return new Vec3(carrier.getX() - carrier.xo, 0, carrier.getZ() - carrier.zo).length() * 20.0;
+	}
+
+	/**
+	 * @return if the camera was put on an entity by hand and goes along with it
+	 */
+	public boolean isAttached() {
+		return resting && attached && carrier != null;
+	}
+
+	/**
+	 * @return if the camera sits on the head of the player themselves
+	 */
+	public boolean isOnPlayer() {
+		return isAttached() && attachedToSelf;
+	}
+
+	/**
+	 * @return the wall or ceiling the camera is held against, null if there is none that close
+	 */
+	private BlockHitResult wall(Subject subject, Vec3 position, Vec3 heldAt) {
+		BlockHitResult nearest = null;
+		double nearestDistance = Double.MAX_VALUE;
+		final List<Vec3> ways = new ArrayList<>();
+		for (final Direction direction : Direction.values()) {
+			if (direction != Direction.DOWN) {
+				ways.add(position.add(new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ())
+						.scale(MOUNT_REACH)));
+			}
+		}
+
+		final Vec3 pushed = heldAt.subtract(position);
+		if (pushed.lengthSqr() > 1.0E-6) {
+			ways.add(heldAt.add(pushed.normalize().scale(MOUNT_REACH)));
+		}
+		for (final Vec3 way : ways) {
+			final BlockHitResult hit = subject.player.level().clip(new ClipContext(position, way,
+					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
+			final double distance = hit.getLocation().distanceToSqr(position);
+			if (hit.getType() != HitResult.Type.MISS && hit.getDirection() != Direction.UP &&
+					distance < nearestDistance) {
+				nearest = hit;
+				nearestDistance = distance;
+			}
+		}
+		return nearest;
+	}
 
 	private void startFalling() {
-		this.resting = false;
-		this.mountedOn = null;
-		this.falling = true;
-		this.carrier = null;
+		resting = false;
+		mountedOn = null;
+		falling = true;
+		carrier = null;
 	}
 
 	/**
 	 * moves and turns the camera with the entity it is lying on
 	 */
 	private void ride(Subject subject) {
-		if (this.attached && this.attachedToSelf) {
+		if (attached && attachedToSelf) {
 			if (subject.player.isDeadOrDying()) {
 				startFalling();
 				return;
 			}
-			// The game makes a new player for every dimension and every life. On the head of the player the
-			// camera goes along to the next dimension, a death it does not survive up there
-			this.carrier = subject.player;
-		} else if (!this.carrier.isAlive() || this.carrier.level() != subject.player.level()) {
+
+			carrier = subject.player;
+		} else if (!carrier.isAlive() || carrier.level() != subject.player.level()) {
 			startFalling();
 			return;
 		}
-		if (this.attached) {
-			Quaternionf frame = frameRotation(this.carrier, subject, this.attachedToHead);
-			Vector3f offset = frame.transform(new Vector3f(this.attachedOffset));
-			Vec3 origin = frameOrigin(this.carrier, subject, this.attachedToHead);
-			// Vivecraft films from where the camera was put a frame ago. On something that moves it would trail
-			// behind by that much and sink into what carries it: as far ahead as the carrier got in a frame
-			Vec3 ahead = this.attachedOrigin == null ? Vec3.ZERO : origin.subtract(this.attachedOrigin);
-			this.attachedOrigin = origin;
+		if (attached) {
+			final Quaternionf frame = frameRotation(carrier, subject, attachedToHead);
+			final Vector3f offset = frame.transform(new Vector3f(attachedOffset));
+			final Vec3 origin = frameOrigin(carrier, subject, attachedToHead);
+
+			Vec3 ahead = attachedOrigin == null ? Vec3.ZERO : origin.subtract(attachedOrigin);
+			attachedOrigin = origin;
 			if (ahead.lengthSqr() > MAX_LEAD * MAX_LEAD) {
 				ahead = Vec3.ZERO;
 			}
-			this.position = origin.add(offset.x, offset.y, offset.z).add(ahead);
-			frame.mul(this.attachedRotation, this.rotation);
+			position = origin.add(offset.x, offset.y, offset.z).add(ahead);
+			frame.mul(attachedRotation, rotation);
 			return;
 		}
-		float turn = Mth.wrapDegrees(this.carrier.getViewYRot(subject.partialTick) - this.carrierYaw);
-		// yaw of entities goes the other way around than rotations around the y axis
-		float radians = -turn * Mth.DEG_TO_RAD;
-		this.position = this.carrier.getPosition(subject.partialTick).add(this.carrierOffset.yRot(radians));
-		this.rotation.rotateLocalY(-(turn - this.carriedTurn) * Mth.DEG_TO_RAD);
-		this.carriedTurn = turn;
+		final float turn = Mth.wrapDegrees(carrier.getViewYRot(subject.partialTick) - carrierYaw);
+
+		final float radians = -turn * Mth.DEG_TO_RAD;
+		position = carrier.getPosition(subject.partialTick).add(carrierOffset.yRot(radians));
+		rotation.rotateLocalY(-(turn - carriedTurn) * Mth.DEG_TO_RAD);
+		carriedTurn = turn;
 	}
 
 	/**
 	 * a camera lying on the ground is kicked away by whatever walks into it, the player included
 	 */
 	private void getKicked(Subject subject) {
-		AABB reach = new AABB(this.position, this.position).inflate(1.0);
-		for (Entity entity : subject.player.level().getEntities((Entity) null, reach, DroppedCamera::isSolid)) {
+		final AABB reach = new AABB(position, position).inflate(1.0);
+		for (final Entity entity : subject.player.level().getEntities((Entity) null, reach, DroppedCamera::isSolid)) {
 			AABB box = entity.getBoundingBox();
 			if (entity == subject.player) {
-				// Smaller for the player, or bending down to pick the camera up kicks it away: roomscale moves
-				// the whole hitbox along with the head
-				double shrink = box.getXsize() * (1.0 - PLAYER_KICK_WIDTH) / 2.0;
+
+				final double shrink = box.getXsize() * (1.0 - PLAYER_KICK_WIDTH) / 2.0;
 				box = box.inflate(-shrink, 0, -shrink);
 			} else {
 				box = box.inflate(RADIUS);
 			}
-			if (!box.contains(this.position)) {
+			if (!box.contains(position)) {
 				continue;
 			}
-			// per tick to per second
-			Vec3 motion = new Vec3(entity.getX() - entity.xo, 0, entity.getZ() - entity.zo).scale(20.0);
-			double speed = motion.length();
+
+			final Vec3 motion = new Vec3(entity.getX() - entity.xo, 0, entity.getZ() - entity.zo).scale(20.0);
+			final double speed = motion.length();
 			if (speed < KICK_MIN_SPEED) {
 				continue;
 			}
-			this.velocity = motion.scale(1.1).add(0, KICK_LIFT, 0);
-			this.kicker = entity;
-			this.kickIgnoreTime = KICK_IGNORE_TIME;
+			velocity = motion.scale(1.1).add(0, KICK_LIFT, 0);
+			kicker = entity;
+			kickIgnoreTime = KICK_IGNORE_TIME;
 			startFalling();
 			tumble(speed * 1.5);
-			hit(new Impact(this.position, new Vec3(0, 1, 0), speed,
-					BlockPos.containing(this.position.add(0, -(RADIUS + 0.1), 0))));
+			hit(new Impact(position, new Vec3(0, 1, 0), speed,
+					BlockPos.containing(position.add(0, -(RADIUS + 0.1), 0))));
 			return;
 		}
 	}
 
 	private void fall(Subject subject, double dt) {
-		boolean inFluid = WorldProbe.inFluid(subject, this.position);
-		this.sinking = inFluid;
-		double gravity = GRAVITY * (inFluid ? FLUID_GRAVITY : 1.0);
-		this.velocity = this.velocity.add(0, -gravity * dt, 0)
+		final boolean inFluid = WorldProbe.inFluid(subject, position);
+		sinking = inFluid;
+		final double gravity = GRAVITY * (inFluid ? FLUID_GRAVITY : 1.0);
+		velocity = velocity.add(0, -gravity * dt, 0)
 				.scale(Math.exp(-(inFluid ? FLUID_DRAG : AIR_DRAG) * dt));
 
-		Vec3 step = this.velocity.scale(dt);
-		double distance = step.length();
+		final Vec3 step = velocity.scale(dt);
+		final double distance = step.length();
 		if (distance < 1.0E-6) {
 			return;
 		}
-		// look a camera size ahead, to stop at the surface and not with the middle of the camera in it
-		Vec3 ahead = this.position.add(step.scale((distance + RADIUS) / distance));
-		Hit hit = trace(subject, this.position, ahead);
+
+		Vec3 ahead = position.add(step.scale((distance + RADIUS) / distance));
+		final Hit hit = trace(subject, position, ahead);
 		if (hit == null) {
-			this.position = this.position.add(step);
-			if (this.position.y < subject.player.level().getMinY() - 16) {
-				// fell out of the world, nothing to land on down there
-				this.falling = false;
-				this.resting = true;
+			position = position.add(step);
+			if (position.y < subject.player.level().getMinY() - 16) {
+
+				falling = false;
+				resting = true;
 			}
 			return;
 		}
 
-		if (hit.entity != null && this.sinking && swims(hit.entity)) {
+		if (hit.entity != null && sinking && swims(hit.entity)) {
 			putOnHead(hit.entity, subject);
 			return;
 		}
 		Vec3 normal = hit.normal;
-		this.position = hit.location.add(normal.scale(RADIUS));
+		position = hit.location.add(normal.scale(RADIUS));
 
-		// bounce: back along the normal with part of the speed, and slowed down along the surface
-		double into = this.velocity.dot(normal);
-		Vec3 along = this.velocity.subtract(normal.scale(into));
-		this.velocity = along.scale(FRICTION).add(normal.scale(-into * BOUNCE));
+		final double into = velocity.dot(normal);
+		final Vec3 along = velocity.subtract(normal.scale(into));
+		velocity = along.scale(FRICTION).add(normal.scale(-into * BOUNCE));
 		if (-into > IMPACT_MIN_SPEED) {
 			hit(new Impact(hit.location, normal, -into,
 					hit.entity != null ? null : BlockPos.containing(hit.location.subtract(normal.scale(0.05)))));
 		}
 
-		double speed = this.velocity.length();
+		final double speed = velocity.length();
 		if (normal.y > 0.5 && speed < REST_SPEED) {
-			this.velocity = Vec3.ZERO;
-			this.falling = false;
-			this.resting = true;
-			this.settleTime = SETTLE_TIME;
+			velocity = Vec3.ZERO;
+			falling = false;
+			resting = true;
+			settleTime = SETTLE_TIME;
 			landOn(hit.entity, subject);
 		} else {
 			tumble(speed);
@@ -595,15 +622,8 @@ public final class DroppedCamera {
 
 	private void hit(Impact impact) {
 		this.impact = impact;
-		this.fovKick = -Math.min(FOV_KICK * impact.speed, FOV_KICK_MAX);
-		this.fovKickAge = 0;
-	}
-
-	/**
-	 * @param allowed if the camera can be put on the head of the player themselves
-	 */
-	public void allowSelf(boolean allowed) {
-		this.selfAllowed = allowed;
+		fovKick = -Math.min(FOV_KICK * impact.speed, FOV_KICK_MAX);
+		fovKickAge = 0;
 	}
 
 	/**
@@ -612,14 +632,13 @@ public final class DroppedCamera {
 	private Entity host(Subject subject, Vec3 position) {
 		Entity nearest = null;
 		double nearestDistance = Double.MAX_VALUE;
-		AABB around = new AABB(position, position).inflate(1.5);
-		for (Entity entity : subject.player.level().getEntities((Entity) null, around, DroppedCamera::isSolid)) {
+		final AABB around = new AABB(position, position).inflate(1.5);
+		for (final Entity entity : subject.player.level().getEntities((Entity) null, around, DroppedCamera::isSolid)) {
 			if (entity == subject.player) {
-				if (!this.selfAllowed) {
+				if (!selfAllowed) {
 					continue;
 				}
-				// Only on the head. A hand lets go of the camera near the own body all the time, and it is not
-				// meant to stick there every time
+
 				if (position.distanceTo(subject.head) > SELF_ATTACH_REACH) {
 					continue;
 				}
@@ -627,7 +646,7 @@ public final class DroppedCamera {
 					!atHead(entity, subject, position)) {
 				continue;
 			}
-			double distance = entity.getBoundingBox().getCenter().distanceToSqr(position);
+			final double distance = entity.getBoundingBox().getCenter().distanceToSqr(position);
 			if (distance < nearestDistance) {
 				nearest = entity;
 				nearestDistance = distance;
@@ -640,74 +659,40 @@ public final class DroppedCamera {
 	 * A camera that sinks onto something that swims is taken along by it: on its head, filming where it swims
 	 */
 	private void putOnHead(Entity entity, Subject subject) {
-		Vec3 look = entity.getViewVector(subject.partialTick);
-		this.position = neck(entity, subject).add(look.scale(entity.getBbWidth() * 0.45))
+		final Vec3 look = entity.getViewVector(subject.partialTick);
+		position = neck(entity, subject).add(look.scale(entity.getBbWidth() * 0.45))
 				.add(0, entity.getBbHeight() * 0.3, 0);
-		CamMath.lookRotation(look, this.rotation);
-		this.velocity = Vec3.ZERO;
-		this.falling = false;
-		this.resting = true;
-		this.settleTime = 0;
+		CamMath.lookRotation(look, rotation);
+		velocity = Vec3.ZERO;
+		falling = false;
+		resting = true;
+		settleTime = 0;
 		attach(entity, subject);
 	}
 
-	/**
-	 * @return what the camera was put on since this was asked the last time, null if nothing
-	 */
-	public Entity pollHost() {
-		Entity host = this.newHost;
-		this.newHost = null;
-		return host;
-	}
-
 	private void attach(Entity entity, Subject subject) {
-		this.carrier = entity;
-		this.newHost = entity;
-		this.attached = true;
-		this.attachedOrigin = null;
-		this.attachedToSelf = entity == subject.player;
-		// near the eyes it goes with the head, anywhere else with the body
-		// On four legs the back is as high as the head, there only what is at the head counts
-		this.attachedToHead = entity instanceof LivingEntity && (atHead(entity, subject, this.position) ||
+		carrier = entity;
+		newHost = entity;
+		attached = true;
+		attachedOrigin = null;
+		attachedToSelf = entity == subject.player;
+
+		attachedToHead = entity instanceof LivingEntity && (atHead(entity, subject, position) ||
 				(!headInFront(entity) &&
-						this.position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight()));
-		Quaternionf inverse = frameRotation(entity, subject, this.attachedToHead).invert();
-		Vec3 offset = this.position.subtract(frameOrigin(entity, subject, this.attachedToHead));
-		inverse.transform(this.attachedOffset.set((float) offset.x, (float) offset.y, (float) offset.z));
-		inverse.mul(this.rotation, this.attachedRotation);
-	}
-
-	/**
-	 * @return how fast what the camera was put on moves, in blocks per second. 0 if it is not on anything
-	 */
-	public double attachedSpeed() {
-		if (!isAttached()) {
-			return 0;
-		}
-		return new Vec3(this.carrier.getX() - this.carrier.xo, 0, this.carrier.getZ() - this.carrier.zo).length() * 20.0;
-	}
-
-	/**
-	 * @return if the camera was put on an entity by hand and goes along with it
-	 */
-	public boolean isAttached() {
-		return this.resting && this.attached && this.carrier != null;
-	}
-
-	/**
-	 * @return if the camera sits on the head of the player themselves
-	 */
-	public boolean isOnPlayer() {
-		return isAttached() && this.attachedToSelf;
+						position.y > frameOrigin(entity, subject, true).y - HEAD_ZONE * entity.getBbHeight()));
+		final Quaternionf inverse = frameRotation(entity, subject, attachedToHead).invert();
+		final Vec3 offset = position.subtract(frameOrigin(entity, subject, attachedToHead));
+		inverse.transform(attachedOffset.set((float) offset.x, (float) offset.y, (float) offset.z));
+		inverse.mul(rotation, attachedRotation);
 	}
 
 	private void landOn(Entity entity, Subject subject) {
-		this.carrier = entity;
-		this.attached = false;
+		carrier = entity;
+		attached = false;
 		if (entity != null) {
-			this.carrierOffset = this.position.subtract(entity.getPosition(subject.partialTick));
-			this.carrierYaw = entity.getViewYRot(subject.partialTick);
-			this.carriedTurn = 0;
+			carrierOffset = position.subtract(entity.getPosition(subject.partialTick));
+			carrierYaw = entity.getViewYRot(subject.partialTick);
+			carriedTurn = 0;
 		}
 	}
 
@@ -715,30 +700,29 @@ public final class DroppedCamera {
 	 * @return the first thing in the way from one point to the other, null if the way is free
 	 */
 	private Hit trace(Subject subject, Vec3 from, Vec3 to) {
-		Level level = subject.player.level();
+		final Level level = subject.player.level();
 		Hit nearest = null;
 		double nearestDistance = Double.MAX_VALUE;
 
-		BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+		final BlockHitResult block = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
 				ClipContext.Fluid.NONE, subject.player));
 		if (block.getType() != HitResult.Type.MISS) {
-			Direction face = block.getDirection();
+			final Direction face = block.getDirection();
 			nearest = new Hit(block.getLocation(), new Vec3(face.getStepX(), face.getStepY(), face.getStepZ()), null);
 			nearestDistance = block.getLocation().distanceToSqr(from);
 		}
 
-		// not the player, the camera comes out of their hand
-		for (Entity entity : level.getEntities(subject.player, new AABB(from, to).inflate(0.5),
+		for (final Entity entity : level.getEntities(subject.player, new AABB(from, to).inflate(0.5),
 				DroppedCamera::isSolid)) {
-			if (entity == this.kicker && this.kickIgnoreTime > 0) {
+			if (entity == kicker && kickIgnoreTime > 0) {
 				continue;
 			}
 			AABB box = entity.getBoundingBox();
 			if (box.contains(from)) {
-				// let go of inside of it, like in the boat the player sits in. Put it on top
+
 				return new Hit(new Vec3(from.x, box.maxY, from.z), new Vec3(0, 1, 0), entity);
 			}
-			Optional<Vec3> point = box.clip(from, to);
+			final Optional<Vec3> point = box.clip(from, to);
 			if (point.isPresent() && point.get().distanceToSqr(from) < nearestDistance) {
 				nearestDistance = point.get().distanceToSqr(from);
 				nearest = new Hit(point.get(), faceNormal(box, point.get()), entity);
@@ -751,23 +735,23 @@ public final class DroppedCamera {
 	 * starts spinning around some new axis, faster the faster the camera moves
 	 */
 	private void tumble(double speed) {
-		this.spinAxis.set(this.random.nextFloat() - 0.5F, this.random.nextFloat() - 0.5F,
-				this.random.nextFloat() - 0.5F);
-		if (this.spinAxis.lengthSquared() < 1.0E-4F) {
-			this.spinAxis.set(1, 0, 0);
+		spinAxis.set(random.nextFloat() - 0.5F, random.nextFloat() - 0.5F,
+				random.nextFloat() - 0.5F);
+		if (spinAxis.lengthSquared() < 1.0E-4F) {
+			spinAxis.set(1, 0, 0);
 		}
-		this.spinAxis.normalize();
-		this.spinSpeed = SPIN * speed;
+		spinAxis.normalize();
+		spinSpeed = SPIN * speed;
 	}
 
 	private boolean supported(Subject subject) {
-		if (this.mountedOn != null) {
-			Vec3 into = this.position.subtract(this.mountedOn.scale(CEILING_GAP + 0.15));
-			return subject.player.level().clip(new ClipContext(this.position, into, ClipContext.Block.COLLIDER,
+		if (mountedOn != null) {
+			final Vec3 into = position.subtract(mountedOn.scale(CEILING_GAP + 0.15));
+			return subject.player.level().clip(new ClipContext(position, into, ClipContext.Block.COLLIDER,
 					ClipContext.Fluid.NONE, subject.player)).getType() != HitResult.Type.MISS;
 		}
-		Vec3 below = this.position.add(0, -(RADIUS + 0.15), 0);
-		return subject.player.level().clip(new ClipContext(this.position, below, ClipContext.Block.COLLIDER,
+		final Vec3 below = position.add(0, -(RADIUS + 0.15), 0);
+		return subject.player.level().clip(new ClipContext(position, below, ClipContext.Block.COLLIDER,
 				ClipContext.Fluid.NONE, subject.player)).getType() != HitResult.Type.MISS;
 	}
 
@@ -775,11 +759,11 @@ public final class DroppedCamera {
 	 * @return how the camera should lie: somewhere between any odd way and with the lens right at the focus
 	 */
 	private Quaternionf restRotation(Vec3 focus, CameraConfig config) {
-		Quaternionf atFocus = new Quaternionf();
-		if (!CamMath.lookRotation(focus.subtract(this.position), atFocus)) {
-			return new Quaternionf(this.randomRest);
+		final Quaternionf atFocus = new Quaternionf();
+		if (!CamMath.lookRotation(focus.subtract(position), atFocus)) {
+			return new Quaternionf(randomRest);
 		}
-		return this.randomRest.slerp(atFocus, (float) CamMath.clamp(config.physicsAim, 0.0, 1.0), new Quaternionf());
+		return randomRest.slerp(atFocus, (float) CamMath.clamp(config.physicsAim, 0.0, 1.0), new Quaternionf());
 	}
 
 	/**

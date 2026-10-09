@@ -12,9 +12,9 @@ import org.joml.Quaternionfc;
  * move that is meant gets through nearly as fast as it was made.
  */
 public final class HandStabilizer {
-	// seconds of lag for the smallest moves, at full strength
+
 	private static final double MAX_LAG = 0.3;
-	// this far ahead of the camera the hand gets through twice as fast, in blocks and radians
+
 	private static final double SOFT_DISTANCE = 0.05;
 	private static final double SOFT_ANGLE = Math.toRadians(4);
 	private final Quaternionf rotation = new Quaternionf();
@@ -29,18 +29,18 @@ public final class HandStabilizer {
 	}
 
 	public Vec3 position() {
-		return this.position;
+		return position;
 	}
 
 	public Quaternionf rotation() {
-		return this.rotation;
+		return rotation;
 	}
 
 	/**
 	 * the camera was let go of, the next hand starts fresh
 	 */
 	public void reset() {
-		this.started = false;
+		started = false;
 	}
 
 	/**
@@ -48,20 +48,20 @@ public final class HandStabilizer {
 	 * @param strength     0 = right where the hand is, 1 = as steady as it gets
 	 */
 	public void update(Vec3 handPosition, Quaternionfc handRotation, double dt, double strength) {
-		if (!this.started || strength <= 0) {
-			this.position = handPosition;
-			this.rotation.set(handRotation);
-			this.started = true;
+		if (!started || strength <= 0) {
+			position = handPosition;
+			rotation.set(handRotation);
+			started = true;
 			return;
 		}
-		double lag = MAX_LAG * Math.min(strength, 1.0);
+		final double lag = MAX_LAG * Math.min(strength, 1.0);
 
-		double distance = handPosition.distanceTo(this.position);
-		this.position = this.position.lerp(handPosition, follow(dt, lag / (1.0 + distance / SOFT_DISTANCE)));
+		final double distance = handPosition.distanceTo(position);
+		position = position.lerp(handPosition, follow(dt, lag / (1.0 + distance / SOFT_DISTANCE)));
 
-		double dot = this.rotation.x * handRotation.x() + this.rotation.y * handRotation.y() +
-				this.rotation.z * handRotation.z() + this.rotation.w * handRotation.w();
-		double angle = 2.0 * Math.acos(Math.min(1.0, Math.abs(dot)));
-		this.rotation.slerp(handRotation, (float) follow(dt, lag / (1.0 + angle / SOFT_ANGLE)));
+		final double dot = rotation.x * handRotation.x() + rotation.y * handRotation.y() +
+				rotation.z * handRotation.z() + rotation.w * handRotation.w();
+		final double angle = 2.0 * Math.acos(Math.min(1.0, Math.abs(dot)));
+		rotation.slerp(handRotation, (float) follow(dt, lag / (1.0 + angle / SOFT_ANGLE)));
 	}
 }

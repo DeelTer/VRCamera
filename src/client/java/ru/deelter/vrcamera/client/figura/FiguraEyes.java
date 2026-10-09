@@ -6,6 +6,8 @@ import org.figuramc.figura.entries.FiguraAPI;
 import org.figuramc.figura.lua.LuaWhitelist;
 import org.figuramc.figura.math.vector.FiguraVec2;
 import org.figuramc.figura.math.vector.FiguraVec3;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 import java.util.Collection;
@@ -29,6 +31,7 @@ public class FiguraEyes implements FiguraAPI {
 		this.filmed = filmed;
 	}
 
+	@NotNull
 	@Override
 	public FiguraAPI build(Avatar avatar) {
 		return new FiguraEyes(avatar.isHost);
@@ -51,24 +54,27 @@ public class FiguraEyes implements FiguraAPI {
 
 	@LuaWhitelist
 	public boolean isFilming() {
-		return this.filmed && DesktopCamera.INSTANCE.filmsSelf() && DesktopCamera.INSTANCE.lens() != null;
+		return filmed && DesktopCamera.INSTANCE.filmsSelf() && DesktopCamera.INSTANCE.lens() != null;
 	}
 
+	@Nullable
 	@LuaWhitelist
 	public FiguraVec3 getCameraPos() {
-		DesktopCamera.Pose lens = isFilming() ? DesktopCamera.INSTANCE.lens() : null;
+		final DesktopCamera.Pose lens = isFilming() ? DesktopCamera.INSTANCE.lens() : null;
 		return lens == null ? null : FiguraVec3.fromVec3(lens.position());
 	}
 
+	@Nullable
 	@LuaWhitelist
 	public FiguraVec3 getLookTarget() {
-		Vec3 target = this.filmed ? EyeContact.INSTANCE.target() : null;
+		final Vec3 target = filmed ? EyeContact.INSTANCE.target() : null;
 		return target == null ? null : FiguraVec3.fromVec3(target);
 	}
 
+	@Nullable
 	@LuaWhitelist
 	public FiguraVec2 getLookOffset() {
-		double[] offset = this.filmed ? EyeContact.INSTANCE.offset() : null;
+		final double[] offset = filmed ? EyeContact.INSTANCE.offset() : null;
 		return offset == null ? null : FiguraVec2.of(offset[0], offset[1]);
 	}
 

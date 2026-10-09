@@ -1,0 +1,14 @@
+{
+	"required": false,
+	"minVersion": "0.8",
+	"package": "ru.deelter.vrcamera.mixin.vivecraft",
+	"compatibilityLevel": "JAVA_21",
+	"plugin": "ru.deelter.vrcamera.mixin.VivecraftMixins",
+	"client": [
+		"VRPlayerModelMixin",
+		"VRWidgetHelperMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

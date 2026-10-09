@@ -52,12 +52,17 @@ loom {
     }
 }
 
-// The few classes that can't be the same for every Minecraft version, like the ones that open a window: the game
-// went from GLFW to SDL. One folder per version, next to what they all share
+// The classes that can't be the same for every Minecraft version: the game draws another way in each of them.
+// "sources" in the file of a version names the folders of src/client it is built from, each "java-<name>" with
+// the "resources-<name>" next to it: what all versions share, what a few of them share, and what is its own
+def sourceNames = (project.findProperty("sources") ?: "shared,${project.mc}").split(",").collect { it.trim() }
 sourceSets {
     client {
         java {
-            srcDir "src/client/java-${project.mc}"
+            srcDirs = sourceNames.collect { it == "shared" ? "src/client/java" : "src/client/java-${it}" }
+        }
+        resources {
+            srcDirs = sourceNames.collect { it == "shared" ? "src/client/resources" : "src/client/resources-${it}" }
         }
     }
 }
@@ -91,11 +96,13 @@ dependencies {
         modImplementation "maven.modrinth:vivecraft:${project.vivecraft_version}"
     }
 
-    // optional, avatars of Figura can look into the camera. -Pfigura runs the game with it
+    // Optional, avatars of Figura can look into the camera. For the versions of the game Figura is not made for,
+    // built against NoFigura, the Figura for those. -Pfigura runs the game with it
+    def figura = "maven.modrinth:${project.findProperty("figura_project") ?: "figura"}:${project.figura_version}"
     if (project.hasProperty("figura")) {
-        modImplementation "maven.modrinth:figura:${project.figura_version}"
+        modImplementation figura
     } else {
-        modCompileOnly "maven.modrinth:figura:${project.figura_version}"
+        modCompileOnly figura
     }
 
     // optional, for the settings screen
@@ -120,6 +127,7 @@ processResources {
 def targetJavaVersion = 21
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
+    it.options.compilerArgs += ["-Xmaxerrs", "2000"]
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
         it.options.release.set(targetJavaVersion)
     }

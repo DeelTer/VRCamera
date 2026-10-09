@@ -14,6 +14,7 @@ import java.util.Iterator;
  * packs pictures the same way in the mod and on the server
  */
 public final class Jpeg {
+
 	private Jpeg() {
 	}
 
@@ -21,14 +22,14 @@ public final class Jpeg {
 	 * @param quality 0 = smallest, 1 = best
 	 */
 	public static byte[] encode(BufferedImage image, float quality) throws IOException {
-		Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+		final Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
 		if (!writers.hasNext()) {
 			throw new IOException("this Java can't write JPEG");
 		}
-		ImageWriter writer = writers.next();
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream(16_384);
-		try (ImageOutputStream out = ImageIO.createImageOutputStream(bytes)) {
-			ImageWriteParam param = writer.getDefaultWriteParam();
+		final ImageWriter writer = writers.next();
+		final ByteArrayOutputStream bytes = new ByteArrayOutputStream(16_384);
+		try (final ImageOutputStream out = ImageIO.createImageOutputStream(bytes)) {
+			final ImageWriteParam param = writer.getDefaultWriteParam();
 			param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
 			param.setCompressionQuality(quality);
 			writer.setOutput(out);

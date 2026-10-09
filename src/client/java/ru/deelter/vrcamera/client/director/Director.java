@@ -1,10 +1,14 @@
 package ru.deelter.vrcamera.client.director;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -16,6 +20,7 @@ import ru.deelter.vrcamera.client.rig.WorldProbe;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -23,32 +28,58 @@ import java.util.Random;
  * player gets blocked from view, it switches to an angle that can see them.
  */
 public final class Director {
-	// seconds after a new shot, in which a blocked view is tolerated
-	private static final double OCCLUSION_GRACE = 1.0;
 
-	// shots are further away in flight, and closer where there is little room
+	private static final double OCCLUSION_GRACE = 1.0;
+	private static final List<TagKey<Biome>> ROUGH_BIOMES = List.of(BiomeTags.IS_MOUNTAIN, BiomeTags.IS_HILL,
+			BiomeTags.IS_FOREST, BiomeTags.IS_TAIGA, BiomeTags.IS_JUNGLE, BiomeTags.IS_BADLANDS);
+	private static final double TERRAIN_INTERVAL = 1.0;
+	private static final double ROUGH_DRONE = 2.5;
+	private static final double DRONE_NEAREST = 0.85;
+	private static final double DRONE_FURTHEST = 1.15;
+	private static final double CLIMBED = 3.0;
+	private static final double CLIMB_FORGET = 0.4;
+	private static final double ROUGH_CRANE = 1.5;
+	private static final double ROUGH_FLYBY = 0.5;
+	/**
+	 * Seconds a shot of a player at a screen is safe from being cut away from for being blocked. On a slope or
+	 * between trees every next shot is blocked too, and the camera would not stop cutting
+	 */
+	private static final double BLOCKED_REST = 3.0;
+	/**
+	 * Looking ahead: how often, how many seconds of the way of the player, from which speed on, and how long the
+	 * camera stays on a side it swung over to
+	 */
+	private static final double AHEAD_INTERVAL = 0.2;
+	private static final double AHEAD_SECONDS = 1.2;
+	private static final double AHEAD_SPEED = 1.5;
+	private static final double SWING_REST = 3.0;
+	/**
+	 * How much more of the way to the camera has to be free for a shot to be picked than for it to be kept. With
+	 * the same measure for both, a shot at the edge of it is picked and dropped in turns
+	 */
+	private static final double ROOM_TO_SPARE = 0.15;
+
 	private static final double FLY_DISTANCE_SCALE = 1.6;
 	private static final double TIGHT_DISTANCE_SCALE = 0.7;
-	// the shot shown when nothing else has room
+
 	private static final double FALLBACK_DISTANCE_SCALE = 0.6;
 	private static final double BOOST = 4.0;
-	// how well first person fits where it is tight, it does not fit anywhere else
+
 	private static final double TIGHT_POV_FIT = 0.6;
 	private static final double SCREEN_POV_FIT = 0.2;
-	// how well the shot of two fits while the player films with a friend: it is what they asked for
+
 	private static final double PARTNER_FIT = 3.0;
-	// shots between two stays in first person, this many or one more
+
 	private static final int HOME_ASIDES = 2;
-	// fights are cut faster
+
 	private static final double COMBAT_DURATION_SCALE = 0.6;
 
-	// what makes a candidate for the next shot less likely to be picked
 	private static final double HIDDEN_HEAD_PENALTY = 0.6;
 	private static final double ACROSS_WATER_PENALTY = 0.25;
 	private static final double SAME_TYPE_PENALTY = 0.25;
 	private static final double SIMILAR_VIEW_PENALTY = 0.5;
 	private static final double CROSSED_LINE_PENALTY = 0.35;
-	// a view has to turn by more than 30 degrees to count as a different one
+
 	private static final double SIMILAR_VIEW_DOT = Math.cos(Math.toRadians(30));
 	private final CameraConfig config;
 	private final Random random = new Random();
@@ -56,30 +87,36 @@ public final class Director {
 	private ShotType lastType;
 	private boolean hold;
 	private boolean forceNext;
-	// the only shot type allowed on the next pick, asked for by the player
 	private ShotType forceType;
 	private double occludedTime;
 	private String lastReason = "";
 	private Context context = Context.IDLE;
-	// context the current shot was picked for
 	private Context shotContext = Context.IDLE;
 	private Event event = Event.NONE;
-	// shot type that gets a better chance on the next pick
 	private ShotType boost;
 	private boolean tight;
 	private boolean atScreen;
+	private boolean rough;
+	private double aheadTimer;
+	private double sinceSwing = SWING_REST;
+	/**
+	 * if the shot that runs may stay when none is found to go to: its time is up, but nothing is wrong with it
+	 */
+	private boolean canStay;
+	private double terrainTimer;
 	private boolean partnered;
-	// other shots left to show before first person is come back to
 	private int asides;
 	private double tightTimer;
 	private double combatTimer;
-	// seconds of recent mining, goes up while a block is being broken, slowly down otherwise
 	private double mineTime;
+	/**
+	 * the height the player climbs up from. It comes after the player slowly: only going up fast, as up a
+	 * mountain side jump after jump, gets far above it
+	 */
+	private double climbFrom = Double.NaN;
 	private double fallTimer;
-	// an event the player wanted to see something else instead of, ignored until it is over
 	private Event dismissed = Event.NONE;
 	private double stillTime;
-	// what the player hit since the last update
 	private Entity attacked;
 
 	public Director(CameraConfig config) {
@@ -94,174 +131,184 @@ public final class Director {
 	}
 
 	public Shot current() {
-		return this.current;
+		return current;
 	}
 
 	public Context context() {
-		return this.context;
+		return context;
 	}
 
 	public Event event() {
-		return this.event;
+		return event;
 	}
 
 	public boolean isTight() {
-		return this.tight;
+		return tight;
 	}
 
 	public boolean isHolding() {
-		return this.hold;
+		return hold;
 	}
 
 	public double occludedTime() {
-		return this.occludedTime;
+		return occludedTime;
 	}
 
 	/**
 	 * @return why the current shot was picked
 	 */
 	public String lastReason() {
-		return this.lastReason;
+		return lastReason;
 	}
 
 	public void reset() {
-		this.current = null;
-		this.hold = false;
-		this.forceNext = false;
-		this.forceType = null;
-		this.event = Event.NONE;
-		this.dismissed = Event.NONE;
-		this.boost = null;
-		this.attacked = null;
-		this.combatTimer = 0;
-		this.mineTime = 0;
-		this.fallTimer = 0;
+		current = null;
+		hold = false;
+		forceNext = false;
+		forceType = null;
+		event = Event.NONE;
+		dismissed = Event.NONE;
+		boost = null;
+		attacked = null;
+		combatTimer = 0;
+		mineTime = 0;
+		fallTimer = 0;
 	}
 
 	/**
 	 * replaces the current shot on the next update
 	 */
 	public void next() {
-		this.forceNext = true;
+		forceNext = true;
 	}
 
 	/**
 	 * the player hit something
 	 */
 	public void onAttack(Entity entity) {
-		this.attacked = entity;
+		attacked = entity;
 	}
 
 	/**
 	 * replaces the current shot with one of the given type on the next update
 	 */
 	public void force(ShotType type) {
-		this.forceType = type;
-		this.forceNext = true;
+		forceType = type;
+		forceNext = true;
 	}
 
 	/**
 	 * @return if the current shot is now kept until released
 	 */
 	public boolean toggleHold() {
-		this.hold = !this.hold;
-		return this.hold;
+		hold = !hold;
+		return hold;
 	}
 
 	/**
 	 * shows a hand placed shot for a while, before the regular rotation continues
 	 */
 	public void showManual(Shot shot) {
-		shot.duration = this.config.manualHoldSeconds;
-		this.current = shot;
-		this.lastType = shot.type;
-		this.shotContext = this.context;
-		this.occludedTime = -OCCLUSION_GRACE;
-		this.lastReason = "manual";
+		shot.duration = config.manualHoldSeconds;
+		current = shot;
+		lastType = shot.type;
+		shotContext = context;
+		occludedTime = -OCCLUSION_GRACE;
+		lastReason = "manual";
 	}
 
 	public void update(Subject subject, Rig rig, double dt) {
 		updateContext(subject, dt);
 
-		// by hand the player decides on every shot, like on one they asked to keep
-		boolean held = this.hold || this.config.directorManual;
-		Event detected = held ? Event.NONE : detectEvent(subject, dt);
-		if (detected != this.dismissed) {
-			// what was dismissed is over
-			this.dismissed = Event.NONE;
+		final boolean held = hold || config.directorManual;
+		final Event detected = held ? Event.NONE : detectEvent(subject, dt);
+		if (detected != dismissed) {
+
+			dismissed = Event.NONE;
 		}
-		if (this.forceNext && detected != Event.NONE) {
-			// the player asked for another shot, that goes before the event
-			this.dismissed = detected;
+		if (forceNext && detected != Event.NONE) {
+
+			dismissed = detected;
 		}
-		Event newEvent = detected == this.dismissed ? Event.NONE : detected;
-		boolean eventOver = newEvent == Event.NONE && this.event != Event.NONE;
-		if (newEvent != this.event) {
-			this.event = newEvent;
+		final Event newEvent = detected == dismissed ? Event.NONE : detected;
+		final boolean eventOver = newEvent == Event.NONE && event != Event.NONE;
+		if (newEvent != event) {
+			event = newEvent;
 			if (newEvent != Event.NONE) {
 				startEvent(subject, rig);
 			}
 		}
-		if (this.event != Event.NONE && this.current != null && rig.ready()) {
-			// the event shot stays for as long as the event lasts
+		if (event != Event.NONE && current != null && rig.ready()) {
+
 			if (subject.teleported) {
 				rig.rebase(subject);
 			}
-			this.current.update(subject, this.config, dt);
+			current.update(subject, config, dt);
 			return;
 		}
 
+		if (current != null && rig.ready() && !held) {
+			lookAhead(subject, rig, dt);
+		}
+		canStay = false;
 		String reason = null;
 		boolean cut = false;
-		if (this.current == null || !rig.ready()) {
+		if (current == null || !rig.ready()) {
 			reason = "start";
 			cut = true;
-		} else if (subject.teleported && this.current.isWorld()) {
+		} else if (subject.teleported && current.isWorld()) {
 			reason = "teleport";
 			cut = true;
 		} else {
 			if (subject.teleported) {
-				// same shot at the new place, a new shot on every teleport hop would be too restless
-				rig.rebase(subject);
-				this.occludedTime = -OCCLUSION_GRACE;
-			}
-			double limit = this.current.isWorld() ? 0.97 : this.config.occlusionRatio;
-			if (rig.arm() < limit) {
-				this.occludedTime += dt;
-			} else {
-				// free again, also lets the grace period run out
-				this.occludedTime = Math.min(0, this.occludedTime + dt);
-			}
-			boolean blocked = this.occludedTime > this.config.occlusionCutTime;
-			boolean finished = this.current.finished(subject);
 
-			if (this.forceNext) {
-				reason = this.forceType != null ? "asked for " + this.forceType : "key";
+				rig.rebase(subject);
+				occludedTime = -OCCLUSION_GRACE;
+			}
+			final double limit = current.isWorld() ? 0.97 : config.occlusionRatio;
+			if (rig.arm() < limit) {
+				occludedTime += dt;
+			} else {
+
+				occludedTime = Math.min(0, occludedTime + dt);
+			}
+			final boolean blocked = occludedTime > config.occlusionCutTime;
+			final boolean finished = current.finished(subject);
+
+			if (forceNext) {
+				reason = forceType != null ? "asked for " + forceType : "key";
 			} else if (eventOver) {
 				reason = "event over";
 			} else if (held) {
-				// a camera that stays behind can't be held forever
-				if (this.current.isWorld() && (blocked || finished)) {
+
+				if (current.isWorld() && (blocked || finished)) {
 					reason = "held shot ended";
 					cut = true;
 				}
-			} else if (blocked) {
+			} else if (blocked && !(subject.atScreen && current.age < BLOCKED_REST)) {
 				reason = "blocked";
-				// swinging the camera through the wall that blocks it would not look good
+
 				cut = true;
 			} else if (finished) {
 				reason = "finished";
-			} else if (this.current.age >= this.current.duration) {
+			} else if (current.age >= current.duration) {
 				reason = "time";
-			} else if (this.current.age > this.config.minShotTime && this.current.type != ShotType.CUSTOM &&
-					!this.current.forced && !(isHome() && this.current.type == ShotType.POV)) {
-				Context now = activity(this.context);
-				if (fit(this.current.type) <= 0) {
-					reason = "unfit for " + this.context;
-				} else if (now != Context.WALK && now != activity(this.shotContext)) {
-					// only when something starts. When a fight or a flight is over the shot may stay, a change of
-					// shot on both ends would be too restless
-					reason = "now " + this.context;
+				canStay = true;
+			} else if (atScreen && subject.feet.y - climbFrom > CLIMBED && current.age > config.minShotTime &&
+					current.type != ShotType.DRONE && current.type != ShotType.CUSTOM && !current.forced) {
+				reason = "climbing";
+				boost = ShotType.DRONE;
+				canStay = true;
+				climbFrom = subject.feet.y;
+			} else if (current.age > config.minShotTime && current.type != ShotType.CUSTOM &&
+					!current.forced && !(isHome() && current.type == ShotType.POV)) {
+				final Context now = activity(context);
+				if (fit(current.type) <= 0) {
+					reason = "unfit for " + context;
+				} else if (now != Context.WALK && now != activity(shotContext)) {
+
+					reason = "now " + context;
+					canStay = true;
 				}
 			}
 		}
@@ -269,14 +316,14 @@ public final class Director {
 		if (reason != null) {
 			choose(subject, rig, cut, reason);
 		}
-		this.current.update(subject, this.config, dt);
+		current.update(subject, config, dt);
 	}
 
 	private Event detectEvent(Subject subject, double dt) {
-		if (!this.config.events) {
+		if (!config.events) {
 			return Event.NONE;
 		}
-		Player player = subject.player;
+		final Player player = subject.player;
 		if (player.isDeadOrDying()) {
 			return Event.DEATH;
 		}
@@ -286,103 +333,106 @@ public final class Director {
 			if (player.fallDistance > 5.0) {
 				falling = true;
 			} else if (player.getDeltaMovement().y < -0.3) {
-				// just went over an edge, don't wait until most of the fall is over
+
 				falling = WorldProbe.groundDistance(subject, 24.0) > 6.0 * subject.unit;
 			}
 		}
 		if (falling) {
-			// also show the landing
-			this.fallTimer = 1.0;
+
+			fallTimer = 1.0;
 		} else {
-			this.fallTimer -= dt;
+			fallTimer -= dt;
 		}
-		if (this.fallTimer > 0) {
+		if (fallTimer > 0) {
 			return Event.FALL;
 		}
 		return subject.guiCenter != null ? Event.MENU : Event.NONE;
 	}
 
 	private void startEvent(Subject subject, Rig rig) {
-		Shot shot = eventShot(subject);
+		final Shot shot = eventShot(subject);
 
-		// a fall is over before the camera could swing there
-		if (this.event != Event.FALL && shot.blends() && this.current != null && rig.ready() && this.current.blends() &&
-				!subject.teleported && this.config.transition != Transition.CUT) {
+		if (event != Event.FALL && shot.blends() && current != null && rig.ready() && current.blends() &&
+				!subject.teleported && config.transition != Transition.CUT) {
 			rig.blend();
 		} else {
 			rig.snap(shot, subject);
 		}
-		this.current = shot;
-		this.lastType = shot.type;
-		this.shotContext = this.context;
-		this.occludedTime = -OCCLUSION_GRACE;
-		this.lastReason = "event " + this.event + (shot.type == this.event.shot ? "" : ", no room");
+		current = shot;
+		lastType = shot.type;
+		shotContext = context;
+		occludedTime = -OCCLUSION_GRACE;
+		lastReason = "event " + event + (shot.type == event.shot ? "" : ", no room");
 	}
 
 	/**
 	 * @return the shot for the event that just started
 	 */
 	private Shot eventShot(Subject subject) {
-		ShotType type = this.event.shot;
-		ShotConfig shotConfig = this.config.shot(type);
-		if (this.event != Event.MENU) {
-			Shot shot = new Shot(type, shotConfig, randomSide());
-			shot.start(subject, this.config);
+		final ShotType type = event.shot;
+		final ShotConfig shotConfig = config.shot(type);
+		if (event != Event.MENU) {
+			final Shot shot = new Shot(type, shotConfig, randomSide());
+			shot.start(subject, config);
 			return shot;
 		}
 
-		// A menu is opened anywhere, also with the back to a wall. Take the shoulder with more room behind it
 		Shot best = null;
 		double bestRoom = -1;
 		for (int side = -1; side <= 1; side += 2) {
-			Shot shot = new Shot(type, shotConfig, side);
-			shot.start(subject, this.config);
-			Vec3 wanted = shot.desiredPosition(subject);
-			double room = wanted.distanceTo(subject.center) *
-					WorldProbe.armFraction(subject, subject.center, wanted, this.config);
+			final Shot shot = new Shot(type, shotConfig, side);
+			shot.start(subject, config);
+			final Vec3 wanted = shot.desiredPosition(subject);
+			final double room = wanted.distanceTo(subject.center) *
+					WorldProbe.armFraction(subject, subject.center, wanted, config);
 			if (room > bestRoom) {
 				bestRoom = room;
 				best = shot;
 			}
 		}
-		if (bestRoom < type.minDistance * subject.unit && this.config.shot(ShotType.POV).enabled) {
-			// no room on either side, the camera would end up inside the player. In first person the menu is
-			// right in front of the camera anyway
-			Shot shot = new Shot(ShotType.POV, this.config.shot(ShotType.POV), 1);
-			shot.start(subject, this.config);
+		if (bestRoom < type.minDistance * subject.unit && config.shot(ShotType.POV).enabled) {
+
+			final Shot shot = new Shot(ShotType.POV, config.shot(ShotType.POV), 1);
+			shot.start(subject, config);
 			return shot;
 		}
 		return best;
 	}
 
 	private void choose(Subject subject, Rig rig, boolean cut, String reason) {
-		Selection selection = new Selection(subject, rig);
-		double distanceScale = (this.context == Context.FLY ? FLY_DISTANCE_SCALE : 1.0) *
-				(this.tight ? TIGHT_DISTANCE_SCALE : 1.0);
+		final Selection selection = new Selection(subject, rig);
+		final double distanceScale = (context == Context.FLY ? FLY_DISTANCE_SCALE : 1.0) *
+				(tight ? TIGHT_DISTANCE_SCALE : 1.0);
 
-		if (this.forceType == ShotType.CUSTOM) {
-			selection.consider(new Shot(ShotType.CUSTOM, this.config.preset(), 1), 1.0, 1.0);
-		} else if (this.forceType != null) {
-			// the player asked for this one, it doesn't have to fit the situation or be enabled
-			selection.considerBothSides(this.forceType, 1.0, distanceScale);
-		} else if (isHome() && this.asides <= 0 && (this.current == null || this.current.type != ShotType.POV)) {
+		if (forceType == ShotType.CUSTOM) {
+			selection.consider(new Shot(ShotType.CUSTOM, config.preset(), 1), 1.0, 1.0);
+		} else if (forceType != null) {
+
+			selection.considerBothSides(forceType, 1.0, distanceScale);
+		} else if (isHome() && asides <= 0 && (current == null || current.type != ShotType.POV)) {
 			selection.considerBothSides(ShotType.POV, 1.0, distanceScale);
 		} else {
-			for (ShotType type : ShotType.values()) {
-				ShotConfig shotConfig = this.config.shot(type);
+			for (final ShotType type : ShotType.values()) {
+				final ShotConfig shotConfig = config.shot(type);
 				if (type == ShotType.CUSTOM || !shotConfig.enabled || (type == ShotType.POV && isHome()) ||
 						(type == ShotType.DUEL && subject.targetCenter == null) ||
 						(type == ShotType.HANDS && !subject.tracksHands)) {
 					continue;
 				}
-				double weight = shotConfig.weight * fit(type) * (type == this.boost ? BOOST : 1.0);
+				if (atScreen && config.calmShots && (type == ShotType.FRONT || type == ShotType.LOW)) {
+					continue;
+				}
+				if (type == ShotType.DRONE && !atScreen) {
+					continue;
+				}
+				final double weight = shotConfig.weight * fit(type) * (type == boost ? BOOST : 1.0) * terrainFit(type);
 				if (weight > 0) {
 					selection.considerBothSides(type, weight, distanceScale);
 				}
 			}
-			if (this.config.customInRotation) {
-				// hand placed shots only have the side they were placed on
-				for (ShotConfig preset : this.config.presets) {
+			if (config.customInRotation) {
+
+				for (final ShotConfig preset : config.presets) {
 					if (preset.enabled && preset.weight > 0) {
 						selection.consider(new Shot(ShotType.CUSTOM, preset, 1), preset.weight, 1.0);
 					}
@@ -391,28 +441,31 @@ public final class Director {
 		}
 
 		Shot next = selection.best;
-		if (next == null) {
+		if (next == null && canStay && current != null) {
+			reason += ", nowhere better";
+			next = current;
+		} else if (next == null) {
 			reason += ", no room";
 			next = fallback(subject, distanceScale);
 		}
 
-		next.forced = this.forceType != null;
-		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, this.random.nextDouble()) *
-				(this.context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
+		next.forced = forceType != null;
+		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, random.nextDouble()) *
+				(context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
 		if (isHome() && !next.forced) {
 			if (next.type == ShotType.POV) {
-				next.duration = this.config.povHomeSeconds;
-				this.asides = HOME_ASIDES + this.random.nextInt(2);
+				next.duration = config.povHomeSeconds;
+				asides = HOME_ASIDES + random.nextInt(2);
 			} else {
-				this.asides--;
+				asides--;
 			}
 		}
 
-		if (next == this.current) {
-			// still the only shot with room, carry on with it
+		if (next == current) {
+
 			next.age = 0;
 			reason += ", kept";
-		} else if (!cut && next.blends() && this.current != null && this.current.blends() && wantsBlend(next)) {
+		} else if (!cut && next.blends() && current != null && current.blends() && wantsBlend(next)) {
 			rig.blend();
 			reason += ", blend";
 		} else {
@@ -420,14 +473,14 @@ public final class Director {
 			reason += ", cut";
 		}
 
-		this.current = next;
-		this.lastType = next.type;
-		this.shotContext = this.context;
-		this.boost = null;
-		this.forceNext = false;
-		this.forceType = null;
-		this.occludedTime = -OCCLUSION_GRACE;
-		this.lastReason = reason;
+		current = next;
+		lastType = next.type;
+		shotContext = context;
+		boost = null;
+		forceNext = false;
+		forceType = null;
+		occludedTime = -OCCLUSION_GRACE;
+		lastReason = reason;
 	}
 
 	/**
@@ -435,23 +488,93 @@ public final class Director {
 	 * other shots in between
 	 */
 	private boolean isHome() {
-		return this.config.povHome && this.atScreen;
+		return config.povHome && atScreen;
 	}
 
 	/**
 	 * @return how well a shot fits what the player is doing and where, 0 means it should not be used
 	 */
+	/**
+	 * Looks where the player is going. A wall that will be between them and the camera in a moment is no reason
+	 * to wait until it is: if the other side of them is free, now and then, the camera swings over to there in
+	 * one move
+	 */
+	private void lookAhead(Subject subject, Rig rig, double dt) {
+		sinceSwing += dt;
+		aheadTimer -= dt;
+		if (aheadTimer > 0) {
+			return;
+		}
+		aheadTimer = AHEAD_INTERVAL;
+		final Vec3 travel = new Vec3(subject.velocity.x, 0, subject.velocity.z);
+		if (!subject.atScreen || subject.seenThrough || sinceSwing < SWING_REST || travel.length() < AHEAD_SPEED ||
+				!current.blends() || current.exactAim() || current.forced || current.type.orbits() ||
+				current.type == ShotType.DRONE || current.type == ShotType.CUSTOM) {
+			return;
+		}
+		final Vec3 step = travel.scale(AHEAD_SECONDS);
+		final double needed = config.occlusionRatio + ROOM_TO_SPARE;
+		if (freeAhead(subject, current, step) >= needed) {
+			return;
+		}
+		final Shot other = new Shot(current.type, current.config, -current.side);
+		other.distanceScale = current.distanceScale;
+		other.start(subject, config);
+		if (freeAhead(subject, other, Vec3.ZERO) < needed || freeAhead(subject, other, step) < needed) {
+			return;
+		}
+		other.age = current.age;
+		other.duration = current.duration;
+		rig.blend();
+		current = other;
+		sinceSwing = 0;
+		occludedTime = -OCCLUSION_GRACE;
+		lastReason = "wall ahead, other side";
+	}
+
+	/**
+	 * @return how much of the way from the player to the camera of a shot is free, once both are further along
+	 */
+	private double freeAhead(Subject subject, Shot shot, Vec3 step) {
+		return WorldProbe.armFraction(subject, subject.center.add(step), shot.desiredPosition(subject).add(step),
+				config);
+	}
+
+	/**
+	 * @return how much more or less a shot is worth where the ground is steep or grown over: a camera near the
+	 * ground is in a slope or behind a tree there, one high above is not
+	 */
+	/**
+	 * @return how far out a shot is, of what its settings say. A drone is not as far every time
+	 */
+	private double reach(ShotType type, double scale) {
+		return type != ShotType.DRONE ? scale :
+				scale * (DRONE_NEAREST + (DRONE_FURTHEST - DRONE_NEAREST) * random.nextDouble());
+	}
+
+	private double terrainFit(ShotType type) {
+		if (!rough) {
+			return 1.0;
+		}
+		return switch (type) {
+			case DRONE -> ROUGH_DRONE;
+			case CRANE -> ROUGH_CRANE;
+			case FLYBY -> ROUGH_FLYBY;
+			case LOW -> 0.0;
+			default -> 1.0;
+		};
+	}
+
 	private double fit(ShotType type) {
 		if (type == ShotType.POV) {
-			// At a screen it is the view the player has themselves, with their hand and what they do with it: worth
-			// a cut now and then. In VR it is the shaking view of a headset, for where nothing else fits
-			return this.tight ? TIGHT_POV_FIT : this.atScreen ? SCREEN_POV_FIT : 0.0;
+
+			return tight ? TIGHT_POV_FIT : atScreen ? SCREEN_POV_FIT : 0.0;
 		}
-		if (type == ShotType.DUEL && this.partnered) {
-			// the shot that has two in the picture, for the friend the player films with
+		if (type == ShotType.DUEL && partnered) {
+
 			return PARTNER_FIT;
 		}
-		return type.weight(this.context) * (this.tight ? type.tightFactor : 1.0);
+		return type.weight(context) * (tight ? type.tightFactor : 1.0);
 	}
 
 	/**
@@ -459,108 +582,119 @@ public final class Director {
 	 * does that by moving it closer to the player, up to inside of them
 	 */
 	private Shot fallback(Subject subject, double distanceScale) {
-		if (this.forceType != null) {
-			// asked for, so shown anyway
-			Shot shot = new Shot(this.forceType, this.config.shot(this.forceType),
-					this.forceType == ShotType.CUSTOM ? 1 : randomSide());
-			shot.distanceScale = distanceScale;
-			shot.start(subject, this.config);
+		if (forceType != null) {
+
+			final Shot shot = new Shot(forceType, config.shot(forceType),
+					forceType == ShotType.CUSTOM ? 1 : randomSide());
+			shot.distanceScale = reach(forceType, distanceScale);
+			shot.start(subject, config);
 			return shot;
 		}
-		// first person needs no room, without it stay close behind the player
-		boolean firstPerson = this.config.shot(ShotType.POV).enabled;
-		ShotType type = firstPerson ? ShotType.POV : ShotType.SHOULDER;
-		if (this.current != null && this.current.type == type && !this.current.forced) {
-			return this.current;
+
+		final boolean firstPerson = config.shot(ShotType.POV).enabled;
+		final ShotType type = firstPerson ? ShotType.POV : ShotType.SHOULDER;
+		if (current != null && current.type == type && !current.forced) {
+			return current;
 		}
-		Shot shot = new Shot(type, this.config.shot(type), randomSide());
+		final Shot shot = new Shot(type, config.shot(type), randomSide());
 		shot.distanceScale = firstPerson ? 1.0 : FALLBACK_DISTANCE_SCALE;
-		shot.start(subject, this.config);
+		shot.start(subject, config);
 		return shot;
 	}
 
 	private int randomSide() {
-		return this.random.nextBoolean() ? 1 : -1;
+		return random.nextBoolean() ? 1 : -1;
 	}
 
 	private boolean wantsBlend(Shot next) {
-		return switch (this.config.transition) {
+		return switch (config.transition) {
 			case CUT -> false;
 			case BLEND -> true;
-			// swinging more than a third around the player takes too long
-			case AUTO -> this.random.nextDouble() < this.config.blendChance &&
-					Math.abs(CamMath.wrap(next.azimuth - this.current.azimuth)) < Math.toRadians(130);
+
+			case AUTO -> random.nextDouble() < config.blendChance &&
+					Math.abs(CamMath.wrap(next.azimuth - current.azimuth)) < Math.toRadians(130);
 		};
 	}
 
 	private void updateContext(Subject subject, double dt) {
-		Minecraft mc = Minecraft.getInstance();
-		Player player = subject.player;
-		this.partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
+		final Minecraft mc = Minecraft.getInstance();
+		final Player player = subject.player;
+		partnered = subject.partner != null && subject.target == null && subject.targetCenter != null;
 
-		this.combatTimer -= dt;
-		Entity attacked = this.attacked;
+		combatTimer -= dt;
+		final Entity attacked = this.attacked;
 		this.attacked = null;
 		if (attacked instanceof LivingEntity && attacked.isAlive()) {
-			// hitting a boat or an item frame is no fight
-			this.combatTimer = 5.0;
+
+			combatTimer = 5.0;
 			subject.target = attacked;
 		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
-			// only what was done by someone is a fight, not falling or burning
-			DamageSource source = player.getLastDamageSource();
-			Entity attacker = source == null ? null : source.getEntity();
+
+			final DamageSource source = player.getLastDamageSource();
+			final Entity attacker = source == null ? null : source.getEntity();
 			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
-				this.combatTimer = 5.0;
+				combatTimer = 5.0;
 				subject.target = attacker;
 			}
 		}
 		if (player.isDeadOrDying() && subject.target != null) {
-			// keep the killer for the death shot
-			this.combatTimer = 5.0;
+
+			combatTimer = 5.0;
 		}
-		if (subject.target != null && (this.combatTimer <= 0 ||
+		if (subject.target != null && (combatTimer <= 0 ||
 				subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
 		)) {
 			subject.target = null;
 		}
-		// counts as mining after a second of it, breaking one block on the way is not worth a change of shot
+
 		if (mc.gameMode != null && mc.gameMode.isDestroying()) {
-			this.mineTime = Math.min(3.0, this.mineTime + dt);
+			mineTime = Math.min(3.0, mineTime + dt);
 		} else {
-			this.mineTime = Math.max(0.0, this.mineTime - 0.5 * dt);
+			mineTime = Math.max(0.0, mineTime - 0.5 * dt);
 		}
-		this.stillTime = subject.speed > 0.5 ? 0 : this.stillTime + dt;
+		stillTime = subject.speed > 0.5 ? 0 : stillTime + dt;
+		climbFrom += CLIMB_FORGET * dt;
+		if (!(climbFrom < subject.feet.y) || player.isFallFlying() || player.isPassenger() || player.isInWater() ||
+				player.getAbilities().flying) {
+			climbFrom = subject.feet.y;
+		}
+		terrainTimer -= dt;
+		if (terrainTimer <= 0) {
+			terrainTimer = TERRAIN_INTERVAL;
+			final Holder<Biome> biome = player.level().getBiome(player.blockPosition());
+			rough = ROUGH_BIOMES.stream().anyMatch(biome::is);
+		}
 
-		Context previous = this.context;
+		final Context previous = context;
 		if (player.isFallFlying()) {
-			this.context = Context.FLY;
+			context = Context.FLY;
 		} else if (player.isPassenger()) {
-			this.context = Context.RIDE;
-		} else if (this.combatTimer > 0) {
-			this.context = Context.COMBAT;
-		} else if (this.mineTime > 1.0) {
-			this.context = Context.MINE;
+			context = Context.RIDE;
+		} else if (combatTimer > 0) {
+			context = Context.COMBAT;
+		} else if (mineTime > 1.0) {
+			context = Context.MINE;
 		} else if (player.isSwimming() || player.isInWater()) {
-			this.context = Context.SWIM;
+			context = Context.SWIM;
 		} else if (subject.speed > 4.8) {
-			this.context = Context.RUN;
-		} else if (this.stillTime > 1.2) {
-			this.context = Context.IDLE;
-		} else if (subject.speed > 0.5 || this.context != Context.IDLE) {
-			// short stops while walking don't count as standing around
-			this.context = Context.WALK;
+			context = Context.RUN;
+		} else if (stillTime > 1.2) {
+			context = Context.IDLE;
+		} else if (subject.speed > 0.5 || context != Context.IDLE) {
+
+			context = Context.WALK;
 		}
-		if (this.context == Context.FLY && previous != Context.FLY) {
-			// show the take off from the ground
-			this.boost = ShotType.FLYBY;
+		if (context == Context.FLY && previous != Context.FLY) {
+
+			boost = ShotType.FLYBY;
 		}
 
-		this.tightTimer -= dt;
-		if (this.tightTimer <= 0) {
-			this.tightTimer = 0.5;
-			this.tight = WorldProbe.openness(subject) < 0.55;
+		tightTimer -= dt;
+		if (tightTimer <= 0) {
+			tightTimer = 0.5;
+			tight = WorldProbe.openness(subject) < 0.55;
 		}
-		this.atScreen = !subject.tracksHands;
+		atScreen = !subject.tracksHands;
 	}
 
 	/**
@@ -587,11 +721,9 @@ public final class Director {
 	 */
 	private final class Selection {
 		private final Subject subject;
-		// direction the camera looks in right now, null if there is no camera position yet
+
 		private final Vec3 viewDir;
-		// The line the player moves along has a left and a right side, the camera should stay on one of them from
-		// shot to shot. Otherwise the player runs to the right in one shot and to the left in the next.
-		// This points to the right side
+
 		private final Vec3 right;
 		private final int currentSide;
 		private final boolean headInFluid;
@@ -603,60 +735,68 @@ public final class Director {
 			this.subject = subject;
 			Vec3 travel = new Vec3(subject.velocity.x, 0, subject.velocity.z);
 			travel = travel.length() > 1.0 ? travel.normalize() : CamMath.forward(subject.facing);
-			this.right = new Vec3(-travel.z, 0, travel.x);
-			this.headInFluid = WorldProbe.inFluid(subject, subject.head);
+			right = new Vec3(-travel.z, 0, travel.x);
+			headInFluid = WorldProbe.inFluid(subject, subject.head);
 			if (rig.ready()) {
-				this.viewDir = subject.center.subtract(rig.position()).normalize();
-				this.currentSide = side(rig.position());
+				viewDir = subject.center.subtract(rig.position()).normalize();
+				currentSide = side(rig.position());
 			} else {
-				this.viewDir = null;
-				this.currentSide = 0;
+				viewDir = null;
+				currentSide = 0;
 			}
 		}
 
 		void considerBothSides(ShotType type, double weight, double distanceScale) {
-			ShotConfig shotConfig = Director.this.config.shot(type);
+			final ShotConfig shotConfig = config.shot(type);
 			consider(new Shot(type, shotConfig, -1), weight, distanceScale);
 			consider(new Shot(type, shotConfig, 1), weight, distanceScale);
 		}
 
+		/**
+		 * Weighs a shot against the best one so far. One the camera would be cut away from for being blocked is
+		 * left out here already, and so is one that is close to that: a shot is picked once, not tried and dropped
+		 */
 		void consider(Shot shot, double weight, double distanceScale) {
-			shot.distanceScale = distanceScale;
-			shot.start(this.subject, Director.this.config);
+			shot.distanceScale = reach(shot.type, distanceScale);
+			shot.start(subject, config);
 
-			Vec3 center = this.subject.center;
-			Vec3 wanted = shot.desiredPosition(this.subject);
-			double free = WorldProbe.armFraction(this.subject, center, wanted, Director.this.config);
-			// a camera that stays in place is only good at the spot it was planned for
+			final Vec3 center = subject.center;
+			final Vec3 wanted = shot.desiredPosition(subject);
+			final double free = WorldProbe.armFraction(subject, center, wanted, config);
+
 			if (shot.isWorld() && free < 0.9) {
 				return;
 			}
-			Vec3 actual = center.lerp(wanted, free);
-			if (actual.distanceTo(center) < shot.type.minDistance * this.subject.unit) {
+			if (forceType == null && !subject.seenThrough && free < config.occlusionRatio + ROOM_TO_SPARE) {
+				return;
+			}
+			final Vec3 actual = center.lerp(wanted,
+					subject.seenThrough ? Rig.outOfSolid(subject, wanted, free) : free);
+			if (actual.distanceTo(center) < shot.type.minDistance * subject.unit) {
 				return;
 			}
 
-			double score = weight * (0.35 + 0.65 * free) * (0.8 + 0.4 * Director.this.random.nextDouble());
-			if (!WorldProbe.visible(this.subject, actual, this.subject.head)) {
+			double score = weight * (0.35 + 0.65 * free) * (0.8 + 0.4 * random.nextDouble());
+			if (!WorldProbe.visible(subject, actual, subject.head)) {
 				score *= HIDDEN_HEAD_PENALTY;
 			}
-			// don't film from under water when the player is above, or the other way around
-			if (WorldProbe.inFluid(this.subject, actual) != this.headInFluid) {
+
+			if (WorldProbe.inFluid(subject, actual) != headInFluid) {
 				score *= ACROSS_WATER_PENALTY;
 			}
-			if (shot.type == Director.this.lastType) {
+			if (shot.type == lastType) {
 				score *= SAME_TYPE_PENALTY;
 			}
-			// a new shot should look clearly different, or it reads as a glitch
-			if (this.viewDir != null && this.viewDir.dot(center.subtract(actual).normalize()) > SIMILAR_VIEW_DOT) {
+
+			if (viewDir != null && viewDir.dot(center.subtract(actual).normalize()) > SIMILAR_VIEW_DOT) {
 				score *= SIMILAR_VIEW_PENALTY;
 			}
-			if (!shot.type.orbits() && this.currentSide * side(actual) < 0) {
+			if (!shot.type.orbits() && currentSide * side(actual) < 0) {
 				score *= CROSSED_LINE_PENALTY;
 			}
-			if (score > this.bestScore) {
-				this.bestScore = score;
-				this.best = shot;
+			if (score > bestScore) {
+				bestScore = score;
+				best = shot;
 			}
 		}
 
@@ -665,12 +805,12 @@ public final class Director {
 		 * close to that line
 		 */
 		private int side(Vec3 cameraPos) {
-			Vec3 offset = cameraPos.subtract(this.subject.center);
-			double length = offset.length();
+			final Vec3 offset = cameraPos.subtract(subject.center);
+			final double length = offset.length();
 			if (length < 1.0E-3) {
 				return 0;
 			}
-			double lateral = offset.dot(this.right) / length;
+			final double lateral = offset.dot(right) / length;
 			return Math.abs(lateral) < 0.2 ? 0 : (int) Math.signum(lateral);
 		}
 	}

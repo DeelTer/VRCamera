@@ -32,26 +32,26 @@ public final class SecondButton {
 	 * @return if another button is down on that hand
 	 */
 	public boolean isDown(int hand) {
-		if (this.unavailable || !(MCVR.get() instanceof MCOpenVR vr)) {
+		if (unavailable || !(MCVR.get() instanceof MCOpenVR vr)) {
 			return false;
 		}
 		try {
-			Set<VRInputAction> down = down(vr, ControllerType.values()[hand]);
+			final Set<VRInputAction> down = down(vr, ControllerType.values()[hand]);
 			if (hand != this.hand) {
-				// just grabbed: what is down now is the button it was grabbed with
+
 				this.hand = hand;
-				this.heldSinceGrab.clear();
-				this.heldSinceGrab.addAll(down);
+				heldSinceGrab.clear();
+				heldSinceGrab.addAll(down);
 				return false;
 			}
-			// let go of and pressed again it would count, there is no telling it from the other one anymore
-			this.heldSinceGrab.retainAll(down);
-			return down.size() > this.heldSinceGrab.size();
+
+			heldSinceGrab.retainAll(down);
+			return down.size() > heldSinceGrab.size();
 		} catch (ReflectiveOperationException | RuntimeException e) {
-			// Vivecraft changed, or there is no such input. Photos can still be taken the other ways
+
 			Vrcamera.LOGGER.warn("VRCamera: can't read controller buttons, the photo button on the camera hand is off",
 					e);
-			this.unavailable = true;
+			unavailable = true;
 			return false;
 		}
 	}
@@ -60,13 +60,13 @@ public final class SecondButton {
 	 * the camera is not held anymore
 	 */
 	public void reset() {
-		this.hand = -1;
-		this.heldSinceGrab.clear();
+		hand = -1;
+		heldSinceGrab.clear();
 	}
 
 	private Set<VRInputAction> down(MCOpenVR vr, ControllerType hand) throws ReflectiveOperationException {
-		Set<VRInputAction> down = new HashSet<>();
-		for (VRInputAction action : vr.getInputActions()) {
+		final Set<VRInputAction> down = new HashSet<>();
+		for (final VRInputAction action : vr.getInputActions()) {
 			if (!action.type.equals("boolean")) {
 				continue;
 			}
@@ -82,11 +82,11 @@ public final class SecondButton {
 	}
 
 	private ControllerType controllerOf(MCOpenVR vr, long origin) throws ReflectiveOperationException {
-		if (this.controllerOfOrigin == null) {
-			// not public in Vivecraft, and nothing public says which controller a button is on
-			this.controllerOfOrigin = MCOpenVR.class.getDeclaredMethod("getOriginControllerType", long.class);
-			this.controllerOfOrigin.setAccessible(true);
+		if (controllerOfOrigin == null) {
+
+			controllerOfOrigin = MCOpenVR.class.getDeclaredMethod("getOriginControllerType", long.class);
+			controllerOfOrigin.setAccessible(true);
 		}
-		return (ControllerType) this.controllerOfOrigin.invoke(vr, origin);
+		return (ControllerType) controllerOfOrigin.invoke(vr, origin);
 	}
 }

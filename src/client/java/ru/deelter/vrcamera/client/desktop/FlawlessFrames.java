@@ -15,7 +15,7 @@ import java.util.function.Function;
  * game stands still each time new ones come into view.
  */
 public final class FlawlessFrames implements Consumer<Function<String, Consumer<Boolean>>> {
-	// what the classes of the mods that are asked have in their names
+
 	private static final List<String> FRAME_LIMITERS = List.of("dynamic_fps");
 	private static final List<Consumer<Boolean>> LISTENERS = new ArrayList<>();
 	private static boolean wanted;
@@ -29,7 +29,7 @@ public final class FlawlessFrames implements Consumer<Function<String, Consumer<
 
 	@Override
 	public void accept(Function<String, Consumer<Boolean>> provider) {
-		String asker = provider.getClass().getName();
+		final String asker = provider.getClass().getName();
 		if (FRAME_LIMITERS.stream().anyMatch(asker::contains)) {
 			LISTENERS.add(provider.apply("vrcamera"));
 		}

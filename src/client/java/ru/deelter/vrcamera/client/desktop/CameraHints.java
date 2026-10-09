@@ -3,6 +3,7 @@ package ru.deelter.vrcamera.client.desktop;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 
 import java.util.EnumMap;
@@ -14,7 +15,6 @@ import java.util.Map;
  * own. Each time something else can be done with the camera, and not over and over: they are read once.
  */
 final class CameraHints {
-	// the same hint is not shown again sooner than this, and none right after the camera said something else
 	private static final long AGAIN_NANOS = 30_000_000_000L;
 	private static final long QUIET_NANOS = 2_500_000_000L;
 	private static final Map<Hint, Long> SHOWN = new EnumMap<>(Hint.class);
@@ -35,23 +35,24 @@ final class CameraHints {
 	 * @param now what the player is doing with the camera, null for nothing a hint is worth
 	 * @return the hint to show, null for none
 	 */
+	@Nullable
 	static Component next(Hint now) {
-		Hint before = last;
+		final Hint before = last;
 		last = now;
 		if (now == null || now == before || !CameraConfig.current().hints) {
 			return null;
 		}
-		// what the keys are is said when the camera is turned on, not every time it is let go of
+
 		if (now.isIdle() && before != null && !before.isIdle()) {
 			return null;
 		}
-		long time = System.nanoTime();
-		Long shown = SHOWN.get(now);
+		final long time = System.nanoTime();
+		final Long shown = SHOWN.get(now);
 		if (time - spoke < QUIET_NANOS || (shown != null && time - shown < AGAIN_NANOS)) {
 			return null;
 		}
 		SHOWN.put(now, time);
-		Object[] keys = new Object[now.keys.length];
+		final Object[] keys = new Object[now.keys.length];
 		for (int key = 0; key < keys.length; key++) {
 			keys[key] = keyName(now.keys[key]);
 		}
@@ -74,7 +75,8 @@ final class CameraHints {
 	 * what the player is doing with the camera, and the keys of the mod its hint names
 	 */
 	enum Hint {
-		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_OTHER, HOLD, HOLD_FREE, STEER;
+		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_FREE("preset.remove"), AIM_OTHER, HOLD,
+		HOLD_FREE, STEER;
 
 		private final String[] keys;
 

@@ -48,25 +48,18 @@ import java.util.logging.Level;
  */
 public final class SyncPlugin extends JavaPlugin implements PluginMessageListener, Listener, CameraApi {
 	private static final double PIN_REACH = 8.0;
-	// how many photos /vrcamsync list writes out at most, chat is not endless
 	private static final int LIST_MOST = 30;
 	private static final int RANGE_INTERVAL_TICKS = 10;
 	private static final int SAVE_INTERVAL_TICKS = 200;
-	// What a client may send: this many messages per second, and this many at once. An honest one sends a
-	// handful per minute, and ten per second while its camera is on
 	private static final double MESSAGES_PER_SECOND = 40.0;
 	private static final double MESSAGES_BURST = 50.0;
-	// blocks a camera can be from the player it belongs to
 	private static final double CAMERA_LEASH = 48.0;
-	// blocks a sheet a player threw or dropped can be from them while they still move it
 	private static final double LOOSE_LEASH = 64.0;
 	private static final long LOOSE_COOLDOWN = 700;
 	private static final long SHUTTER_COOLDOWN = 500;
 	private static final long SWITCH_COOLDOWN = 200;
-	// after this many messages over that, the client is not listened to for a while
 	private static final int DROPPED_BEFORE_IGNORED = 200;
 	private static final long IGNORED_MILLIS = 60_000;
-	// the largest message a client can send at all
 	private static final int MAX_MESSAGE_BYTES = 32767;
 	private static final float[] QUALITIES = {0.8F, 0.65F, 0.5F, 0.35F, 0.25F};
 	private final LooseSheets loose = new LooseSheets();
@@ -129,7 +122,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			}
 			return null;
 		} catch (IOException | RuntimeException e) {
-			// the readers of Java throw all kinds of things at broken files
 			return null;
 		}
 	}
@@ -137,7 +129,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private static long hash(byte[] image) {
 		try {
 			long hash = ByteBuffer.wrap(MessageDigest.getInstance("SHA-256").digest(image)).getLong();
-			// 0 stands for no picture
 			return hash == 0 ? 1 : hash;
 		} catch (NoSuchAlgorithmException e) {
 			throw new IllegalStateException(e);
@@ -156,7 +147,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	public void onEnable() {
 		saveDefaultConfig();
 		readConfig();
-		// pictures are checked in memory, no temp files for that
 		ImageIO.setUseCache(false);
 
 		this.store = new SheetStore(getDataFolder().toPath(), getLogger());
@@ -309,21 +299,16 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				}
 			}
 		} catch (IOException | RuntimeException e) {
-			// a client that sends nonsense is ignored, not kicked: it may just be a newer or older mod
 			getLogger().log(Level.FINE, "Bad message from " + player.getName(), e);
 		}
 	}
 
 	private void hello(Player player, int version) {
 		if (version != Protocol.VERSION) {
-			// it gets no answer and plays on its own, as on a server without this plugin
 			getLogger().info(player.getName() + " has a VRCamera mod that speaks protocol " + version + ", this is " +
 					Protocol.VERSION);
 			return;
 		}
-		// Known once per connection, or every hello would make the server tell about all sheets around again.
-		// Answered every time: the first answer is lost if the client says hello before it said which channels it
-		// listens on, the server does not send into a channel nobody listens on
 		if (this.clients.putIfAbsent(player.getUniqueId(), new Client()) == null) {
 			getLogger().info(player.getName() + " has the VRCamera mod");
 		}
@@ -350,7 +335,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		double dx = camera.x() - at.getX();
 		double dy = camera.y() - at.getY();
 		double dz = camera.z() - at.getZ();
-		// A camera stays near its player. One far off is a lie, and could be put in front of anyone's face
 		if (!this.shareCameras || !Float.isFinite(length) || length < 1.0E-3F ||
 				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH)) {
 			return;
@@ -365,8 +349,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		watchers.forEach(watcher -> send(watcher, message));
 	}
 
-	// ---- free cameras other plugins give players
-
 	/**
 	 * @return false if the camera is too far from its player to be theirs, and nobody was told
 	 */
@@ -375,7 +357,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		double dx = x - at.getX();
 		double dy = y - at.getY();
 		double dz = z - at.getZ();
-		// like the camera it comes from, it stays near its player
 		if (!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH)) {
 			return false;
 		}
@@ -396,8 +377,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				watchers.add(watcher);
 			}
 		}
-		// In a crowd everyone would be told about every camera of everyone, many times per second. The nearest
-		// ones are, who are the ones to see it
 		if (watchers.size() > this.cameraWatchers) {
 			watchers.sort(Comparator.comparingDouble(watcher -> watcher.getLocation().distanceSquared(at)));
 			return watchers.subList(0, this.cameraWatchers);
@@ -472,7 +451,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				if (!(sender instanceof Player admin) || id.isBlank() || id.length() > Protocol.MAX_CAMERA_ID) {
 					return false;
 				}
-				// where the admin stands and looks is where the camera goes
 				done = placeCamera(target, CameraView.builder(id).location(admin.getEyeLocation()).replace(true).build());
 			}
 			case "remove" -> done = !id.isEmpty() && removeCamera(target, id);
@@ -505,7 +483,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		double dx = sheet.pose().x() - at.getX();
 		double dy = sheet.pose().y() - at.getY();
 		double dz = sheet.pose().z() - at.getZ();
-		// it comes out of the camera, which is somewhere around its player
 		boolean refused = this.maxLoose == 0 || client.sharingLoose || now - client.lastLoose < LOOSE_COOLDOWN ||
 				!player.hasPermission("vrcamera.pin") || (sheet.custom() && !mayCustom(player)) ||
 				!worldAllowed(player.getWorld()) || !sheet.pose().isSane() ||
@@ -534,7 +511,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					send(still, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), 0, 0)));
 					return;
 				}
-				// more than a player may have lying around: the oldest go, for everyone and for the player too
 				List<LooseSheets.Sheet> own = this.loose.of(owner);
 				for (int i = 0; i <= own.size() - this.maxLoose; i++) {
 					removeLoose(own.get(i), true);
@@ -584,7 +560,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				sheet.world.equals(player.getWorld().getUID()) &&
 				sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= PIN_REACH * PIN_REACH;
 		if (!allowed) {
-			// Someone else was faster, or it is gone. The client took it already and has to let go of it again
 			client.knownLoose.remove(id);
 			send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, id));
 			return;
@@ -592,7 +567,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		Player before = Bukkit.getPlayer(sheet.owner);
 		Client beforeClient = this.clients.get(sheet.owner);
 		if (before != null && beforeClient != null) {
-			// forgotten, so the next look at who is near what tells them about it again, as someone else's
 			beforeClient.knownLoose.remove(id);
 			send(before, Protocol.looseId(Protocol.S_LOOSE_GONE, id));
 		}
@@ -634,11 +608,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	private void wantImage(Client client, long hash) {
-		// only so many wait at once, a client can't make the server queue up without end
 		if (client.wantedImages.size() >= this.imageQueue || client.wantedImages.contains(hash)) {
 			return;
 		}
-		// only pictures of sheets it was told about, not whatever hash it comes up with
 		for (long id : client.known) {
 			StoredSheet sheet = this.store.get(id);
 			if (sheet != null && sheet.imageHash() == hash) {
@@ -682,7 +654,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		PhotoPinEvent event = new PhotoPinEvent(player, new Location(player.getWorld(), pin.x(), pin.y(), pin.z()),
 				player.getWorld().getBlockAt(pin.blockX(), pin.blockY(), pin.blockZ()), pin.custom());
 		if (!event.callEvent()) {
-			// another plugin has a say: a region that is protected, a player who is muted
 			send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), Protocol.PIN_NOT_ALLOWED, 0, 0)));
 			return;
 		}
@@ -691,7 +662,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		UUID world = player.getWorld().getUID();
 		UUID owner = player.getUniqueId();
 		String ownerName = player.getName();
-		// reading the picture and writing it to disk is not for the server thread
 		Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
 			long hash = 0;
 			CleanPicture clean = clean(pin.image(), this.maxImageBytes);
@@ -716,7 +686,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		if (client != null) {
 			client.pinning = false;
 		}
-		// The turn as a unit quaternion. Anything else also scales, and a sheet could be made to fill the sky
 		float length = (float) Math.sqrt(pin.qx() * pin.qx() + pin.qy() * pin.qy() + pin.qz() * pin.qz() +
 				pin.qw() * pin.qw());
 		if (length < 1.0E-3F) {
@@ -724,11 +693,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			length = 1.0F;
 		}
 		byte result = imageHash == 0 ? Protocol.PIN_BAD_IMAGE : Protocol.PIN_OK;
-		// asked again: two pins of one player can be on their way at once
 		if (result == Protocol.PIN_OK && this.store.ownedBy(owner) >= this.maxPerPlayer) {
 			result = Protocol.PIN_TOO_MANY;
 		}
-		// the shape of the sheet is the shape of the picture, not what the client says it is
 		StoredSheet sheet = new StoredSheet(this.store.newId(), world, owner, ownerName, pin.blockX(), pin.blockY(),
 				pin.blockZ(), pin.x(), pin.y(), pin.z(), pin.qx() / length, pin.qy() / length, pin.qz() / length,
 				pin.qw() / length, clean == null ? 1.0F : clean.aspect, imageHash, pin.custom());
@@ -750,9 +717,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		getLogger().info(ownerName + " pinned photo " + sheet.id() + " at " + pin.blockX() + " " + pin.blockY() + " " +
 				pin.blockZ());
 		this.store.cacheImage(imageHash, clean.jpeg);
-		// heard by everyone around, with the mod or without
 		sound(sheet, Sound.ENTITY_ITEM_FRAME_PLACE);
-		// The one who pinned it has it already. The others get it with the next look at who is near what
 		client.known.add(sheet.id());
 		send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), Protocol.PIN_OK, sheet.id(),
 				imageHash)));
@@ -775,7 +740,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		if (!sane) {
 			return Protocol.PIN_BAD_IMAGE;
 		}
-		// Within reach of the player, and on the block it claims to be on. Or anyone could pin anywhere
 		Location location = player.getLocation();
 		double dx = pin.x() - location.getX();
 		double dy = pin.y() - location.getY();
@@ -786,7 +750,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		if (dx * dx + dy * dy + dz * dz > PIN_REACH * PIN_REACH || bx * bx + by * by + bz * bz > 4.0) {
 			return Protocol.PIN_TOO_FAR;
 		}
-		// loaded for sure, it is within reach of a player
 		if (player.getWorld().getBlockAt(pin.blockX(), pin.blockY(), pin.blockZ()).getType().isAir()) {
 			return Protocol.PIN_TOO_FAR;
 		}
@@ -836,7 +799,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private void unpin(Player player, long id) {
 		StoredSheet sheet = this.store.get(id);
 		if (sheet == null) {
-			// already gone, the client did not get that yet
 			send(player, Protocol.remove(id, Protocol.REMOVED_TAKEN));
 			return;
 		}
@@ -867,7 +829,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * tells every client about the photos that came into its range, and to forget the ones that are far away
 	 */
 	private void updateRanges() {
-		// nobody said anything about it for too long: its owner is gone in some way that was not noticed
 		long expired = System.currentTimeMillis() - this.looseLifetime;
 		for (LooseSheets.Sheet sheet : new ArrayList<>(this.loose.all())) {
 			if (sheet.touched < expired) {
@@ -920,7 +881,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					known.remove();
 				} else if (!sheet.owner.equals(player.getUniqueId()) && (!sheet.world.equals(world) ||
 						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget)) {
-					// its own are the client's to keep track of, wherever it walks
 					send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, sheet.id));
 					known.remove();
 				}
@@ -945,7 +905,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	@EventHandler
 	public void onChannel(PlayerRegisterChannelEvent event) {
-		// its hello came before this, and the answer to that went nowhere
 		if (Protocol.CHANNEL.equals(event.getChannel()) && this.clients.containsKey(event.getPlayer().getUniqueId())) {
 			sendHello(event.getPlayer());
 		}
@@ -959,7 +918,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	@EventHandler
 	public void onWorldChange(PlayerChangedWorldEvent event) {
-		// what a player left lying in the other world is not theirs to move anymore
 		this.loose.of(event.getPlayer().getUniqueId()).forEach(sheet -> removeLoose(sheet, false));
 		Client client = this.clients.get(event.getPlayer().getUniqueId());
 		if (client != null) {
@@ -1003,10 +961,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 	}
 
-	// With photos-protect-blocks, what a photo is pinned to only goes when a player breaks it. These run before
-	// the handlers below, which then find nothing that fell
-
-	// the explosion still happens, it only leaves these blocks standing
 	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
 	public void protectFromBlockExplosion(BlockExplodeEvent event) {
 		if (this.protectBlocks) {
@@ -1143,9 +1097,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * what is known about a player that has the mod
 	 */
 	private static final class Client {
-		// the photos this client was told about and not told to forget
 		final Set<Long> known = new HashSet<>();
-		// the same for the sheets that are not pinned, its own included
 		final Set<Long> knownLoose = new HashSet<>();
 		final ArrayDeque<Long> wantedImages = new ArrayDeque<>();
 		boolean sharingLoose;
@@ -1154,9 +1106,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		long lastSwitch;
 		long lastPrint;
 		long lastPin;
-		// one pin at a time is looked at, the rest of them wait in the client
 		boolean pinning;
-		// messages it may still send, filled up again over time
 		double allowance = MESSAGES_BURST;
 		long allowanceAt = System.nanoTime();
 		int dropped;

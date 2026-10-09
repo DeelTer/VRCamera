@@ -35,26 +35,26 @@ public final class PhotoPinEvent extends PlayerEvent implements Cancellable {
 	 * @return where the middle of the sheet is
 	 */
 	public @NotNull Location getLocation() {
-		return this.location.clone();
+		return location.clone();
 	}
 
 	/**
 	 * @return the block the sheet is pinned to
 	 */
 	public @NotNull Block getBlock() {
-		return this.block;
+		return block;
 	}
 
 	/**
 	 * @return if the player says it is a picture from somewhere else, and not a photo taken in the game
 	 */
 	public boolean isCustom() {
-		return this.custom;
+		return custom;
 	}
 
 	@Override
 	public boolean isCancelled() {
-		return this.cancelled;
+		return cancelled;
 	}
 
 	@Override

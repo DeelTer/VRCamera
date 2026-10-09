@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
+import org.jetbrains.annotations.NotNull;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
@@ -18,7 +19,6 @@ public class CameraConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
-	// number of the last change of defaults this file has seen, see migrate
 	private static final int VERSION = 6;
 	private static CameraConfig current;
 	public int version = VERSION;
@@ -47,6 +47,29 @@ public class CameraConfig {
 	 * if the camera of a player at a screen holds still while they jump
 	 */
 	public JumpSteady jumpSteady = JumpSteady.SERIES;
+	/**
+	 * if the camera of a player at a screen swings around them when they turn. Off, it stays where it is in the
+	 * world: a player who looks around is not a reason to move
+	 */
+	public boolean followTurns = false;
+	/**
+	 * degrees per second the drone circles the player. Where it flies is set like for any other shot
+	 */
+	public double droneSpeed = 6.0;
+	/**
+	 * The camera of a player at a screen stays where the shot has it also behind blocks, and shows the player
+	 * through a round hole in them. And how many blocks across half of that hole is
+	 */
+	public boolean seeThrough = true;
+	public double seeThroughRadius = 2.0;
+	/**
+	 * if the director of a player at a screen leaves out the shots from close by and from the ground
+	 */
+	public boolean calmShots = true;
+	/**
+	 * if the player was told once which keys work the camera
+	 */
+	public boolean introShown = false;
 	/**
 	 * size of the camera icon
 	 */
@@ -113,7 +136,6 @@ public class CameraConfig {
 	 */
 	public int outputWidth = 0;
 	public int outputHeight = 0;
-	// where the window of the camera was the last time: x, y, width and height. Kept by the mod, not a setting
 	public int[] outputWindowPlace = {};
 	public boolean outputWindowFull = false;
 	/**
@@ -125,8 +147,6 @@ public class CameraConfig {
 	 */
 	public double chromaDistance = 32;
 	public double cameraLabelDistance = 48;
-	// Players by name, empty for no one: who the camera on the screen films in place of the player, and who it has
-	// in the picture with them
 	public String filmPlayer = "";
 	public String filmWith = "";
 	public boolean freeAutoSwitch = true;
@@ -157,6 +177,10 @@ public class CameraConfig {
 	 * let the players around see where the camera is, on servers that share that
 	 */
 	public boolean shareCamera = true;
+	/**
+	 * the set of free cameras that is open, empty for the usual one. Changed with /cam set
+	 */
+	public String cameraSet = "";
 	/**
 	 * if a server may give the player free cameras
 	 */
@@ -286,12 +310,12 @@ public class CameraConfig {
 	public boolean povHome = false;
 	public double povHomeSeconds = 60;
 	public Map<String, ShotConfig> shots = new LinkedHashMap<>();
-	// from before there were presets, only read to carry it over
 	private ShotConfig custom;
 
 	/**
 	 * @return a hand placed shot as it is before it was placed anywhere: in front of the player
 	 */
+	@NotNull
 	public static ShotConfig defaultPreset() {
 		return new ShotConfig(1.0, 0, 5, 4.0, 70, 8, 12);
 	}
@@ -318,11 +342,11 @@ public class CameraConfig {
 	private static CameraConfig load() {
 		CameraConfig config = null;
 		if (Files.exists(PATH)) {
-			try (Reader reader = Files.newBufferedReader(PATH)) {
-				JsonObject json = GSON.fromJson(reader, JsonObject.class);
+			try (final Reader reader = Files.newBufferedReader(PATH)) {
+				final JsonObject json = GSON.fromJson(reader, JsonObject.class);
 				config = GSON.fromJson(json, CameraConfig.class);
 				if (config != null && !json.has("version")) {
-					// from before files had a version
+
 					config.version = 1;
 				}
 			} catch (Exception e) {
@@ -345,14 +369,14 @@ public class CameraConfig {
 		if (type == ShotType.CUSTOM) {
 			return preset();
 		}
-		return this.shots.computeIfAbsent(key(type), key -> type.defaults());
+		return shots.computeIfAbsent(key(type), key -> type.defaults());
 	}
 
 	/**
 	 * @return the active hand placed shot
 	 */
 	public ShotConfig preset() {
-		return this.presets.get(this.activePreset);
+		return presets.get(activePreset);
 	}
 
 	/**
@@ -360,40 +384,40 @@ public class CameraConfig {
 	 */
 
 	private void fillDefaults() {
-		if (this.shots == null) {
-			this.shots = new LinkedHashMap<>();
+		if (shots == null) {
+			shots = new LinkedHashMap<>();
 		}
-		// a shot set to null in the file counts as missing
-		this.shots.values().removeIf(shot -> shot == null);
-		// shots that no longer exist
-		this.shots.keySet().removeIf(name -> Arrays.stream(ShotType.values()).noneMatch(type -> key(type).equals(name)));
-		if (this.presets == null) {
-			this.presets = new ArrayList<>();
+
+		shots.values().removeIf(shot -> shot == null);
+
+		shots.keySet().removeIf(name -> Arrays.stream(ShotType.values()).noneMatch(type -> key(type).equals(name)));
+		if (presets == null) {
+			presets = new ArrayList<>();
 		}
-		this.presets.removeIf(preset -> preset == null);
-		if (this.presets.isEmpty()) {
-			this.presets.add(this.custom != null ? this.custom : defaultPreset());
+		presets.removeIf(preset -> preset == null);
+		if (presets.isEmpty()) {
+			presets.add(custom != null ? custom : defaultPreset());
 		}
-		this.custom = null;
-		this.activePreset = Math.clamp(this.activePreset, 0, this.presets.size() - 1);
-		// unknown values in the file end up as null
-		if (this.transition == null) {
-			this.transition = Transition.AUTO;
+		custom = null;
+		activePreset = Math.clamp(activePreset, 0, presets.size() - 1);
+
+		if (transition == null) {
+			transition = Transition.AUTO;
 		}
-		if (this.pace == null) {
-			this.pace = Pace.DEFAULT;
+		if (pace == null) {
+			pace = Pace.DEFAULT;
 		}
-		if (this.screenOutput == null) {
-			this.screenOutput = ScreenOutput.SCREEN;
+		if (screenOutput == null) {
+			screenOutput = ScreenOutput.SCREEN;
 		}
-		if (this.pullStyle == null) {
-			this.pullStyle = PullStyle.TELEKINESIS;
+		if (pullStyle == null) {
+			pullStyle = PullStyle.TELEKINESIS;
 		}
-		if (this.marker == null) {
-			this.marker = Marker.DOT;
+		if (marker == null) {
+			marker = Marker.DOT;
 		}
-		// write all shots to the file, also the ones added by an update
-		for (ShotType type : ShotType.values()) {
+
+		for (final ShotType type : ShotType.values()) {
 			shot(type);
 		}
 	}
@@ -406,49 +430,48 @@ public class CameraConfig {
 	 */
 	private void migrate(int from) {
 		if (from < 2) {
-			// hand placed shots started too close
-			for (ShotConfig preset : this.presets) {
+
+			for (final ShotConfig preset : presets) {
 				if (preset.azimuth == 0 && preset.elevation == 5 && preset.distance == 2.5) {
 					preset.distance = defaultPreset().distance;
 				}
 			}
-			// the menu shot was too far behind the player, the shoulder covered the menu
-			ShotConfig menu = shot(ShotType.MENU);
+
+			final ShotConfig menu = shot(ShotType.MENU);
 			if (menu.azimuth == 155) {
 				menu.azimuth = ShotType.MENU.defaults().azimuth;
 			}
 		}
-		if (from < 3 && this.pullSeconds == 2.0) {
-			// pulling the camera took too long
-			this.pullSeconds = 1.25;
+		if (from < 3 && pullSeconds == 2.0) {
+
+			pullSeconds = 1.25;
 		}
-		if (from < 4 && this.marker == Marker.DOT) {
-			this.marker = Marker.MODEL;
+		if (from < 4 && marker == Marker.DOT) {
+			marker = Marker.MODEL;
 		}
-		if (from < 6 && this.throwPower == 1.0) {
-			// a thrown camera did not get far
-			this.throwPower = 1.3;
+		if (from < 6 && throwPower == 1.0) {
+
+			throwPower = 1.3;
 		}
 		if (from < 5) {
-			// Shots changed too often to follow, and were too short to cut a video from. Only what is still as it
-			// came: what the player set stays
-			if (this.minShotTime == 2.5) {
-				this.minShotTime = 4.0;
+
+			if (minShotTime == 2.5) {
+				minShotTime = 4.0;
 			}
-			if (this.orbitSpeed == 14) {
-				this.orbitSpeed = 10;
+			if (orbitSpeed == 14) {
+				orbitSpeed = 10;
 			}
-			if (this.manualHoldSeconds == 20) {
-				this.manualHoldSeconds = 30;
+			if (manualHoldSeconds == 20) {
+				manualHoldSeconds = 30;
 			}
-			if (this.turnLag == 0.9) {
-				this.turnLag = 1.1;
+			if (turnLag == 0.9) {
+				turnLag = 1.1;
 			}
-			if (this.turnDeadzone == 12) {
-				this.turnDeadzone = 16;
+			if (turnDeadzone == 12) {
+				turnDeadzone = 16;
 			}
-			if (this.handStabilize == 0.5) {
-				this.handStabilize = 0.6;
+			if (handStabilize == 0.5) {
+				handStabilize = 0.6;
 			}
 			longer(ShotType.SHOULDER, 6, 11);
 			longer(ShotType.FRONT, 5, 9);
@@ -461,14 +484,14 @@ public class CameraConfig {
 			longer(ShotType.POV, 5, 10);
 			longer(ShotType.MENU, 6, 10);
 		}
-		this.version = VERSION;
+		version = VERSION;
 	}
 
 	/**
 	 * gives a shot the length it has by default now, if it still has the one it had before
 	 */
 	private void longer(ShotType type, double oldMin, double oldMax) {
-		ShotConfig shot = shot(type);
+		final ShotConfig shot = shot(type);
 		if (shot.minDuration == oldMin && shot.maxDuration == oldMax) {
 			shot.minDuration = type.defaults().minDuration;
 			shot.maxDuration = type.defaults().maxDuration;
@@ -479,11 +502,11 @@ public class CameraConfig {
 	 * @return if the picture of the camera has a size of its own, and not the one of the game window
 	 */
 	public boolean hasOutputSize() {
-		return this.outputWidth > 0 && this.outputHeight > 0;
+		return outputWidth > 0 && outputHeight > 0;
 	}
 
 	public void save() {
-		try (Writer writer = Files.newBufferedWriter(PATH)) {
+		try (final Writer writer = Files.newBufferedWriter(PATH)) {
 			GSON.toJson(this, writer);
 		} catch (IOException e) {
 			Vrcamera.LOGGER.error("VRCamera: failed to write {}", PATH, e);

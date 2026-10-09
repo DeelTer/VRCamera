@@ -1,5 +1,7 @@
 package ru.deelter.vrcamera.sync;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +18,6 @@ public final class Protocol {
 	public static final String CHANNEL = "vrcamera:sync";
 	public static final int VERSION = 2;
 
-	// A message to the server can't be larger than 32767 bytes, picture included. And a channel that is shared
-	// with every other mod should not be filled with pictures
 	public static final int MAX_IMAGE_BYTES = 24_000;
 	public static final int MAX_IMAGE_SIDE = 320;
 	public static final int MAX_SHEETS_PER_MESSAGE = 48;
@@ -59,7 +59,6 @@ public final class Protocol {
 	public static final byte S_TAKE = 16;
 	public static final byte S_SHOW = 17;
 
-	// what a server calls a camera it gives a player is not longer than this
 	public static final int MAX_CAMERA_ID = 64;
 
 	/**
@@ -80,21 +79,10 @@ public final class Protocol {
 	private Protocol() {
 	}
 
-	private static byte[] message(byte type, Body body) {
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream(64);
-		try (DataOutputStream out = new DataOutputStream(bytes)) {
-			out.writeByte(type);
-			body.write(out);
-		} catch (IOException e) {
-			// not from writing into memory
-			throw new IllegalStateException(e);
-		}
-		return bytes.toByteArray();
-	}
-
 	/**
 	 * @return what is left of the message after its first byte, the one that says what it is
 	 */
+	@NotNull
 	public static DataInputStream body(byte[] message) {
 		return new DataInputStream(new ByteArrayInputStream(message, 1, message.length - 1));
 	}
@@ -123,24 +111,25 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static Pin readPin(DataInputStream in) throws IOException {
-		long reference = in.readLong();
-		int blockX = in.readInt();
-		int blockY = in.readInt();
-		int blockZ = in.readInt();
-		double x = in.readDouble();
-		double y = in.readDouble();
-		double z = in.readDouble();
-		float qx = in.readFloat();
-		float qy = in.readFloat();
-		float qz = in.readFloat();
-		float qw = in.readFloat();
-		float aspect = in.readFloat();
-		int length = in.readUnsignedShort();
+		final long reference = in.readLong();
+		final int blockX = in.readInt();
+		final int blockY = in.readInt();
+		final int blockZ = in.readInt();
+		final double x = in.readDouble();
+		final double y = in.readDouble();
+		final double z = in.readDouble();
+		final float qx = in.readFloat();
+		final float qy = in.readFloat();
+		final float qz = in.readFloat();
+		final float qw = in.readFloat();
+		final float aspect = in.readFloat();
+		final int length = in.readUnsignedShort();
 		if (length > MAX_IMAGE_BYTES) {
 			throw new IOException("picture of " + length + " bytes");
 		}
-		byte[] image = new byte[length];
+		final byte[] image = new byte[length];
 		in.readFully(image);
 		return new Pin(reference, blockX, blockY, blockZ, x, y, z, qx, qy, qz, qw, aspect, image, in.readBoolean());
 	}
@@ -162,6 +151,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static Limits readLimits(DataInputStream in) throws IOException {
 		return new Limits(in.readInt(), in.readInt(), in.readInt(), in.readInt());
 	}
@@ -169,7 +159,7 @@ public final class Protocol {
 	public static byte[] sheets(List<Sheet> sheets) {
 		return message(S_SHEETS, out -> {
 			out.writeShort(sheets.size());
-			for (Sheet sheet : sheets) {
+			for (final Sheet sheet : sheets) {
 				out.writeLong(sheet.id);
 				out.writeLong(sheet.owner.getMostSignificantBits());
 				out.writeLong(sheet.owner.getLeastSignificantBits());
@@ -190,11 +180,11 @@ public final class Protocol {
 	}
 
 	public static List<Sheet> readSheets(DataInputStream in) throws IOException {
-		int count = in.readUnsignedShort();
+		final int count = in.readUnsignedShort();
 		if (count > MAX_SHEETS_PER_MESSAGE) {
 			throw new IOException(count + " sheets in one message");
 		}
-		List<Sheet> sheets = new ArrayList<>(count);
+		final List<Sheet> sheets = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {
 			sheets.add(new Sheet(in.readLong(), new UUID(in.readLong(), in.readLong()), in.readUTF(),
 					in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
@@ -220,11 +210,11 @@ public final class Protocol {
 	}
 
 	public static byte[] readImage(DataInputStream in) throws IOException {
-		int length = in.readUnsignedShort();
+		final int length = in.readUnsignedShort();
 		if (length > MAX_IMAGE_BYTES) {
 			throw new IOException("picture of " + length + " bytes");
 		}
-		byte[] image = new byte[length];
+		final byte[] image = new byte[length];
 		in.readFully(image);
 		return image;
 	}
@@ -238,6 +228,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static PinResult readPinResult(DataInputStream in) throws IOException {
 		return new PinResult(in.readLong(), in.readByte(), in.readLong(), in.readLong());
 	}
@@ -245,15 +236,15 @@ public final class Protocol {
 	public static byte[] forget(List<Long> ids) {
 		return message(S_FORGET, out -> {
 			out.writeShort(ids.size());
-			for (long id : ids) {
+			for (final long id : ids) {
 				out.writeLong(id);
 			}
 		});
 	}
 
 	public static List<Long> readForget(DataInputStream in) throws IOException {
-		int count = in.readUnsignedShort();
-		List<Long> ids = new ArrayList<>(count);
+		final int count = in.readUnsignedShort();
+		final List<Long> ids = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {
 			ids.add(in.readLong());
 		}
@@ -290,33 +281,19 @@ public final class Protocol {
 		});
 	}
 
-	private static void writePose(
-			DataOutputStream out, double x, double y, double z, float qx, float qy, float qz, float qw)
-			throws IOException {
-		out.writeDouble(x);
-		out.writeDouble(y);
-		out.writeDouble(z);
-		out.writeFloat(qx);
-		out.writeFloat(qy);
-		out.writeFloat(qz);
-		out.writeFloat(qw);
-	}
-
 	/**
 	 * @param owner who the server says it is from, null for one read from a client: {@code ownerName} is not
 	 *              in the message then either
 	 */
+	@NotNull
 	public static Camera readCamera(DataInputStream in, boolean fromServer) throws IOException {
-		UUID owner = fromServer ? new UUID(in.readLong(), in.readLong()) : null;
-		String name = fromServer ? in.readUTF() : "";
+		final UUID owner = fromServer ? new UUID(in.readLong(), in.readLong()) : null;
+		final String name = fromServer ? in.readUTF() : "";
 		return new Camera(owner, name, in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(),
 				in.readFloat(), in.readFloat(), in.readFloat());
 	}
 
-	private static void writePose(DataOutputStream out, Pose pose) throws IOException {
-		writePose(out, pose.x, pose.y, pose.z, pose.qx, pose.qy, pose.qz, pose.qw);
-	}
-
+	@NotNull
 	public static Pose readPose(DataInputStream in) throws IOException {
 		return new Pose(in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(), in.readFloat(),
 				in.readFloat(), in.readFloat());
@@ -332,6 +309,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static NewLoose readNewLoose(DataInputStream in) throws IOException {
 		return new NewLoose(in.readLong(), readPose(in), readImage(in), in.readBoolean());
 	}
@@ -366,6 +344,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static Loose readLoose(DataInputStream in) throws IOException {
 		return new Loose(in.readLong(), new UUID(in.readLong(), in.readLong()), in.readUTF(), readPose(in),
 				in.readFloat(), in.readLong(), in.readBoolean());
@@ -379,6 +358,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static LooseResult readLooseResult(DataInputStream in) throws IOException {
 		return new LooseResult(in.readLong(), in.readLong(), in.readLong());
 	}
@@ -397,6 +377,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static Placed readPlaced(DataInputStream in) throws IOException {
 		return new Placed(in.readUTF(), in.readDouble(), in.readDouble(), in.readDouble(), in.readFloat(),
 				in.readFloat(), in.readFloat(), in.readBoolean(), in.readBoolean());
@@ -435,6 +416,7 @@ public final class Protocol {
 		});
 	}
 
+	@NotNull
 	public static Switched readSwitched(DataInputStream in) throws IOException {
 		return new Switched(in.readUTF(), in.readUTF(), in.readDouble(), in.readDouble(), in.readDouble());
 	}
@@ -442,6 +424,34 @@ public final class Protocol {
 	public static byte[] reset() {
 		return message(S_RESET, out -> {
 		});
+	}
+
+	private static byte[] message(byte type, Body body) {
+		final ByteArrayOutputStream bytes = new ByteArrayOutputStream(64);
+		try (final DataOutputStream out = new DataOutputStream(bytes)) {
+			out.writeByte(type);
+			body.write(out);
+		} catch (IOException e) {
+
+			throw new IllegalStateException(e);
+		}
+		return bytes.toByteArray();
+	}
+
+	private static void writePose(
+			DataOutputStream out, double x, double y, double z, float qx, float qy, float qz, float qw)
+			throws IOException {
+		out.writeDouble(x);
+		out.writeDouble(y);
+		out.writeDouble(z);
+		out.writeFloat(qx);
+		out.writeFloat(qy);
+		out.writeFloat(qz);
+		out.writeFloat(qw);
+	}
+
+	private static void writePose(DataOutputStream out, Pose pose) throws IOException {
+		writePose(out, pose.x, pose.y, pose.z, pose.qx, pose.qy, pose.qz, pose.qw);
 	}
 
 	@FunctionalInterface
@@ -480,7 +490,7 @@ public final class Protocol {
 	 */
 	public record Pose(double x, double y, double z, float qx, float qy, float qz, float qw) {
 		public boolean isSane() {
-			float length = qx * qx + qy * qy + qz * qz + qw * qw;
+			final float length = qx * qx + qy * qy + qz * qz + qw * qw;
 			return Double.isFinite(x) && Double.isFinite(y) && Double.isFinite(z) && Float.isFinite(length) &&
 					length > 1.0E-6F;
 		}
@@ -488,8 +498,9 @@ public final class Protocol {
 		/**
 		 * @return the same with a unit quaternion, anything else would also scale what is turned by it
 		 */
+		@NotNull
 		public Pose normalized() {
-			float length = (float) Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
+			final float length = (float) Math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw);
 			return new Pose(x, y, z, qx / length, qy / length, qz / length, qw / length);
 		}
 	}

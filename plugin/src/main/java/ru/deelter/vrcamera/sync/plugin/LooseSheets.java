@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.sync.plugin;
 
+import org.jetbrains.annotations.NotNull;
 import ru.deelter.vrcamera.sync.Protocol;
 
 import java.util.*;
@@ -11,39 +12,38 @@ import java.util.*;
  */
 public final class LooseSheets {
 
-	// in the order they were made, the oldest first
 	private final Map<Long, Sheet> byId = new LinkedHashMap<>();
 	private final Map<Long, byte[]> images = new HashMap<>();
 	private final Map<Long, Integer> imageUses = new HashMap<>();
 	private long nextId = 1;
 
 	public Collection<Sheet> all() {
-		return this.byId.values();
+		return byId.values();
 	}
 
 	public Sheet get(long id) {
-		return this.byId.get(id);
+		return byId.get(id);
 	}
 
 	public byte[] image(long hash) {
-		return this.images.get(hash);
+		return images.get(hash);
 	}
 
 	public Sheet add(
 			UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash, byte[] image,
 			boolean custom) {
-		Sheet sheet = new Sheet(this.nextId++, world, owner, ownerName, pose, aspect, imageHash, custom);
-		this.byId.put(sheet.id, sheet);
-		this.images.putIfAbsent(imageHash, image);
-		this.imageUses.merge(imageHash, 1, Integer::sum);
+		final Sheet sheet = new Sheet(nextId++, world, owner, ownerName, pose, aspect, imageHash, custom);
+		byId.put(sheet.id, sheet);
+		images.putIfAbsent(imageHash, image);
+		imageUses.merge(imageHash, 1, Integer::sum);
 		return sheet;
 	}
 
 	public Sheet remove(long id) {
-		Sheet sheet = this.byId.remove(id);
+		final Sheet sheet = byId.remove(id);
 		if (sheet != null &&
-				this.imageUses.computeIfPresent(sheet.imageHash, (hash, uses) -> uses > 1 ? uses - 1 : null) == null) {
-			this.images.remove(sheet.imageHash);
+				imageUses.computeIfPresent(sheet.imageHash, (hash, uses) -> uses > 1 ? uses - 1 : null) == null) {
+			images.remove(sheet.imageHash);
 		}
 		return sheet;
 	}
@@ -52,8 +52,8 @@ public final class LooseSheets {
 	 * @return the sheets of that player, oldest first
 	 */
 	public List<Sheet> of(UUID owner) {
-		List<Sheet> sheets = new ArrayList<>();
-		for (Sheet sheet : this.byId.values()) {
+		final List<Sheet> sheets = new ArrayList<>();
+		for (final Sheet sheet : byId.values()) {
 			if (sheet.owner.equals(owner)) {
 				sheets.add(sheet);
 			}
@@ -70,7 +70,7 @@ public final class LooseSheets {
 		public UUID owner;
 		public String ownerName;
 		public Protocol.Pose pose;
-		// when its owner last said something about it
+
 		public long touched = System.currentTimeMillis();
 
 		Sheet(long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash,
@@ -85,15 +85,16 @@ public final class LooseSheets {
 			this.imageHash = imageHash;
 		}
 
+		@NotNull
 		public Protocol.Loose toProtocol() {
-			return new Protocol.Loose(this.id, this.owner, this.ownerName, this.pose, this.aspect, this.imageHash,
-					this.custom);
+			return new Protocol.Loose(id, owner, ownerName, pose, aspect, imageHash,
+					custom);
 		}
 
 		public double distanceSquared(double x, double y, double z) {
-			double dx = this.pose.x() - x;
-			double dy = this.pose.y() - y;
-			double dz = this.pose.z() - z;
+			final double dx = pose.x() - x;
+			final double dy = pose.y() - y;
+			final double dz = pose.z() - z;
 			return dx * dx + dy * dy + dz * dz;
 		}
 	}

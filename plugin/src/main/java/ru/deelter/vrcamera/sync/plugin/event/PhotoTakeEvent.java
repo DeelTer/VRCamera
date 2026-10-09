@@ -29,7 +29,7 @@ public final class PhotoTakeEvent extends PlayerEvent {
 	 * @return where the camera was, as the mod of the player says. Not checked beyond being near the player
 	 */
 	public @NotNull Location getCamera() {
-		return this.camera.clone();
+		return camera.clone();
 	}
 
 	@Override

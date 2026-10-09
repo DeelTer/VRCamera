@@ -9,8 +9,6 @@ import ru.deelter.vrcamera.client.desktop.ChromaKey;
 
 @Mixin(Gui.class)
 public class GuiMixin {
-
-	// the dark corners the game puts over its picture would be dark corners on the green as well
 	@Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$noVignetteOverGreen(CallbackInfo ci) {
 		if (ChromaKey.isOn()) {

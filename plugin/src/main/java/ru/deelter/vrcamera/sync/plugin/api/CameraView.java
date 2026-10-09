@@ -34,22 +34,22 @@ public final class CameraView {
 	}
 
 	public @NotNull String id() {
-		return this.id;
+		return id;
 	}
 
 	/**
 	 * @return where it stands, with the way it looks as yaw and pitch
 	 */
 	public @NotNull Location location() {
-		return this.location.clone();
+		return location.clone();
 	}
 
 	public float fov() {
-		return this.fov;
+		return fov;
 	}
 
 	public boolean replace() {
-		return this.replace;
+		return replace;
 	}
 
 	public static final class Builder {
@@ -96,7 +96,7 @@ public final class CameraView {
 		 * turns the camera to a place, instead of giving yaw and pitch
 		 */
 		public @NotNull Builder lookAt(@NotNull Location target) {
-			this.lookAt = target.clone();
+			lookAt = target.clone();
 			return this;
 		}
 
@@ -118,21 +118,21 @@ public final class CameraView {
 		}
 
 		public @NotNull CameraView build() {
-			Location at = Objects.requireNonNull(this.location, "a camera needs a location").clone();
-			if (this.lookAt != null) {
-				double dx = this.lookAt.getX() - at.getX();
-				double dy = this.lookAt.getY() - at.getY();
-				double dz = this.lookAt.getZ() - at.getZ();
+			final Location at = Objects.requireNonNull(location, "a camera needs a location").clone();
+			if (lookAt != null) {
+				final double dx = lookAt.getX() - at.getX();
+				final double dy = lookAt.getY() - at.getY();
+				final double dz = lookAt.getZ() - at.getZ();
 				at.setYaw((float) Math.toDegrees(Math.atan2(-dx, dz)));
 				at.setPitch((float) -Math.toDegrees(Math.atan2(dy, Math.sqrt(dx * dx + dz * dz))));
 			}
-			if (this.yaw != null) {
-				at.setYaw(this.yaw);
+			if (yaw != null) {
+				at.setYaw(yaw);
 			}
-			if (this.pitch != null) {
-				at.setPitch(this.pitch);
+			if (pitch != null) {
+				at.setPitch(pitch);
 			}
-			return new CameraView(this.id, at, this.fov, this.replace);
+			return new CameraView(id, at, fov, replace);
 		}
 	}
 }

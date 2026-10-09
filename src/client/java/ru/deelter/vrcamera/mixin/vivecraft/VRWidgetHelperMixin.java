@@ -15,11 +15,9 @@ import org.vivecraft.client_vr.render.helpers.VRWidgetHelper;
 import ru.deelter.vrcamera.client.CameraController;
 import ru.deelter.vrcamera.client.SelfieScreen;
 
-// optional, the mod works without these, so don't crash if Vivecraft changes the methods
 @Pseudo
 @Mixin(value = VRWidgetHelper.class, remap = false)
 public class VRWidgetHelperMixin {
-
 	@Inject(method = "renderVRHandheldCameraWidget", at = @At("HEAD"), cancellable = true, require = 0)
 	private static void vrcamera$hideCameraModel(CallbackInfo ci) {
 		if (CameraController.INSTANCE.hidesModel()) {
@@ -27,7 +25,6 @@ public class VRWidgetHelperMixin {
 		}
 	}
 
-	// Vivecraft puts the model where the camera films from, which is steadied. It belongs into the hand
 	@ModifyVariable(method = "renderVRCameraWidget", at = @At("STORE"), ordinal = 0, require = 0)
 	private static Vec3 vrcamera$modelIntoHand(Vec3 filmedFrom, @Local(argsOnly = true) RenderPass shown) {
 		Vec3 hand = CameraController.INSTANCE.handPosition();

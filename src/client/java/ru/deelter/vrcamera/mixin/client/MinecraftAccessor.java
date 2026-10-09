@@ -8,8 +8,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(Minecraft.class)
 public interface MinecraftAccessor {
-
-	// the picture the game draws into, to have it draw into another one for the camera
 	@Mutable
 	@Accessor("mainRenderTarget")
 	void vrcamera$setMainRenderTarget(RenderTarget target);

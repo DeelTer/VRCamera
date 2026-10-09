@@ -35,21 +35,21 @@ public final class CameraSwitchEvent extends PlayerEvent {
 	 * @return the letter the player knows the camera by
 	 */
 	public @NotNull String getCameraName() {
-		return this.name;
+		return name;
 	}
 
 	/**
 	 * @return the id a plugin gave the camera, null for one the player made themselves
 	 */
 	public @Nullable String getCameraId() {
-		return this.id;
+		return id;
 	}
 
 	/**
 	 * @return where the camera is, as the mod of the player says. Not checked
 	 */
 	public @NotNull Location getCamera() {
-		return this.camera.clone();
+		return camera.clone();
 	}
 
 	@Override

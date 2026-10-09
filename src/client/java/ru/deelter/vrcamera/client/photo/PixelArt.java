@@ -11,13 +11,12 @@ import java.util.List;
  * of the colours a map can show, with a light pattern where two of them are mixed.
  */
 public final class PixelArt {
-	// pixels along the longer side of the picture, at the lowest and at the highest strength
+
 	private static final int MOST_PIXELS = 128;
 	private static final int LEAST_PIXELS = 32;
-	// What a picture is at most when it is sent to a server. Every pixel is drawn as a square of several, as many
-	// as fit into this: a JPEG smears single pixels, squares of them it keeps
+
 	private static final int SENT_PIXELS = 256;
-	// how far the pattern moves a colour before the nearest of the palette is picked, of 255
+
 	private static final double DITHER = 10.0;
 	private static final int[] PATTERN = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
 
@@ -34,38 +33,38 @@ public final class PixelArt {
 		if (strength <= 0) {
 			return picture;
 		}
-		int width = picture.getWidth();
-		int height = picture.getHeight();
-		int longer = (int) Math.round(MOST_PIXELS - (MOST_PIXELS - LEAST_PIXELS) * Math.min(strength, 1.0));
-		int cellsX = width >= height ? longer : Math.max(1, Math.round(longer * width / (float) height));
-		int cellsY = width >= height ? Math.max(1, Math.round(longer * height / (float) width)) : longer;
+		final int width = picture.getWidth();
+		final int height = picture.getHeight();
+		final int longer = (int) Math.round(MOST_PIXELS - (MOST_PIXELS - LEAST_PIXELS) * Math.min(strength, 1.0));
+		final int cellsX = width >= height ? longer : Math.max(1, Math.round(longer * width / (float) height));
+		final int cellsY = width >= height ? Math.max(1, Math.round(longer * height / (float) width)) : longer;
 		if (cellsX >= width || cellsY >= height) {
 			return picture;
 		}
-		int[] colors = palette();
-		int square = Math.max(1, SENT_PIXELS / longer);
-		NativeImage art = new NativeImage(cellsX * square, cellsY * square, false);
+		final int[] colors = palette();
+		final int square = Math.max(1, SENT_PIXELS / longer);
+		final NativeImage art = new NativeImage(cellsX * square, cellsY * square, false);
 		try {
 			for (int cellY = 0; cellY < cellsY; cellY++) {
-				int top = cellY * height / cellsY;
-				int bottom = Math.max(top + 1, (cellY + 1) * height / cellsY);
+				final int top = cellY * height / cellsY;
+				final int bottom = Math.max(top + 1, (cellY + 1) * height / cellsY);
 				for (int cellX = 0; cellX < cellsX; cellX++) {
-					int left = cellX * width / cellsX;
-					int right = Math.max(left + 1, (cellX + 1) * width / cellsX);
+					final int left = cellX * width / cellsX;
+					final int right = Math.max(left + 1, (cellX + 1) * width / cellsX);
 					int red = 0;
 					int green = 0;
 					int blue = 0;
 					for (int y = top; y < bottom; y++) {
 						for (int x = left; x < right; x++) {
-							int pixel = picture.getPixel(x, y);
+							final int pixel = picture.getPixel(x, y);
 							red += pixel >> 16 & 0xFF;
 							green += pixel >> 8 & 0xFF;
 							blue += pixel & 0xFF;
 						}
 					}
-					int count = (right - left) * (bottom - top);
-					double shift = (PATTERN[(cellY & 3) * 4 + (cellX & 3)] / 16.0 - 0.47) * DITHER;
-					int color = 0xFF000000 | nearest(colors, shifted(red / count, shift), shifted(green / count, shift),
+					final int count = (right - left) * (bottom - top);
+					final double shift = (PATTERN[(cellY & 3) * 4 + (cellX & 3)] / 16.0 - 0.47) * DITHER;
+					final int color = 0xFF000000 | nearest(colors, shifted(red / count, shift), shifted(green / count, shift),
 							shifted(blue / count, shift));
 					for (int y = 0; y < square; y++) {
 						for (int x = 0; x < square; x++) {
@@ -89,14 +88,14 @@ public final class PixelArt {
 	private static int nearest(int[] colors, int red, int green, int blue) {
 		int best = 0;
 		long bestDistance = Long.MAX_VALUE;
-		for (int color : colors) {
-			int otherRed = color >> 16 & 0xFF;
-			int mean = (red + otherRed) / 2;
-			long dr = red - otherRed;
-			long dg = green - (color >> 8 & 0xFF);
-			long db = blue - (color & 0xFF);
-			// weighted the way an eye tells colours apart, plain distance picks greys for everything
-			long distance = ((512 + mean) * dr * dr >> 8) + 4 * dg * dg + ((767 - mean) * db * db >> 8);
+		for (final int color : colors) {
+			final int otherRed = color >> 16 & 0xFF;
+			final int mean = (red + otherRed) / 2;
+			final long dr = red - otherRed;
+			final long dg = green - (color >> 8 & 0xFF);
+			final long db = blue - (color & 0xFF);
+
+			final long distance = ((512 + mean) * dr * dr >> 8) + 4 * dg * dg + ((767 - mean) * db * db >> 8);
 			if (distance < bestDistance) {
 				bestDistance = distance;
 				best = color;
@@ -110,14 +109,14 @@ public final class PixelArt {
 	 */
 	private static int[] palette() {
 		if (palette == null) {
-			List<Integer> colors = new ArrayList<>();
+			final List<Integer> colors = new ArrayList<>();
 			for (int id = 1; id < 64; id++) {
-				int base = MapColor.byId(id).col;
+				final int base = MapColor.byId(id).col;
 				if (base == 0) {
 					continue;
 				}
-				for (MapColor.Brightness brightness : MapColor.Brightness.values()) {
-					int shade = brightness.modifier;
+				for (final MapColor.Brightness brightness : MapColor.Brightness.values()) {
+					final int shade = brightness.modifier;
 					colors.add((base >> 16 & 0xFF) * shade / 255 << 16 | (base >> 8 & 0xFF) * shade / 255 << 8 |
 							(base & 0xFF) * shade / 255);
 				}

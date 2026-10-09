@@ -15,13 +15,14 @@ import java.util.Locale;
  * what the camera of Vivecraft is doing and why, in words: for the debug overlay and /vrcam status
  */
 public final class CameraDebug {
+
 	private CameraDebug() {
 	}
 
 	public static List<String> lines(CameraController controller) {
-		Mode mode = controller.mode();
-		Director director = controller.director();
-		List<String> lines = new ArrayList<>();
+		final Mode mode = controller.mode();
+		final Director director = controller.director();
+		final List<String> lines = new ArrayList<>();
 
 		String state = "VRCamera " + mode;
 		if (mode != Mode.OFF && !controller.isEngaged()) {
@@ -35,10 +36,10 @@ public final class CameraDebug {
 			return lines;
 		}
 
-		Shot shot = controller.shot();
+		final Shot shot = controller.shot();
 		if (shot != null) {
-			// shots without an end have no duration worth showing
-			String time = shot.duration == Double.MAX_VALUE ? format("%.1fs", shot.age) :
+
+			final String time = shot.duration == Double.MAX_VALUE ? format("%.1fs", shot.age) :
 					format("%.1f/%.1fs", shot.age, shot.duration);
 			lines.add("shot: " + shot.type + (shot.side < 0 ? " left " : " right ") + time +
 					(director.isHolding() ? " HOLD" : ""));
@@ -54,9 +55,9 @@ public final class CameraDebug {
 			lines.add("preset: " + controller.presetLabel());
 		}
 
-		Rig rig = controller.rig();
-		Subject subject = controller.subject();
-		// the rig does not move the camera of the physics mode
+		final Rig rig = controller.rig();
+		final Subject subject = controller.subject();
+
 		if (mode != Mode.PHYSICS) {
 			lines.add(format("arm: %.0f%%%s  fov: %.0f", rig.arm() * 100.0,
 					rig.lookingPast() ? " (looking past)" : "", rig.fov()));
