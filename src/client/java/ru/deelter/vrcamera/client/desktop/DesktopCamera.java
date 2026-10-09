@@ -42,6 +42,7 @@ import ru.deelter.vrcamera.client.sync.PhotoSync;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -265,9 +266,29 @@ public final class DesktopCamera {
 			return;
 		}
 		int camera = grab.isAiming() ? grab.aimedAt() : free.active();
+		int next = -1;
+		final LocalPlayer player = Minecraft.getInstance().player;
+		if (camera == free.active() && player != null) {
+			final Vec3 eyes = player.getEyePosition(partialTick());
+			double distance = FREE_AROUND * FREE_AROUND;
+			for (int other = 0; other < free.count(); other++) {
+				final double away = free.position(other).distanceToSqr(eyes);
+				if (other != camera && away < distance) {
+					distance = away;
+					next = other;
+				}
+			}
+			if (next < 0) {
+				say("vrcamera.message.free.lastHere");
+				return;
+			}
+		}
 		String name = free.name(camera);
 		grab.reset();
 		free.remove(camera);
+		if (next >= 0) {
+			free.show(next > camera ? next - 1 : next);
+		}
 		say("vrcamera.message.free.removed", name);
 	}
 
@@ -534,6 +555,29 @@ public final class DesktopCamera {
 			return false;
 		}
 		useCameraSet(set);
+		return true;
+	}
+
+	/**
+	 * deletes the set of free cameras that is open, and goes over to the usual one
+	 *
+	 * @return false if the usual one is open: that one stays
+	 */
+	public boolean deleteCameraSet() {
+		final Minecraft mc = Minecraft.getInstance();
+		final String set = cameraSet();
+		if (set.isEmpty() || mc.level == null) {
+			return false;
+		}
+		final Path file = PhotoStore.worldCache().resolve(FreeCamera.fileName(dimension(mc), set));
+		useCameraSet("");
+		free.close();
+		try {
+			Files.deleteIfExists(file);
+		} catch (IOException e) {
+			Vrcamera.LOGGER.warn("VRCamera: can't delete {}", file, e);
+			return false;
+		}
 		return true;
 	}
 

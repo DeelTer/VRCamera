@@ -614,6 +614,13 @@ final class FreeCamera {
 	}
 
 	/**
+	 * lets go of the file the cameras are kept in: nothing is written to it any more
+	 */
+	void close() {
+		file = null;
+	}
+
+	/**
 	 * writes down where the cameras stand
 	 */
 	void save() {
