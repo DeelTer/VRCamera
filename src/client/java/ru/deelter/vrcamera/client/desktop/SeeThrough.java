@@ -14,7 +14,8 @@ import ru.deelter.vrcamera.Vrcamera;
  * picture is put over the first one where the hole is. No block is drawn any differently, and nothing is seen that
  * is not right around the player: what is far behind them was in the first picture already.
  * <p>
- * Drawn in the OpenGL context of the camera window, which nothing else draws in.
+ * Drawn in the OpenGL context that is current. Where that is the one of the game, it is left the way it was found:
+ * the game remembers what it has set, and does not set it again.
  */
 final class SeeThrough {
 	private static final String VERTEX = """
@@ -51,6 +52,8 @@ final class SeeThrough {
 				color = vec4(seen.rgb, 1.0);
 			}
 			""";
+	private static final int[] SWITCHED_OFF = {
+			GL11.GL_DEPTH_TEST, GL11.GL_BLEND, GL11.GL_CULL_FACE, GL11.GL_STENCIL_TEST};
 	private static Hole hole;
 	private static int program;
 	private static int vertices;
@@ -71,6 +74,16 @@ final class SeeThrough {
 		if (open == null || broken) {
 			return;
 		}
+		final int programBefore = GL11.glGetInteger(GL20.GL_CURRENT_PROGRAM);
+		final int verticesBefore = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+		final int unitBefore = GL11.glGetInteger(GL13.GL_ACTIVE_TEXTURE);
+		final boolean[] enabledBefore = new boolean[SWITCHED_OFF.length];
+		for (int state = 0; state < SWITCHED_OFF.length; state++) {
+			enabledBefore[state] = GL11.glIsEnabled(SWITCHED_OFF[state]);
+			GL11.glDisable(SWITCHED_OFF[state]);
+		}
+		GL13.glActiveTexture(GL13.GL_TEXTURE0);
+		final int textureBefore = GL11.glGetInteger(GL11.GL_TEXTURE_BINDING_2D);
 		try {
 			if (program == 0) {
 				program = link();
@@ -78,7 +91,6 @@ final class SeeThrough {
 			}
 			GL11.glViewport(shown.x(), shown.y(), shown.width(), shown.height());
 			GL20.glUseProgram(program);
-			GL13.glActiveTexture(GL13.GL_TEXTURE0);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, open.texture());
 			GL20.glUniform1i(GL20.glGetUniformLocation(program, "cut"), 0);
 			GL20.glUniform2f(GL20.glGetUniformLocation(program, "center"), open.x(), open.y());
@@ -88,12 +100,19 @@ final class SeeThrough {
 			GL20.glUniform1f(GL20.glGetUniformLocation(program, "feet"), open.floor());
 			GL30.glBindVertexArray(vertices);
 			GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, 4);
-			GL30.glBindVertexArray(0);
-			GL11.glBindTexture(GL11.GL_TEXTURE_2D, 0);
-			GL20.glUseProgram(0);
 		} catch (RuntimeException e) {
 			broken = true;
 			Vrcamera.LOGGER.error("VRCamera: can't show the player through blocks, that is off until the game restarts", e);
+		} finally {
+			GL30.glBindVertexArray(verticesBefore);
+			GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureBefore);
+			GL13.glActiveTexture(unitBefore);
+			GL20.glUseProgram(programBefore);
+			for (int state = 0; state < SWITCHED_OFF.length; state++) {
+				if (enabledBefore[state]) {
+					GL11.glEnable(SWITCHED_OFF[state]);
+				}
+			}
 		}
 	}
 

@@ -156,10 +156,10 @@ public final class OutputWindow {
 	}
 
 	/**
-	 * @return if a player behind blocks can be shown through them: not here, where the window is drawn into with the context of the game
+	 * @return if a player behind blocks can be shown through them
 	 */
 	public static boolean showsThrough() {
-		return false;
+		return true;
 	}
 
 	/**
