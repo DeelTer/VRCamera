@@ -156,6 +156,13 @@ public final class OutputWindow {
 	}
 
 	/**
+	 * @return if a player behind blocks can be shown through them: not here, where the window is drawn into with the context of the game
+	 */
+	public static boolean showsThrough() {
+		return false;
+	}
+
+	/**
 	 * copies the picture to the window
 	 *
 	 * @param guides if the lines that help to frame a picture go over it, the ones that were picked with H

@@ -152,14 +152,15 @@ public final class Shot {
 			return;
 		}
 
+		final boolean tied = focus(subject) != null;
 		if (type.orbits()) {
 			azimuth += side * Math.toRadians(config.orbitSpeed) * dt;
-		} else {
-
-			final boolean tight = focus(subject) != null;
+		} else if (type == ShotType.DRONE) {
+			azimuth += side * Math.toRadians(config.droneSpeed) * dt;
+		} else if (tied || !subject.atScreen || config.followTurns) {
 			final double error = CamMath.wrap(wantedAzimuth(subject) - azimuth);
-			final double deadzone = Math.toRadians(tight ? 4.0 : config.turnDeadzone);
-			final double lag = Math.max(0.01, tight ? config.turnLag * 0.6 : config.turnLag);
+			final double deadzone = Math.toRadians(tied ? 4.0 : config.turnDeadzone);
+			final double lag = Math.max(0.01, tied ? config.turnLag * 0.6 : config.turnLag);
 			if (Math.abs(error) > deadzone && dt > 0) {
 				azimuth += (error - Math.signum(error) * deadzone) * (1.0 - Math.exp(-dt / lag));
 			}

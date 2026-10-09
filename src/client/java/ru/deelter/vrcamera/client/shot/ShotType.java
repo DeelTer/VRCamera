@@ -58,6 +58,11 @@ public enum ShotType {
 	 */
 	MENU(new ShotConfig(1.0, 138, 18, 1.7, 55, 8, 14), 1.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 	/**
+	 * High above the player and to the side, circling them on a course of its own whichever way they turn: the
+	 * player in the place they are in
+	 */
+	DRONE(new ShotConfig(1.0, 180, 45, 14.0, 60, 10, 18), 0.1, 1.0, 0.6, 0.9, 1.2, 0.8, 1.2, 0.8, 0.4, 0.2),
+	/**
 	 * placed by hand
 	 */
 	CUSTOM(null, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0);

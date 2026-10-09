@@ -1,5 +1,7 @@
 package ru.deelter.vrcamera.client.rig;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
 
@@ -19,6 +21,8 @@ public final class Rig {
 	private static final double BLEND_TIME = 1.6;
 
 	private static final double ANCHOR_LAG = 0.18;
+	private static final double SOLID_STEP = 0.2;
+	private static final double BACK_OUT_AFTER = 0.5;
 
 	private static final double USUAL_VIEW = Math.tan(Math.toRadians(35.0));
 
@@ -31,7 +35,13 @@ public final class Rig {
 	private final boolean zoomIsCloseness;
 	private final Quaternionf rotation = new Quaternionf();
 	private double arm = 1.0;
+	private boolean viewBlocked;
 	private double softTime;
+	/**
+	 * seconds the way out has been free. The camera of a player at a screen waits before it backs out again:
+	 * past the edge of a block the way is free and blocked by turns, and it would go back and forth
+	 */
+	private double clearTime;
 	private boolean softArmed;
 	private double sinceTransition = BLEND_TIME;
 	private boolean ready;
@@ -66,6 +76,36 @@ public final class Rig {
 
 	public double arm() {
 		return arm;
+	}
+
+	/**
+	 * @return if something is between the player and where the shot has the camera
+	 */
+	public boolean viewBlocked() {
+		return viewBlocked;
+	}
+
+	/**
+	 * For a camera that shows the player through what is in the way. It stays where the shot has it, behind
+	 * blocks and in leaves, glass or plants as well. Only not inside a block that nothing is seen through: there
+	 * is no picture from in there, and it stops in front of it, at once and not in a move through it.
+	 *
+	 * @param clear how far out the way from the player is free
+	 * @return how far out the camera goes, 1 for all the way to where the shot has it
+	 */
+	public static double outOfSolid(Subject subject, Vec3 wanted, double clear) {
+		final double length = wanted.distanceTo(subject.center);
+		if (length < 1.0E-3) {
+			return clear;
+		}
+		final Level level = subject.player.level();
+		final double step = SOLID_STEP * subject.unit / length;
+		for (double out = 1.0; out > clear; out -= step) {
+			if (!level.getBlockState(BlockPos.containing(subject.center.lerp(wanted, out))).isSolidRender()) {
+				return out < 1.0 ? Math.max(clear, out - step) : 1.0;
+			}
+		}
+		return clear;
 	}
 
 	public boolean lookingPast() {
@@ -155,8 +195,13 @@ public final class Rig {
 					distance.update(shot.distance, lag, dt));
 		}
 
-		final double free = WorldProbe.armFraction(subject, subject.center, wanted, config);
-		if (free < arm) {
+		final double clear = WorldProbe.armFraction(subject, subject.center, wanted, config);
+		viewBlocked = clear < 0.999;
+		final boolean through = subject.seenThrough;
+		final double free = through ? outOfSolid(subject, wanted, clear) : clear;
+		if (through) {
+			arm = free;
+		} else if (free < arm) {
 			final Vec3 current = subject.center.lerp(wanted, arm);
 
 			if (softArmed && softTime < config.softOcclusionTime &&
@@ -164,11 +209,13 @@ public final class Rig {
 				softTime += dt;
 			} else {
 				arm = free;
+				clearTime = 0;
 			}
 		} else {
 			softTime = 0;
 			softArmed = true;
-			if (dt > 0) {
+			clearTime += dt;
+			if (dt > 0 && (!subject.atScreen || clearTime > BACK_OUT_AFTER)) {
 				arm += (free - arm) * (1.0 - Math.exp(-dt / 0.6));
 			}
 		}

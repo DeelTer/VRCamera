@@ -143,6 +143,7 @@ public final class DesktopGui {
 			} else if (target.width != own.width || target.height != own.height) {
 				target.resize(own.width, own.height);
 			}
+			GameFrame.begin();
 			drawing = true;
 			DirectorPass.setTarget(mc, target);
 			RenderSystem.getDevice().createCommandEncoder().clearColorAndDepthTextures(target.getColorTexture(),
@@ -190,6 +191,10 @@ public final class DesktopGui {
 				corner(consumer, pose, from, right, halfWidth, halfHeight, frameRight, frameTop);
 				corner(consumer, pose, from, right, halfWidth, -halfHeight, frameRight, frameBottom);
 				corner(consumer, pose, from, right, -halfWidth, -halfHeight, frameLeft, frameBottom);
+				corner(consumer, pose, from, right, -halfWidth, -halfHeight, frameLeft, frameBottom);
+				corner(consumer, pose, from, right, halfWidth, -halfHeight, frameRight, frameBottom);
+				corner(consumer, pose, from, right, halfWidth, halfHeight, frameRight, frameTop);
+				corner(consumer, pose, from, right, -halfWidth, halfHeight, frameLeft, frameTop);
 			});
 			poseStack.popPose();
 		} catch (RuntimeException | LinkageError e) {
@@ -267,7 +272,7 @@ public final class DesktopGui {
 			Minecraft.getInstance().getTextureManager().register(TEXTURE, texture);
 		}
 		texture.show(target);
-		return RenderTypes.entityCutout(TEXTURE);
+		return RenderTypes.text(TEXTURE);
 	}
 
 	private static void corner(

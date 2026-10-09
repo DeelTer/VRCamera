@@ -48,6 +48,29 @@ public class CameraConfig {
 	 */
 	public JumpSteady jumpSteady = JumpSteady.SERIES;
 	/**
+	 * if the camera of a player at a screen swings around them when they turn. Off, it stays where it is in the
+	 * world: a player who looks around is not a reason to move
+	 */
+	public boolean followTurns = false;
+	/**
+	 * degrees per second the drone circles the player. Where it flies is set like for any other shot
+	 */
+	public double droneSpeed = 6.0;
+	/**
+	 * The camera of a player at a screen stays where the shot has it also behind blocks, and shows the player
+	 * through a round hole in them. And how many blocks across half of that hole is
+	 */
+	public boolean seeThrough = true;
+	public double seeThroughRadius = 2.0;
+	/**
+	 * if the director of a player at a screen leaves out the shots from close by and from the ground
+	 */
+	public boolean calmShots = true;
+	/**
+	 * if the player was told once which keys work the camera
+	 */
+	public boolean introShown = false;
+	/**
 	 * size of the camera icon
 	 */
 	public double indicatorSize = 1.0;
@@ -154,6 +177,10 @@ public class CameraConfig {
 	 * let the players around see where the camera is, on servers that share that
 	 */
 	public boolean shareCamera = true;
+	/**
+	 * the set of free cameras that is open, empty for the usual one. Changed with /cam set
+	 */
+	public String cameraSet = "";
 	/**
 	 * if a server may give the player free cameras
 	 */

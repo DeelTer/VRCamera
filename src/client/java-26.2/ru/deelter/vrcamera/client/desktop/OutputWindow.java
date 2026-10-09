@@ -157,6 +157,13 @@ public final class OutputWindow {
 	}
 
 	/**
+	 * @return if a player behind blocks can be shown through them: the window has an OpenGL context of its own to draw it in
+	 */
+	public static boolean showsThrough() {
+		return true;
+	}
+
+	/**
 	 * copies the picture to the window
 	 *
 	 * @param guides if the lines that help to frame a picture go over it, the ones that were picked with H

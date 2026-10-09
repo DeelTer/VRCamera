@@ -4,7 +4,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.core.Holder;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.phys.Vec3;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -16,6 +20,7 @@ import ru.deelter.vrcamera.client.rig.WorldProbe;
 import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -25,6 +30,34 @@ import java.util.Random;
 public final class Director {
 
 	private static final double OCCLUSION_GRACE = 1.0;
+	private static final List<TagKey<Biome>> ROUGH_BIOMES = List.of(BiomeTags.IS_MOUNTAIN, BiomeTags.IS_HILL,
+			BiomeTags.IS_FOREST, BiomeTags.IS_TAIGA, BiomeTags.IS_JUNGLE, BiomeTags.IS_BADLANDS);
+	private static final double TERRAIN_INTERVAL = 1.0;
+	private static final double ROUGH_DRONE = 2.5;
+	private static final double DRONE_NEAREST = 0.85;
+	private static final double DRONE_FURTHEST = 1.15;
+	private static final double CLIMBED = 3.0;
+	private static final double CLIMB_FORGET = 0.4;
+	private static final double ROUGH_CRANE = 1.5;
+	private static final double ROUGH_FLYBY = 0.5;
+	/**
+	 * Seconds a shot of a player at a screen is safe from being cut away from for being blocked. On a slope or
+	 * between trees every next shot is blocked too, and the camera would not stop cutting
+	 */
+	private static final double BLOCKED_REST = 3.0;
+	/**
+	 * Looking ahead: how often, how many seconds of the way of the player, from which speed on, and how long the
+	 * camera stays on a side it swung over to
+	 */
+	private static final double AHEAD_INTERVAL = 0.2;
+	private static final double AHEAD_SECONDS = 1.2;
+	private static final double AHEAD_SPEED = 1.5;
+	private static final double SWING_REST = 3.0;
+	/**
+	 * How much more of the way to the camera has to be free for a shot to be picked than for it to be kept. With
+	 * the same measure for both, a shot at the edge of it is picked and dropped in turns
+	 */
+	private static final double ROOM_TO_SPARE = 0.15;
 
 	private static final double FLY_DISTANCE_SCALE = 1.6;
 	private static final double TIGHT_DISTANCE_SCALE = 0.7;
@@ -63,11 +96,24 @@ public final class Director {
 	private ShotType boost;
 	private boolean tight;
 	private boolean atScreen;
+	private boolean rough;
+	private double aheadTimer;
+	private double sinceSwing = SWING_REST;
+	/**
+	 * if the shot that runs may stay when none is found to go to: its time is up, but nothing is wrong with it
+	 */
+	private boolean canStay;
+	private double terrainTimer;
 	private boolean partnered;
 	private int asides;
 	private double tightTimer;
 	private double combatTimer;
 	private double mineTime;
+	/**
+	 * the height the player climbs up from. It comes after the player slowly: only going up fast, as up a
+	 * mountain side jump after jump, gets far above it
+	 */
+	private double climbFrom = Double.NaN;
 	private double fallTimer;
 	private Event dismissed = Event.NONE;
 	private double stillTime;
@@ -201,6 +247,10 @@ public final class Director {
 			return;
 		}
 
+		if (current != null && rig.ready() && !held) {
+			lookAhead(subject, rig, dt);
+		}
+		canStay = false;
 		String reason = null;
 		boolean cut = false;
 		if (current == null || !rig.ready()) {
@@ -235,7 +285,7 @@ public final class Director {
 					reason = "held shot ended";
 					cut = true;
 				}
-			} else if (blocked) {
+			} else if (blocked && !(subject.atScreen && current.age < BLOCKED_REST)) {
 				reason = "blocked";
 
 				cut = true;
@@ -243,6 +293,13 @@ public final class Director {
 				reason = "finished";
 			} else if (current.age >= current.duration) {
 				reason = "time";
+				canStay = true;
+			} else if (atScreen && subject.feet.y - climbFrom > CLIMBED && current.age > config.minShotTime &&
+					current.type != ShotType.DRONE && current.type != ShotType.CUSTOM && !current.forced) {
+				reason = "climbing";
+				boost = ShotType.DRONE;
+				canStay = true;
+				climbFrom = subject.feet.y;
 			} else if (current.age > config.minShotTime && current.type != ShotType.CUSTOM &&
 					!current.forced && !(isHome() && current.type == ShotType.POV)) {
 				final Context now = activity(context);
@@ -251,6 +308,7 @@ public final class Director {
 				} else if (now != Context.WALK && now != activity(shotContext)) {
 
 					reason = "now " + context;
+					canStay = true;
 				}
 			}
 		}
@@ -361,7 +419,13 @@ public final class Director {
 						(type == ShotType.HANDS && !subject.tracksHands)) {
 					continue;
 				}
-				final double weight = shotConfig.weight * fit(type) * (type == boost ? BOOST : 1.0);
+				if (atScreen && config.calmShots && (type == ShotType.FRONT || type == ShotType.LOW)) {
+					continue;
+				}
+				if (type == ShotType.DRONE && !atScreen) {
+					continue;
+				}
+				final double weight = shotConfig.weight * fit(type) * (type == boost ? BOOST : 1.0) * terrainFit(type);
 				if (weight > 0) {
 					selection.considerBothSides(type, weight, distanceScale);
 				}
@@ -377,7 +441,10 @@ public final class Director {
 		}
 
 		Shot next = selection.best;
-		if (next == null) {
+		if (next == null && canStay && current != null) {
+			reason += ", nowhere better";
+			next = current;
+		} else if (next == null) {
 			reason += ", no room";
 			next = fallback(subject, distanceScale);
 		}
@@ -427,6 +494,77 @@ public final class Director {
 	/**
 	 * @return how well a shot fits what the player is doing and where, 0 means it should not be used
 	 */
+	/**
+	 * Looks where the player is going. A wall that will be between them and the camera in a moment is no reason
+	 * to wait until it is: if the other side of them is free, now and then, the camera swings over to there in
+	 * one move
+	 */
+	private void lookAhead(Subject subject, Rig rig, double dt) {
+		sinceSwing += dt;
+		aheadTimer -= dt;
+		if (aheadTimer > 0) {
+			return;
+		}
+		aheadTimer = AHEAD_INTERVAL;
+		final Vec3 travel = new Vec3(subject.velocity.x, 0, subject.velocity.z);
+		if (!subject.atScreen || subject.seenThrough || sinceSwing < SWING_REST || travel.length() < AHEAD_SPEED ||
+				!current.blends() || current.exactAim() || current.forced || current.type.orbits() ||
+				current.type == ShotType.DRONE || current.type == ShotType.CUSTOM) {
+			return;
+		}
+		final Vec3 step = travel.scale(AHEAD_SECONDS);
+		final double needed = config.occlusionRatio + ROOM_TO_SPARE;
+		if (freeAhead(subject, current, step) >= needed) {
+			return;
+		}
+		final Shot other = new Shot(current.type, current.config, -current.side);
+		other.distanceScale = current.distanceScale;
+		other.start(subject, config);
+		if (freeAhead(subject, other, Vec3.ZERO) < needed || freeAhead(subject, other, step) < needed) {
+			return;
+		}
+		other.age = current.age;
+		other.duration = current.duration;
+		rig.blend();
+		current = other;
+		sinceSwing = 0;
+		occludedTime = -OCCLUSION_GRACE;
+		lastReason = "wall ahead, other side";
+	}
+
+	/**
+	 * @return how much of the way from the player to the camera of a shot is free, once both are further along
+	 */
+	private double freeAhead(Subject subject, Shot shot, Vec3 step) {
+		return WorldProbe.armFraction(subject, subject.center.add(step), shot.desiredPosition(subject).add(step),
+				config);
+	}
+
+	/**
+	 * @return how much more or less a shot is worth where the ground is steep or grown over: a camera near the
+	 * ground is in a slope or behind a tree there, one high above is not
+	 */
+	/**
+	 * @return how far out a shot is, of what its settings say. A drone is not as far every time
+	 */
+	private double reach(ShotType type, double scale) {
+		return type != ShotType.DRONE ? scale :
+				scale * (DRONE_NEAREST + (DRONE_FURTHEST - DRONE_NEAREST) * random.nextDouble());
+	}
+
+	private double terrainFit(ShotType type) {
+		if (!rough) {
+			return 1.0;
+		}
+		return switch (type) {
+			case DRONE -> ROUGH_DRONE;
+			case CRANE -> ROUGH_CRANE;
+			case FLYBY -> ROUGH_FLYBY;
+			case LOW -> 0.0;
+			default -> 1.0;
+		};
+	}
+
 	private double fit(ShotType type) {
 		if (type == ShotType.POV) {
 
@@ -448,7 +586,7 @@ public final class Director {
 
 			final Shot shot = new Shot(forceType, config.shot(forceType),
 					forceType == ShotType.CUSTOM ? 1 : randomSide());
-			shot.distanceScale = distanceScale;
+			shot.distanceScale = reach(forceType, distanceScale);
 			shot.start(subject, config);
 			return shot;
 		}
@@ -515,6 +653,17 @@ public final class Director {
 			mineTime = Math.max(0.0, mineTime - 0.5 * dt);
 		}
 		stillTime = subject.speed > 0.5 ? 0 : stillTime + dt;
+		climbFrom += CLIMB_FORGET * dt;
+		if (!(climbFrom < subject.feet.y) || player.isFallFlying() || player.isPassenger() || player.isInWater() ||
+				player.getAbilities().flying) {
+			climbFrom = subject.feet.y;
+		}
+		terrainTimer -= dt;
+		if (terrainTimer <= 0) {
+			terrainTimer = TERRAIN_INTERVAL;
+			final Holder<Biome> biome = player.level().getBiome(player.blockPosition());
+			rough = ROUGH_BIOMES.stream().anyMatch(biome::is);
+		}
 
 		final Context previous = context;
 		if (player.isFallFlying()) {
@@ -603,8 +752,12 @@ public final class Director {
 			consider(new Shot(type, shotConfig, 1), weight, distanceScale);
 		}
 
+		/**
+		 * Weighs a shot against the best one so far. One the camera would be cut away from for being blocked is
+		 * left out here already, and so is one that is close to that: a shot is picked once, not tried and dropped
+		 */
 		void consider(Shot shot, double weight, double distanceScale) {
-			shot.distanceScale = distanceScale;
+			shot.distanceScale = reach(shot.type, distanceScale);
 			shot.start(subject, config);
 
 			final Vec3 center = subject.center;
@@ -614,7 +767,11 @@ public final class Director {
 			if (shot.isWorld() && free < 0.9) {
 				return;
 			}
-			final Vec3 actual = center.lerp(wanted, free);
+			if (forceType == null && !subject.seenThrough && free < config.occlusionRatio + ROOM_TO_SPARE) {
+				return;
+			}
+			final Vec3 actual = center.lerp(wanted,
+					subject.seenThrough ? Rig.outOfSolid(subject, wanted, free) : free);
 			if (actual.distanceTo(center) < shot.type.minDistance * subject.unit) {
 				return;
 			}

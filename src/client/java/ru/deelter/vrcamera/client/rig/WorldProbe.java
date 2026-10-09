@@ -12,11 +12,45 @@ import net.minecraft.world.phys.Vec3;
 
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
+import net.minecraft.world.level.Level;
+import ru.deelter.vrcamera.client.desktop.DitheredBlocks;
 
 /**
  * block checks for the camera
  */
 public final class WorldProbe {
+	private static final int MOST_SOFT_BLOCKS = 48;
+	private static final double SOFT_STEP = 0.25;
+
+	/**
+	 * @return where the first block is that is in the way from one place to another, null if there is none. Blocks
+	 * that are drawn see-through for the camera are not in its way
+	 */
+	private static Vec3 firstInTheWay(Subject subject, Vec3 from, Vec3 to) {
+		final Level level = subject.player.level();
+		final Vec3 way = to.subtract(from);
+		final double length = way.length();
+		Vec3 start = from;
+		for (int passed = 0; passed < MOST_SOFT_BLOCKS; passed++) {
+			final BlockHitResult hit = level.clip(new ClipContext(start, to, ClipContext.Block.COLLIDER,
+					ClipContext.Fluid.NONE, subject.player));
+			if (hit.getType() == HitResult.Type.MISS) {
+				return null;
+			}
+			if (!subject.softBlocks || !DitheredBlocks.dithers(level.getBlockState(hit.getBlockPos()))) {
+				return hit.getLocation();
+			}
+			Vec3 on = hit.getLocation();
+			do {
+				on = on.add(way.scale(SOFT_STEP / length));
+			} while (BlockPos.containing(on).equals(hit.getBlockPos()));
+			if (on.distanceToSqr(from) >= length * length) {
+				return null;
+			}
+			start = on;
+		}
+		return null;
+	}
 
 	/**
 	 * Checks how far a camera can move from {@code from} to {@code to}, without getting into blocks. Works like the
@@ -38,10 +72,9 @@ public final class WorldProbe {
 					((i >> 1 & 1) * 2 - 1) * radius,
 					((i >> 2 & 1) * 2 - 1) * radius);
 			final Vec3 start = from.add(offset);
-			final BlockHitResult hit = subject.player.level().clip(new ClipContext(start, to.add(offset),
-					ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
-			if (hit.getType() != HitResult.Type.MISS) {
-				free = Math.min(free, hit.getLocation().distanceTo(start));
+			final Vec3 hit = firstInTheWay(subject, start, to.add(offset));
+			if (hit != null) {
+				free = Math.min(free, hit.distanceTo(start));
 			}
 		}
 		double fraction = free >= length ? 1.0 : CamMath.clamp((free - config.collisionMargin) / length, 0.0, 1.0);

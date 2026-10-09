@@ -34,6 +34,7 @@ import java.util.Objects;
  */
 public final class ChromaKey {
 	public static final String DEFAULT_COLOR = "#00B140";
+	private static final Vector4fc NOTHING = new Vector4f(0.0F, 0.0F, 0.0F, 0.0F);
 
 	public static final int EVEN_LIGHT = 0xF000F0;
 
@@ -130,6 +131,9 @@ public final class ChromaKey {
 	 * camera, the player still has to see where they are
 	 */
 	public static boolean applies() {
+		if (DirectorPass.drawsEntitiesAlone()) {
+			return !broken;
+		}
 		if (!on || broken) {
 			return false;
 		}
@@ -188,7 +192,18 @@ public final class ChromaKey {
 	/**
 	 * @return the colour of the settings, the default green if what is written there is not one
 	 */
+	/**
+	 * @return if entities are lit the same wherever they stand. Not in a picture of the entities alone that is no
+	 * green screen: that one is put over the picture of the world, and has to look like it
+	 */
+	public static boolean lightsEvenly() {
+		return applies() && !DirectorPass.drawsEntitiesAlone();
+	}
+
 	private static Vector4fc background() {
+		if (DirectorPass.drawsEntitiesAlone()) {
+			return NOTHING;
+		}
 		final String text = preset.color == null ? CameraConfig.current().chromaColor : preset.color;
 		if (!Objects.equals(text, colorText)) {
 			colorText = text;

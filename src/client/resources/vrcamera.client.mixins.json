@@ -4,6 +4,7 @@
 	"package": "ru.deelter.vrcamera.mixin.client",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
+		"BlockDitheringConfigMixin",
 		"CameraMixin",
 		"ClientPacketListenerMixin",
 		"ContainerScreenAccessor",

@@ -12,6 +12,6 @@ public class EntityRendererMixin {
 
 	@ModifyReturnValue(method = "getPackedLightCoords", at = @At("RETURN"), require = 0)
 	private int vrcamera$evenLight(int light) {
-		return ChromaKey.applies() ? ChromaKey.EVEN_LIGHT : light;
+		return ChromaKey.lightsEvenly() ? ChromaKey.EVEN_LIGHT : light;
 	}
 }

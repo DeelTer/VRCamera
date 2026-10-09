@@ -60,6 +60,7 @@ final class PictureBlit {
 				0);
 		GL30.glBlitFramebuffer(0, 0, picture.width, picture.height, shown.x(), shown.y(), shown.x() + shownWidth,
 				shown.y() + shownHeight, GL11.GL_COLOR_BUFFER_BIT, GL11.GL_LINEAR);
+		SeeThrough.draw(shown);
 		if (guide != null) {
 			drawGuide(guide, shown);
 		}

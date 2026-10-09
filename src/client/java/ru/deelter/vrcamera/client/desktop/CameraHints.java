@@ -75,7 +75,8 @@ final class CameraHints {
 	 * what the player is doing with the camera, and the keys of the mod its hint names
 	 */
 	enum Hint {
-		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_OTHER, HOLD, HOLD_FREE, STEER;
+		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_FREE("preset.remove"), AIM_OTHER, HOLD,
+		HOLD_FREE, STEER;
 
 		private final String[] keys;
 

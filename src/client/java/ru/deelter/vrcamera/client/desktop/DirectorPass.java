@@ -8,6 +8,8 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.gizmos.Gizmos;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 import ru.deelter.vrcamera.Vrcamera;
@@ -29,10 +31,20 @@ import java.util.Locale;
  * that is put back before the frame goes on.
  */
 public final class DirectorPass {
+	private static final float USUAL_NEAR = 0.05F;
+	/**
+	 * how near the player can be to the camera for a picture without what is in the way
+	 */
+	private static final double CUT_CLOSEST = 1.5;
+	private static final double CUT_FADE = 1.0;
+	private static final float BELOW_PICTURE = -1.0F;
 	private static final Vector4fc BLACK = new Vector4f(0.0F, 0.0F, 0.0F, 1.0F);
 
 	private static boolean active;
 	private static RenderTarget target;
+	private static RenderTarget cut;
+	private static float cutNear;
+	private static boolean entitiesAlone;
 
 	private static int[] shape;
 	private static long lastNanos;
@@ -82,6 +94,7 @@ public final class DirectorPass {
 	 * Called once per frame, after the game drew the view of the player and before it shows it.
 	 */
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
+		GameFrame.newFrame();
 		final DesktopCamera camera = DesktopCamera.INSTANCE;
 		if (camera.isOn() && (mc.level == null || mc.player == null)) {
 
@@ -122,6 +135,7 @@ public final class DirectorPass {
 		}
 		try {
 			if (camera.showsOwnView()) {
+				SeeThrough.set(null);
 
 				OutputWindow.show(mc, own, false, false);
 				return;
@@ -137,9 +151,14 @@ public final class DirectorPass {
 			}
 			final long started = System.nanoTime();
 
-			shape = ownSize ? new int[]{width, height} : OutputWindow.size();
+			final int[] window = OutputWindow.size();
+			if (window == null) {
+				return;
+			}
+			shape = ownSize ? new int[]{width, height} : window;
 			DesktopGui.draw(mc, deltaTracker, own);
-			draw(mc, deltaTracker, own);
+			draw(mc, deltaTracker, own, target);
+			SeeThrough.set(cutThrough(mc, deltaTracker, own, camera, width, height));
 			final long drawn = System.nanoTime();
 			OutputWindow.show(mc, target, camera.showsGrid(), shape != null && !ownSize);
 			measure(started, drawn, System.nanoTime());
@@ -167,9 +186,68 @@ public final class DirectorPass {
 		}
 	}
 
-	private static void draw(Minecraft mc, DeltaTracker deltaTracker, RenderTarget own) {
+	/**
+	 * Draws the picture once more without what is nearer to the camera than the player, for {@link SeeThrough}.
+	 *
+	 * @return where in the picture the player is seen through what is in the way, null if nothing is
+	 */
+	private static SeeThrough.Hole cutThrough(
+			Minecraft mc, DeltaTracker deltaTracker, RenderTarget own, DesktopCamera camera, int width, int height) {
+		final DesktopCamera.Pose pose = camera.lens();
+		if (pose == null || camera.revealAmount() < 0.01 || !OutputWindow.showsThrough()) {
+			return null;
+		}
+		final Vector3f to = camera.revealCenter().subtract(pose.position()).toVector3f();
+		pose.rotation().conjugate(new Quaternionf()).transform(to);
+		final double depth = -to.z;
+		final double radius = camera.revealRadius();
+		final double amount = camera.revealAmount() * Math.clamp((depth - CUT_CLOSEST) / CUT_FADE, 0.0, 1.0);
+		final DesktopCamera.Blocked blocked = camera.blockedBy(pose);
+		if (amount < 0.01 || (!blocked.solid() && blocked.near() <= USUAL_NEAR)) {
+			return null;
+		}
+		final double half = Math.tan(Math.toRadians(pose.fov()) / 2.0);
+		final float aspect = shape == null ? width / (float) height : shape[0] / (float) shape[1];
+		if (cut == null) {
+			cut = new MainTarget(width, height);
+		} else if (cut.width != width || cut.height != height) {
+			cut.resize(width, height);
+		}
+		entitiesAlone = blocked.solid();
+		cutNear = entitiesAlone ? 0 : (float) blocked.near();
+		try {
+			draw(mc, deltaTracker, own, cut);
+		} finally {
+			cutNear = 0;
+			entitiesAlone = false;
+		}
+		final Vector3f feet = camera.revealFeet().subtract(pose.position()).toVector3f();
+		pose.rotation().conjugate(new Quaternionf()).transform(feet);
+		final float floor = feet.z < 0 ? (float) (feet.y / (-feet.z * half)) * 0.5F + 0.5F : 0.0F;
+		return new SeeThrough.Hole(PictureBlit.textureId(cut), (float) (to.x / (depth * half * aspect)) * 0.5F + 0.5F,
+				(float) (to.y / (depth * half)) * 0.5F + 0.5F,
+				(float) (radius / (2.0 * depth * half)), aspect, (float) amount, blocked.solid() ? BELOW_PICTURE : floor);
+	}
+
+	/**
+	 * @return how near to the camera the picture that is drawn right now begins
+	 */
+	/**
+	 * @return if the picture that is drawn right now is one of the entities alone, with nothing of the world
+	 * around them: the player to show through blocks that can't be opened up
+	 */
+	public static boolean drawsEntitiesAlone() {
+		return active && entitiesAlone;
+	}
+
+	public static float near(float usual) {
+		return active && cutNear > 0 ? cutNear : usual;
+	}
+
+	private static void draw(Minecraft mc, DeltaTracker deltaTracker, RenderTarget own, RenderTarget target) {
 		final CameraType view = mc.options.getCameraType();
 		try {
+			GameFrame.begin();
 			active = true;
 			setTarget(mc, target);
 
@@ -215,5 +293,10 @@ public final class DirectorPass {
 			target.destroyBuffers();
 			target = null;
 		}
+		if (cut != null) {
+			cut.destroyBuffers();
+			cut = null;
+		}
+		SeeThrough.set(null);
 	}
 }

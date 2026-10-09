@@ -83,6 +83,16 @@ public final class ConfigScreen {
 				value -> config.outputFps = value));
 		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
 				value -> config.jumpSteady = value));
+		desktop.addEntry(screen.toggle("followTurns", config.followTurns, defaults.followTurns,
+				value -> config.followTurns = value));
+		desktop.addEntry(screen.slider("droneSpeed", config.droneSpeed, defaults.droneSpeed, -30, 30, 1, "%.0f",
+				value -> config.droneSpeed = value));
+		desktop.addEntry(screen.toggle("calmShots", config.calmShots, defaults.calmShots,
+				value -> config.calmShots = value));
+		desktop.addEntry(screen.toggle("seeThrough", config.seeThrough, defaults.seeThrough,
+				value -> config.seeThrough = value));
+		desktop.addEntry(screen.slider("seeThroughRadius", config.seeThroughRadius, defaults.seeThroughRadius, 0.5,
+				6, 0.25, "%.2f", value -> config.seeThroughRadius = value));
 		desktop.addEntry(screen.slider("menuSize", config.menuSize, defaults.menuSize, 0.5, 3, 0.25, "%.2fx",
 				value -> config.menuSize = value));
 		desktop.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmPlayer"),
@@ -97,13 +107,16 @@ public final class ConfigScreen {
 				.setTooltipSupplier(help("vrcamera.option.filmWith.tooltip"))
 				.setSaveConsumer(value -> config.filmWith = value.trim())
 				.build());
-		desktop.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
+		final ConfigCategory free = builder.getOrCreateCategory(Component.translatable("vrcamera.config.free"));
+		free.addEntry(screen.entries.startTextDescription(
+				Component.translatable("vrcamera.config.free.description")).build());
+		free.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
 				value -> config.freeAutoSwitch = value));
-		desktop.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
+		free.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
 				defaults.freeAutoSwitchAngle, 10, 90, 5, "%.0f", value -> config.freeAutoSwitchAngle = value));
-		desktop.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
+		free.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
 				defaults.freeAutoSwitchSeconds, 0, 1.5, 0.05, "%.2f s", value -> config.freeAutoSwitchSeconds = value));
-		desktop.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
+		free.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
 				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
 
 		final ConfigCategory vr = builder.getOrCreateCategory(Component.translatable("vrcamera.config.vr"));

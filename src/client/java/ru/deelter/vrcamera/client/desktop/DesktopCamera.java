@@ -13,11 +13,17 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraIndicator;
 import ru.deelter.vrcamera.client.Vr;
@@ -67,7 +73,21 @@ public final class DesktopCamera {
 	private static final double GAZE_NEAR = 1.5;
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
+	/**
+	 * how much sooner the view goes over to the eyes of the player while blocks push the camera up to them: from
+	 * that close it shows a back and nothing else
+	 */
+	private static final double PUSHED_IN = 0.5;
 	private static final double MARKER_JUMP = 1.5;
+	private static final double REVEAL_SECONDS = 0.5;
+	private static final double CUT_PAST_BLOCK = 0.9;
+	private static final double CUT_BEFORE_BODY = 0.7;
+	private static final double CRAMPED = 0.45;
+	private static final double ROOMY = 0.65;
+	private static final double REVEAL_SWITCH = 0.05;
+	private static final int OPEN_SAMPLES = 2;
+	private static final double OPEN_DEPTH = 6.0;
+	private static final double OPEN_STEP = 0.5;
 	private static final int FROM_SERVER_WAITING = 64;
 	private static final double LENT_LONGEST = 600.0;
 	private static final double STICK_REACH = 0.5;
@@ -94,6 +114,10 @@ public final class DesktopCamera {
 	private CameraConfig config;
 	private Director director;
 	private Shot followShot;
+	private boolean announceShot;
+	private double revealAmount;
+	private boolean cramped;
+	private boolean shownCramped;
 	private Shot steered;
 	private boolean flying;
 	private boolean filmsSelf = true;
@@ -222,6 +246,25 @@ public final class DesktopCamera {
 	}
 
 	/**
+	 * Takes a free camera away for good: the one the player points at, or the one that films. Not the last one,
+	 * the mode has nothing to film with then
+	 */
+	public void removeCamera() {
+		if (this.mode != Mode.FREE || this.freeLevel == null || this.free.isEmpty()) {
+			return;
+		}
+		if (this.free.count() == 1) {
+			say("vrcamera.message.free.last");
+			return;
+		}
+		int camera = this.grab.isAiming() ? this.grab.aimedAt() : this.free.active();
+		String name = this.free.name(camera);
+		this.grab.reset();
+		this.free.remove(camera);
+		say("vrcamera.message.free.removed", name);
+	}
+
+	/**
 	 * The one key between the view of the player and the picture of the camera. A camera with a window of its own
 	 * shows the view of the player in it, and stays what it is: the window is what is recorded. One that films into
 	 * the game window is turned off, and back on to what it was doing
@@ -275,7 +318,7 @@ public final class DesktopCamera {
 		ownView = false;
 		if (mode == Mode.DIRECTOR && director != null) {
 			director.next();
-			say("vrcamera.message.next");
+			announceShot = true;
 		}
 	}
 
@@ -414,6 +457,86 @@ public final class DesktopCamera {
 	/**
 	 * takes away every free camera of the world the player is in, and puts a first one at their eyes
 	 */
+	private static String dimension(Minecraft mc) {
+		return mc.level.dimension().identifier().toDebugFileName();
+	}
+
+	/**
+	 * @return the sets of free cameras there are for where the player is, the usual one left out
+	 */
+	public List<String> cameraSets() {
+		final Minecraft mc = Minecraft.getInstance();
+		return mc.level == null ? List.of() : FreeCamera.sets(PhotoStore.worldCache(), dimension(mc));
+	}
+
+	/**
+	 * @return the name of the set of free cameras that is open, empty for the usual one
+	 */
+	public String cameraSet() {
+		return CameraConfig.current().cameraSet;
+	}
+
+	/**
+	 * goes over to the set of free cameras after the one that is open, and from the last one to the usual one
+	 */
+	public void nextCameraSet() {
+		final List<String> sets = new ArrayList<>(cameraSets());
+		sets.remove("");
+		sets.addFirst("");
+		useCameraSet(sets.get((sets.indexOf(cameraSet()) + 1) % sets.size()));
+	}
+
+	/**
+	 * Goes over to another set of free cameras: the same place filmed another way, with cameras that are not in
+	 * each other's way. One that is not there yet starts with a camera at the eyes of the player.
+	 *
+	 * @param set its name, empty for the usual one
+	 */
+	public void useCameraSet(String set) {
+		final CameraConfig config = CameraConfig.current();
+		free.save();
+		config.cameraSet = set;
+		config.save();
+		grab.reset();
+		freeLevel = null;
+		if (mode != Mode.FREE) {
+			setMode(Mode.FREE);
+		}
+		say("vrcamera.message.set", set.isEmpty() ? Component.translatable("vrcamera.message.set.usual") : set);
+	}
+
+	/**
+	 * copies the free cameras of the set that is open to the clipboard, as text for someone on the same map
+	 *
+	 * @return false if there are none open
+	 */
+	public boolean exportCameras() {
+		if (mode != Mode.FREE || freeLevel == null || free.isEmpty()) {
+			return false;
+		}
+		Minecraft.getInstance().keyboardHandler.setClipboard(free.export());
+		say("vrcamera.message.set.exported", free.count());
+		return true;
+	}
+
+	/**
+	 * makes a set of the cameras that are in the clipboard as text, and goes over to it
+	 *
+	 * @return false if what is in the clipboard is not cameras
+	 */
+	public boolean importCameras(String set) {
+		final Minecraft mc = Minecraft.getInstance();
+		if (mc.level == null) {
+			return false;
+		}
+		final Path file = PhotoStore.worldCache().resolve(FreeCamera.fileName(dimension(mc), set));
+		if (FreeCamera.importTo(file, mc.keyboardHandler.getClipboard()) == 0) {
+			return false;
+		}
+		useCameraSet(set);
+		return true;
+	}
+
 	public void clearCameras() {
 		final LocalPlayer player = Minecraft.getInstance().player;
 		if (mode != Mode.FREE || player == null || freeLevel == null) {
@@ -774,7 +897,7 @@ public final class DesktopCamera {
 	public List<String> debugLines() {
 		final List<String> lines = new ArrayList<>();
 		lines.add("VRCamera on screen: " + mode + (hasOwnWindow() ? ", own window" : ", game window"));
-		Shot shot = steered != null ? steered : mode == Mode.FOLLOW ? followShot :
+		Shot shot = steered != null ? steered : mode == Mode.FOLLOW || mode == Mode.DRONE ? followShot :
 												director == null ? null : director.current();
 		if (shot != null) {
 			lines.add("shot: " + shot.type + (showsOwnView() ? " (own view of the player)" : ""));
@@ -837,7 +960,12 @@ public final class DesktopCamera {
 	}
 
 	private void sayMode() {
-		if (mode == Mode.DIRECTOR && CameraConfig.current().directorManual) {
+		final CameraConfig config = CameraConfig.current();
+		if (mode != Mode.OFF && !config.introShown) {
+			config.introShown = true;
+			config.save();
+			say("vrcamera.hint.intro", CameraHints.keyName("mode"), CameraHints.keyName("toggle"));
+		} else if (mode == Mode.DIRECTOR && config.directorManual) {
 
 			say("vrcamera.message.manual", CameraHints.keyName("next"), CameraHints.keyName("toggle"));
 		} else {
@@ -894,7 +1022,7 @@ public final class DesktopCamera {
 		} catch (IOException e) {
 			Vrcamera.LOGGER.warn("VRCamera: can't make {}", cache, e);
 		}
-		free.open(cache.resolve(FreeCamera.fileName(mc.level.dimension().identifier().toDebugFileName())));
+		free.open(cache.resolve(FreeCamera.fileName(dimension(mc), CameraConfig.current().cameraSet)));
 
 		if (fromServerLevel == mc.level) {
 			fromServer.forEach(Runnable::run);
@@ -1014,7 +1142,7 @@ public final class DesktopCamera {
 	 * a shot the player set up is shown from here on: for a while by the director, for good by the follow camera
 	 */
 	private void handOver(Shot shot) {
-		if (mode == Mode.FOLLOW) {
+		if (mode == Mode.FOLLOW || mode == Mode.DRONE) {
 			followShot = shot;
 		} else if (director != null) {
 			director.showManual(shot);
@@ -1057,6 +1185,8 @@ public final class DesktopCamera {
 		final Player star = find(mc, config.filmPlayer);
 		filmsSelf = star == null || star == player;
 		subject.updateWithoutVR(filmsSelf ? player : star, partialTick, dt, dt, config);
+		subject.softBlocks = hasOwnWindow() && DitheredBlocks.active();
+		subject.seenThrough = config.seeThrough && hasOwnWindow() && OutputWindow.showsThrough();
 		final Player partner = find(mc, config.filmWith);
 		subject.partner = partner == subject.player ? null : partner;
 		if (mode == Mode.FREE && mc.level != freeLevel) {
@@ -1203,7 +1333,113 @@ public final class DesktopCamera {
 		handOver(shot);
 	}
 
+	/**
+	 * @return how far from the camera the player is in the picture that is drawn right now, for the blocks in
+	 * between to be drawn see-through. 0 if that is not the picture of a camera that films a player
+	 */
+	public double ditherReach() {
+		return DirectorPass.isActive() && subject.softBlocks && mode != Mode.FREE && pose != null ?
+				pose.position().distanceTo(subject.center) : 0.0;
+	}
+
+	/**
+	 * @return how far the hole the player is seen through behind blocks is open, from 0 to 1
+	 */
+	public double revealAmount() {
+		return hasOwnWindow() && mode != Mode.FREE && !showsOwnView() ? revealAmount : 0.0;
+	}
+
+	/**
+	 * @return the middle of that hole, and how many blocks across half of it is
+	 */
+	public Vec3 revealCenter() {
+		return subject.center;
+	}
+
+	public Vec3 revealFeet() {
+		return subject.feet;
+	}
+
+	public double revealRadius() {
+		return CameraConfig.current().seeThroughRadius * subject.unit;
+	}
+
+	/**
+	 * what is between the camera and the player
+	 *
+	 * @param near  how far in front of the camera a picture without it begins: right behind the last block in the
+	 *              way, and never as far as the player
+	 * @param solid if there is next to nothing but solid blocks around the player, as in a narrow shaft. A picture
+	 *              that begins inside those is empty: there the player alone is shown through the blocks, and
+	 *              they are left whole
+	 */
+	public record Blocked(double near, boolean solid) {
+	}
+
+	/**
+	 * @return what is between the camera and the player. With nothing there the picture begins right before the
+	 * player, for the hole to close slowly after the last block is out of the way
+	 */
+	public Blocked blockedBy(Pose lens) {
+		final Vec3 ahead = new Vec3(lens.rotation().transform(new Vector3f(0, 0, -1)));
+		final Level level = subject.player.level();
+		double lastBlock = 0;
+		double body = Double.MAX_VALUE;
+		for (final Vec3 part : List.of(subject.head.add(0, 0.3 * subject.unit, 0), subject.center, subject.feet)) {
+			body = Math.min(body, part.subtract(lens.position()).dot(ahead));
+			final BlockHitResult hit = level.clip(new ClipContext(part, lens.position(), ClipContext.Block.COLLIDER,
+					ClipContext.Fluid.NONE, subject.player));
+			if (hit.getType() != HitResult.Type.MISS) {
+				lastBlock = Math.max(lastBlock, hit.getLocation().subtract(lens.position()).dot(ahead));
+			}
+		}
+		final double near = Math.min(lastBlock <= 0 ? Double.MAX_VALUE : lastBlock + CUT_PAST_BLOCK,
+				body - CUT_BEFORE_BODY * subject.unit);
+		final double open = openBehind(lens, ahead, Math.max(near, 0.0));
+		cramped = open < (cramped ? ROOMY : CRAMPED);
+		if (revealAmount < REVEAL_SWITCH) {
+			shownCramped = cramped;
+		}
+		return new Blocked(near, shownCramped);
+	}
+
+	/**
+	 * @return how much of the hole would show something, from 0 to 1, if the picture in it began that far from the
+	 * camera. Where there are only solid blocks behind, there is nothing to draw, and the hole is empty
+	 */
+	private double openBehind(Pose lens, Vec3 ahead, double near) {
+		final Level level = subject.player.level();
+		final Vec3 right = new Vec3(lens.rotation().transform(new Vector3f(1, 0, 0)));
+		final Vec3 up = new Vec3(lens.rotation().transform(new Vector3f(0, 1, 0)));
+		final double radius = revealRadius();
+		int all = 0;
+		int open = 0;
+		for (int x = -OPEN_SAMPLES; x <= OPEN_SAMPLES; x++) {
+			for (int y = -OPEN_SAMPLES; y <= OPEN_SAMPLES; y++) {
+				if (x * x + y * y > OPEN_SAMPLES * OPEN_SAMPLES) {
+					continue;
+				}
+				final Vec3 through = subject.center.add(right.scale(x * radius / OPEN_SAMPLES))
+						.add(up.scale(y * radius / OPEN_SAMPLES));
+				if (through.y < subject.feet.y) {
+					continue;
+				}
+				final Vec3 way = through.subtract(lens.position()).normalize();
+				final double from = near / Math.max(way.dot(ahead), 0.1);
+				all++;
+				for (double along = from; along < from + OPEN_DEPTH; along += OPEN_STEP) {
+					if (!level.getBlockState(BlockPos.containing(lens.position().add(way.scale(along)))).isSolidRender()) {
+						open++;
+						break;
+					}
+				}
+			}
+		}
+		return all == 0 ? 1.0 : open / (double) all;
+	}
+
 	private Pose filmFree(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
+		revealAmount = 0;
 		free.ride(partialTick, dt);
 		if (flying) {
 			free.fly(new Vec3(held(mc.options.keyRight) - held(mc.options.keyLeft),
@@ -1284,9 +1520,10 @@ public final class DesktopCamera {
 			steer(mc, dt);
 			steered.update(subject, config, dt);
 			shot = steered;
-		} else if (mode == Mode.FOLLOW) {
+		} else if (mode == Mode.FOLLOW || mode == Mode.DRONE) {
 			if (followShot == null || !rig.ready()) {
-				followShot = new Shot(ShotType.CUSTOM, config.preset(), 1);
+				followShot = mode == Mode.DRONE ? new Shot(ShotType.DRONE, config.shot(ShotType.DRONE), 1) :
+						new Shot(ShotType.CUSTOM, config.preset(), 1);
 				followShot.start(subject, config);
 				rig.snap(followShot, subject);
 			} else if (subject.teleported) {
@@ -1297,11 +1534,19 @@ public final class DesktopCamera {
 		} else {
 			director.update(subject, rig, dt);
 			shot = director.current();
+			if (announceShot) {
+				announceShot = false;
+				say("vrcamera.message.shot",
+						Component.translatable("vrcamera.shot." + shot.type.name().toLowerCase(Locale.ROOT)));
+			}
 		}
 		rig.update(shot, subject, dt, config);
+		final double wanted = subject.seenThrough && rig.viewBlocked() && cramped == shownCramped ? 1.0 : 0.0;
+		revealAmount += Math.clamp(wanted - revealAmount, -dt / REVEAL_SECONDS, dt / REVEAL_SECONDS);
 
 		final double fromHead = rig.position().distanceTo(subject.head);
-		inside = filmsSelf && fromHead < (inside ? INSIDE_OUT : INSIDE_IN) * subject.unit;
+		final double pushed = rig.arm() < 0.999 ? PUSHED_IN : 0.0;
+		inside = filmsSelf && fromHead < ((inside ? INSIDE_OUT : INSIDE_IN) + pushed) * subject.unit;
 		return new Pose(rig.position(), new Quaternionf(rig.rotation()),
 				(float) Math.clamp(rig.fov(), 1.0, 179.0));
 	}
@@ -1355,9 +1600,11 @@ public final class DesktopCamera {
 		if (grab.isHolding()) {
 			return free ? CameraHints.Hint.HOLD_FREE : CameraHints.Hint.HOLD;
 		}
-		if (grab.isAiming()) {
-			return free && grab.aimedAt() != this.free.active() ? CameraHints.Hint.AIM_OTHER :
-					CameraHints.Hint.AIM;
+		if (this.grab.isAiming()) {
+			if (!free) {
+				return CameraHints.Hint.AIM;
+			}
+			return this.grab.aimedAt() != this.free.active() ? CameraHints.Hint.AIM_OTHER : CameraHints.Hint.AIM_FREE;
 		}
 		return free ? CameraHints.Hint.IDLE_FREE : CameraHints.Hint.IDLE;
 	}
@@ -1382,7 +1629,7 @@ public final class DesktopCamera {
 	}
 
 	public enum Mode {
-		OFF, DIRECTOR, FOLLOW, FREE
+		OFF, DIRECTOR, FOLLOW, DRONE, FREE
 	}
 
 	/**

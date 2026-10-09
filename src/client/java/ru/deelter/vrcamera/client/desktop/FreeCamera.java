@@ -18,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,6 +35,8 @@ final class FreeCamera {
 
 	static final int MOST = 26;
 	private static final String FILES = "cameras-";
+	private static final String SET_MARK = "@";
+	private static final String SHARED = "vrcamera-cameras:";
 
 	private static final double SPEED = 6.0;
 	private static final double FAST = 3.0;
@@ -78,8 +81,67 @@ final class FreeCamera {
 	/**
 	 * @return the name of the file the cameras of a dimension are kept in
 	 */
-	static String fileName(String dimension) {
-		return FILES + dimension + ".json";
+	static String fileName(String dimension, String set) {
+		return FILES + dimension + (set.isEmpty() ? "" : SET_MARK + set) + ".json";
+	}
+
+	/**
+	 * @return the set a file of cameras belongs to, empty for the one every world starts with
+	 */
+	private static String setOf(String fileName) {
+		final int mark = fileName.indexOf(SET_MARK);
+		return mark < 0 ? "" : fileName.substring(mark + 1, fileName.length() - ".json".length());
+	}
+
+	/**
+	 * @return the sets of cameras there are for a dimension, the one every world starts with left out
+	 */
+	static List<String> sets(Path folder, String dimension) {
+		try (final Stream<Path> files = Files.list(folder)) {
+			return files.map(file -> file.getFileName().toString())
+					.filter(name -> name.startsWith(FILES + dimension + SET_MARK) && name.endsWith(".json"))
+					.map(FreeCamera::setOf).sorted().toList();
+		} catch (IOException e) {
+			return List.of();
+		}
+	}
+
+	/**
+	 * @return the cameras as text, to give to someone who plays on the same map
+	 */
+	String export() {
+		settle();
+		return SHARED + Base64.getEncoder().encodeToString(GSON.toJson(spots).getBytes(StandardCharsets.UTF_8));
+	}
+
+	/**
+	 * Writes cameras someone gave as text down as a set of their own.
+	 *
+	 * @return how many there are, 0 if the text is not cameras
+	 */
+	static int importTo(Path file, String text) {
+		if (!text.trim().startsWith(SHARED)) {
+			return 0;
+		}
+		try {
+			final String written = new String(Base64.getDecoder().decode(text.trim().substring(SHARED.length())),
+					StandardCharsets.UTF_8);
+			final Spot[] given = GSON.fromJson(written, Spot[].class);
+			if (given == null || given.length == 0) {
+				return 0;
+			}
+			final List<Spot> kept = new ArrayList<>();
+			for (final Spot spot : List.of(given).subList(0, Math.min(given.length, MOST))) {
+				spot.name = String.valueOf((char) ('A' + kept.size()));
+				spot.id = null;
+				kept.add(spot);
+			}
+			Files.createDirectories(file.getParent());
+			Files.writeString(file, GSON.toJson(kept), StandardCharsets.UTF_8);
+			return kept.size();
+		} catch (IOException | RuntimeException e) {
+			return 0;
+		}
 	}
 
 	private static double bodyYaw(Entity entity, float partialTick) {
@@ -170,7 +232,8 @@ final class FreeCamera {
 		}
 		try (final Stream<Path> files = Files.list(file.getParent())) {
 			for (final Path other : files.toList()) {
-				if (other.getFileName().toString().startsWith(FILES)) {
+				final String name = other.getFileName().toString();
+				if (name.startsWith(FILES) && setOf(name).equals(setOf(file.getFileName().toString()))) {
 					Files.deleteIfExists(other);
 				}
 			}
@@ -422,6 +485,21 @@ final class FreeCamera {
 		decline(spots.remove(active));
 		active = -1;
 		show(before);
+		save();
+	}
+
+	/**
+	 * takes one of the cameras away. The one that films goes on filming, unless it is the one
+	 */
+	void remove(int camera) {
+		if (camera == this.active) {
+			remove();
+			return;
+		}
+		settle();
+		Spot filming = this.spots.get(this.active);
+		decline(this.spots.remove(camera));
+		this.active = this.spots.indexOf(filming);
 		save();
 	}
 

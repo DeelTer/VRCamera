@@ -21,6 +21,7 @@ import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.Locale;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * The {@code /vrcam} command. Runs on the client only, the server never sees it.
@@ -30,6 +31,7 @@ import java.util.function.Predicate;
  */
 public final class VrcamCommand {
 	private static final int DONE = 1;
+	private static final Pattern SET_NAME = Pattern.compile("[A-Za-z0-9_-]{1,24}");
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
 
@@ -165,6 +167,29 @@ public final class VrcamCommand {
 				}))
 				.then(shots())
 				.then(ClientCommands.literal("manual").executes(context -> manual(context.getSource())))
+				.then(ClientCommands.literal("set")
+						.executes(context -> cameraSet(context.getSource(), ""))
+						.then(ClientCommands.argument("set", StringArgumentType.word()).suggests((context, builder) -> {
+							DesktopCamera.INSTANCE.cameraSets().forEach(builder::suggest);
+							return builder.buildFuture();
+						}).executes(context -> cameraSet(context.getSource(),
+								StringArgumentType.getString(context, "set")))))
+				.then(ClientCommands.literal("export").executes(context -> {
+					if (!DesktopCamera.INSTANCE.exportCameras()) {
+						context.getSource().sendError(Component.translatable("vrcamera.command.set.none"));
+						return 0;
+					}
+					return DONE;
+				}))
+				.then(ClientCommands.literal("import")
+						.then(ClientCommands.argument("set", StringArgumentType.word()).executes(context -> {
+							final String set = StringArgumentType.getString(context, "set");
+							if (!SET_NAME.matcher(set).matches() || !DesktopCamera.INSTANCE.importCameras(set)) {
+								context.getSource().sendError(Component.translatable("vrcamera.command.set.bad"));
+								return 0;
+							}
+							return DONE;
+						})))
 				.then(player("follow", DesktopCamera.INSTANCE::film))
 				.then(player("with", DesktopCamera.INSTANCE::filmWith))
 				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
@@ -237,6 +262,15 @@ public final class VrcamCommand {
 		config.save();
 		source.sendFeedback(Component.translatable(
 				config.directorManual ? "vrcamera.command.manual.on" : "vrcamera.command.manual.off"));
+		return DONE;
+	}
+
+	private static int cameraSet(FabricClientCommandSource source, String set) {
+		if (!set.isEmpty() && !SET_NAME.matcher(set).matches()) {
+			source.sendError(Component.translatable("vrcamera.command.set.bad"));
+			return 0;
+		}
+		DesktopCamera.INSTANCE.useCameraSet(set);
 		return DONE;
 	}
 

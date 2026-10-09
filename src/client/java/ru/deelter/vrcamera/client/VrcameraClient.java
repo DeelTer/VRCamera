@@ -32,6 +32,7 @@ import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.CameraMenuScreen;
+import ru.deelter.vrcamera.client.gui.CameraSetsScreen;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
@@ -60,6 +61,11 @@ public class VrcameraClient implements ClientModInitializer {
 
 	private final Map<KeyMapping, Runnable> keys = new LinkedHashMap<>();
 	private final Set<KeyMapping> heldInWindow = new HashSet<>();
+	/**
+	 * Keys that are held in the game window. The game counts a key that is held as pressed again and again, the
+	 * way it is typed with: one press of a key of the mod is one thing done
+	 */
+	private final Set<KeyMapping> heldInGame = new HashSet<>();
 
 	private KeyMapping gameOnly;
 
@@ -97,7 +103,7 @@ public class VrcameraClient implements ClientModInitializer {
 
 		final int width = Math.min(PAUSE_BUTTON, (pauseMenu.width - HORIZONTAL_GAP - 60) / 2);
 		return new int[]{index % 2 == 0 ? EDGE_MARGIN : pauseMenu.width - EDGE_MARGIN - width,
-				index < 2 ? EDGE_MARGIN : pauseMenu.height - 24,
+				index < 2 ? EDGE_MARGIN : pauseMenu.height - 24 - 22 * ((index - 2) / 2),
 				width};
 	}
 
@@ -143,7 +149,16 @@ public class VrcameraClient implements ClientModInitializer {
 		key("photo", InputConstants.KEY_F6, VrcameraClient::takePhoto);
 		key("preset.new", InputConstants.KEY_N, desktop::addCamera,
 				Vr.INSTALLED ? CameraController.INSTANCE::newPreset : NO_ACTION);
+		key("preset.remove", InputConstants.KEY_DELETE, desktop::removeCamera, NO_ACTION);
+		key("preset.remove.other", InputConstants.KEY_BACKSPACE, desktop::removeCamera, NO_ACTION);
 		key("preset.fly", UNBOUND, desktop::flyToNext);
+		key("set.next", UNBOUND, desktop::nextCameraSet, NO_ACTION);
+		key("sets", UNBOUND, () -> {
+			final Minecraft mc = Minecraft.getInstance();
+			if (mc.gui.screen() == null && mc.level != null) {
+				mc.gui.setScreen(new CameraSetsScreen(null));
+			}
+		}, NO_ACTION);
 		key("summon", UNBOUND, desktop::summon,
 				Vr.INSTALLED ? CameraController.INSTANCE::summon : NO_ACTION);
 		key("debug", UNBOUND, DebugOverlay::toggle);
@@ -233,8 +248,17 @@ public class VrcameraClient implements ClientModInitializer {
 	}
 
 	private void handleKey(@NotNull KeyMapping key, @NotNull Runnable action, boolean inWindow) {
+		boolean pressed = false;
 		while (key.consumeClick()) {
+			pressed = true;
+		}
+		if (pressed && !heldInGame.contains(key)) {
 			action.run();
+		}
+		if (key.isDown()) {
+			heldInGame.add(key);
+		} else {
+			heldInGame.remove(key);
 		}
 		final boolean down = inWindow && key != gameOnly &&
 				OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue());
@@ -269,6 +293,8 @@ public class VrcameraClient implements ClientModInitializer {
 						button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu))).build());
 			}
 			buttons.add(chromaButton());
+			buttons.add(Button.builder(Component.translatable("vrcamera.gui.sets"),
+					button -> Minecraft.getInstance().gui.setScreen(new CameraSetsScreen(pauseMenu))).build());
 			for (int slot = 0; slot < buttons.size(); slot++) {
 				final Button button = buttons.get(slot);
 				final int[] at = pauseSlot(pauseMenu, slot);

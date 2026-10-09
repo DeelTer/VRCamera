@@ -45,6 +45,18 @@ public final class Subject {
 	 */
 	public boolean tracksHands = true;
 	/**
+	 * if the player is at a screen and not in VR
+	 */
+	public boolean atScreen;
+	/**
+	 * if the camera shows the player through what is in the way, and has no need to keep clear of it
+	 */
+	public boolean seenThrough;
+	/**
+	 * if blocks like leaves are drawn see-through for the camera, and are not in its way
+	 */
+	public boolean softBlocks;
+	/**
 	 * size of the player, 1 is a regular player. All camera distances are multiplied by this
 	 */
 	public double unit = 1.0;
@@ -114,6 +126,7 @@ public final class Subject {
 		center = feet.lerp(head, config.aimHeight);
 		hands = center;
 		tracksHands = false;
+		atScreen = true;
 
 		guiCenter = null;
 		turn(player, partialTick, Mth.rotLerp(partialTick, player.yBodyRotO, player.yBodyRot) * Mth.DEG_TO_RAD, dt);
