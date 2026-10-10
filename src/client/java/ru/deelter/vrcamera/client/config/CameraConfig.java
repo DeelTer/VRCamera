@@ -209,6 +209,18 @@ public class CameraConfig {
 	 * heard by the others
 	 */
 	public boolean photoSounds = true;
+	/**
+	 * if a photo a player at a screen looks at for a moment is shown large at the side of the screen
+	 */
+	public boolean photoPreview = true;
+	/**
+	 * seconds a photo is looked at before it is shown large
+	 */
+	public double photoPreviewSeconds = 0.5;
+	/**
+	 * blocks from which a photo that is looked at is shown large
+	 */
+	public double photoPreviewDistance = 2.0;
 	public boolean photoClipboard = true;
 	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory

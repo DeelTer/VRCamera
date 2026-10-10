@@ -699,6 +699,7 @@ public final class PhotoSync {
 					PhotoAlbum.image(picture), image);
 			if (shown != null) {
 				shown.custom = sheet.custom();
+				shown.own = isOwn(sheet.owner());
 			}
 			loaded.add(sheet.id());
 		}
@@ -733,6 +734,11 @@ public final class PhotoSync {
 					sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect, result.imageHash(),
 					true, sheet.custom));
 		}
+	}
+
+	private static boolean isOwn(UUID owner) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		return player != null && owner.equals(player.getUUID());
 	}
 
 	/**

@@ -84,6 +84,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private boolean freeThroughBlocks;
 	private boolean kickOutdated;
 	private String outdatedMessage;
+	private String minModVersion;
 	private double freeRange;
 	private final Set<UUID> cameraDenied = new HashSet<>();
 	private double sendRange;
@@ -331,8 +332,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		freeThroughBlocks = getConfig().getBoolean("cameras.free-through-blocks", false);
 		freeRange = Math.max(0.0, getConfig().getDouble("cameras.free-range", 64));
 		kickOutdated = getConfig().getBoolean("mod.kick-outdated", true);
+		minModVersion = getConfig().getString("mod.min-version", "2.1.3");
 		outdatedMessage = getConfig().getString("mod.outdated-message",
-				"Update the VRCamera mod to 2.1.3 or newer to play here");
+				"Update the VRCamera mod to %min% or newer to play here").replace("%min%", minModVersion);
 		maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
 		allowCustom = getConfig().getBoolean("custom-pictures", true);
 		protectBlocks = getConfig().getBoolean("photos-protect-blocks", false);
@@ -357,13 +359,47 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		player.sendPluginMessage(this, Protocol.CHANNEL, message);
 	}
 
+	/**
+	 * @param version what a mod calls itself, like 2.1.4+26.2. Empty from a mod too old to say
+	 * @return if that is a version before the least one, by its numbers. What comes after them is not looked at
+	 */
+	private static boolean isOlder(String version, String least) {
+		final int[] has = numbers(version);
+		final int[] needs = numbers(least);
+		for (int part = 0; part < Math.max(has.length, needs.length); part++) {
+			final int mine = part < has.length ? has[part] : 0;
+			final int wanted = part < needs.length ? needs[part] : 0;
+			if (mine != wanted) {
+				return mine < wanted;
+			}
+		}
+		return false;
+	}
+
+	private static int[] numbers(String version) {
+		final String plain = version.split("[+-]", 2)[0].trim();
+		if (plain.isEmpty()) {
+			return new int[0];
+		}
+		final String[] parts = plain.split("[.]");
+		final int[] numbers = new int[parts.length];
+		for (int part = 0; part < parts.length; part++) {
+			try {
+				numbers[part] = Integer.parseInt(parts[part]);
+			} catch (NumberFormatException e) {
+				numbers[part] = 0;
+			}
+		}
+		return numbers;
+	}
+
 	private void hello(Player player, int version, Protocol.Mod mod) {
 		if (version != Protocol.VERSION) {
 			getLogger().info(player.getName() + " has a VRCamera mod that speaks protocol " + version + ", this is " +
 					Protocol.VERSION);
 			return;
 		}
-		final boolean keepsRules = mod.rulesLevel() >= Protocol.RULES_LEVEL ||
+		final boolean keepsRules = (mod.rulesLevel() >= Protocol.RULES_LEVEL && !isOlder(mod.version(), minModVersion)) ||
 				player.hasPermission("vrcamera.camera.unrestricted");
 		if (!keepsRules && kickOutdated) {
 			getLogger().info(player.getName() + " was kicked: their VRCamera mod is too old to keep the camera rules");

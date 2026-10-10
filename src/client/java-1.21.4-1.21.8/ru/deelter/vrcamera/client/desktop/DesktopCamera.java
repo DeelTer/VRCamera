@@ -265,6 +265,11 @@ public final class DesktopCamera {
 	 * the mode has nothing to film with then
 	 */
 	public void removeCamera() {
+		final Boolean discarded = Vr.isRunning() ? null : SheetReach.INSTANCE.discard();
+		if (discarded != null) {
+			say(discarded ? "vrcamera.message.photo.discarded" : "vrcamera.message.photo.others");
+			return;
+		}
 		if (mode != Mode.FREE || freeLevel == null || free.isEmpty()) {
 			return;
 		}

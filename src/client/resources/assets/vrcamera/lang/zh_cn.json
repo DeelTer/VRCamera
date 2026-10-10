@@ -365,7 +365,15 @@
 	"vrcamera.message.photo.wait": "摄像机：%s 秒后可再次拍照",
 	"key.vrcamera.turn": "转动手中的摄像机或照片",
 	"vrcamera.hint.sheet.aim": "右键 — 拿起照片",
-	"vrcamera.hint.sheet.hold": "滚轮 — 拉近/拉远 · %s — 旋转 · 靠近方块 — 贴上",
+	"vrcamera.hint.sheet.hold": "滚轮 — 拉近/拉远 · %s — 旋转 · %s — 丢弃 · 靠近方块 — 贴上",
 	"vrcamera.message.sound": "摄像机：同时录制两个窗口？请在录制软件中关闭其中一个的音频采集，否则声音会重复",
-	"vrcamera.message.denied": "摄像机：此处不允许拍摄"
+	"vrcamera.message.denied": "摄像机：此处不允许拍摄",
+	"vrcamera.option.photoPreview": "照片预览",
+	"vrcamera.option.photoPreview.tooltip": "非 VR：注视一张照片片刻，它会放大显示在屏幕一侧，移开视线后消失。不会出现在摄像机画面中",
+	"vrcamera.option.photoPreviewSeconds": "注视照片时长",
+	"vrcamera.option.photoPreviewSeconds.tooltip": "注视照片多久后放大显示",
+	"vrcamera.message.photo.discarded": "照片已丢弃",
+	"vrcamera.message.photo.others": "摄像机：这不是你的照片，无法丢弃",
+	"vrcamera.option.photoPreviewDistance": "预览距离",
+	"vrcamera.option.photoPreviewDistance.tooltip": "注视的照片在多少格以内会放大显示"
 }

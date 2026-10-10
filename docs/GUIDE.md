@@ -346,8 +346,9 @@ Server settings, `plugins/VRCamera/config.yml`:
 | `cameras.share`, `cameras.range` | `true`, `32`  | show players' cameras to the others, and within how many blocks                                                                                                      |
 | `cameras.free-through-blocks`    | `false`       | `false`: a PC player's free camera stops at blocks instead of flying through them |
 | `cameras.free-range`             | `64`          | blocks a free camera gets away from its player, it is pulled along beyond that. `0`: any distance |
-| `mod.kick-outdated`              | `true`        | a mod older than 2.1.3 does not know the camera rules. `true`: players with one are kicked; `false`: only told |
-| `mod.outdated-message`           | see config    | what they are kicked or told with |
+| `mod.min-version`                | `2.1.3`       | the oldest version of the mod players may have; an older one does not know the camera rules |
+| `mod.kick-outdated`              | `true`        | `true`: players with an older mod are kicked; `false`: only told |
+| `mod.outdated-message`           | see config    | what they are kicked or told with; `%min%` is the version |
 
 Permissions: `vrcamera.pin` (everyone), `vrcamera.photo.nocooldown`, `vrcamera.camera.unrestricted`,
 `vrcamera.remove.others`, `vrcamera.admin` (all four: operators).
@@ -448,7 +449,8 @@ Names are saved as `filmPlayer` and `filmWith`. Free cameras keep their own fram
 comes out of the active camera; with cameras off it hangs in front of you for a few seconds, then falls.
 Aim at a photo and hold right-click to take it: the wheel moves it nearer or farther, `R` rotates it a quarter
 turn. Hold it against a block and release to pin it; release in the air and it falls. Your photos lying around
-have an icon with the distance. On Windows the image is also copied to the clipboard (`photoClipboard`).
+have an icon with the distance. Look at a photo for half a second and it is shown large at the side of the
+screen, from up to 2 blocks away (`photoPreview`, `photoPreviewSeconds`, `photoPreviewDistance`); it is not in the camera's picture. On Windows the image is also copied to the clipboard (`photoClipboard`).
 On servers with the plugin, others can see your active camera within 48 blocks of you, subject to the server's
 sharing range. `shareCamera` disables sharing; `othersCameras` limits visible cameras from others (default 3, 0 hides
 all).

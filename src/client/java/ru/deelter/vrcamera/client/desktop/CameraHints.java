@@ -76,7 +76,7 @@ final class CameraHints {
 	 */
 	enum Hint {
 		IDLE("steer"), IDLE_FREE("preset.new", "preset"), AIM, AIM_FREE("preset.remove"), AIM_OTHER, HOLD("turn"),
-		HOLD_FREE("turn"), STEER, SHEET_AIM, SHEET_HOLD("turn");
+		HOLD_FREE("turn"), STEER, SHEET_AIM, SHEET_HOLD("turn", "preset.remove");
 
 		private final String[] keys;
 

@@ -80,6 +80,10 @@ public final class SheetReach implements PhotoAlbum.Hands {
 		}
 	}
 
+	public boolean isHolding() {
+		return holding;
+	}
+
 	/**
 	 * @return if the use key belongs to a photo right now, and not to the game
 	 */
@@ -108,6 +112,23 @@ public final class SheetReach implements PhotoAlbum.Hands {
 			quarterTurns++;
 		}
 		return holding;
+	}
+
+	/**
+	 * throws the held photo away, if the player made it
+	 *
+	 * @return null if no photo is held, otherwise if it is gone
+	 */
+	@Nullable
+	public Boolean discard() {
+		if (!holding) {
+			return null;
+		}
+		final Boolean gone = PhotoAlbum.INSTANCE.discard(HAND);
+		if (!Boolean.FALSE.equals(gone)) {
+			holding = false;
+		}
+		return gone;
 	}
 
 	/**

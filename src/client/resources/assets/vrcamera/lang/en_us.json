@@ -365,7 +365,15 @@
 	"vrcamera.message.photo.wait": "Camera: next photo in %s s",
 	"key.vrcamera.turn": "Turn the held camera or photo",
 	"vrcamera.hint.sheet.aim": "RMB — take the photo",
-	"vrcamera.hint.sheet.hold": "Wheel — nearer/farther · %s — rotate · at a block — pin",
+	"vrcamera.hint.sheet.hold": "Wheel — nearer/farther · %s — rotate · %s — throw away · at a block — pin",
 	"vrcamera.message.sound": "Camera: recording both windows? Turn off audio capture for one of them in your recording program, or the sound doubles",
-	"vrcamera.message.denied": "Camera: filming is not allowed here"
+	"vrcamera.message.denied": "Camera: filming is not allowed here",
+	"vrcamera.option.photoPreview": "Photo preview",
+	"vrcamera.option.photoPreview.tooltip": "Without VR: look at a photo for a moment and it is shown large at the side of the screen. Look away and it goes. Not in the picture of the camera",
+	"vrcamera.option.photoPreviewSeconds": "Look at it for",
+	"vrcamera.option.photoPreviewSeconds.tooltip": "How long you look at a photo before it is shown large",
+	"vrcamera.message.photo.discarded": "Photo thrown away",
+	"vrcamera.message.photo.others": "Camera: this photo is not yours to throw away",
+	"vrcamera.option.photoPreviewDistance": "Preview from",
+	"vrcamera.option.photoPreviewDistance.tooltip": "From how many blocks away a photo you look at is shown large"
 }

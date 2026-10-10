@@ -635,6 +635,7 @@ public final class PhotoSync {
 					PhotoAlbum.image(picture), image);
 			if (shown != null) {
 				shown.custom = sheet.custom();
+				shown.own = isOwn(sheet.owner());
 			}
 			this.loaded.add(sheet.id());
 		}
@@ -711,6 +712,11 @@ public final class PhotoSync {
 		if (this.connected) {
 			send(Protocol.unpin(id));
 		}
+	}
+
+	private static boolean isOwn(UUID owner) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		return player != null && owner.equals(player.getUUID());
 	}
 
 	/**

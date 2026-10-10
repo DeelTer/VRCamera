@@ -365,7 +365,15 @@
 	"vrcamera.message.photo.wait": "Caméra : prochaine photo dans %s s",
 	"key.vrcamera.turn": "Tourner la caméra ou la photo tenue",
 	"vrcamera.hint.sheet.aim": "Clic droit — prendre la photo",
-	"vrcamera.hint.sheet.hold": "Molette — plus près/loin · %s — tourner · près d'un bloc — épingler",
+	"vrcamera.hint.sheet.hold": "Molette — plus près/loin · %s — tourner · %s — jeter · près d'un bloc — épingler",
 	"vrcamera.message.sound": "Caméra : vous enregistrez les deux fenêtres ? Coupez la capture audio de l'une d'elles dans votre logiciel, sinon le son est doublé",
-	"vrcamera.message.denied": "Caméra : il est interdit de filmer ici"
+	"vrcamera.message.denied": "Caméra : il est interdit de filmer ici",
+	"vrcamera.option.photoPreview": "Aperçu des photos",
+	"vrcamera.option.photoPreview.tooltip": "Sans VR : regardez une photo un instant et elle s'affiche en grand sur le côté de l'écran. Détournez le regard et elle disparaît. Absente de l'image de la caméra",
+	"vrcamera.option.photoPreviewSeconds": "Regarder la photo pendant",
+	"vrcamera.option.photoPreviewSeconds.tooltip": "Combien de temps regarder une photo avant qu'elle s'affiche en grand",
+	"vrcamera.message.photo.discarded": "Photo jetée",
+	"vrcamera.message.photo.others": "Caméra : cette photo n'est pas à vous",
+	"vrcamera.option.photoPreviewDistance": "Aperçu à partir de",
+	"vrcamera.option.photoPreviewDistance.tooltip": "À combien de blocs de distance une photo regardée s'affiche en grand"
 }
