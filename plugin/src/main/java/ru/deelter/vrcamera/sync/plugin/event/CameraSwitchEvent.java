@@ -19,8 +19,8 @@ public final class CameraSwitchEvent extends PlayerEvent {
 	private final String id;
 	private final Location camera;
 
-	public CameraSwitchEvent(@NotNull Player player, @NotNull String name, @Nullable String id,
-	                         @NotNull Location camera) {
+	public CameraSwitchEvent(
+			@NotNull Player player, @NotNull String name, @Nullable String id, @NotNull Location camera) {
 		super(player);
 		this.name = name;
 		this.id = id;

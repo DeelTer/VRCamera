@@ -20,7 +20,6 @@ import java.util.function.Supplier;
  * Settings screen, built with Cloth Config. Only load this class when Cloth Config is installed.
  */
 public final class ConfigScreen {
-
 	private static final int[][] OUTPUT_SIZES = {
 			{1280, 720}, {1920, 1080}, {2560, 1440}, {3840, 2160}, {1080, 1920}, {1440, 2560}};
 	private final ConfigEntryBuilder entries;
@@ -30,7 +29,6 @@ public final class ConfigScreen {
 	}
 
 	public static Screen create(Screen parent) {
-
 		final CameraConfig config = CameraConfig.current();
 		final CameraConfig defaults = new CameraConfig();
 		final Pace pace = config.pace;
@@ -39,7 +37,6 @@ public final class ConfigScreen {
 				.setParentScreen(parent)
 				.setTitle(Component.translatable("vrcamera.config.title"))
 				.setSavingRunnable(() -> {
-
 					if (config.pace != pace) {
 						config.pace.apply(config);
 					}
@@ -196,7 +193,8 @@ public final class ConfigScreen {
 		motion.addEntry(screen.toggle("speedFov", config.speedFov, defaults.speedFov,
 				value -> config.speedFov = value));
 
-		final ConfigCategory collision = builder.getOrCreateCategory(Component.translatable("vrcamera.config.collision"));
+		final ConfigCategory collision = builder.getOrCreateCategory(
+				Component.translatable("vrcamera.config.collision"));
 		collision.addEntry(screen.slider("collisionRadius", config.collisionRadius, defaults.collisionRadius,
 				0.05, 0.5, 0.01, "%.2f", value -> config.collisionRadius = value));
 		collision.addEntry(screen.slider("collisionMargin", config.collisionMargin, defaults.collisionMargin,
@@ -235,7 +233,8 @@ public final class ConfigScreen {
 			}
 			final ShotConfig shot = config.shot(type);
 			final String name = type.name().toLowerCase(Locale.ROOT);
-			final SubCategoryBuilder group = screen.entries.startSubCategory(Component.translatable("vrcamera.shot." + name))
+			final SubCategoryBuilder group = screen.entries
+					.startSubCategory(Component.translatable("vrcamera.shot." + name))
 					.setTooltip(Component.translatable("vrcamera.shot." + name + ".tooltip"));
 			screen.addShot(group, shot, type.defaults(), true);
 			shots.addEntry(group.build());
@@ -318,7 +317,7 @@ public final class ConfigScreen {
 	}
 
 	private AbstractConfigListEntry<?> outputSize(CameraConfig config) {
-		String key = "vrcamera.option.outputSize";
+		final String key = "vrcamera.option.outputSize";
 		final List<int[]> sizes = new ArrayList<>();
 		sizes.add(new int[]{0, 0});
 		sizes.addAll(Arrays.asList(OUTPUT_SIZES));
@@ -326,7 +325,6 @@ public final class ConfigScreen {
 		final int height = config.hasOutputSize() ? config.outputHeight : 0;
 		int[] current = sizes.stream().filter(size -> size[0] == width && size[1] == height).findFirst().orElse(null);
 		if (current == null) {
-
 			current = new int[]{width, height};
 			sizes.add(current);
 		}

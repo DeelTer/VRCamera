@@ -11,10 +11,8 @@ import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 @Mixin(MouseHandler.class)
 public class MouseHandlerMixin {
-
 	@Inject(method = "onScroll", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$wheelMovesCamera(long window, double horizontal, double vertical, CallbackInfo ci) {
-
 		if (OutputWindow.onScroll(window, vertical) || DesktopCamera.INSTANCE.scroll(vertical)) {
 			ci.cancel();
 		}

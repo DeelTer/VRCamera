@@ -62,7 +62,6 @@ public final class OutputWindow {
 		}
 		if (window != 0) {
 			if (closeRequested) {
-
 				close();
 				DesktopCamera.INSTANCE.setMode(DesktopCamera.Mode.OFF);
 			}
@@ -203,7 +202,6 @@ public final class OutputWindow {
 				throw new IllegalStateException("the camera window can't be drawn into: " + SDLError.SDL_GetError());
 			}
 			try {
-
 				SDLVideo.SDL_GL_SetSwapInterval(0);
 				GL11.glColorMask(true, true, true, true);
 				PictureBlit.draw(picture, texture, frameBuffer, size[0], size[1], fill,
@@ -377,11 +375,12 @@ public final class OutputWindow {
 			try (final MemoryStack stack = MemoryStack.stackPush()) {
 				final SDL_Rect bounds = SDL_Rect.malloc(stack);
 				for (int i = 0; displays != null && i < displays.limit(); i++) {
-					if (SDLVideo.SDL_GetDisplayBounds(displays.get(i), bounds)) {
-						final Box whole = new Box(bounds.x(), bounds.y(), bounds.w(), bounds.h());
-						if (whole.has(place.middleX(), place.middleY())) {
-							return whole;
-						}
+					if (!SDLVideo.SDL_GetDisplayBounds(displays.get(i), bounds)) {
+						continue;
+					}
+					final Box whole = new Box(bounds.x(), bounds.y(), bounds.w(), bounds.h());
+					if (whole.has(place.middleX(), place.middleY())) {
+						return whole;
 					}
 				}
 			}

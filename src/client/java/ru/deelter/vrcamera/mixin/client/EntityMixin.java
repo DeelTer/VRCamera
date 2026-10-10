@@ -11,7 +11,6 @@ import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 @Mixin(Entity.class)
 public class EntityMixin {
-
 	@Inject(method = "turn", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$mouseTurnsCamera(double yRot, double xRot, CallbackInfo ci) {
 		if ((Object) this == Minecraft.getInstance().player && DesktopCamera.INSTANCE.turn(yRot, xRot)) {

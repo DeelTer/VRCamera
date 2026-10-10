@@ -11,7 +11,6 @@ import java.lang.reflect.Method;
  * frame it over it. Needs the OpenGL renderer of the game.
  */
 final class PictureBlit {
-
 	private static final int LINE_PART = 360;
 	private static Method glId;
 
@@ -99,8 +98,9 @@ final class PictureBlit {
 			if (before != null) {
 				final int dots = Math.max(1, (int) Math.ceil(Math.hypot(x - before[0], y - before[1]) / thickness));
 				for (int dot = 1; dot <= dots; dot++) {
-					strip((int) (before[0] + (x - before[0]) * dot / dots), (int) (before[1] + (y - before[1]) * dot / dots),
-							thickness, thickness);
+					final int dotX = (int) (before[0] + (x - before[0]) * dot / dots);
+					final int dotY = (int) (before[1] + (y - before[1]) * dot / dots);
+					strip(dotX, dotY, thickness, thickness);
 				}
 			}
 			before = new double[]{x, y};

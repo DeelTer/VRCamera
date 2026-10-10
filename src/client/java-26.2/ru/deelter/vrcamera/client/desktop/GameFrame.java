@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
  * what the game is asked for to draw a frame, which is not asked for the same way in every version of it
  */
 final class GameFrame {
-
 	/**
 	 * Pictures the mod had the game draw in this frame, on top of the one of the game itself. The game keeps
 	 * three sets of what a picture is drawn with and takes the next one for every picture, counting on one

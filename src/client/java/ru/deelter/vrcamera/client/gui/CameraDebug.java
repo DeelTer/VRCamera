@@ -15,7 +15,6 @@ import java.util.Locale;
  * what the camera of Vivecraft is doing and why, in words: for the debug overlay and /vrcam status
  */
 public final class CameraDebug {
-
 	private CameraDebug() {
 	}
 
@@ -38,7 +37,6 @@ public final class CameraDebug {
 
 		final Shot shot = controller.shot();
 		if (shot != null) {
-
 			final String time = shot.duration == Double.MAX_VALUE ? format("%.1fs", shot.age) :
 					format("%.1f/%.1fs", shot.age, shot.duration);
 			lines.add("shot: " + shot.type + (shot.side < 0 ? " left " : " right ") + time +

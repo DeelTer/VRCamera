@@ -47,10 +47,12 @@ public class CameraSetsScreen extends Screen {
 			refresh("vrcamera.gui.sets.opened");
 		}).bounds(x, y, WIDTH, BUTTON_HEIGHT).build());
 		y += BUTTON_HEIGHT + GAP;
-		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.sets.export"),
-						button -> refresh(camera.exportCameras() ? "vrcamera.gui.sets.copied" : "vrcamera.command.set.none"))
+		final Component export = Component.translatable("vrcamera.gui.sets.export");
+		addRenderableWidget(Button.builder(export, button -> refresh(camera.exportCameras() ?
+						"vrcamera.gui.sets.copied" : "vrcamera.command.set.none"))
 				.bounds(x, y, half, BUTTON_HEIGHT).build());
-		deleteButton = addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.sets.delete"), button -> {
+		final Component delete = Component.translatable("vrcamera.gui.sets.delete");
+		deleteButton = addRenderableWidget(Button.builder(delete, button -> {
 			if (!deleting) {
 				deleting = true;
 				button.setMessage(Component.translatable("vrcamera.gui.sets.delete.confirm"));

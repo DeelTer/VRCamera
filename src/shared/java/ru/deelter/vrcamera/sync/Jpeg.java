@@ -14,7 +14,6 @@ import java.util.Iterator;
  * packs pictures the same way in the mod and on the server
  */
 public final class Jpeg {
-
 	private Jpeg() {
 	}
 

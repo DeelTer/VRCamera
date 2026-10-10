@@ -78,7 +78,6 @@ public final class CustomPictures {
 				reader.dispose();
 			}
 		} catch (RuntimeException e) {
-
 			throw new IOException("broken picture");
 		}
 	}

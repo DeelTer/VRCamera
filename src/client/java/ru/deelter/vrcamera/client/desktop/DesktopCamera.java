@@ -224,7 +224,6 @@ public final class DesktopCamera {
 	public void setMode(Mode mode) {
 		final Minecraft mc = Minecraft.getInstance();
 		if (mode != Mode.OFF && Vr.isRunning()) {
-
 			return;
 		}
 		if (mode == this.mode) {
@@ -265,7 +264,7 @@ public final class DesktopCamera {
 			say("vrcamera.message.free.last");
 			return;
 		}
-		int camera = grab.isAiming() ? grab.aimedAt() : free.active();
+		final int camera = grab.isAiming() ? grab.aimedAt() : free.active();
 		int next = -1;
 		final LocalPlayer player = Minecraft.getInstance().player;
 		if (camera == free.active() && player != null) {
@@ -283,7 +282,7 @@ public final class DesktopCamera {
 				return;
 			}
 		}
-		String name = free.name(camera);
+		final String name = free.name(camera);
 		grab.reset();
 		free.remove(camera);
 		if (next >= 0) {
@@ -329,7 +328,8 @@ public final class DesktopCamera {
 			askedFor = type;
 		} else {
 			director.force(type);
-			say("vrcamera.message.shot", Component.translatable("vrcamera.shot." + type.name().toLowerCase(Locale.ROOT)));
+			say("vrcamera.message.shot",
+					Component.translatable("vrcamera.shot." + type.name().toLowerCase(Locale.ROOT)));
 		}
 	}
 
@@ -342,7 +342,6 @@ public final class DesktopCamera {
 	}
 
 	public void nextShot() {
-
 		ownView = false;
 		if (mode == Mode.DIRECTOR && director != null) {
 			director.next();
@@ -443,7 +442,7 @@ public final class DesktopCamera {
 	 * somewhere else are passed over: by their name they can still be cut to
 	 */
 	public void nextPoint() {
-		int camera = nextAround();
+		final int camera = nextAround();
 		if (camera >= 0) {
 			cutTo(camera);
 		}
@@ -453,7 +452,7 @@ public final class DesktopCamera {
 	 * the same, but the camera that films flies over to the next one and films on the way
 	 */
 	public void flyToNext() {
-		int camera = nextAround();
+		final int camera = nextAround();
 		if (camera >= 0) {
 			grab.release();
 			free.flyTo(camera);
@@ -474,7 +473,7 @@ public final class DesktopCamera {
 	 * @return false if there is none
 	 */
 	public boolean showCamera(String name) {
-		int camera = cameraNames().indexOf(name.toUpperCase(Locale.ROOT));
+		final int camera = cameraNames().indexOf(name.toUpperCase(Locale.ROOT));
 		if (camera < 0) {
 			return false;
 		}
@@ -603,7 +602,7 @@ public final class DesktopCamera {
 			String id, Vec3 position, float yaw, float pitch, float fov, boolean anyway, boolean show) {
 		withCameras(() -> {
 			final boolean known = free.indexOf(id) >= 0;
-			int camera = free.place(id, position, yaw, pitch, fov, anyway);
+			final int camera = free.place(id, position, yaw, pitch, fov, anyway);
 			if (camera < 0) {
 				return;
 			}
@@ -628,7 +627,6 @@ public final class DesktopCamera {
 			free.takeBack(id, exact);
 			final LocalPlayer player = Minecraft.getInstance().player;
 			if (mode == Mode.FREE && free.isEmpty() && player != null) {
-
 				addAtEyes(player, partialTick());
 			}
 		});
@@ -647,7 +645,7 @@ public final class DesktopCamera {
 		}
 		final boolean open = mode == Mode.FREE && freeLevel != null && !free.isEmpty();
 		if (!(seconds > 0)) {
-			int camera = open ? free.indexOf(id) : -1;
+			final int camera = open ? free.indexOf(id) : -1;
 			if (camera >= 0 && camera != free.active()) {
 				grab.reset();
 				free.show(camera);
@@ -655,7 +653,6 @@ public final class DesktopCamera {
 			return;
 		}
 		if (lentId == null) {
-
 			lentFrom = mode;
 			lentBefore = open ? free.name(free.active()) : null;
 			lentShown = false;
@@ -665,7 +662,6 @@ public final class DesktopCamera {
 		if (open) {
 			showLent();
 		} else if (mode != Mode.FREE) {
-
 			setMode(Mode.FREE);
 		}
 	}
@@ -817,7 +813,6 @@ public final class DesktopCamera {
 			poseNanos = now;
 			return true;
 		} catch (RuntimeException e) {
-
 			Vrcamera.LOGGER.error("VRCamera: the camera on the screen failed and was turned off", e);
 			setMode(Mode.OFF);
 			return false;
@@ -851,7 +846,6 @@ public final class DesktopCamera {
 	 */
 	public void keepView(Minecraft mc) {
 		if (mode != Mode.OFF && Vr.isRunning()) {
-
 			setMode(Mode.OFF);
 			return;
 		}
@@ -941,7 +935,7 @@ public final class DesktopCamera {
 	public List<String> debugLines() {
 		final List<String> lines = new ArrayList<>();
 		lines.add("VRCamera on screen: " + mode + (hasOwnWindow() ? ", own window" : ", game window"));
-		Shot shot = steered != null ? steered : mode == Mode.FOLLOW || mode == Mode.DRONE ? followShot :
+		final Shot shot = steered != null ? steered : mode == Mode.FOLLOW || mode == Mode.DRONE ? followShot :
 												director == null ? null : director.current();
 		if (shot != null) {
 			lines.add("shot: " + shot.type + (showsOwnView() ? " (own view of the player)" : ""));
@@ -979,7 +973,6 @@ public final class DesktopCamera {
 			return;
 		}
 		try {
-
 			final Camera view = mc.gameRenderer.mainCamera();
 			final Vec3 eye = view.position();
 			final Vec3 forward = new Vec3(view.forwardVector().x(), view.forwardVector().y(), view.forwardVector().z());
@@ -987,9 +980,9 @@ public final class DesktopCamera {
 			final UnaryOperator<Vec3> placed = ViewBob.steady(mc, player, eye, forward, up);
 			final int filming = mode == Mode.FREE ? free.active() : 0;
 			final boolean several = mode == Mode.FREE && free.count() > 1;
-			CameraIndicator.draw(CAMERA_ICON, several ? free.name(filming) : "",
-					markerPosition(), eye, forward, up, player.getScale(), true, farSize(eye, markerPosition()) * grab.iconSize(filming, filming),
-					placed);
+			final double iconSize = farSize(eye, markerPosition()) * grab.iconSize(filming, filming);
+			CameraIndicator.draw(CAMERA_ICON, several ? free.name(filming) : "", markerPosition(), eye, forward, up,
+					player.getScale(), true, iconSize, placed);
 
 			for (int camera = 0; several && camera < free.count(); camera++) {
 				if (camera != filming && isAround(camera, eye)) {
@@ -999,7 +992,6 @@ public final class DesktopCamera {
 				}
 			}
 		} catch (IllegalStateException e) {
-
 		}
 	}
 
@@ -1010,7 +1002,6 @@ public final class DesktopCamera {
 			config.save();
 			say("vrcamera.hint.intro", CameraHints.keyName("mode"), CameraHints.keyName("toggle"));
 		} else if (mode == Mode.DIRECTOR && config.directorManual) {
-
 			say("vrcamera.message.manual", CameraHints.keyName("next"), CameraHints.keyName("toggle"));
 		} else if (mode == Mode.FREE) {
 			say("vrcamera.message.free", CameraHints.keyName("steer"));
@@ -1034,7 +1025,7 @@ public final class DesktopCamera {
 		}
 		final Vec3 eyes = player.getEyePosition();
 		for (int step = 1; step < free.count(); step++) {
-			int camera = (free.active() + step) % free.count();
+			final int camera = (free.active() + step) % free.count();
 			if (free.position(camera).distanceToSqr(eyes) < FREE_AROUND * FREE_AROUND) {
 				return camera;
 			}
@@ -1075,7 +1066,6 @@ public final class DesktopCamera {
 		}
 		fromServer.clear();
 		if (lentId != null && !free.isEmpty()) {
-
 			showLent();
 			return;
 		}
@@ -1101,9 +1091,8 @@ public final class DesktopCamera {
 	}
 
 	private void showLent() {
-		int camera = free.indexOf(lentId);
+		final int camera = free.indexOf(lentId);
 		if (camera < 0) {
-
 			lentUntil = 0;
 			return;
 		}
@@ -1179,7 +1168,7 @@ public final class DesktopCamera {
 			place.distance = 3;
 		}
 		place.fov = fov;
-		Shot shot = new Shot(ShotType.CUSTOM, place, 1);
+		final Shot shot = new Shot(ShotType.CUSTOM, place, 1);
 		shot.start(subject, CameraConfig.current());
 		return shot;
 	}
@@ -1208,8 +1197,7 @@ public final class DesktopCamera {
 	}
 
 	private double held(KeyMapping key) {
-
-		boolean down = steeredFromWindow ?
+		final boolean down = steeredFromWindow ?
 				OutputWindow.isKeyDown(KeyMappingHelper.getBoundKeyOf(key).getValue()) : key.isDown();
 		return down ? 1.0 : 0.0;
 	}
@@ -1217,7 +1205,6 @@ public final class DesktopCamera {
 	private Pose move(Minecraft mc, LocalPlayer player, float partialTick) {
 		final CameraConfig config = CameraConfig.current();
 		if (config != this.config || director == null) {
-
 			this.config = config;
 			director = new Director(config);
 			followShot = null;
@@ -1243,7 +1230,6 @@ public final class DesktopCamera {
 		readWindow(mc);
 		reach(mc, player, partialTick, dt, config);
 		if (grab.isHolding()) {
-
 			return new Pose(grab.position(), grab.rotation(), pose == null ? DEFAULT_FOV : pose.fov());
 		}
 		return mode == Mode.FREE ? filmFree(mc, player, partialTick, dt, config) : filmShot(mc, dt, config);
@@ -1281,7 +1267,6 @@ public final class DesktopCamera {
 		OutputWindow.capture(steeredFromWindow && mode == Mode.FREE);
 		final double[] mouse = OutputWindow.mouseMoved();
 		if (steeredFromWindow) {
-
 			mc.getFramerateLimitTracker().onInputReceived();
 			zoom(wheel);
 			free.turn(mouse[0] * DRAG_TURN, mouse[1] * DRAG_TURN);
@@ -1328,12 +1313,10 @@ public final class DesktopCamera {
 				camera -> !several || isAround(camera, eyes));
 		if (grab.isAiming() && mc.options.keyUse.isDown()) {
 			if (several && grab.aimedAt() != free.active()) {
-
 				free.show(grab.aimedAt());
 				pose = free.pose(0);
 			}
 			if (several) {
-
 				free.unstick();
 			}
 			grab.take(pose, eyes);
@@ -1369,7 +1352,7 @@ public final class DesktopCamera {
 			final Vec3 target = held.add(thrown);
 			landing = held.lerp(target, WorldProbe.armFraction(subject, held, target, config));
 		}
-		Shot shot = shotFrom(landing, fov, 0);
+		final Shot shot = shotFrom(landing, fov, 0);
 		rig.adopt(held, shot, subject);
 
 		rig.lookFrom(grab.aim());
@@ -1462,7 +1445,8 @@ public final class DesktopCamera {
 				final double from = near / Math.max(way.dot(ahead), 0.1);
 				all++;
 				for (double along = from; along < from + OPEN_DEPTH; along += OPEN_STEP) {
-					if (!level.getBlockState(BlockPos.containing(lens.position().add(way.scale(along)))).isSolidRender()) {
+					final BlockPos passed = BlockPos.containing(lens.position().add(way.scale(along)));
+					if (!level.getBlockState(passed).isSolidRender()) {
 						open++;
 						break;
 					}
@@ -1486,7 +1470,6 @@ public final class DesktopCamera {
 			return filmed;
 		}
 		if (free.count() == 1) {
-
 			free.fling(Vec3.ZERO);
 			return filmed;
 		}
@@ -1501,7 +1484,6 @@ public final class DesktopCamera {
 	 * until they look at another one.
 	 */
 	private void followGaze(LocalPlayer player, float partialTick, double dt, CameraConfig config) {
-
 		if (!config.freeAutoSwitch || flying || free.count() < 2 || lentId != null) {
 			gazeAt = -1;
 			return;
@@ -1512,7 +1494,7 @@ public final class DesktopCamera {
 		double nearest = Math.cos(Math.toRadians(config.freeAutoSwitchAngle));
 		for (int camera = 0; camera < free.count(); camera++) {
 			final Vec3 to = free.position(camera).subtract(eyes);
-			double distance = to.length();
+			final double distance = to.length();
 
 			if (distance < GAZE_NEAR || !isAround(camera, eyes)) {
 				continue;
@@ -1524,7 +1506,6 @@ public final class DesktopCamera {
 			}
 		}
 		if (free.isInFlight()) {
-
 			gazeAt = found;
 			gazeTime = -1;
 			return;
@@ -1539,7 +1520,6 @@ public final class DesktopCamera {
 		}
 		gazeTime += dt;
 		if (gazeTime > config.freeAutoSwitchSeconds) {
-
 			gazeTime = -1;
 			if (found != free.active()) {
 				free.show(found);
@@ -1610,7 +1590,7 @@ public final class DesktopCamera {
 			toldFilming = null;
 			return;
 		}
-		int camera = free.active();
+		final int camera = free.active();
 		final String filming = free.name(camera);
 		if (!filming.equals(toldFilming)) {
 			toldFilming = filming;
@@ -1655,7 +1635,6 @@ public final class DesktopCamera {
 		final LocalPlayer player = Minecraft.getInstance().player;
 		if (grab.isHolding() && player != null &&
 				grab.position().distanceToSqr(pose.position()) < 1.0E-6) {
-
 			return grab.shownAt(player, player.getEyePosition(partialTick()));
 		}
 		final double since = Math.min((System.nanoTime() - poseNanos) / 1.0E9, poseStep * 1.5);

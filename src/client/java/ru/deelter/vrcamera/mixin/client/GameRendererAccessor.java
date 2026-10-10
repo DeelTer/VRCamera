@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(GameRenderer.class)
 public interface GameRendererAccessor {
-
 	@Mutable
 	@Accessor("mainRenderTarget")
 	void vrcamera$setMainRenderTarget(RenderTarget target);

@@ -31,7 +31,6 @@ import java.util.Random;
  * the player while it comes to rest, so what is filmed after a drop is still worth watching.
  */
 public final class DroppedCamera {
-
 	private static final double GRAVITY = 16.0;
 
 	private static final double RADIUS = 0.06;
@@ -132,7 +131,8 @@ public final class DroppedCamera {
 		}
 		final Vec3 neck = neck(entity, subject);
 		final Vec3 along = entity.getViewVector(subject.partialTick).scale(entity.getBbWidth() * HEAD_LENGTH);
-		final double part = CamMath.clamp(position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr()), 0.0, 1.0);
+		final double alongNeck = position.subtract(neck).dot(along) / Math.max(1.0E-6, along.lengthSqr());
+		final double part = CamMath.clamp(alongNeck, 0.0, 1.0);
 		return position.distanceTo(neck.add(along.scale(part))) < HEAD_REACH * Math.max(1.0, entity.getBbWidth());
 	}
 
@@ -309,7 +309,6 @@ public final class DroppedCamera {
 			} else if (!supported(subject)) {
 				startFalling();
 			} else if (mountedOn == null) {
-
 				getKicked(subject);
 			}
 		}
@@ -321,7 +320,6 @@ public final class DroppedCamera {
 		if (falling) {
 			rotation.rotateAxis((float) (spinSpeed * dt), spinAxis);
 			if (sinking && config.underwaterLook) {
-
 				spinSpeed *= Math.exp(-4.0 * dt);
 				sinkTime += dt;
 				rotation.rotateZ((float) (Math.cos(sinkTime * 1.4) * 0.35 * dt))
@@ -542,7 +540,6 @@ public final class DroppedCamera {
 		for (final Entity entity : subject.player.level().getEntities((Entity) null, reach, DroppedCamera::isSolid)) {
 			AABB box = entity.getBoundingBox();
 			if (entity == subject.player) {
-
 				final double shrink = box.getXsize() * (1.0 - PLAYER_KICK_WIDTH) / 2.0;
 				box = box.inflate(-shrink, 0, -shrink);
 			} else {
@@ -581,12 +578,11 @@ public final class DroppedCamera {
 			return;
 		}
 
-		Vec3 ahead = position.add(step.scale((distance + RADIUS) / distance));
+		final Vec3 ahead = position.add(step.scale((distance + RADIUS) / distance));
 		final Hit hit = trace(subject, position, ahead);
 		if (hit == null) {
 			position = position.add(step);
 			if (position.y < subject.player.level().getMinY() - 16) {
-
 				falling = false;
 				resting = true;
 			}
@@ -597,7 +593,7 @@ public final class DroppedCamera {
 			putOnHead(hit.entity, subject);
 			return;
 		}
-		Vec3 normal = hit.normal;
+		final Vec3 normal = hit.normal;
 		position = hit.location.add(normal.scale(RADIUS));
 
 		final double into = velocity.dot(normal);
@@ -717,9 +713,8 @@ public final class DroppedCamera {
 			if (entity == kicker && kickIgnoreTime > 0) {
 				continue;
 			}
-			AABB box = entity.getBoundingBox();
+			final AABB box = entity.getBoundingBox();
 			if (box.contains(from)) {
-
 				return new Hit(new Vec3(from.x, box.maxY, from.z), new Vec3(0, 1, 0), entity);
 			}
 			final Optional<Vec3> point = box.clip(from, to);

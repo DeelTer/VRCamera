@@ -51,7 +51,6 @@ public final class OutputWindow {
 		}
 		if (window != 0) {
 			if (GLFW.glfwWindowShouldClose(window)) {
-
 				close();
 				DesktopCamera.INSTANCE.setMode(DesktopCamera.Mode.OFF);
 			}
@@ -194,7 +193,8 @@ public final class OutputWindow {
 			} else {
 				GL.setCapabilities(capabilities);
 			}
-			PictureBlit.draw(picture, texture, frameBuffer, size[0], size[1], fill, guides ? WindowInput.guide() : null);
+			PictureBlit.draw(picture, texture, frameBuffer, size[0], size[1], fill, guides ? WindowInput.guide() :
+					null);
 			GLFW.glfwSwapBuffers(window);
 		} finally {
 			GLFW.glfwMakeContextCurrent(game);

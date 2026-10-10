@@ -18,10 +18,8 @@ import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
 @Mixin(LevelExtractor.class)
 public class LevelExtractorMixin {
-
 	@Inject(method = "extractGizmos", at = @At("HEAD"), require = 0)
 	private void vrcamera$drawHeadsetAids(CallbackInfo ci) {
-
 		RemoteCameras.INSTANCE.drawLabels();
 		PhotoAlbum.INSTANCE.drawLabels();
 		DesktopCamera.INSTANCE.drawLabel();

@@ -101,7 +101,7 @@ public final class PhotoStore {
 	}
 
 	public static List<Pinned> loadPinned(Path cache) {
-		Path file = cache.resolve(PINNED_FILE);
+		final Path file = cache.resolve(PINNED_FILE);
 		if (!Files.isRegularFile(file)) {
 			return new ArrayList<>();
 		}
@@ -138,7 +138,7 @@ public final class PhotoStore {
 			return;
 		}
 		try (final Stream<Path> files = Files.list(cache)) {
-			for (Path file : files.toList()) {
+			for (final Path file : files.toList()) {
 				final String name = file.getFileName().toString();
 
 				if (name.endsWith(".png") && !keep.contains(name) &&
@@ -165,7 +165,7 @@ public final class PhotoStore {
 	@Nullable
 	public static byte[] readRemote(long hash) {
 		try {
-			Path file = remoteFile(hash);
+			final Path file = remoteFile(hash);
 			return Files.isRegularFile(file) ? Files.readAllBytes(file) : null;
 		} catch (IOException | RuntimeException e) {
 			return null;
@@ -174,7 +174,7 @@ public final class PhotoStore {
 
 	public static void writeRemote(long hash, byte[] image) {
 		try {
-			Path file = remoteFile(hash);
+			final Path file = remoteFile(hash);
 			Files.createDirectories(file.getParent());
 			Files.write(file, image);
 		} catch (IOException | RuntimeException e) {
@@ -194,7 +194,7 @@ public final class PhotoStore {
 			final List<Path> oldestLast = files.filter(file -> file.toString().endsWith(".jpg"))
 					.sorted(Comparator.comparingLong((Path file) -> file.toFile().lastModified()).reversed())
 					.toList();
-			for (Path file : oldestLast.subList(Math.min(REMOTE_FILES, oldestLast.size()), oldestLast.size())) {
+			for (final Path file : oldestLast.subList(Math.min(REMOTE_FILES, oldestLast.size()), oldestLast.size())) {
 				Files.deleteIfExists(file);
 			}
 		} catch (IOException | RuntimeException e) {
@@ -260,7 +260,7 @@ public final class PhotoStore {
 
 	private static void deleteTree(Path dir) throws IOException {
 		try (final Stream<Path> files = Files.walk(dir)) {
-			for (Path file : files.sorted(Comparator.reverseOrder()).toList()) {
+			for (final Path file : files.sorted(Comparator.reverseOrder()).toList()) {
 				Files.delete(file);
 			}
 		}

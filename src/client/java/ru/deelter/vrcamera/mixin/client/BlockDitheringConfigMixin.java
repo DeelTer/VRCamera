@@ -9,7 +9,6 @@ import ru.deelter.vrcamera.client.desktop.DitheredBlocks;
 @Pseudo
 @Mixin(targets = "me.zipestudio.blockdithering.dithering.DitheringDataConfig", remap = false)
 public class BlockDitheringConfigMixin {
-
 	@ModifyReturnValue(method = "getFarDistance", at = @At("RETURN"), require = 0)
 	private double vrcamera$asFarAsThePlayer(double far) {
 		return DitheredBlocks.far(far);

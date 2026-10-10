@@ -11,7 +11,6 @@ import java.util.*;
  * owner leaves or after a while.
  */
 public final class LooseSheets {
-
 	private final Map<Long, Sheet> byId = new LinkedHashMap<>();
 	private final Map<Long, byte[]> images = new HashMap<>();
 	private final Map<Long, Integer> imageUses = new HashMap<>();
@@ -73,8 +72,9 @@ public final class LooseSheets {
 
 		public long touched = System.currentTimeMillis();
 
-		Sheet(long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash,
-		      boolean custom) {
+		Sheet(
+				long id, UUID world, UUID owner, String ownerName, Protocol.Pose pose, float aspect, long imageHash,
+				boolean custom) {
 			this.custom = custom;
 			this.id = id;
 			this.world = world;

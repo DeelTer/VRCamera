@@ -21,7 +21,6 @@ import java.util.Iterator;
  * every other mod.
  */
 public final class PhotoCodec {
-
 	private static final int SENT_WIDTH = 256;
 	private static final float[] QUALITIES = {0.72F, 0.6F, 0.48F, 0.36F, 0.25F};
 
@@ -41,7 +40,6 @@ public final class PhotoCodec {
 			int height = Math.max(1, Math.round(width * picture.height / (float) picture.width));
 			int scaledWidth = width;
 			if (height > Protocol.MAX_IMAGE_SIDE) {
-
 				scaledWidth = Math.max(1, Math.round(width * Protocol.MAX_IMAGE_SIDE / (float) height));
 				height = Protocol.MAX_IMAGE_SIDE;
 			}
@@ -74,8 +72,8 @@ public final class PhotoCodec {
 			final ImageReader reader = readers.next();
 			try {
 				reader.setInput(in);
-				int width = reader.getWidth(0);
-				int height = reader.getHeight(0);
+				final int width = reader.getWidth(0);
+				final int height = reader.getHeight(0);
 				if (width < 1 || height < 1 || width > Protocol.MAX_IMAGE_SIDE || height > Protocol.MAX_IMAGE_SIDE) {
 					throw new IOException("picture of " + width + "x" + height);
 				}
@@ -85,7 +83,6 @@ public final class PhotoCodec {
 				reader.dispose();
 			}
 		} catch (RuntimeException e) {
-
 			throw new IOException(e);
 		}
 	}

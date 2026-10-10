@@ -22,7 +22,6 @@ import java.lang.reflect.Field;
 		"me.jellysquid.mods.sodium.client.render.chunk.RenderSectionManager"
 }, remap = false)
 public class SodiumSectionManagerMixin {
-
 	@Unique
 	private static final String[] vrcamera$FOUND = {"renderLists", "taskLists", "renderTree"};
 	@Unique
@@ -68,7 +67,6 @@ public class SodiumSectionManagerMixin {
 						vrcamera$fields[i] = getClass().getDeclaredField(vrcamera$FOUND[i]);
 						vrcamera$fields[i].setAccessible(true);
 					} catch (NoSuchFieldException e) {
-
 					}
 				}
 			}

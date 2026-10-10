@@ -116,7 +116,6 @@ public final class Subject {
 	 * @param realDt actual seconds since the last update
 	 */
 	public void updateWithoutVR(Player player, float partialTick, double dt, double realDt, CameraConfig config) {
-
 		feet = feet.add(0, hop, 0);
 		move(player, partialTick, dt, realDt);
 		hop = hop(player, dt, config.jumpSteady);
@@ -207,8 +206,7 @@ public final class Subject {
 
 		rest = !jumps || settled > SETTLE_AFTER ? y : Math.clamp(rest, y - reach, y);
 		if (dt > 0) {
-
-			double pull = 2.0 / GROUND_LAG;
+			final double pull = 2.0 / GROUND_LAG;
 			final double step = pull * dt;
 			final double fade = 1.0 / (1.0 + step + 0.48 * step * step + 0.235 * step * step * step);
 			final double off = ground - rest;
@@ -238,7 +236,6 @@ public final class Subject {
 				hops = 0;
 			}
 		} else {
-
 			if (wasGrounded && rising > 1.0) {
 				hops++;
 			}

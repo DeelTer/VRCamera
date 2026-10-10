@@ -128,8 +128,8 @@ public final class CameraController implements Tracker {
 	}
 
 	public static boolean isVRRunning() {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		return VRState.VR_RUNNING && dh.vrPlayer != null && dh.vrPlayer.vrdata_world_render != null;
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		return VRState.VR_RUNNING && dataHolder.vrPlayer != null && dataHolder.vrPlayer.vrdata_world_render != null;
 	}
 
 	public Mode mode() {
@@ -149,10 +149,9 @@ public final class CameraController implements Tracker {
 	 */
 	public boolean hidesModel() {
 		if (!engaged || mode == Mode.PHYSICS) {
-
 			return false;
 		}
-		Shot shot = shot();
+		final Shot shot = shot();
 
 		return config.marker != Marker.MODEL || (shot != null && shot.type == ShotType.POV);
 	}
@@ -173,17 +172,17 @@ public final class CameraController implements Tracker {
 	 */
 	@Nullable
 	public HumanoidArm armToHide() {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
 		if (!engaged || !config.hideHoldingArm || handPosition == null ||
-				dh.currentPass != RenderPass.CAMERA || !dh.cameraTracker.isMoving()) {
+				dataHolder.currentPass != RenderPass.CAMERA || !dataHolder.cameraTracker.isMoving()) {
 			return null;
 		}
-		final CameraTracker camera = dh.cameraTracker;
+		final CameraTracker camera = dataHolder.cameraTracker;
 
 		if (looksAtPlayer(camera.getPosition(), camera.getRotation())) {
 			return null;
 		}
-		final boolean rightHand = (camera.getMovingController() == 0) != dh.vrSettings.reverseHands;
+		final boolean rightHand = (camera.getMovingController() == 0) != dataHolder.vrSettings.reverseHands;
 		return rightHand ? HumanoidArm.RIGHT : HumanoidArm.LEFT;
 	}
 
@@ -205,7 +204,7 @@ public final class CameraController implements Tracker {
 		}
 		final CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
 		final boolean held = camera.isMoving() && handPosition != null;
-		Vec3 position = held ? handPosition : camera.getPosition();
+		final Vec3 position = held ? handPosition : camera.getPosition();
 		return position.distanceTo(subject.head) <= config.selfieDistance &&
 				looksAtPlayer(position, held ? handRotation : camera.getRotation());
 	}
@@ -213,31 +212,30 @@ public final class CameraController implements Tracker {
 	/**
 	 * Draws what helps the player find the camera, called while Vivecraft collects what to render for one of the eyes.
 	 */
-	public void drawHeadsetAids(VRData vr) {
+	public void drawHeadsetAids(VRData vrData) {
 		try {
 			if (config.indicator) {
-				final Vec3 head = vr.hmd.getPosition();
+				final Vec3 head = vrData.hmd.getPosition();
 				PhotoAlbum.INSTANCE.forEachLoose(sheet -> {
 					final double distance = sheet.distanceTo(head);
 					if (distance > PHOTO_ICON_MIN_DISTANCE && distance < PHOTO_ICON_MAX_DISTANCE) {
-						drawIndicator(PHOTO_ICON, sheet, vr, false);
+						drawIndicator(PHOTO_ICON, sheet, vrData, false);
 					}
 				});
 			}
 			if (!engaged || !ClientDataHolderVR.getInstance().cameraTracker.isVisible()) {
 				return;
 			}
-			final Vec3 camera = handPosition != null ? handPosition : vr.getEye(RenderPass.CAMERA).getPosition();
+			final Vec3 camera = handPosition != null ? handPosition : vrData.getEye(RenderPass.CAMERA).getPosition();
 			if (config.marker == Marker.DOT && mode != Mode.PHYSICS) {
-				drawMarker(camera, vr.worldScale);
+				drawMarker(camera, vrData.worldScale);
 			}
-			Shot shot = shot();
+			final Shot shot = shot();
 
 			if (config.indicator && (shot == null || shot.type != ShotType.POV)) {
-				drawIndicator(INDICATOR_ICON, camera, vr, true);
+				drawIndicator(INDICATOR_ICON, camera, vrData, true);
 			}
 		} catch (IllegalStateException e) {
-
 		}
 	}
 
@@ -337,7 +335,6 @@ public final class CameraController implements Tracker {
 
 	public void cycleMode() {
 		if (mode != Mode.OFF && !isVRRunning()) {
-
 			setMode(Mode.OFF);
 			return;
 		}
@@ -350,7 +347,6 @@ public final class CameraController implements Tracker {
 	 */
 	public void tick() {
 		if (engaged && (!isVRRunning() || Minecraft.getInstance().player == null)) {
-
 			release();
 			subject.reset();
 			rig.reset();
@@ -364,7 +360,6 @@ public final class CameraController implements Tracker {
 		if (engaged && config.shareCamera && ++shareTicks % 2 == 0 && isVRRunning()) {
 			final CameraTracker camera = ClientDataHolderVR.getInstance().cameraTracker;
 			if (camera.isVisible()) {
-
 				final boolean held = handPosition != null;
 				PhotoSync.INSTANCE.shareCamera(held ? handPosition : camera.getPosition(),
 						held ? handRotation : camera.getRotation());
@@ -380,18 +375,18 @@ public final class CameraController implements Tracker {
 		if (mode == Mode.OFF || !isVRRunning()) {
 			return;
 		}
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		final VRData vr = dh.vrPlayer.vrdata_world_render;
-		final Vec3 head = vr.hmd.getPosition();
-		final Vector3f look = vr.hmd.getDirection();
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		final VRData vrData = dataHolder.vrPlayer.vrdata_world_render;
+		final Vec3 head = vrData.hmd.getPosition();
+		final Vector3f look = vrData.hmd.getDirection();
 		Vec3 forward = new Vec3(look.x, 0, look.z);
-		forward = forward.length() < 1.0E-3 ? CamMath.forward(vr.hmd.getYawRad()) : forward.normalize();
+		forward = forward.length() < 1.0E-3 ? CamMath.forward(vrData.hmd.getYawRad()) : forward.normalize();
 
-		final Vec3 pos = head.add(forward.scale(0.45 * vr.worldScale)).add(0, -0.15 * vr.worldScale, 0);
+		final Vec3 pos = head.add(forward.scale(0.45 * vrData.worldScale)).add(0, -0.15 * vrData.worldScale, 0);
 		final Quaternionf rotation = new Quaternionf();
 		CamMath.lookRotation(head.subtract(pos), rotation);
-		dh.cameraTracker.setPosition(pos);
-		dh.cameraTracker.setRotation(rotation);
+		dataHolder.cameraTracker.setPosition(pos);
+		dataHolder.cameraTracker.setRotation(rotation);
 		dropped.pickUp();
 		pullHand = null;
 
@@ -439,7 +434,6 @@ public final class CameraController implements Tracker {
 		}
 		notify(Component.translatable("vrcamera.message.mode", mode.label()));
 		if (mode == Mode.PHYSICS) {
-
 			summon();
 		}
 	}
@@ -524,11 +518,9 @@ public final class CameraController implements Tracker {
 		if (pullHand == hand) {
 			pullHand = null;
 			if (!pullLifted) {
-
 				return;
 			}
 			if (mode == Mode.PHYSICS) {
-
 				Vec3 speed = pullDrawn ? pullVelocity : Vec3.ZERO;
 
 				final Vec3 swing = pullDrawn ? handThrow.velocity(subject.velocity) : Vec3.ZERO;
@@ -541,10 +533,9 @@ public final class CameraController implements Tracker {
 				dropped.drop(camera.getPosition(), camera.getRotation(), speed);
 				limbs.reset();
 			} else if (pullDrawn) {
-
 				placedByHand(camera.getPosition());
 			} else {
-				Shot shot = shot();
+				final Shot shot = shot();
 				if (shot != null && rig.ready() && subject.player != null) {
 					rig.adopt(camera.getPosition(), shot, subject);
 					rig.blend();
@@ -561,7 +552,6 @@ public final class CameraController implements Tracker {
 	public boolean takePhoto() {
 		final LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null && !isVRRunning()) {
-
 			if (!PhotoAlbum.INSTANCE.takeWithoutCamera(player, config.photoSheet)) {
 				return false;
 			}
@@ -648,11 +638,11 @@ public final class CameraController implements Tracker {
 		if (!engaged) {
 			return;
 		}
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		dh.vrSettings.displayMirrorUseScreenshotCamera = previousMirror;
-		dh.vrSettings.handCameraFov = previousFov;
-		if (shownByUs && dh.cameraTracker.isVisible()) {
-			dh.cameraTracker.toggleVisibility();
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		dataHolder.vrSettings.displayMirrorUseScreenshotCamera = previousMirror;
+		dataHolder.vrSettings.handCameraFov = previousFov;
+		if (shownByUs && dataHolder.cameraTracker.isVisible()) {
+			dataHolder.cameraTracker.toggleVisibility();
 		}
 		shownByUs = false;
 		engaged = false;
@@ -676,10 +666,9 @@ public final class CameraController implements Tracker {
 		final double dt = Minecraft.getInstance().isPaused() ? 0 : Math.min((now - albumNanos) / 1.0E9, 0.1);
 		albumNanos = now;
 		try {
-			PhotoAlbum.INSTANCE.update(player.level(), Vive.hands(ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render),
-					dt);
+			final VRData worldData = ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render;
+			PhotoAlbum.INSTANCE.update(player.level(), Vive.hands(worldData), dt);
 		} catch (RuntimeException e) {
-
 			Vrcamera.LOGGER.error("VRCamera: updating photo sheets failed", e);
 			PhotoAlbum.INSTANCE.clear();
 		}
@@ -692,7 +681,6 @@ public final class CameraController implements Tracker {
 
 	@Override
 	public void inactiveProcess(LocalPlayer player) {
-
 		subject.reset();
 		rig.reset();
 		wasGrabbed = false;
@@ -715,7 +703,6 @@ public final class CameraController implements Tracker {
 						ClientDataHolderVR.getInstance().vrPlayer.vrdata_world_render.worldScale);
 			}
 		} catch (RuntimeException e) {
-
 			Vrcamera.LOGGER.error("VRCamera: camera update failed, turning the camera off", e);
 			setMode(Mode.OFF);
 			notify(Component.translatable("vrcamera.message.error"));
@@ -740,9 +727,9 @@ public final class CameraController implements Tracker {
 	 * The camera icon with the distance to the camera below it, like a waypoint: at the camera and seen through
 	 * walls. While the camera is out of sight the icon sticks to the edge of the view on the side the camera is on.
 	 */
-	private void drawIndicator(String icon, Vec3 camera, VRData vr, boolean alsoOutOfSight) {
-		CameraIndicator.draw(icon, "", camera, vr.hmd.getPosition(), new Vec3(vr.hmd.getDirection()),
-				new Vec3(vr.hmd.getCustomVector(MathUtils.UP)), vr.worldScale, alsoOutOfSight, 1.0,
+	private void drawIndicator(String icon, Vec3 camera, VRData vrData, boolean alsoOutOfSight) {
+		CameraIndicator.draw(icon, "", camera, vrData.hmd.getPosition(), new Vec3(vrData.hmd.getDirection()),
+				new Vec3(vrData.hmd.getCustomVector(MathUtils.UP)), vrData.worldScale, alsoOutOfSight, 1.0,
 				UnaryOperator.identity());
 	}
 
@@ -750,7 +737,7 @@ public final class CameraController implements Tracker {
 		if (mode == Mode.FOLLOW) {
 			return "REC follow";
 		}
-		Shot shot = director.current();
+		final Shot shot = director.current();
 		final String text = shot == null ? "REC" : "REC " + shot.type.name().toLowerCase(Locale.ROOT);
 		return director.isHolding() ? text + " (hold)" : text;
 	}
@@ -760,7 +747,7 @@ public final class CameraController implements Tracker {
 		if (!rig.ready() || subject.player == null) {
 			return;
 		}
-		Shot shot = customShot();
+		final Shot shot = customShot();
 		final Shot previous = shot();
 		if (previous != null && previous.blends()) {
 			rig.blend();
@@ -819,11 +806,11 @@ public final class CameraController implements Tracker {
 	/**
 	 * takes over the Vivecraft camera settings
 	 */
-	private void engage(ClientDataHolderVR dh) {
-		previousMirror = dh.vrSettings.displayMirrorUseScreenshotCamera;
-		previousFov = dh.vrSettings.handCameraFov;
+	private void engage(ClientDataHolderVR dataHolder) {
+		previousMirror = dataHolder.vrSettings.displayMirrorUseScreenshotCamera;
+		previousFov = dataHolder.vrSettings.handCameraFov;
 		if (config.forceMirror) {
-			dh.vrSettings.displayMirrorUseScreenshotCamera = true;
+			dataHolder.vrSettings.displayMirrorUseScreenshotCamera = true;
 		}
 		engaged = true;
 	}
@@ -875,31 +862,29 @@ public final class CameraController implements Tracker {
 	 * @return where in the world the menu is that the player has open, null if there is none
 	 */
 	@Nullable
-	private Vec3 openMenuPosition(VRData vr) {
+	private Vec3 openMenuPosition(VRData vrData) {
 		final Screen screen = Minecraft.getInstance().gui.screen();
 
 		if (GuiHandler.GUI_POS_ROOM == null || screen == null ||
 				(screen instanceof ChatScreen && !config.menuShotChat)) {
 			return null;
 		}
-		return VRPlayer.roomToWorldPos(GuiHandler.GUI_POS_ROOM, vr);
+		return VRPlayer.roomToWorldPos(GuiHandler.GUI_POS_ROOM, vrData);
 	}
 
 	private void process(LocalPlayer player) {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		final CameraTracker camera = dh.cameraTracker;
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		final CameraTracker camera = dataHolder.cameraTracker;
 		handPosition = null;
-		if (dh.vrSettings.seated) {
-
+		if (dataHolder.vrSettings.seated) {
 			setMode(Mode.OFF);
 			return;
 		}
 		if (camera.isQuickMode()) {
-
 			return;
 		}
 		if (!engaged) {
-			engage(dh);
+			engage(dataHolder);
 		}
 		if (!camera.isVisible()) {
 			camera.toggleVisibility();
@@ -915,15 +900,14 @@ public final class CameraController implements Tracker {
 		frameDt = worldDt;
 		shutter = Math.max(0.0, shutter - dt);
 		if (realDt > RESUME_GAP) {
-
 			subject.reset();
 			rig.reset();
 		}
 
-		final VRData vr = dh.vrPlayer.vrdata_world_render;
+		final VRData vrData = dataHolder.vrPlayer.vrdata_world_render;
 		final float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
-		VrSubject.update(subject, player, vr, partialTick, dt, realDt, config);
-		subject.guiCenter = openMenuPosition(vr);
+		VrSubject.update(subject, player, vrData, partialTick, dt, realDt, config);
+		subject.guiCenter = openMenuPosition(vrData);
 		dropped.allowSelf(config.attachToSelf);
 		final ResourceKey<Level> dimension = player.level().dimension();
 		changedDimension = this.dimension != null && !this.dimension.equals(dimension);
@@ -934,11 +918,11 @@ public final class CameraController implements Tracker {
 
 			final boolean submerged = config.underwaterLook && WorldProbe.inFluid(subject, camera.getPosition());
 			final double wet = underwater.update(submerged ? 1.0 : 0.0, UNDERWATER_TIME, dt);
-			dh.vrSettings.handCameraFov = (float) CamMath.clamp(
+			dataHolder.vrSettings.handCameraFov = (float) CamMath.clamp(
 					previousFov + dropped.fovOffset() + wet * UNDERWATER_FOV - shutterFov(), 1.0, 179.0);
 		}
 		if (pullHand != null) {
-			flyToHand(camera, vr, player, dt);
+			flyToHand(camera, vrData, player, dt);
 			return;
 		}
 		if (camera.isMoving()) {
@@ -954,9 +938,9 @@ public final class CameraController implements Tracker {
 
 			handThrow.sample(camera.getPosition());
 
-			stabilizer.update(camera.getPosition().subtract(vr.origin), camera.getRotation(), dt,
+			stabilizer.update(camera.getPosition().subtract(vrData.origin), camera.getRotation(), dt,
 					config.handStabilize);
-			camera.setPosition(stabilizer.position().add(vr.origin));
+			camera.setPosition(stabilizer.position().add(vrData.origin));
 			camera.setRotation(new Quaternionf(stabilizer.rotation()));
 			putUpCheck -= worldDt;
 			if (mode == Mode.PHYSICS && putUpCheck <= 0) {
@@ -978,14 +962,12 @@ public final class CameraController implements Tracker {
 		}
 		couldPutUp = false;
 		if (wasGrabbed && offeredHand >= 0) {
-
 			camera.startMoving(offeredHand);
 			return;
 		}
 		if (wasGrabbed) {
 			wasGrabbed = false;
 			if (mode == Mode.PHYSICS) {
-
 				final Vec3 start = WorldProbe.reach(player, subject.head, camera.getPosition());
 				final Vec3 handVelocity = handThrow.velocity(subject.velocity);
 				if (!dropped.place(subject, start, camera.getPosition(), camera.getRotation(),
@@ -1005,7 +987,7 @@ public final class CameraController implements Tracker {
 			return;
 		}
 		if (mode == Mode.PHYSICS) {
-			letFall(camera, vr, worldDt);
+			letFall(camera, vrData, worldDt);
 			return;
 		}
 
@@ -1028,39 +1010,35 @@ public final class CameraController implements Tracker {
 
 		camera.setPosition(rig.position());
 		camera.setRotation(rig.rotation());
-		dh.vrSettings.handCameraFov = (float) CamMath.clamp(rig.fov() - shutterFov(), 1.0, 179.0);
+		dataHolder.vrSettings.handCameraFov = (float) CamMath.clamp(rig.fov() - shutterFov(), 1.0, 179.0);
 	}
 
 	/**
 	 * the physics mode while the camera is not in the hand: it falls and stays where it lands
 	 */
-	private void letFall(CameraTracker camera, VRData vr, double dt) {
+	private void letFall(CameraTracker camera, VRData vrData, double dt) {
 		if (changedDimension && !dropped.isOnPlayer()) {
-
 			dropped.pickUp();
 			summon();
 			return;
 		}
 
 		if (camera.getPosition().distanceTo(subject.head) > PHYSICS_LEASH) {
-
 			dropped.pickUp();
 			summon();
 			return;
 		}
 		if (!dropped.isDropped()) {
-
 			dropped.drop(camera.getPosition(), camera.getRotation(), Vec3.ZERO);
 			limbs.reset();
 		}
 		if (subject.teleported) {
 			limbs.reset();
 		}
-		limbs.update(vr, dropped, dt, config.kickPower);
+		limbs.update(vrData, dropped, dt, config.kickPower);
 		dropped.update(subject, dt, config, restFocus());
 		camera.setPosition(dropped.position());
 		if (dropped.isAttached() && config.physicsShake > 0) {
-
 			camera.setRotation(new Quaternionf(dropped.rotation()).mul(shake.update(dt,
 					dropped.attachedSpeed(), false, config.physicsShake)));
 		} else {
@@ -1124,21 +1102,19 @@ public final class CameraController implements Tracker {
 	/**
 	 * a pulled camera on its way to the hand that pulled it
 	 */
-	private void flyToHand(CameraTracker camera, VRData vr, LocalPlayer player, double dt) {
-
+	private void flyToHand(CameraTracker camera, VRData vrData, LocalPlayer player, double dt) {
 		final boolean rightHand = (pullHand == InteractionHand.MAIN_HAND) !=
 				ClientDataHolderVR.getInstance().vrSettings.reverseHands;
 		Vec3 toRight = new Vec3(-subject.headDir.z, 0, subject.headDir.x);
 		toRight = toRight.lengthSqr() < 1.0E-6 ? Vec3.ZERO : toRight.normalize();
-		final Vec3 grip = toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vr.worldScale);
-		final Vec3 hand = vr.getController(pullHand.ordinal()).getPosition().add(grip);
+		final Vec3 grip = toRight.scale((rightHand ? -1 : 1) * PULL_GRIP_OFFSET * vrData.worldScale);
+		final Vec3 hand = vrData.getController(pullHand.ordinal()).getPosition().add(grip);
 		Vec3 position;
 		boolean arrived;
 		if (pullDrawn) {
 			pullElapsed += dt;
 			final double progress = Math.min(1.0, pullElapsed / Math.max(0.05, config.pullSeconds));
 			if (progress < PULL_WINDUP) {
-
 				camera.setPosition(pullStart.add(0, Math.sin(pullElapsed * 45.0) * 0.012, 0));
 				return;
 			}
@@ -1161,7 +1137,7 @@ public final class CameraController implements Tracker {
 			arrived = progress >= 1.0;
 		} else {
 			position = pullGlide.update(hand, PULL_TIME, dt);
-			arrived = position.distanceTo(hand) <= PULL_ARRIVED * vr.worldScale;
+			arrived = position.distanceTo(hand) <= PULL_ARRIVED * vrData.worldScale;
 		}
 		final Quaternionf atPlayer = new Quaternionf();
 		if (CamMath.lookRotation(subject.head.subtract(position), atPlayer)) {
@@ -1185,7 +1161,7 @@ public final class CameraController implements Tracker {
 	}
 
 	private Shot customShot() {
-		Shot shot = new Shot(ShotType.CUSTOM, config.preset(), 1);
+		final Shot shot = new Shot(ShotType.CUSTOM, config.preset(), 1);
 		shot.start(subject, config);
 		return shot;
 	}
@@ -1209,7 +1185,7 @@ public final class CameraController implements Tracker {
 		preset.distance = Math.max(0.3, offset.length() / subject.unit);
 		config.save();
 
-		Shot shot = customShot();
+		final Shot shot = customShot();
 		rig.adopt(cameraPos, shot, subject);
 		if (wasThrown) {
 			rig.blend();

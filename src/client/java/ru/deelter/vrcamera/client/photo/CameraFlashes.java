@@ -69,7 +69,7 @@ public final class CameraFlashes {
 			}
 			final float left = 1.0F - (now - flash.nanos) / (float) DURATION_NANOS;
 			final float alpha = BRIGHTEST * left * left;
-			float half = SIZE / 2.0F;
+			final float half = SIZE / 2.0F;
 			final Vector3f facing = new Vector3f((float) (toView.x / distance), (float) (toView.y / distance),
 					(float) (toView.z / distance));
 			poseStack.pushPose();

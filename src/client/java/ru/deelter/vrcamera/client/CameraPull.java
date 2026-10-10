@@ -43,8 +43,8 @@ public final class CameraPull implements HeldInteractModule {
 		this.controller = controller;
 	}
 
-	private static double angle(Vec3 a, Vec3 b) {
-		return Math.acos(CamMath.clamp(a.normalize().dot(b.normalize()), -1.0, 1.0));
+	private static double angle(Vec3 one, Vec3 other) {
+		return Math.acos(CamMath.clamp(one.normalize().dot(other.normalize()), -1.0, 1.0));
 	}
 
 	@Override
@@ -54,7 +54,6 @@ public final class CameraPull implements HeldInteractModule {
 
 	@Override
 	public int getPriority() {
-
 		return 760;
 	}
 
@@ -87,10 +86,8 @@ public final class CameraPull implements HeldInteractModule {
 	public boolean onHoldTick(LocalPlayer player, InteractionHand hand) {
 		final int index = hand.ordinal();
 		if (pulled[index]) {
-
 			final double drawn = controller.pullProgress(hand);
 			if (drawn >= 0) {
-
 				VRClientAPI.instance().triggerHapticPulse(VRBodyPart.fromInteractionHand(hand), 0.05F,
 						(float) CamMath.lerp(120.0, 320.0, drawn), (float) CamMath.lerp(0.15, 1.0, drawn), 0.0F);
 			}
@@ -100,7 +97,6 @@ public final class CameraPull implements HeldInteractModule {
 			return false;
 		}
 		if (controller.config().pullStyle == PullStyle.TELEKINESIS) {
-
 			pulled[index] = true;
 			controller.startPull(hand);
 			return true;
@@ -131,17 +127,17 @@ public final class CameraPull implements HeldInteractModule {
 		if (controller.config().pullSeconds <= 0 || !controller.canPull()) {
 			return false;
 		}
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		final VRData vr = dh.vrPlayer.vrdata_world_pre;
-		final Vec3 camera = dh.cameraTracker.getPosition();
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		final VRData vrData = dataHolder.vrPlayer.vrdata_world_pre;
+		final Vec3 camera = dataHolder.cameraTracker.getPosition();
 
 		final Vec3 fromHand = camera.subtract(handPosition);
 		final double distance = fromHand.length();
-		if (distance < MIN_DISTANCE * vr.worldScale || distance > MAX_DISTANCE) {
+		if (distance < MIN_DISTANCE * vrData.worldScale || distance > MAX_DISTANCE) {
 			return false;
 		}
-		final Vec3 fromHead = camera.subtract(vr.hmd.getPosition());
-		return angle(fromHand, new Vec3(vr.getController(hand.ordinal()).getDirection())) < HAND_ANGLE * slack &&
-				angle(fromHead, new Vec3(vr.hmd.getDirection())) < HEAD_ANGLE * slack;
+		final Vec3 fromHead = camera.subtract(vrData.hmd.getPosition());
+		return angle(fromHand, new Vec3(vrData.getController(hand.ordinal()).getDirection())) < HAND_ANGLE * slack &&
+				angle(fromHead, new Vec3(vrData.hmd.getDirection())) < HEAD_ANGLE * slack;
 	}
 }

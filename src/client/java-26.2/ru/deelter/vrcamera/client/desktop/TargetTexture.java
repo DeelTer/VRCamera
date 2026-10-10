@@ -21,6 +21,5 @@ final class TargetTexture extends AbstractTexture {
 
 	@Override
 	public void close() {
-
 	}
 }

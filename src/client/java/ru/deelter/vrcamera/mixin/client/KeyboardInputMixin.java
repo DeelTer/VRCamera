@@ -13,7 +13,6 @@ import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 
 @Mixin(KeyboardInput.class)
 public abstract class KeyboardInputMixin extends ClientInput {
-
 	@Inject(method = "tick", at = @At("TAIL"), require = 0)
 	private void vrcamera$keysSteerCamera(CallbackInfo ci) {
 		if (DesktopCamera.INSTANCE.isSteered()) {

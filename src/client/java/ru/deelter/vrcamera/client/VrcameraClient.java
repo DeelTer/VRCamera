@@ -92,7 +92,6 @@ public class VrcameraClient implements ClientModInitializer {
 	 * @return x, y and width
 	 */
 	private static int @NotNull [] pauseSlot(@NotNull Screen pauseMenu, int index) {
-
 		final int beside = pauseMenu.width / 2 - 102 - HORIZONTAL_GAP;
 		if (beside >= PAUSE_BUTTON_MIN) {
 			return new int[]{EDGE_MARGIN, EDGE_MARGIN + 22 * index, Math.min(PAUSE_BUTTON, beside)};

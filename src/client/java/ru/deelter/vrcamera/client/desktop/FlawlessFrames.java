@@ -15,7 +15,6 @@ import java.util.function.Function;
  * game stands still each time new ones come into view.
  */
 public final class FlawlessFrames implements Consumer<Function<String, Consumer<Boolean>>> {
-
 	private static final List<String> FRAME_LIMITERS = List.of("dynamic_fps");
 	private static final List<Consumer<Boolean>> LISTENERS = new ArrayList<>();
 	private static boolean wanted;

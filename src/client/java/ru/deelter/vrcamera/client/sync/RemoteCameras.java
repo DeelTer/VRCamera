@@ -100,13 +100,13 @@ public final class RemoteCameras {
 		try {
 			update();
 			final Minecraft mc = Minecraft.getInstance();
-			for (Camera camera : shown()) {
+			for (final Camera camera : shown()) {
 				submitModel(mc, level, output, viewPosition, poseStack, camera.position, camera.rotation);
 			}
 		} catch (RuntimeException e) {
 			broken = true;
-			Vrcamera.LOGGER.error("VRCamera: drawing other players' cameras failed, they are off until the game restarts",
-					e);
+			Vrcamera.LOGGER.error("VRCamera: drawing other players' cameras failed, " +
+					"they are off until the game restarts", e);
 		}
 	}
 
@@ -135,12 +135,11 @@ public final class RemoteCameras {
 			return;
 		}
 		try {
-			for (Camera camera : shown()) {
+			for (final Camera camera : shown()) {
 				Gizmos.billboardText(CAMERA_ICON + " " + camera.ownerName, camera.position.add(0, 0.28, 0),
 						TextGizmo.Style.forColorAndCentered(LABEL_COLOR).withScale(0.12F));
 			}
 		} catch (IllegalStateException e) {
-
 		}
 	}
 
@@ -150,7 +149,7 @@ public final class RemoteCameras {
 	private void update() {
 		final long now = System.nanoTime();
 		cameras.values().removeIf(camera -> now - camera.heardNanos > GONE_NANOS);
-		for (Camera camera : cameras.values()) {
+		for (final Camera camera : cameras.values()) {
 			final Vec3 shown = camera.trail.follow(camera.rotation);
 			if (shown != null) {
 				camera.position = shown;

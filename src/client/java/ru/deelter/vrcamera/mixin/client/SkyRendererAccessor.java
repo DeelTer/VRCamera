@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(SkyRenderer.class)
 public interface SkyRendererAccessor {
-
 	@Mutable
 	@Accessor("renderTarget")
 	void vrcamera$setRenderTarget(RenderTarget target);

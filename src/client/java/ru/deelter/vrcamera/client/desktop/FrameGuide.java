@@ -7,12 +7,9 @@ package ru.deelter.vrcamera.client.desktop;
 enum FrameGuide {
 	THIRDS(1.0 / 3.0, 2.0 / 3.0),
 	GOLDEN(0.382, 0.618),
-
 	SPIRAL,
 	HALVES(0.5),
-
 	UPRIGHT,
-
 	SAFE,
 	NONE;
 

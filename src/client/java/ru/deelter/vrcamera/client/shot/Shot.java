@@ -13,7 +13,6 @@ import ru.deelter.vrcamera.client.rig.Subject;
  * the camera there and keeps it out of walls.
  */
 public final class Shot {
-
 	private static final double POV_AIM_LAG = 0.25;
 
 	public final ShotType type;
@@ -87,7 +86,6 @@ public final class Shot {
 			final Vec3 toFocus = focus.subtract(subject.center);
 
 			if (toFocus.horizontalDistance() > 0.5 * subject.unit) {
-
 				reference = CamMath.azimuthOf(toFocus);
 			}
 		}
@@ -112,7 +110,6 @@ public final class Shot {
 		aim.reset(subject.headDir);
 
 		if (type == ShotType.FLYBY) {
-
 			Vec3 dir = CamMath.forward(subject.facing);
 			final Vec3 horizontal = new Vec3(subject.velocity.x, 0, subject.velocity.z);
 			if (horizontal.length() > 1.0) {
@@ -176,7 +173,6 @@ public final class Shot {
 			case DEATH -> {
 				distance *= CamMath.lerp(1.0, 1.6, CamMath.smoothstep(age / 8.0));
 				if (subject.targetCenter != null) {
-
 					lookTarget = subject.center.lerp(subject.targetCenter, 0.35);
 				}
 			}
@@ -186,7 +182,6 @@ public final class Shot {
 			}
 			case MENU -> {
 				if (subject.guiCenter != null) {
-
 					lookTarget = subject.center.lerp(subject.guiCenter, 0.8);
 				}
 			}
@@ -228,7 +223,6 @@ public final class Shot {
 	 */
 	public Vec3 position(Vec3 center, Subject subject, double azimuth, double elevation, double distance) {
 		if (type == ShotType.POV) {
-
 			final Vec3 aim = this.aim.get();
 			Vec3 ahead = new Vec3(aim.x, 0, aim.z);
 			ahead = ahead.length() < 0.2 ? CamMath.forward(subject.facing) : ahead.normalize();
@@ -237,7 +231,6 @@ public final class Shot {
 		}
 		Vec3 pos = center.add(CamMath.orbit(azimuth, elevation).scale(distance));
 		if (type == ShotType.LOW) {
-
 			pos = new Vec3(pos.x, Math.max(pos.y, subject.feet.y + 0.25 * subject.unit), pos.z);
 		}
 		return pos;

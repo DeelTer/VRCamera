@@ -9,7 +9,6 @@ import java.util.Deque;
  * Watches a camera that is held in the hand, to tell a throw from just letting go of it.
  */
 public final class HandThrow {
-
 	private static final double WINDOW = 0.12;
 
 	private static final double MIN_SPEED = 2.5;

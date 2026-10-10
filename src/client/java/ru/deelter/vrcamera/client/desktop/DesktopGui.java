@@ -46,7 +46,6 @@ import java.util.WeakHashMap;
  * rectangle in front of the player while the camera films.
  */
 public final class DesktopGui {
-
 	private static final double DISTANCE = 0.85;
 	private static final double DROP = 0.12;
 
@@ -176,8 +175,7 @@ public final class DesktopGui {
 			return;
 		}
 		try {
-
-			Vec3 right = new Vec3(-Math.cos(facing), 0, -Math.sin(facing));
+			final Vec3 right = new Vec3(-Math.cos(facing), 0, -Math.sin(facing));
 
 			final float shape = (frameRight - frameLeft) * target.width /
 					Math.max(1.0F, (frameTop - frameBottom) * target.height);
@@ -242,7 +240,8 @@ public final class DesktopGui {
 			bottom = Math.max(bottom, window.vrcamera$top() + window.vrcamera$height());
 		}
 
-		boolean drawn = !(screen instanceof AbstractContainerScreen<?>) && bottom - top < screen.height * WIDGETS_PART;
+		final boolean drawn = !(screen instanceof AbstractContainerScreen<?>) &&
+				bottom - top < screen.height * WIDGETS_PART;
 		if (right <= left || bottom <= top || screen instanceof ChatScreen || drawn || screen.width < 1 ||
 				screen.height < 1) {
 			frameLeft = 0;

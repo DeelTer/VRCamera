@@ -25,7 +25,6 @@ import ru.deelter.vrcamera.client.sync.RemoteCameras;
 @Pseudo
 @Mixin(value = VRWidgetHelper.class, remap = false)
 public class VRWidgetHelperMixin {
-
 	@Inject(method = "extractVRHandheldCameraWidget", at = @At("TAIL"), require = 0)
 	private static void vrcamera$adjustCameraModel(
 			CameraWidgetRenderState cameraState, LocalPlayer player, CallbackInfo ci) {
@@ -35,17 +34,16 @@ public class VRWidgetHelperMixin {
 			return;
 		}
 		final Vec3 hand = controller.handPosition();
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		if (dh.currentPass == RenderPass.CAMERA) {
-
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		if (dataHolder.currentPass == RenderPass.CAMERA) {
 			cameraState.visible = false;
 			return;
 		}
-		if (hand == null || !cameraState.visible || dh.vrPlayer == null) {
+		if (hand == null || !cameraState.visible || dataHolder.vrPlayer == null) {
 			return;
 		}
 
-		final Matrix4f filmed = dh.vrPlayer.vrdata_world_render.getEye(RenderPass.CAMERA).getMatrix();
+		final Matrix4f filmed = dataHolder.vrPlayer.vrdata_world_render.getEye(RenderPass.CAMERA).getMatrix();
 		cameraState.modelMatrix.mulLocal(filmed.invert())
 				.mulLocal(new Matrix4f().rotation(controller.handRotation()));
 		cameraState.pos = hand;
@@ -55,7 +53,6 @@ public class VRWidgetHelperMixin {
 	private static void vrcamera$keepModelOutOfPicture(
 			SubmitNodeCollector output, CameraRenderState cameraState, CameraWidgetRenderState widgetState,
 			PoseStack poseStack, CallbackInfo ci) {
-
 		PhotoAlbum.INSTANCE.render(output, cameraState.pos, poseStack);
 		RemoteCameras.INSTANCE.render(output, cameraState.pos, poseStack);
 		CameraFlashes.INSTANCE.render(output, cameraState.pos, poseStack);

@@ -13,7 +13,6 @@ import java.util.UUID;
 public record StoredSheet(
 		long id, UUID world, UUID owner, String ownerName, int blockX, int blockY, int blockZ, double x, double y,
 		double z, float qx, float qy, float qz, float qw, float aspect, long imageHash, boolean custom) {
-
 	@NotNull
 	public ChunkKey chunk() {
 		return new ChunkKey(world, (int) Math.floor(x) >> 4, (int) Math.floor(z) >> 4);
@@ -24,10 +23,10 @@ public record StoredSheet(
 		return new BlockKey(world, blockX, blockY, blockZ);
 	}
 
-	public double distanceSquared(double px, double py, double pz) {
-		final double dx = x - px;
-		final double dy = y - py;
-		final double dz = z - pz;
+	public double distanceSquared(double fromX, double fromY, double fromZ) {
+		final double dx = x - fromX;
+		final double dy = y - fromY;
+		final double dz = z - fromZ;
 		return dx * dx + dy * dy + dz * dz;
 	}
 

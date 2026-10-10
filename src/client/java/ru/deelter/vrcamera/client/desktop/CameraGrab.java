@@ -142,7 +142,6 @@ final class CameraGrab {
 	 * moves the held camera on by one frame
 	 */
 	void hold(LocalPlayer player, Vec3 eyes, Vec3 look, Subject subject, CameraConfig config, double dt) {
-
 		final double ease = 1.0 - Math.exp(-EASE * dt);
 		distance += (wanted - distance) * (1.0 - Math.exp(-WHEEL_EASE * dt));
 		offset = offset.lerp(look.scale(distance), ease);

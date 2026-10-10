@@ -42,7 +42,6 @@ public final class CameraShutter implements HeldInteractModule {
 
 	@Override
 	public int getPriority() {
-
 		return 740;
 	}
 
@@ -59,17 +58,17 @@ public final class CameraShutter implements HeldInteractModule {
 
 	@Override
 	public boolean isActive(LocalPlayer player, InteractionHand hand, Vec3 handPosition) {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		final CameraTracker camera = dh.cameraTracker;
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		final CameraTracker camera = dataHolder.cameraTracker;
 
 		if (controller.config().photoGesture != PhotoGesture.OTHER_HAND || !controller.isEngaged() ||
 				!camera.isMoving() || camera.isQuickMode() || camera.getMovingController() == hand.ordinal()) {
 			return false;
 		}
 
-		final VRData vr = dh.vrPlayer.vrdata_world_pre;
-		final Vec3 holding = vr.getController(camera.getMovingController()).getPosition();
-		return handPosition.distanceTo(holding) < REACH * vr.worldScale;
+		final VRData vrData = dataHolder.vrPlayer.vrdata_world_pre;
+		final Vec3 holding = vrData.getController(camera.getMovingController()).getPosition();
+		return handPosition.distanceTo(holding) < REACH * vrData.worldScale;
 	}
 
 	@Override
@@ -92,7 +91,6 @@ public final class CameraShutter implements HeldInteractModule {
 			return true;
 		}
 		if (camera.getMovingController() == index) {
-
 			return true;
 		}
 		final double seconds = controller.config().photoHoldSeconds;

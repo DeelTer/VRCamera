@@ -20,7 +20,6 @@ import ru.deelter.vrcamera.Vrcamera;
  * Costs next to nothing. It shows the picture the camera renders anyway, on one more rectangle.
  */
 public final class SelfieScreen {
-
 	private static final float LEFT = 3.733F / 16.0F;
 	private static final float RIGHT = 12.266F / 16.0F;
 	private static final float BOTTOM = 8.4F / 16.0F;
@@ -39,9 +38,9 @@ public final class SelfieScreen {
 	 */
 	public static void render(
 			SubmitNodeCollector output, Vec3 viewPosition, Vec3 cameraPosition, Matrix4f model, PoseStack poseStack) {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
 
-		if (broken || (dh.currentPass != RenderPass.LEFT && dh.currentPass != RenderPass.RIGHT) ||
+		if (broken || (dataHolder.currentPass != RenderPass.LEFT && dataHolder.currentPass != RenderPass.RIGHT) ||
 				!CameraController.INSTANCE.showsSelfieScreen()) {
 			return;
 		}
@@ -52,8 +51,7 @@ public final class SelfieScreen {
 			poseStack.mulPose(model);
 			poseStack.translate(-0.5F, -0.5F, -0.5F);
 			output.submitCustomGeometry(poseStack, VRRenderTypes.entitySolidNoCardinalLight(
-					dh.vrRenderer.cameraFramebuffer.getColorTextureView(), true), (pose, consumer) -> {
-
+					dataHolder.vrRenderer.cameraFramebuffer.getColorTextureView(), true), (pose, consumer) -> {
 				vertex(consumer, pose, LEFT, TOP, 0, 1);
 				vertex(consumer, pose, RIGHT, TOP, 1, 1);
 				vertex(consumer, pose, RIGHT, BOTTOM, 1, 0);
@@ -65,13 +63,13 @@ public final class SelfieScreen {
 			});
 			poseStack.popPose();
 		} catch (RuntimeException | LinkageError e) {
-
 			broken = true;
 			Vrcamera.LOGGER.error("VRCamera: the selfie screen can't be drawn, it is off until the game restarts", e);
 		}
 	}
 
-	private static void vertex(@NonNull VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v) {
+	private static void vertex(
+			@NonNull VertexConsumer consumer, PoseStack.Pose pose, float x, float y, float u, float v) {
 		consumer.addVertex(pose, x, y, DEPTH)
 				.setColor(1.0F, 1.0F, 1.0F, 1.0F)
 				.setUv(u, v)

@@ -11,7 +11,6 @@ import ru.deelter.vrcamera.client.desktop.DirectorPass;
 @Pseudo
 @Mixin(targets = "net.caffeinemc.mods.sodium.client.render.chunk.occlusion.AsyncCameraTimingControl", remap = false)
 public class SodiumCameraTimingMixin {
-
 	@Inject(method = "getShouldRenderSync", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$cameraIsSeenOnTheSpot(CallbackInfoReturnable<Boolean> cir) {
 		if (DirectorPass.isActive()) {

@@ -4,7 +4,6 @@ import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Context;
 
 public enum ShotType {
-
 	/**
 	 * behind the player, looking over the shoulder
 	 */

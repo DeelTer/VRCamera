@@ -31,7 +31,6 @@ import java.util.Random;
  * particles and sounds around the camera. All of it only exists on this client
  */
 public final class CameraEffects {
-
 	private static final SoundEvent SHUTTER = SoundEvent.createVariableRangeEvent(
 			Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "shutter"));
 	private static final SoundEvent PRINTING = SoundEvent.createVariableRangeEvent(
@@ -63,7 +62,6 @@ public final class CameraEffects {
 					.normalize();
 			final double ahead = direction.dot(lens);
 			if (ahead > 0) {
-
 				direction = direction.subtract(lens.scale(2.0 * ahead));
 			}
 			final Vec3 position = impact.position().add(direction.scale(0.15));
@@ -202,7 +200,8 @@ public final class CameraEffects {
 		player.playSound(SoundEvents.ITEM_PICKUP, 0.8F, 1.3F);
 		for (int i = 0; i < 6; i++) {
 			player.level().addParticle(ParticleTypes.ELECTRIC_SPARK, position.x, position.y, position.z,
-					(RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6);
+					(RANDOM.nextDouble() - 0.5) * 0.6, (RANDOM.nextDouble() - 0.5) * 0.6,
+					(RANDOM.nextDouble() - 0.5) * 0.6);
 		}
 	}
 

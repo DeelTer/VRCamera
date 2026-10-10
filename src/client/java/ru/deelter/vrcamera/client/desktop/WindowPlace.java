@@ -109,7 +109,6 @@ final class WindowPlace {
 		}
 		final int bar = window.barHeight();
 		if (CameraConfig.current().hasOutputSize()) {
-
 			if (place.y() < monitor.y() + bar) {
 				window.move(new Box(place.x(), monitor.y() + bar, place.width(), place.height()));
 			}

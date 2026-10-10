@@ -1,5 +1,7 @@
 package ru.deelter.vrcamera.client;
 
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -20,6 +22,7 @@ import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -35,7 +38,6 @@ public final class VrcamCommand {
 	private static final Pattern SET_NAME = Pattern.compile("[A-Za-z0-9_-]{1,24}");
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
-
 		final LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal("vrcam")
 				.executes(context -> status(context.getSource()));
 
@@ -82,7 +84,6 @@ public final class VrcamCommand {
 			}));
 		}
 		for (final ScreenOutput output : ScreenOutput.values()) {
-
 			screen.then(ClientCommands.literal(output == ScreenOutput.WINDOW ? "window" : "here").executes(context -> {
 				CameraConfig.current().screenOutput = output;
 				CameraConfig.current().save();
@@ -170,11 +171,10 @@ public final class VrcamCommand {
 				.then(ClientCommands.literal("manual").executes(context -> manual(context.getSource())))
 				.then(ClientCommands.literal("set")
 						.executes(context -> cameraSet(context.getSource(), ""))
-						.then(ClientCommands.argument("set", StringArgumentType.word()).suggests((context, builder) -> {
-							DesktopCamera.INSTANCE.cameraSets().forEach(builder::suggest);
-							return builder.buildFuture();
-						}).executes(context -> cameraSet(context.getSource(),
-								StringArgumentType.getString(context, "set")))))
+						.then(ClientCommands.argument("set", StringArgumentType.word())
+								.suggests((context, builder) -> suggestCameraSets(builder))
+								.executes(context -> cameraSet(context.getSource(),
+										StringArgumentType.getString(context, "set")))))
 				.then(ClientCommands.literal("export").executes(context -> {
 					if (!DesktopCamera.INSTANCE.exportCameras()) {
 						context.getSource().sendError(Component.translatable("vrcamera.command.set.none"));
@@ -183,14 +183,8 @@ public final class VrcamCommand {
 					return DONE;
 				}))
 				.then(ClientCommands.literal("import")
-						.then(ClientCommands.argument("set", StringArgumentType.word()).executes(context -> {
-							final String set = StringArgumentType.getString(context, "set");
-							if (!SET_NAME.matcher(set).matches() || !DesktopCamera.INSTANCE.importCameras(set)) {
-								context.getSource().sendError(Component.translatable("vrcamera.command.set.bad"));
-								return 0;
-							}
-							return DONE;
-						})))
+						.then(ClientCommands.argument("set", StringArgumentType.word()).executes(context ->
+								importCameraSet(context.getSource(), StringArgumentType.getString(context, "set")))))
 				.then(player("follow", DesktopCamera.INSTANCE::film))
 				.then(player("with", DesktopCamera.INSTANCE::filmWith))
 				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
@@ -244,7 +238,8 @@ public final class VrcamCommand {
 	 * the shots of the director by name, and the next one of its own choice without one
 	 */
 	private static LiteralArgumentBuilder<FabricClientCommandSource> shots() {
-		final LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot").executes(context -> {
+		final LiteralArgumentBuilder<FabricClientCommandSource> shot = ClientCommands.literal("shot");
+		shot.executes(context -> {
 			DesktopCamera.INSTANCE.showShot(null);
 			return DONE;
 		});
@@ -263,6 +258,19 @@ public final class VrcamCommand {
 		config.save();
 		source.sendFeedback(Component.translatable(
 				config.directorManual ? "vrcamera.command.manual.on" : "vrcamera.command.manual.off"));
+		return DONE;
+	}
+
+	private static CompletableFuture<Suggestions> suggestCameraSets(SuggestionsBuilder builder) {
+		DesktopCamera.INSTANCE.cameraSets().forEach(builder::suggest);
+		return builder.buildFuture();
+	}
+
+	private static int importCameraSet(FabricClientCommandSource source, String set) {
+		if (!SET_NAME.matcher(set).matches() || !DesktopCamera.INSTANCE.importCameras(set)) {
+			source.sendError(Component.translatable("vrcamera.command.set.bad"));
+			return 0;
+		}
 		return DONE;
 	}
 

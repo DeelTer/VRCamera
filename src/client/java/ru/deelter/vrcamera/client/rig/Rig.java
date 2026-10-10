@@ -17,7 +17,6 @@ import ru.deelter.vrcamera.client.shot.Shot;
  * and aims it at the player.
  */
 public final class Rig {
-
 	private static final double BLEND_TIME = 1.6;
 
 	private static final double ANCHOR_LAG = 0.18;
@@ -188,7 +187,6 @@ public final class Rig {
 		if (shot.isWorld()) {
 			wanted = shot.worldPos;
 		} else {
-
 			wanted = shot.position(center, subject,
 					azimuth.update(shot.azimuth, lag, dt),
 					elevation.update(shot.elevation, lag, dt),
@@ -204,8 +202,8 @@ public final class Rig {
 		} else if (free < arm) {
 			final Vec3 current = subject.center.lerp(wanted, arm);
 
-			if (softArmed && softTime < config.softOcclusionTime &&
-					WorldProbe.spotFree(subject, current, config) && WorldProbe.thin(subject, subject.center, current)) {
+			if (softArmed && softTime < config.softOcclusionTime && WorldProbe.spotFree(subject, current, config) &&
+					WorldProbe.thin(subject, subject.center, current)) {
 				softTime += dt;
 			} else {
 				arm = free;
@@ -223,7 +221,6 @@ public final class Rig {
 
 		Vec3 aim = shot.lookTarget;
 		if (config.faceDistance > 0 && !shot.exactAim()) {
-
 			final double near = config.faceDistance * subject.unit;
 			double away = position.distanceTo(subject.center);
 			if (zoomIsCloseness) {
@@ -233,7 +230,6 @@ public final class Rig {
 			aim = aim.add(subject.head.subtract(subject.center).scale(closeness));
 		}
 		if (config.leadRoom > 0 && !shot.exactAim()) {
-
 			Vec3 lead = new Vec3(subject.velocity.x, 0, subject.velocity.z).scale(config.leadRoom);
 			final double max = config.leadRoomMax * subject.unit;
 			if (lead.length() > max) {

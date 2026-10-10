@@ -446,7 +446,6 @@ public final class Protocol {
 			out.writeByte(type);
 			body.write(out);
 		} catch (IOException e) {
-
 			throw new IllegalStateException(e);
 		}
 		return bytes.toByteArray();
@@ -523,8 +522,8 @@ public final class Protocol {
 	 * A sheet that is not pinned: in a hand, falling or lying somewhere. The server only keeps those in memory
 	 * and for a while, they are told about so the others see them and can pick them up
 	 */
-	public record Loose(long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash,
-	                    boolean custom) {
+	public record Loose(
+			long id, UUID owner, String ownerName, Pose pose, float aspect, long imageHash, boolean custom) {
 	}
 
 	public record NewLoose(long reference, Pose pose, byte[] image, boolean custom) {
@@ -543,8 +542,8 @@ public final class Protocol {
 	 * where the camera of a player is. Sent a few times per second while it is on, nothing says that it is off:
 	 * a camera that is not heard of for a moment is gone
 	 */
-	public record Camera(UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz,
-	                     float qw) {
+	public record Camera(
+			UUID owner, String ownerName, double x, double y, double z, float qx, float qy, float qz, float qw) {
 	}
 
 	/**
@@ -554,8 +553,8 @@ public final class Protocol {
 	 * @param anyway also if the player has moved or thrown away the one with this id
 	 * @param show   if it films right away
 	 */
-	public record Placed(String id, double x, double y, double z, float yaw, float pitch, float fov, boolean anyway,
-	                     boolean show) {
+	public record Placed(
+			String id, double x, double y, double z, float yaw, float pitch, float fov, boolean anyway, boolean show) {
 		public boolean isSane() {
 			return !id.isEmpty() && id.length() <= MAX_CAMERA_ID && Double.isFinite(x) && Double.isFinite(y) &&
 					Double.isFinite(z) && Float.isFinite(yaw) && Float.isFinite(pitch) && Float.isFinite(fov);

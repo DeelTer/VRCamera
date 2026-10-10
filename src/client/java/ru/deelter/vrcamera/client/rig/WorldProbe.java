@@ -39,14 +39,14 @@ public final class WorldProbe {
 			if (!subject.softBlocks || !DitheredBlocks.dithers(level.getBlockState(hit.getBlockPos()))) {
 				return hit.getLocation();
 			}
-			Vec3 on = hit.getLocation();
+			Vec3 behind = hit.getLocation();
 			do {
-				on = on.add(way.scale(SOFT_STEP / length));
-			} while (BlockPos.containing(on).equals(hit.getBlockPos()));
-			if (on.distanceToSqr(from) >= length * length) {
+				behind = behind.add(way.scale(SOFT_STEP / length));
+			} while (BlockPos.containing(behind).equals(hit.getBlockPos()));
+			if (behind.distanceToSqr(from) >= length * length) {
 				return null;
 			}
-			start = on;
+			start = behind;
 		}
 		return null;
 	}
@@ -124,7 +124,6 @@ public final class WorldProbe {
 		final BlockHitResult front = subject.player.level().clip(new ClipContext(from, to,
 				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, subject.player));
 		if (front.getType() == HitResult.Type.MISS) {
-
 			return true;
 		}
 		final BlockHitResult back = subject.player.level().clip(new ClipContext(to, from,
@@ -146,7 +145,7 @@ public final class WorldProbe {
 		if (hit.getType() == HitResult.Type.MISS) {
 			return to;
 		}
-		double free = Math.max(0.0, hit.getLocation().distanceTo(from) - 0.3);
+		final double free = Math.max(0.0, hit.getLocation().distanceTo(from) - 0.3);
 		return from.add(to.subtract(from).normalize().scale(free));
 	}
 
@@ -169,7 +168,6 @@ public final class WorldProbe {
 		final double range = 5.0 * subject.unit;
 		double sum = 0;
 		for (int i = 0; i < 9; i++) {
-
 			final Vec3 dir = i == 8 ? new Vec3(0, 1, 0) : CamMath.orbit(i * Math.PI / 4.0, 0.15);
 			final Vec3 end = subject.center.add(dir.scale(range));
 			final BlockHitResult hit = subject.player.level().clip(new ClipContext(subject.center, end,

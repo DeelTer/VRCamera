@@ -74,6 +74,7 @@ public final class PhotoSync {
 	private final Set<Long> ghosts = new HashSet<>();
 	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
+	private static final double HEARD_WITHIN = 64.0;
 	private boolean connected;
 	private float photoCooldown;
 	private long lastPhoto;
@@ -254,7 +255,6 @@ public final class PhotoSync {
 		}
 		ticks++;
 		if (!connected) {
-
 			if (hellos < HELLO_TRIES && ticks % HELLO_INTERVAL_TICKS == 0 &&
 					ClientPlayNetworking.canSend(SyncPayload.TYPE)) {
 				hellos++;
@@ -273,7 +273,6 @@ public final class PhotoSync {
 		});
 		sharePacked();
 		if (ticks % POSE_INTERVAL_TICKS == 0) {
-
 			PhotoAlbum.INSTANCE.forEachShared(sheet -> {
 				if (sheet.movedSinceShared()) {
 					send(Protocol.loosePose(Protocol.C_LOOSE_POSE, sheet.looseId(), pose(sheet)));
@@ -290,7 +289,6 @@ public final class PhotoSync {
 		final boolean showOthers = CameraConfig.current().showOthersPhotos;
 		final boolean showCustom = CameraConfig.current().showCustomPhotos;
 		if (showCustom != shownCustom) {
-
 			shownCustom = showCustom;
 			new ArrayList<>(loaded).forEach(id -> PhotoAlbum.INSTANCE.removeRemote(id, false));
 			new ArrayList<>(ghosts).forEach(PhotoAlbum.INSTANCE::removeLoose);
@@ -309,7 +307,6 @@ public final class PhotoSync {
 				}
 			} else if (shown && distance < LOAD_DISTANCE * LOAD_DISTANCE) {
 				if (sheet.custom() && !showCustom && !sheet.owner().equals(player.getUUID())) {
-
 					final PhotoSheet standIn = PhotoAlbum.INSTANCE.addRemote(sheet.id(), false,
 							new Vec3(sheet.x(), sheet.y(), sheet.z()),
 							new Quaternionf(sheet.qx(), sheet.qy(), sheet.qz(), sheet.qw()), sheet.aspect(), black(),
@@ -335,7 +332,8 @@ public final class PhotoSync {
 					loaded.size() + ghosts.size() + waiting.size() < MAX_LOADED) {
 				if (loose.custom() && !showCustom) {
 					final Protocol.Pose at = loose.pose();
-					final PhotoSheet standIn = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
+					final PhotoSheet standIn = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(),
+							at.z()),
 							new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), black(), null);
 					if (standIn != null) {
 						standIn.placeholder = true;
@@ -351,11 +349,9 @@ public final class PhotoSync {
 				continue;
 			}
 			if (!canFetch(sheet.imageHash())) {
-
 				break;
 			}
 			if (loaded.size() + waiting.size() >= MAX_LOADED) {
-
 				Protocol.Sheet farthest = null;
 				double farthestDistance = Math.sqrt(eyes.distanceToSqr(sheet.x(), sheet.y(), sheet.z())) + EVICT_MARGIN;
 				for (final long id : loaded) {
@@ -458,8 +454,8 @@ public final class PhotoSync {
 						PhotoAlbum.INSTANCE.serverTookOver();
 						Vrcamera.LOGGER.info("VRCamera: this server shares photos");
 					} else {
-						Vrcamera.LOGGER.warn("VRCamera: the server speaks photo protocol {}, this mod {}. Photos are not shared",
-								limits.version(), Protocol.VERSION);
+						Vrcamera.LOGGER.warn("VRCamera: the server speaks photo protocol {}, this mod {}. " +
+								"Photos are not shared", limits.version(), Protocol.VERSION);
 					}
 				}
 				case Protocol.S_SHEETS -> Protocol.readSheets(in).forEach(this::learn);
@@ -515,18 +511,8 @@ public final class PhotoSync {
 					}
 				}
 				case Protocol.S_SHOW -> DesktopCamera.INSTANCE.serverShow(in.readUTF(), in.readFloat());
-				case Protocol.S_SHUTTER, Protocol.S_PRINT -> {
-					final Vec3 at = new Vec3(in.readDouble(), in.readDouble(), in.readDouble());
-					final LocalPlayer player = Minecraft.getInstance().player;
-
-					if (player != null && Double.isFinite(at.lengthSqr()) && at.distanceTo(player.position()) < 64) {
-						if (message[0] == Protocol.S_SHUTTER) {
-							CameraEffects.shutter(player.level(), at);
-						} else {
-							CameraEffects.printing(player.level(), at);
-						}
-					}
-				}
+				case Protocol.S_SHUTTER, Protocol.S_PRINT -> cameraSound(message[0] == Protocol.S_SHUTTER,
+						new Vec3(in.readDouble(), in.readDouble(), in.readDouble()));
 				default -> {
 				}
 			}
@@ -580,7 +566,6 @@ public final class PhotoSync {
 			return;
 		}
 		if (!PhotoAlbum.INSTANCE.has(sheet) || sheet.isPinned() || sheet.isGhost()) {
-
 			dropLoose(result.id());
 			return;
 		}
@@ -603,15 +588,15 @@ public final class PhotoSync {
 	}
 
 	/**
-	 * gets the picture with that hash, from where it is closest: memory, disk, server
-	 */
-	/**
 	 * @return if {@link #fetch} would start to get that picture now
 	 */
 	private boolean canFetch(long hash) {
 		return packed.containsKey(hash) || askedServer.size() < MAX_WAITING;
 	}
 
+	/**
+	 * gets the picture with that hash, from where it is closest: memory, disk, server
+	 */
 	private void fetch(long hash) {
 		if (waiting.containsKey(hash)) {
 			return;
@@ -677,7 +662,8 @@ public final class PhotoSync {
 					ghosts.add(loose.id())) {
 				final Protocol.Pose at = loose.pose();
 				final PhotoSheet ghost = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
-						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), PhotoAlbum.image(picture), image);
+						new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), PhotoAlbum.image(picture),
+						image);
 				if (ghost != null) {
 					ghost.custom = loose.custom();
 				}
@@ -724,11 +710,25 @@ public final class PhotoSync {
 		}
 		final LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-
 			known.put(result.id(), new Protocol.Sheet(result.id(), player.getUUID(), player.getName().getString(),
 					sheet.position().x, sheet.position().y, sheet.position().z, sheet.rotation().x,
 					sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect, result.imageHash(),
 					true, sheet.custom));
+		}
+	}
+
+	/**
+	 * the camera of another player clicked or printed a photo
+	 */
+	private void cameraSound(boolean shutter, Vec3 at) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		if (player == null || !Double.isFinite(at.lengthSqr()) || at.distanceTo(player.position()) >= HEARD_WITHIN) {
+			return;
+		}
+		if (shutter) {
+			CameraEffects.shutter(player.level(), at);
+		} else {
+			CameraEffects.printing(player.level(), at);
 		}
 	}
 

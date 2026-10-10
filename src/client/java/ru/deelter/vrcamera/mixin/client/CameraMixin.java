@@ -22,7 +22,6 @@ import ru.deelter.vrcamera.client.desktop.DirectorPass;
 
 @Mixin(Camera.class)
 public abstract class CameraMixin {
-
 	@Shadow
 	private boolean detached;
 

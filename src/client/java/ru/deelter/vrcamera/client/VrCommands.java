@@ -77,6 +77,5 @@ final class VrCommands {
 					}
 					return DONE;
 				})));
-
 	}
 }

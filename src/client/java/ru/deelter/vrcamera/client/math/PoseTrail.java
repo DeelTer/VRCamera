@@ -46,7 +46,7 @@ public final class PoseTrail {
 	 */
 	@Nullable
 	public Vec3 last() {
-		Sample last = samples.peekLast();
+		final Sample last = samples.peekLast();
 		return last == null ? null : last.position;
 	}
 

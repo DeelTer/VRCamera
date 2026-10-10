@@ -15,10 +15,8 @@ import ru.deelter.vrcamera.client.desktop.DirectorPass;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
-
 	@WrapWithCondition(method = "extract", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;extractRenderState(Lnet/minecraft/client/DeltaTracker;ZZ)V"), require = 0)
 	private boolean vrcamera$noHudForCamera(Gui gui, DeltaTracker deltaTracker, boolean renderLevel, boolean loaded) {
-
 		return !DirectorPass.isActive() || DesktopGui.isDrawing();
 	}
 

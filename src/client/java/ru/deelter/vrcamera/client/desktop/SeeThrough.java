@@ -102,7 +102,8 @@ final class SeeThrough {
 			GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, 4);
 		} catch (RuntimeException e) {
 			broken = true;
-			Vrcamera.LOGGER.error("VRCamera: can't show the player through blocks, that is off until the game restarts", e);
+			Vrcamera.LOGGER.error("VRCamera: can't show the player through blocks, that is off until the game restarts",
+					e);
 		} finally {
 			GL30.glBindVertexArray(verticesBefore);
 			GL11.glBindTexture(GL11.GL_TEXTURE_2D, textureBefore);

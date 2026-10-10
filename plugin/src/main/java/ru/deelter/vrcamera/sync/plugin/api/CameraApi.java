@@ -15,7 +15,6 @@ import java.util.concurrent.TimeUnit;
  * can give them only a handful.
  */
 public interface CameraApi {
-
 	/**
 	 * @return the API, null while the plugin is not enabled
 	 */

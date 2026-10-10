@@ -43,7 +43,7 @@ public final class ChromaKey {
 	private static final int SEEN_MOST = 1024;
 	private static final Vector4f color = new Vector4f(0.0F, 0xB1 / 255.0F, 0x40 / 255.0F, 1.0F);
 	private static Preset preset = Preset.CONFIG;
-	private static boolean on;
+	private static boolean enabled;
 	private static boolean broken;
 	private static Boolean shadowsBefore;
 	private static String colorText;
@@ -52,7 +52,7 @@ public final class ChromaKey {
 	}
 
 	public static boolean isOn() {
-		return on;
+		return enabled;
 	}
 
 	public static Preset preset() {
@@ -64,7 +64,7 @@ public final class ChromaKey {
 	 */
 	public static void cycle() {
 		final Preset[] presets = Preset.values();
-		if (!on) {
+		if (!enabled) {
 			preset = presets[0];
 			set(true);
 		} else if (preset == presets[presets.length - 1]) {
@@ -108,10 +108,10 @@ public final class ChromaKey {
 
 	public static void set(boolean value) {
 		final Minecraft mc = Minecraft.getInstance();
-		if (value == on) {
+		if (value == enabled) {
 			return;
 		}
-		on = value;
+		enabled = value;
 		broken = false;
 		SEEN.clear();
 
@@ -132,7 +132,7 @@ public final class ChromaKey {
 		if (DirectorPass.drawsEntitiesAlone()) {
 			return !broken;
 		}
-		if (!on || broken) {
+		if (!enabled || broken) {
 			return false;
 		}
 		if (Vr.isRunning()) {
@@ -188,9 +188,6 @@ public final class ChromaKey {
 	}
 
 	/**
-	 * @return the colour of the settings, the default green if what is written there is not one
-	 */
-	/**
 	 * @return if entities are lit the same wherever they stand. Not in a picture of the entities alone that is no
 	 * green screen: that one is put over the picture of the world, and has to look like it
 	 */
@@ -198,6 +195,9 @@ public final class ChromaKey {
 		return applies() && !DirectorPass.drawsEntitiesAlone();
 	}
 
+	/**
+	 * @return the colour of the settings, the default green if what is written there is not one
+	 */
 	private static Vector4fc background() {
 		if (DirectorPass.drawsEntitiesAlone()) {
 			return NOTHING;
@@ -264,7 +264,8 @@ public final class ChromaKey {
 			}
 			GL11.glDepthMask(depthMask);
 			GL11.glClearDepth(clearDepth);
-			GL11.glColorMask(colorMask.get(0) != 0, colorMask.get(1) != 0, colorMask.get(2) != 0, colorMask.get(3) != 0);
+			GL11.glColorMask(colorMask.get(0) != 0, colorMask.get(1) != 0, colorMask.get(2) != 0,
+					colorMask.get(3) != 0);
 			GL11.glClearColor(clearColor.get(0), clearColor.get(1), clearColor.get(2), clearColor.get(3));
 		} catch (RuntimeException | LinkageError e) {
 			failed(e);
@@ -273,7 +274,8 @@ public final class ChromaKey {
 
 	private static void failed(Throwable cause) {
 		broken = true;
-		Vrcamera.LOGGER.error("VRCamera: the green screen can't be drawn, it is off until it is turned on again", cause);
+		Vrcamera.LOGGER.error("VRCamera: the green screen can't be drawn, it is off until it is turned on again",
+				cause);
 	}
 
 	/**

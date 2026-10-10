@@ -11,7 +11,6 @@ import java.util.function.UnaryOperator;
  * read like a part of the screen sways with it, and should not.
  */
 final class ViewBob {
-
 	private ViewBob() {
 	}
 

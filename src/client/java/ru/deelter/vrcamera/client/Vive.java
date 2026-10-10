@@ -22,7 +22,6 @@ import java.util.List;
  * that Vivecraft is installed: this class is not to be loaded without it.
  */
 public final class Vive {
-
 	private Vive() {
 	}
 
@@ -59,9 +58,9 @@ public final class Vive {
 	 * what only the eyes of the player get to see: none of it should show up in the recording
 	 */
 	public static void drawHeadsetAids() {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		if (dh.currentPass == RenderPass.LEFT || dh.currentPass == RenderPass.RIGHT) {
-			CameraController.INSTANCE.drawHeadsetAids(dh.vrPlayer.vrdata_world_render);
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		if (dataHolder.currentPass == RenderPass.LEFT || dataHolder.currentPass == RenderPass.RIGHT) {
+			CameraController.INSTANCE.drawHeadsetAids(dataHolder.vrPlayer.vrdata_world_render);
 		}
 	}
 
@@ -70,21 +69,21 @@ public final class Vive {
 	 */
 	@Nullable
 	public static RenderTarget cameraPicture() {
-		final ClientDataHolderVR dh = ClientDataHolderVR.getInstance();
-		return dh.vrRenderer == null ? null : dh.vrRenderer.cameraFramebuffer;
+		final ClientDataHolderVR dataHolder = ClientDataHolderVR.getInstance();
+		return dataHolder.vrRenderer == null ? null : dataHolder.vrRenderer.cameraFramebuffer;
 	}
 
 	@NotNull
-	public static PhotoAlbum.Hands hands(VRData vr) {
+	public static PhotoAlbum.Hands hands(VRData vrData) {
 		return new PhotoAlbum.Hands() {
 			@Override
 			public Vec3 position(int hand) {
-				return vr.getController(hand).getPosition();
+				return vrData.getController(hand).getPosition();
 			}
 
 			@Override
 			public Quaternionf rotation(int hand) {
-				return vr.getController(hand).getMatrix().getNormalizedRotation(new Quaternionf());
+				return vrData.getController(hand).getMatrix().getNormalizedRotation(new Quaternionf());
 			}
 		};
 	}

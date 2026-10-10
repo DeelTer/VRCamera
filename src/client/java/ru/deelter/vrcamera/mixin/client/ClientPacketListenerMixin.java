@@ -11,7 +11,6 @@ import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 
 @Mixin(ClientPacketListener.class)
 public class ClientPacketListenerMixin {
-
 	@Inject(method = "handleExplosion", at = @At("TAIL"), require = 0)
 	private void vrcamera$blowSheetsAway(ClientboundExplodePacket packet, CallbackInfo ci) {
 		PhotoAlbum.INSTANCE.explosion(packet.center(), packet.radius());

@@ -346,7 +346,6 @@ public class CameraConfig {
 				final JsonObject json = GSON.fromJson(reader, JsonObject.class);
 				config = GSON.fromJson(json, CameraConfig.class);
 				if (config != null && !json.has("version")) {
-
 					config.version = 1;
 				}
 			} catch (Exception e) {
@@ -430,7 +429,6 @@ public class CameraConfig {
 	 */
 	private void migrate(int from) {
 		if (from < 2) {
-
 			for (final ShotConfig preset : presets) {
 				if (preset.azimuth == 0 && preset.elevation == 5 && preset.distance == 2.5) {
 					preset.distance = defaultPreset().distance;
@@ -443,18 +441,15 @@ public class CameraConfig {
 			}
 		}
 		if (from < 3 && pullSeconds == 2.0) {
-
 			pullSeconds = 1.25;
 		}
 		if (from < 4 && marker == Marker.DOT) {
 			marker = Marker.MODEL;
 		}
 		if (from < 6 && throwPower == 1.0) {
-
 			throwPower = 1.3;
 		}
 		if (from < 5) {
-
 			if (minShotTime == 2.5) {
 				minShotTime = 4.0;
 			}

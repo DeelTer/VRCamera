@@ -32,7 +32,6 @@ import ru.deelter.vrcamera.client.math.PoseTrail;
  * side of its local +Z.
  */
 public final class PhotoSheet {
-
 	public static final float WIDTH = 0.18F;
 
 	private static final double PRINT_TIME = 0.7;
@@ -121,7 +120,6 @@ public final class PhotoSheet {
 	 */
 	@Nullable
 	private static BlockHitResult surface(Level level, Vec3 from, Vec3 to) {
-
 		final BlockHitResult outline = level.clip(new ClipContext(from, to, ClipContext.Block.OUTLINE,
 				ClipContext.Fluid.NONE, CollisionContext.empty()));
 		if (outline.getType() != HitResult.Type.MISS && holds(level, outline.getBlockPos())) {
@@ -240,7 +238,6 @@ public final class PhotoSheet {
 	 */
 	public boolean canGrab(int hand) {
 		if (isPinned()) {
-
 			return removable && !awaitingServer && !placeholder;
 		}
 
@@ -281,7 +278,6 @@ public final class PhotoSheet {
 		final Vector3f offset = handRotation.transform(new Vector3f(gripOffset));
 		final Vec3 next = handPosition.add(offset.x, offset.y, offset.z);
 		if (dt > 0) {
-
 			velocity = velocity.lerp(next.subtract(position).scale(1.0 / dt), 0.35);
 		}
 		position = next;
@@ -409,12 +405,11 @@ public final class PhotoSheet {
 		BlockHitResult nearest = surface(level, center.subtract(behind.scale(PIN_PUSHED_IN)), center.add(
 				behind.scale(PIN_REACH)));
 		if (nearest == null) {
-
 			double nearestDistance = Double.MAX_VALUE;
 			for (final Direction direction : Direction.values()) {
 				final Vec3 reach = new Vec3(direction.getStepX(), direction.getStepY(), direction.getStepZ())
 						.scale(PIN_REACH);
-				BlockHitResult hit = surface(level, center, center.add(reach));
+				final BlockHitResult hit = surface(level, center, center.add(reach));
 				if (hit != null && hit.getLocation().distanceToSqr(center) < nearestDistance) {
 					nearest = hit;
 					nearestDistance = hit.getLocation().distanceToSqr(center);
@@ -500,7 +495,6 @@ public final class PhotoSheet {
 
 		BlockHitResult hit = clip(level, velocity.scale(dt));
 		if (hit.getType() != HitResult.Type.MISS && hit.getDirection() != Direction.UP) {
-
 			velocity = new Vec3(0, Math.min(velocity.y, 0), 0);
 			hit = clip(level, velocity.scale(dt));
 		}

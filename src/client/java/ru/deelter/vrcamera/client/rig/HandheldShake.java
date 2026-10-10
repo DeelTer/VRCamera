@@ -9,7 +9,6 @@ import ru.deelter.vrcamera.client.math.CamMath;
  * jolts when the one holding it gets hurt. A tracked controller alone is too steady for that.
  */
 public final class HandheldShake {
-
 	private static final double JOLT_TIME = 0.35;
 
 	private static final double FULL_STEP_SPEED = 5.0;

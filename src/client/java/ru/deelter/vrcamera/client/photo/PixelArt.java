@@ -11,7 +11,6 @@ import java.util.List;
  * of the colours a map can show, with a light pattern where two of them are mixed.
  */
 public final class PixelArt {
-
 	private static final int MOST_PIXELS = 128;
 	private static final int LEAST_PIXELS = 32;
 
@@ -51,26 +50,11 @@ public final class PixelArt {
 				for (int cellX = 0; cellX < cellsX; cellX++) {
 					final int left = cellX * width / cellsX;
 					final int right = Math.max(left + 1, (cellX + 1) * width / cellsX);
-					int red = 0;
-					int green = 0;
-					int blue = 0;
-					for (int y = top; y < bottom; y++) {
-						for (int x = left; x < right; x++) {
-							final int pixel = picture.getPixel(x, y);
-							red += pixel >> 16 & 0xFF;
-							green += pixel >> 8 & 0xFF;
-							blue += pixel & 0xFF;
-						}
-					}
-					final int count = (right - left) * (bottom - top);
+					final int[] mean = meanColor(picture, left, top, right, bottom);
 					final double shift = (PATTERN[(cellY & 3) * 4 + (cellX & 3)] / 16.0 - 0.47) * DITHER;
-					final int color = 0xFF000000 | nearest(colors, shifted(red / count, shift), shifted(green / count, shift),
-							shifted(blue / count, shift));
-					for (int y = 0; y < square; y++) {
-						for (int x = 0; x < square; x++) {
-							art.setPixel(cellX * square + x, cellY * square + y, color);
-						}
-					}
+					final int color = 0xFF000000 | nearest(colors, shifted(mean[0], shift), shifted(mean[1], shift),
+							shifted(mean[2], shift));
+					fill(art, cellX * square, cellY * square, square, color);
 				}
 			}
 		} catch (RuntimeException e) {
@@ -79,6 +63,33 @@ public final class PixelArt {
 		}
 		picture.close();
 		return art;
+	}
+
+	/**
+	 * @return red, green and blue of a part of a picture, evened out over it
+	 */
+	private static int[] meanColor(NativeImage picture, int left, int top, int right, int bottom) {
+		int red = 0;
+		int green = 0;
+		int blue = 0;
+		for (int y = top; y < bottom; y++) {
+			for (int x = left; x < right; x++) {
+				final int pixel = picture.getPixel(x, y);
+				red += pixel >> 16 & 0xFF;
+				green += pixel >> 8 & 0xFF;
+				blue += pixel & 0xFF;
+			}
+		}
+		final int count = (right - left) * (bottom - top);
+		return new int[]{red / count, green / count, blue / count};
+	}
+
+	private static void fill(NativeImage art, int left, int top, int size, int color) {
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				art.setPixel(left + x, top + y, color);
+			}
+		}
 	}
 
 	private static int shifted(int value, double shift) {
@@ -91,11 +102,11 @@ public final class PixelArt {
 		for (final int color : colors) {
 			final int otherRed = color >> 16 & 0xFF;
 			final int mean = (red + otherRed) / 2;
-			final long dr = red - otherRed;
-			final long dg = green - (color >> 8 & 0xFF);
-			final long db = blue - (color & 0xFF);
-
-			final long distance = ((512 + mean) * dr * dr >> 8) + 4 * dg * dg + ((767 - mean) * db * db >> 8);
+			final long redOff = red - otherRed;
+			final long greenOff = green - (color >> 8 & 0xFF);
+			final long blueOff = blue - (color & 0xFF);
+			final long distance = ((512 + mean) * redOff * redOff >> 8) + 4 * greenOff * greenOff +
+					((767 - mean) * blueOff * blueOff >> 8);
 			if (distance < bestDistance) {
 				bestDistance = distance;
 				best = color;

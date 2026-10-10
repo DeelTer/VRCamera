@@ -28,7 +28,6 @@ import java.util.stream.Stream;
  * They are kept with the world they stand in, one file per dimension.
  */
 final class FreeCamera {
-
 	static final int MOST = 26;
 	private static final String FILES = "cameras-";
 	private static final String SET_MARK = "@";
@@ -325,7 +324,7 @@ final class FreeCamera {
 			}
 			return;
 		}
-		int kept = spots.indexOf(filming);
+		final int kept = spots.indexOf(filming);
 		if (spots.isEmpty()) {
 			active = 0;
 		} else if (kept >= 0) {
@@ -444,7 +443,6 @@ final class FreeCamera {
 				continue;
 			}
 			if (!carrier.isAlive() || carrier.isRemoved()) {
-
 				spot.carrier = null;
 				continue;
 			}
@@ -493,7 +491,7 @@ final class FreeCamera {
 			return;
 		}
 		settle();
-		Spot filming = spots.get(active);
+		final Spot filming = spots.get(active);
 		decline(spots.remove(camera));
 		active = spots.indexOf(filming);
 		save();
@@ -505,8 +503,8 @@ final class FreeCamera {
 	void fly(Vec3 keys, boolean fast) {
 		final Vec3 ahead = forward(yaw, pitch);
 		final Vec3 right = new Vec3(-ahead.z, 0, ahead.x);
-		final Vec3 way = ahead.scale(keys.z).add(right.lengthSqr() < 1.0E-6 ? Vec3.ZERO : right.normalize().scale(keys.x))
-				.add(0, keys.y, 0);
+		final Vec3 sideways = right.lengthSqr() < 1.0E-6 ? Vec3.ZERO : right.normalize().scale(keys.x);
+		final Vec3 way = ahead.scale(keys.z).add(sideways).add(0, keys.y, 0);
 		push = way.lengthSqr() < 1.0E-6 ? Vec3.ZERO : way.normalize().scale(SPEED * (fast ? FAST : 1.0));
 		if (push.lengthSqr() > 0) {
 			glide = Vec3.ZERO;
@@ -583,8 +581,7 @@ final class FreeCamera {
 		active = 0;
 		if (Files.isRegularFile(file)) {
 			try {
-
-				JsonElement written = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
+				final JsonElement written = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
 				Spot[] kept;
 				if (written.isJsonObject()) {
 					final Kept all = GSON.fromJson(written, Kept.class);
@@ -595,13 +592,11 @@ final class FreeCamera {
 				} else {
 					kept = GSON.fromJson(written, Spot[].class);
 				}
-				if (kept != null) {
-					for (final Spot spot : List.of(kept).subList(0, Math.min(kept.length, MOST))) {
-						if (spot.name == null) {
-							spot.name = freeName();
-						}
-						spots.add(spot);
+				for (int camera = 0; kept != null && camera < Math.min(kept.length, MOST); camera++) {
+					if (kept[camera].name == null) {
+						kept[camera].name = freeName();
 					}
+					spots.add(kept[camera]);
 				}
 			} catch (IOException | JsonParseException | NullPointerException e) {
 				Vrcamera.LOGGER.warn("VRCamera: can't read the cameras in {}", file, e);
@@ -669,7 +664,6 @@ final class FreeCamera {
 	 * the camera that films is where it was flown to, its spot has to hear of that
 	 */
 	private void settle() {
-
 		if (!isInFlight() && active >= 0 && active < spots.size()) {
 			final Spot spot = spots.get(active);
 			spot.x = position.x;
@@ -682,7 +676,6 @@ final class FreeCamera {
 	 * where a camera stands: degrees the way the game counts them for a player
 	 */
 	private static final class Spot {
-
 		private String name;
 		private double x;
 		private double y;

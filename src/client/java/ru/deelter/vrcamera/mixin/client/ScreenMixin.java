@@ -10,7 +10,6 @@ import ru.deelter.vrcamera.client.desktop.DesktopGui;
 
 @Mixin(Screen.class)
 public class ScreenMixin {
-
 	@Inject(method = "extractTransparentBackground", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$noDimInWorld(CallbackInfo ci) {
 		if (DesktopGui.isDrawing()) {

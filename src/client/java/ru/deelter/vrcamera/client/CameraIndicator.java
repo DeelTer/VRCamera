@@ -12,7 +12,6 @@ import java.util.function.UnaryOperator;
  * While the camera is out of sight the icon sticks to the edge of the view on the side the camera is on.
  */
 public final class CameraIndicator {
-
 	private static final double MIN_DISTANCE = 1.2;
 
 	private static final double VIEW_ANGLE = Math.toRadians(35);
@@ -53,12 +52,10 @@ public final class CameraIndicator {
 
 		Vec3 anchor;
 		if (Math.atan2(sideways, z) < VIEW_ANGLE) {
-
 			anchor = camera.add(up.scale(0.15 * worldScale));
 		} else if (!alsoOutOfSight) {
 			return;
 		} else {
-
 			final Vec3 side = sideways < 1.0E-3 ? right : right.scale(x / sideways).add(up.scale(y / sideways));
 			final double depth = PINNED_DISTANCE * worldScale;
 			anchor = head.add(forward.scale(depth)).add(side.scale(depth * Math.tan(PINNED_ANGLE)));

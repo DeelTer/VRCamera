@@ -19,7 +19,6 @@ import ru.deelter.vrcamera.client.CameraController;
 @Pseudo
 @Mixin(value = VRPlayerModel.class, remap = false)
 public class VRPlayerModelMixin {
-
 	@Inject(method = "animateVRModel", at = @At("RETURN"), require = 0)
 	private static void vrcamera$hideHoldingArm(
 			PlayerModel model, AvatarRenderState renderState, Vector3f tempV, Vector3f tempV2, Matrix3f tempM,

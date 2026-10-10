@@ -17,7 +17,6 @@ import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 
 @Mixin(Minecraft.class)
 public class MinecraftMixin {
-
 	@Shadow
 	@Final
 	private DeltaTracker.Timer deltaTracker;

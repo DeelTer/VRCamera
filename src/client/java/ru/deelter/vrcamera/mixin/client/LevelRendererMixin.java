@@ -24,7 +24,6 @@ import ru.deelter.vrcamera.client.sync.RemoteCameras;
 
 @Mixin(LevelRenderer.class)
 public class LevelRendererMixin {
-
 	@Inject(method = "submitFeatures*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;finalizeGizmoCollection()V"), require = 0)
 	private void vrcamera$drawWithoutVR(
 			CallbackInfo ci, @Local(argsOnly = true) LevelRenderState levelRenderState,
@@ -73,7 +72,8 @@ public class LevelRendererMixin {
 	}
 
 	@WrapWithCondition(method = "submitFeatures*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/state/level/ParticlesRenderState;submit(Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V"), require = 0)
-	private boolean vrcamera$noParticles(ParticlesRenderState particles, SubmitNodeCollector output, CameraRenderState camera) {
+	private boolean vrcamera$noParticles(ParticlesRenderState particles, SubmitNodeCollector output,
+			CameraRenderState camera) {
 		return !ChromaKey.applies();
 	}
 

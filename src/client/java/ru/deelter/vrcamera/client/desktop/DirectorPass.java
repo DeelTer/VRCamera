@@ -98,7 +98,6 @@ public final class DirectorPass {
 		GameFrame.newFrame();
 		final DesktopCamera camera = DesktopCamera.INSTANCE;
 		if (camera.isOn() && (mc.level == null || mc.player == null)) {
-
 			camera.setMode(DesktopCamera.Mode.OFF);
 		}
 		camera.keepView(mc);
@@ -131,7 +130,6 @@ public final class DirectorPass {
 
 		final RenderTarget own = mc.gameRenderer.mainRenderTarget();
 		if (!camera.advance(deltaTracker.getGameTimeDeltaPartialTick(true))) {
-
 			return;
 		}
 		try {
@@ -173,7 +171,6 @@ public final class DirectorPass {
 	 * @return what the second picture costs, for the debug overlay
 	 */
 	static List<String> debugLines() {
-
 		return List.of(String.format(Locale.ROOT, "camera window: %.0f fps, draw %.1f ms + show %.1f ms per picture",
 						framesPerSecond, drawMillis, showMillis),
 				String.format(Locale.ROOT, "that is %.0f%% of a second on the processor",
@@ -227,12 +224,10 @@ public final class DirectorPass {
 		final float floor = feet.z < 0 ? (float) (feet.y / (-feet.z * half)) * 0.5F + 0.5F : 0.0F;
 		return new SeeThrough.Hole(PictureBlit.textureId(cut), (float) (to.x / (depth * half * aspect)) * 0.5F + 0.5F,
 				(float) (to.y / (depth * half)) * 0.5F + 0.5F,
-				(float) (radius / (2.0 * depth * half)), aspect, (float) amount, blocked.solid() ? BELOW_PICTURE : floor);
+				(float) (radius / (2.0 * depth * half)), aspect, (float) amount,
+				blocked.solid() ? BELOW_PICTURE : floor);
 	}
 
-	/**
-	 * @return how near to the camera the picture that is drawn right now begins
-	 */
 	/**
 	 * @return if the picture that is drawn right now is one of the entities alone, with nothing of the world
 	 * around them: the player to show through blocks that can't be opened up
@@ -241,6 +236,9 @@ public final class DirectorPass {
 		return active && entitiesAlone;
 	}
 
+	/**
+	 * @return how near to the camera the picture that is drawn right now begins
+	 */
 	public static float near(float usual) {
 		return active && cutNear > 0 ? cutNear : usual;
 	}
@@ -281,7 +279,6 @@ public final class DirectorPass {
 	}
 
 	private static void measure(long started, long drawn, long shown) {
-
 		drawMillis += ((drawn - started) / 1.0E6 - drawMillis) * 0.1;
 		showMillis += ((shown - drawn) / 1.0E6 - showMillis) * 0.1;
 		frames++;

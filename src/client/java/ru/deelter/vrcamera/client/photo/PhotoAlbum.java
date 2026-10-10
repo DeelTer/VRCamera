@@ -158,7 +158,7 @@ public final class PhotoAlbum {
 		final BlockPos block = BlockPos.containing(sheet.center());
 		final int light = LightCoordsUtil.pack(Math.max(MIN_LIGHT, level.getBrightness(LightLayer.BLOCK, block)),
 				level.getBrightness(LightLayer.SKY, block));
-		float half = PhotoSheet.WIDTH / 2.0F;
+		final float half = PhotoSheet.WIDTH / 2.0F;
 
 		final float bottom = -sheet.height() * printed;
 		final float topV = 1.0F - printed;
@@ -183,7 +183,6 @@ public final class PhotoAlbum {
 		});
 		final float veil = sheet.veil();
 		if (veil > 0.01F) {
-
 			output.submitCustomGeometry(poseStack, RenderTypes.entityTranslucent(WHITE), (pose, consumer) -> {
 				vertex(consumer, pose, -half, bottom, VEIL_GAP, 0, 1, light, veil);
 				vertex(consumer, pose, half, bottom, VEIL_GAP, 1, 1, light, veil);
@@ -210,11 +209,10 @@ public final class PhotoAlbum {
 	 * @return if a photo is on its way out of the camera, the next one has to wait for it
 	 */
 	public boolean isPrinting() {
-
 		if (developing && System.nanoTime() - developingSince < DEVELOP_TIMEOUT_NANOS) {
 			return true;
 		}
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			if (sheet.isPrinting()) {
 				return true;
 			}
@@ -280,7 +278,7 @@ public final class PhotoAlbum {
 			picture.close();
 			return null;
 		}
-		PhotoSheet sheet = add(picture, aspect, null);
+		final PhotoSheet sheet = add(picture, aspect, null);
 		sheet.restore(position, rotation);
 		sheet.setRemote(id, removable);
 		sheet.packed = packed;
@@ -292,7 +290,7 @@ public final class PhotoAlbum {
 	 */
 	public void removeRemote(long id, boolean fell) {
 		for (int i = sheets.size() - 1; i >= 0; i--) {
-			PhotoSheet sheet = sheets.get(i);
+			final PhotoSheet sheet = sheets.get(i);
 			if (sheet.remoteId() != id) {
 				continue;
 			}
@@ -319,7 +317,7 @@ public final class PhotoAlbum {
 	public PhotoSheet nearest(Vec3 hand, int handIndex, double reach) {
 		PhotoSheet nearest = null;
 		double nearestDistance = reach * reach;
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			final double distance = sheet.center().distanceToSqr(hand);
 			if (sheet.canGrab(handIndex) && distance < nearestDistance) {
 				nearest = sheet;
@@ -352,7 +350,6 @@ public final class PhotoAlbum {
 					CameraEffects.ownPrinting(player);
 				}
 			} catch (RuntimeException e) {
-
 				Vrcamera.LOGGER.error("VRCamera: could not print the photo", e);
 			}
 		}
@@ -397,13 +394,12 @@ public final class PhotoAlbum {
 			PhotoStore.prepare(cache);
 			small.writeToFile(cache.resolve(name));
 		} catch (IOException e) {
-
 			Vrcamera.LOGGER.warn("VRCamera: could not cache the sheet {}", name, e);
 			file = null;
 		}
 
 		makeRoom();
-		PhotoSheet sheet = add(small, height / (float) width, file);
+		final PhotoSheet sheet = add(small, height / (float) width, file);
 		PhotoSync.INSTANCE.shareLoose(sheet, pixels(sheet));
 		return sheet;
 	}
@@ -422,13 +418,12 @@ public final class PhotoAlbum {
 	}
 
 	private PhotoSheet add(NativeImage picture, float aspect, String file) {
-
 		final int slot = freeTextures.isEmpty() ? nextTexture++ : freeTextures.pop();
 		final Identifier texture = Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "photo/" + slot);
 
 		Minecraft.getInstance().getTextureManager().register(texture,
 				new DynamicTexture(() -> "VRCamera photo", picture));
-		PhotoSheet sheet = new PhotoSheet(texture, slot, aspect, file);
+		final PhotoSheet sheet = new PhotoSheet(texture, slot, aspect, file);
 		sheets.add(sheet);
 		return sheet;
 	}
@@ -437,15 +432,14 @@ public final class PhotoAlbum {
 	 * @param forget if its picture in the cache goes as well. Not for sheets that are only unloaded
 	 */
 	private void remove(int index, boolean forget) {
-		PhotoSheet sheet = sheets.remove(index);
+		final PhotoSheet sheet = sheets.remove(index);
 		if (sheet.looseId() != 0 && !sheet.isGhost()) {
-
 			PhotoSync.INSTANCE.dropLoose(sheet.looseId());
 		}
 		Minecraft.getInstance().getTextureManager().release(sheet.texture);
 		freeTextures.push(sheet.textureSlot);
 		if (forget && sheet.file != null && cache != null) {
-			Path file = cache.resolve(sheet.file);
+			final Path file = cache.resolve(sheet.file);
 			CompletableFuture.runAsync(() -> PhotoStore.delete(file));
 		}
 	}
@@ -455,7 +449,6 @@ public final class PhotoAlbum {
 			save();
 		}
 		for (int i = sheets.size() - 1; i >= 0; i--) {
-
 			remove(i, !sheets.get(i).isPinned());
 		}
 		elsewhere = new ArrayList<>();
@@ -485,7 +478,7 @@ public final class PhotoAlbum {
 
 			final Map<PhotoStore.Pinned, NativeImage> here = new LinkedHashMap<>();
 			final List<PhotoStore.Pinned> elsewhere = new ArrayList<>();
-			for (PhotoStore.Pinned sheet : pinned) {
+			for (final PhotoStore.Pinned sheet : pinned) {
 				if (!dimension.equals(sheet.dimension)) {
 					elsewhere.add(sheet);
 					continue;
@@ -504,7 +497,6 @@ public final class PhotoAlbum {
 	}
 
 	private void restore(int session, Map<PhotoStore.Pinned, NativeImage> here, List<PhotoStore.Pinned> elsewhere) {
-
 		if (session != this.session || PhotoSync.INSTANCE.isConnected()) {
 			here.values().forEach(NativeImage::close);
 			loaded = session == this.session || loaded;
@@ -512,7 +504,7 @@ public final class PhotoAlbum {
 		}
 		this.elsewhere = elsewhere;
 		here.forEach((pinned, picture) -> {
-			PhotoSheet sheet = add(picture, pinned.aspect, pinned.file);
+			final PhotoSheet sheet = add(picture, pinned.aspect, pinned.file);
 			sheet.restore(new Vec3(pinned.x, pinned.y, pinned.z),
 					new Quaternionf(pinned.qx, pinned.qy, pinned.qz, pinned.qw));
 			sheet.custom = pinned.custom;
@@ -528,7 +520,6 @@ public final class PhotoAlbum {
 	 */
 	private void save() {
 		if (PhotoSync.INSTANCE.isConnected()) {
-
 			return;
 		}
 		unsaved = true;
@@ -537,7 +528,7 @@ public final class PhotoAlbum {
 		}
 		unsaved = false;
 		final List<PhotoStore.Pinned> pinned = new ArrayList<>(elsewhere);
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			if (!sheet.isPinned() || sheet.file == null) {
 				continue;
 			}
@@ -564,7 +555,6 @@ public final class PhotoAlbum {
 		final boolean wasGhost = sheet.isGhost();
 		sheet.grab(hand, hands.position(hand), hands.rotation(hand));
 		if (wasGhost) {
-
 			PhotoSync.INSTANCE.takeLoose(sheet.looseId());
 		} else if (wasPinned && sheet.remoteId() != 0) {
 			PhotoSync.INSTANCE.unpin(sheet.remoteId());
@@ -582,13 +572,12 @@ public final class PhotoAlbum {
 	}
 
 	public void release(int hand) {
-		PhotoSheet sheet = held(hand);
+		final PhotoSheet sheet = held(hand);
 		if (sheet == null || level == null) {
 			return;
 		}
 		sheet.release(level);
 		if (sheet.isPinned()) {
-
 			if (PhotoSync.INSTANCE.isConnected()) {
 				if (sheet.looseId() != 0) {
 					PhotoSync.INSTANCE.dropLoose(sheet.looseId());
@@ -606,7 +595,7 @@ public final class PhotoAlbum {
 	 * the camera holds on to the sheet it is printing
 	 */
 	public void hangFrom(Vec3 camera, Quaternionfc cameraRotation, float worldScale) {
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			sheet.hangFrom(camera, cameraRotation, worldScale);
 		}
 	}
@@ -631,18 +620,16 @@ public final class PhotoAlbum {
 
 	public void update(Level level, Hands hands, double dt) {
 		if (level != this.level) {
-
 			enter(level);
 		}
 		for (int i = sheets.size() - 1; i >= 0; i--) {
-			PhotoSheet sheet = sheets.get(i);
+			final PhotoSheet sheet = sheets.get(i);
 			if (sheet.hand() >= 0 && hands != null) {
 				sheet.carry(hands.position(sheet.hand()), hands.rotation(sheet.hand()), dt);
 			}
 			final boolean wasPinned = sheet.isPinned();
 			sheet.update(level, dt);
 			if (wasPinned && !sheet.isPinned()) {
-
 				CameraEffects.tornOff(level, sheet.center());
 				save();
 			}
@@ -661,7 +648,6 @@ public final class PhotoAlbum {
 					save();
 				}
 			} else if (sheet.isGone() || (sheet.isLoose() && !level.isLoaded(block))) {
-
 				remove(i, true);
 			}
 		}
@@ -674,7 +660,7 @@ public final class PhotoAlbum {
 	public void explosion(Vec3 center, float radius) {
 		final double reach = radius * BLAST_REACH;
 		boolean unpinned = false;
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			final Vec3 away = sheet.center().subtract(center);
 			final double distance = away.length();
 
@@ -707,7 +693,7 @@ public final class PhotoAlbum {
 			picture.close();
 			return null;
 		}
-		PhotoSheet sheet = add(picture, aspect, null);
+		final PhotoSheet sheet = add(picture, aspect, null);
 		sheet.makeGhost(looseId, position, rotation);
 		sheet.packed = packed;
 		return sheet;
@@ -757,7 +743,7 @@ public final class PhotoAlbum {
 				file = null;
 			}
 			makeRoom();
-			PhotoSheet sheet = add(pixels, picture.height() / (float) picture.width(), file);
+			final PhotoSheet sheet = add(pixels, picture.height() / (float) picture.width(), file);
 			sheet.custom = true;
 			final Vec3 look = player.getLookAngle();
 			Vec3 forward = new Vec3(look.x, 0, look.z);
@@ -780,7 +766,7 @@ public final class PhotoAlbum {
 		}
 		try {
 			final Vec3 eyes = player.getEyePosition();
-			for (PhotoSheet sheet : sheets) {
+			for (final PhotoSheet sheet : sheets) {
 				if (sheet.placeholder && sheet.center().distanceToSqr(eyes) < LABEL_DISTANCE * LABEL_DISTANCE) {
 					Gizmos.billboardText(Component.translatable("vrcamera.label.custom").getString(),
 							sheet.center().add(0, 0.02, 0),
@@ -791,12 +777,11 @@ public final class PhotoAlbum {
 				}
 			}
 		} catch (IllegalStateException _) {
-
 		}
 	}
 
 	public void moveGhost(long looseId, Vec3 position, Quaternionfc rotation) {
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			if (sheet.looseId() == looseId && sheet.isGhost()) {
 				sheet.ghostTo(position, rotation);
 			}
@@ -809,9 +794,8 @@ public final class PhotoAlbum {
 	 */
 	public void removeLoose(long looseId) {
 		for (int i = sheets.size() - 1; i >= 0; i--) {
-			PhotoSheet sheet = sheets.get(i);
+			final PhotoSheet sheet = sheets.get(i);
 			if (sheet.looseId() == looseId && !sheet.isPinned()) {
-
 				sheet.setLooseId(0);
 				remove(i, true);
 			}
@@ -826,7 +810,7 @@ public final class PhotoAlbum {
 	 * @param visitor gets every sheet of this player the others see as a loose one
 	 */
 	public void forEachShared(Consumer<PhotoSheet> visitor) {
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			if (sheet.looseId() != 0 && !sheet.isGhost() && !sheet.isPinned()) {
 				visitor.accept(sheet);
 			}
@@ -853,12 +837,13 @@ public final class PhotoAlbum {
 		final int[] shape = ofCamera == null ? null : DirectorPass.shape();
 		developing = true;
 		developingSince = System.nanoTime();
-		Screenshot.takeScreenshot(ofCamera == null ? mc.gameRenderer.mainRenderTarget() : ofCamera, image -> mc.execute(() -> {
+		final RenderTarget shot = ofCamera == null ? mc.gameRenderer.mainRenderTarget() : ofCamera;
+		Screenshot.takeScreenshot(shot, image -> mc.execute(() -> {
 			final NativeImage photo = shape == null ? image : reshape(image, shape);
 			if (CameraConfig.current().photoClipboard) {
 				PhotoClipboard.copy(photo.getPixels(), photo.getWidth(), photo.getHeight());
 			}
-			PhotoSheet sheet = develop(photo, printSheet);
+			final PhotoSheet sheet = develop(photo, printSheet);
 			final LocalPlayer now = mc.player;
 
 			if (sheet == null || now == null || lens != null) {
@@ -878,7 +863,7 @@ public final class PhotoAlbum {
 	 * @param visitor gets the middle of every sheet that lies around or falls
 	 */
 	public void forEachLoose(Consumer<Vec3> visitor) {
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			if (sheet.isLoose()) {
 				visitor.accept(sheet.center());
 			}
@@ -896,7 +881,7 @@ public final class PhotoAlbum {
 			return;
 		}
 		try {
-			for (PhotoSheet sheet : sheets) {
+			for (final PhotoSheet sheet : sheets) {
 				if (sheet.position().distanceToSqr(viewPosition) < DRAW_DISTANCE * DRAW_DISTANCE) {
 					render(sheet, level, output, viewPosition, poseStack);
 				}
@@ -909,7 +894,7 @@ public final class PhotoAlbum {
 
 	@Nullable
 	private PhotoSheet held(int hand) {
-		for (PhotoSheet sheet : sheets) {
+		for (final PhotoSheet sheet : sheets) {
 			if (sheet.hand() == hand) {
 				return sheet;
 			}

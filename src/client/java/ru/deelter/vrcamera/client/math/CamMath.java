@@ -7,7 +7,6 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 public class CamMath {
-
 	/**
 	 * @return angle wrapped to -PI..PI
 	 */
@@ -25,13 +24,13 @@ public class CamMath {
 		return value < min ? min : Math.min(value, max);
 	}
 
-	public static double lerp(double a, double b, double t) {
-		return a + (b - a) * t;
+	public static double lerp(double from, double to, double progress) {
+		return from + (to - from) * progress;
 	}
 
-	public static double smoothstep(double t) {
-		t = clamp(t, 0, 1);
-		return t * t * (3.0 - 2.0 * t);
+	public static double smoothstep(double progress) {
+		final double part = clamp(progress, 0, 1);
+		return part * part * (3.0 - 2.0 * part);
 	}
 
 	/**

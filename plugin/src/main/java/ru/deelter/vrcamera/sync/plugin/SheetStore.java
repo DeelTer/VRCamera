@@ -19,7 +19,6 @@ import java.util.logging.Logger;
  * is stored once.
  */
 public final class SheetStore {
-
 	private static final int FILE_VERSION = 2;
 
 	private static final int CACHED_IMAGES = 256;
@@ -108,7 +107,8 @@ public final class SheetStore {
 		drop(byBlock, sheet.block(), sheet);
 		owned.computeIfPresent(sheet.owner(), (owner, count) -> count > 1 ? count - 1 : null);
 		dirty = true;
-		final Integer left = imageUses.computeIfPresent(sheet.imageHash(), (hash, count) -> count > 1 ? count - 1 : null);
+		final Integer left = imageUses.computeIfPresent(sheet.imageHash(),
+				(hash, count) -> count > 1 ? count - 1 : null);
 		if (left != null) {
 			return 0;
 		}
@@ -218,7 +218,8 @@ public final class SheetStore {
 			Files.createDirectories(listFile.getParent());
 
 			final Path temp = listFile.resolveSibling("sheets.dat.tmp");
-			try (final DataOutputStream out = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(temp)))) {
+			final OutputStream file = new BufferedOutputStream(Files.newOutputStream(temp));
+			try (final DataOutputStream out = new DataOutputStream(file)) {
 				out.writeInt(FILE_VERSION);
 				out.writeLong(nextId);
 				out.writeInt(sheets.size());
@@ -298,7 +299,6 @@ public final class SheetStore {
 			this.nextId = nextId;
 			int missing = 0;
 			for (final StoredSheet sheet : sheets) {
-
 				if (Files.isRegularFile(imageFile(sheet.imageHash()))) {
 					index(sheet);
 				} else {

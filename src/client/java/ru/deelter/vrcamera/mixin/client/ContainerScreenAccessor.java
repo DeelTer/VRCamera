@@ -9,7 +9,6 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  */
 @Mixin(AbstractContainerScreen.class)
 public interface ContainerScreenAccessor {
-
 	@Accessor("leftPos")
 	int vrcamera$left();
 

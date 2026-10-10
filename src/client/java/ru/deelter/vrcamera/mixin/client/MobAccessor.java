@@ -7,7 +7,6 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(Mob.class)
 public interface MobAccessor {
-
 	/**
 	 * @return the sound that mob makes now and then, null if it has none
 	 */

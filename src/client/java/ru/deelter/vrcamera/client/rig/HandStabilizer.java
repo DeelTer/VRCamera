@@ -12,7 +12,6 @@ import org.joml.Quaternionfc;
  * move that is meant gets through nearly as fast as it was made.
  */
 public final class HandStabilizer {
-
 	private static final double MAX_LAG = 0.3;
 
 	private static final double SOFT_DISTANCE = 0.05;

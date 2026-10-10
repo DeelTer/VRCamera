@@ -43,8 +43,9 @@ public final class LimbStrikes {
 		rest[hand] = REST_AFTER_RELEASE;
 	}
 
-	public void update(VRData vr, DroppedCamera camera, double dt, double power) {
-		final VRData.VRDevicePose[] limbs = {vr.getController(0), vr.getController(1), vr.foot_left, vr.foot_right};
+	public void update(VRData vrData, DroppedCamera camera, double dt, double power) {
+		final VRData.VRDevicePose[] limbs = {vrData.getController(0), vrData.getController(1), vrData.foot_left,
+				vrData.foot_right};
 		for (int i = 0; i < LIMBS; i++) {
 			final Vec3 position = limbs[i] == null ? null : limbs[i].getPosition();
 			final Vec3 previous = last[i];
@@ -62,7 +63,7 @@ public final class LimbStrikes {
 
 			final Vec3 offset = camera.position().subtract(closest(previous, position, camera.position()));
 			final double distance = offset.length();
-			if (distance > REACH * vr.worldScale) {
+			if (distance > REACH * vrData.worldScale) {
 				continue;
 			}
 			final Vec3 normal = distance < 1.0E-4 ? new Vec3(0, 1, 0) : offset.scale(1.0 / distance);

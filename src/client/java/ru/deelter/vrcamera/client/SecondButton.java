@@ -32,13 +32,12 @@ public final class SecondButton {
 	 * @return if another button is down on that hand
 	 */
 	public boolean isDown(int hand) {
-		if (unavailable || !(MCVR.get() instanceof MCOpenVR vr)) {
+		if (unavailable || !(MCVR.get() instanceof MCOpenVR openVr)) {
 			return false;
 		}
 		try {
-			final Set<VRInputAction> down = down(vr, ControllerType.values()[hand]);
+			final Set<VRInputAction> down = down(openVr, ControllerType.values()[hand]);
 			if (hand != this.hand) {
-
 				this.hand = hand;
 				heldSinceGrab.clear();
 				heldSinceGrab.addAll(down);
@@ -48,7 +47,6 @@ public final class SecondButton {
 			heldSinceGrab.retainAll(down);
 			return down.size() > heldSinceGrab.size();
 		} catch (ReflectiveOperationException | RuntimeException e) {
-
 			Vrcamera.LOGGER.warn("VRCamera: can't read controller buttons, the photo button on the camera hand is off",
 					e);
 			unavailable = true;
@@ -64,9 +62,9 @@ public final class SecondButton {
 		heldSinceGrab.clear();
 	}
 
-	private Set<VRInputAction> down(MCOpenVR vr, ControllerType hand) throws ReflectiveOperationException {
+	private Set<VRInputAction> down(MCOpenVR openVr, ControllerType hand) throws ReflectiveOperationException {
 		final Set<VRInputAction> down = new HashSet<>();
-		for (final VRInputAction action : vr.getInputActions()) {
+		for (final VRInputAction action : openVr.getInputActions()) {
 			if (!action.type.equals("boolean")) {
 				continue;
 			}
@@ -74,19 +72,19 @@ public final class SecondButton {
 				if (action.digitalData[hand.ordinal()].state) {
 					down.add(action);
 				}
-			} else if (action.digitalData[0].state && controllerOf(vr, action.digitalData[0].activeOrigin) == hand) {
+			} else if (action.digitalData[0].state &&
+					controllerOf(openVr, action.digitalData[0].activeOrigin) == hand) {
 				down.add(action);
 			}
 		}
 		return down;
 	}
 
-	private ControllerType controllerOf(MCOpenVR vr, long origin) throws ReflectiveOperationException {
+	private ControllerType controllerOf(MCOpenVR openVr, long origin) throws ReflectiveOperationException {
 		if (controllerOfOrigin == null) {
-
 			controllerOfOrigin = MCOpenVR.class.getDeclaredMethod("getOriginControllerType", long.class);
 			controllerOfOrigin.setAccessible(true);
 		}
-		return (ControllerType) controllerOfOrigin.invoke(vr, origin);
+		return (ControllerType) controllerOfOrigin.invoke(openVr, origin);
 	}
 }
