@@ -48,7 +48,7 @@ permissions.
 | `/vrcam shot <name>`                              | shows a shot: `shoulder`, `front`, `orbit`, `flyby`, `crane`, `low`, `hands`, `duel`, `death`, `fall`, `pov`, `menu`, `custom`. Turns the director on if needed |
 | `/vrcam summon`                                   | brings the camera to you                                                                                                                                        |
 | `/vrcam photo`                                    | takes a photo                                                                                                                                                   |
-| `/vrcam load <address>`                           | puts a picture from the internet on a sheet                                                                                                                     |
+| `/vrcam load <address> [true]`                    | puts a picture from the internet on a sheet; with `true` in your photo palette and pixel size                                                                                                                     |
 | `/vrcam palette [name\|map]`                      | opens the palette screen (also the **Photo palette** button in the pause menu), with a name picks one (`map` = map colours); `add <lospec link>` fetches one from lospec.com, `folder` opens the folder                          |
 | `/vrcam preset next`, `new`, `delete`             | own angles                                                                                                                                                      |
 | `/vrcam preset <number>`                          | picks an own angle, counted from 1                                                                                                                              |
@@ -272,7 +272,8 @@ cannot be told from one you are just not on. If a picture is missing from the fo
 
 ### Pictures from the internet
 
-`/vrcam load <address>` puts a picture from the web on a sheet and drops it in front of you. From there it is
+`/vrcam load <address>` puts a picture from the web on a sheet and drops it in front of you; add `true` after
+the address and it is put in your photo palette and pixel size, like a photo. From there it is
 a sheet like any other: pick it up, pin it.
 
 - PNG, JPEG or the first frame of a GIF, up to 8 MB, `http` and `https` only.
@@ -610,8 +611,8 @@ and by `/vrcam reload`.
 | `photoGesture`           | `"same_hand"`   | `"same_hand"`, `"other_hand"` or `"off"`                                                                                                                                      |
 | `photoHoldSeconds`       | `1.0`           | seconds the button of the photo gesture is held, 0 = at once                                                                                                                  |
 | `photoSounds`            | `true`          | the click of a photo and the whirr of printing it, yours and of others. `false` mutes them for you; the others still hear yours                                               |
-| `photoPixels`            | `0.3`           | pixel art on the sheet, in the colours of a map: 0 = off, 1 = fewest pixels (128 down to 32 along the longer side). New photos only; the saved file is not changed            |
-| `photoPalette`           | `"justparchment8"` | the colours of the photo on a sheet: empty = map colours, otherwise the name of a file in `config/vrcamera/palettes` (HEX, GPL, PAL, TXT as on [lospec.com](https://lospec.com/palette-list)). The folder starts with `justparchment8` by JustJimmy. Works with and without pixel art; the others see the sheet in your colours. New photos only |
+| `photoPixels`            | `0`             | pixel art on the sheet, in the colours of a map: 0 = off, 1 = fewest pixels (128 down to 32 along the longer side). New photos only; the saved file is not changed            |
+| `photoPalette`           | `"justparchment8"` | the colours of the photo on a sheet: empty = map colours, otherwise the name of a file in `config/vrcamera/palettes` (HEX, GPL, PAL, TXT as on [lospec.com](https://lospec.com/palette-list)). The folder starts with four: `justparchment8` by JustJimmy, `carob-treat` by SurrealEmber, `gothic-bit` by HiroHi, `smoky-09` by green guy. Works with and without pixel art; the others see the sheet in your colours. New photos only |
 | `photoBrightness`        | `0.3`           | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed                                                         |
 | `debugOverlay`           | `false`         | debug overlay on the HUD                                                                                                                                                      |
 | `cameraLabelDistance`    | `48`            | Free-camera label range in blocks; 0 hides labels                                                                                                                             |

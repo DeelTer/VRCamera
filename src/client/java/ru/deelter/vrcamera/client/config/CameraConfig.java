@@ -200,10 +200,10 @@ public class CameraConfig {
 	 */
 	public double photoBrightness = 0.3;
 	/**
-	 * How much the picture on a sheet is turned into pixel art in the colours of a map: 0 = not at all, 1 = as
-	 * few pixels as it gets. Only the sheet, not the file
+	 * How large the pixels of the picture on a sheet are made: 0 = not at all, 1 = as few pixels as it gets.
+	 * Without a palette of the player they are in the colours of a map. Only the sheet, not the file
 	 */
-	public double photoPixels = 0.3;
+	public double photoPixels = 0.0;
 	/**
 	 * the name of the palette in config/vrcamera/palettes a photo on a sheet is made of, empty for the colours of
 	 * a map. Only the sheet, not the file

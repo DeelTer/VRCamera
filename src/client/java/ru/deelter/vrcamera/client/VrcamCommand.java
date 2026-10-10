@@ -4,6 +4,7 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
@@ -38,6 +39,10 @@ import java.util.regex.Pattern;
 public final class VrcamCommand {
 	private static final int DONE = 1;
 	private static final String MAP_PALETTE = "map";
+	/**
+	 * at the end of the address of /vrcam load: the picture is put in the palette of the player, as a photo is
+	 */
+	private static final String IN_PALETTE = " true";
 	private static final Pattern SET_NAME = Pattern.compile("[A-Za-z0-9_-]{1,24}");
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
@@ -52,10 +57,13 @@ public final class VrcamCommand {
 			return DONE;
 		}));
 		root.then(ClientCommands.literal("load")
-				.then(ClientCommands.argument("address", StringArgumentType.greedyString()).executes(context -> {
+				.then(ClientCommands.argument("address", StringArgumentType.greedyString())
+						.suggests(VrcamCommand::suggestInPalette).executes(context -> {
 					final FabricClientCommandSource source = context.getSource();
-					PhotoAlbum.INSTANCE.loadCustom(StringArgumentType.getString(context, "address"),
-							source::sendFeedback);
+					final String typed = StringArgumentType.getString(context, "address").trim();
+					final boolean inPalette = typed.endsWith(IN_PALETTE);
+					PhotoAlbum.INSTANCE.loadCustom(inPalette ? typed.substring(0, typed.length() - IN_PALETTE.length()) :
+							typed, inPalette, source::sendFeedback);
 					return DONE;
 				})));
 		root.then(ClientCommands.literal("palette")
@@ -242,6 +250,22 @@ public final class VrcamCommand {
 			}
 			return DONE;
 		}));
+	}
+
+	/**
+	 * after the address of /vrcam load and a space, offers the word that puts the picture in the palette
+	 */
+	private static CompletableFuture<Suggestions> suggestInPalette(
+			CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
+		final String typed = builder.getRemaining();
+		final String word = IN_PALETTE.trim();
+		final int space = typed.lastIndexOf(' ');
+		if (space <= 0 || typed.indexOf(' ') != space || !word.startsWith(typed.substring(space + 1))) {
+			return builder.buildFuture();
+		}
+		return builder.createOffset(builder.getStart() + space + 1)
+				.suggest(word, Component.translatable("vrcamera.command.load.palette"))
+				.buildFuture();
 	}
 
 	private static int palettes(FabricClientCommandSource source) {

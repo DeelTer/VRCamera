@@ -378,7 +378,7 @@
 	"vrcamera.option.photoPreviewDistance.tooltip": "С какого расстояния в блоках фото, на которое вы смотрите, показывается крупно",
 	"vrcamera.option.photoPalette": "Фото: цвета",
 	"vrcamera.option.photoPalette.tooltip": "Палитра, в которой рисуются новые фото на листках. Кнопка «Палитра фото» в меню паузы или /vrcam palette покажет все палитры с цветами и скачает новые с lospec.com.",
-	"vrcamera.option.photoPalette.map": "Как на карте Minecraft",
+	"vrcamera.option.photoPalette.map": "Обычные цвета",
 	"vrcamera.command.palette.set": "Палитра фото: %s",
 	"vrcamera.command.palette.unknown": "Нет палитры %s, см. /vrcam palette",
 	"vrcamera.command.palette.loading": "Загружаю палитру…",
@@ -391,5 +391,6 @@
 	"vrcamera.gui.palettes.get": "Скачать",
 	"vrcamera.gui.palettes.folder": "Папка",
 	"vrcamera.gui.palettes.help": "Свои файлы (HEX, GPL, PAL, TXT) кладите в папку",
-	"vrcamera.gui.palettes.find": "Найти палитру"
+	"vrcamera.gui.palettes.find": "Найти палитру",
+	"vrcamera.command.load.palette": "в вашей палитре фото и с вашим размером пикселей"
 }

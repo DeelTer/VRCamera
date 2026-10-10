@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.photo;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.world.level.material.MapColor;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +15,9 @@ public final class PixelArt {
 	private static final int MOST_PIXELS = 128;
 	private static final int LEAST_PIXELS = 32;
 
+	/**
+	 * as wide as a sheet is sent to the others, so they get it pixel for pixel
+	 */
 	private static final int SENT_PIXELS = 256;
 
 	private static final double DITHER = 10.0;
@@ -27,18 +31,28 @@ public final class PixelArt {
 
 	/**
 	 * @param picture  closed if another one is returned in its place
-	 * @param strength 0 = leave it as it is, 1 = as few pixels as it gets
+	 * @param strength 0 = no larger pixels, only the colours of the palette of the player if there is one. 1 =
+	 *                 as few pixels as it gets
 	 */
 	public static NativeImage apply(NativeImage picture, double strength) {
-		final int[] own = Palettes.current();
+		return apply(picture, strength, Palettes.current());
+	}
+
+	/**
+	 * @param picture  closed if another one is returned in its place
+	 * @param strength as in {@link #apply(NativeImage, double)}
+	 * @param own      the colours of the palette to use, null for those of a map
+	 */
+	public static NativeImage apply(NativeImage picture, double strength, int @Nullable [] own) {
 		final int[] colors = own != null ? own : palette();
 		final double dither = own != null ? Math.clamp(255.0 / own.length, DITHER, MOST_DITHER) : DITHER;
 		final int width = picture.getWidth();
 		final int height = picture.getHeight();
-		final int longer = (int) Math.round(MOST_PIXELS - (MOST_PIXELS - LEAST_PIXELS) * Math.min(strength, 1.0));
+		final int longer = strength <= 0 ? SENT_PIXELS :
+				(int) Math.round(MOST_PIXELS - (MOST_PIXELS - LEAST_PIXELS) * Math.min(strength, 1.0));
 		final int cellsX = width >= height ? longer : Math.max(1, Math.round(longer * width / (float) height));
 		final int cellsY = width >= height ? Math.max(1, Math.round(longer * height / (float) width)) : longer;
-		if (strength <= 0 || cellsX >= width || cellsY >= height) {
+		if ((own == null && strength <= 0) || cellsX >= width || cellsY >= height) {
 			return own == null ? picture : recolor(picture, colors, dither);
 		}
 		final int square = Math.max(1, SENT_PIXELS / longer);

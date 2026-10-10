@@ -378,7 +378,7 @@
 	"vrcamera.option.photoPreviewDistance.tooltip": "注视的照片在多少格以内会放大显示",
 	"vrcamera.option.photoPalette": "照片：颜色",
 	"vrcamera.option.photoPalette.tooltip": "新照片在纸张上使用的调色板。暂停菜单中的“照片调色板”按钮或 /vrcam palette 会列出所有调色板及其颜色，并可从 lospec.com 下载新的。",
-	"vrcamera.option.photoPalette.map": "与 Minecraft 地图相同",
+	"vrcamera.option.photoPalette.map": "普通颜色",
 	"vrcamera.command.palette.set": "照片调色板：%s",
 	"vrcamera.command.palette.unknown": "没有名为 %s 的调色板，见 /vrcam palette",
 	"vrcamera.command.palette.loading": "正在下载调色板…",
@@ -391,5 +391,6 @@
 	"vrcamera.gui.palettes.get": "下载",
 	"vrcamera.gui.palettes.folder": "文件夹",
 	"vrcamera.gui.palettes.help": "自己的文件（HEX、GPL、PAL、TXT）放入文件夹",
-	"vrcamera.gui.palettes.find": "查找调色板"
+	"vrcamera.gui.palettes.find": "查找调色板",
+	"vrcamera.command.load.palette": "使用你的照片调色板和像素大小"
 }
