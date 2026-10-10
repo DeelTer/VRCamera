@@ -7,8 +7,14 @@ import com.google.gson.JsonParser;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.math.CamMath;
@@ -58,10 +64,12 @@ final class FreeCamera {
 
 	private static final int FROM_SERVER_MOST = 8;
 	private static final Gson GSON = new Gson();
+	private static final double WALL_GAP = 0.25;
 	private final List<Spot> spots = new ArrayList<>();
 	private final Set<String> declined = new LinkedHashSet<>();
 	private int active;
 	private Path file;
+	private Bounds bounds;
 	private Vec3 position = Vec3.ZERO;
 	private Vec3 velocity = Vec3.ZERO;
 	private Vec3 push = Vec3.ZERO;
@@ -543,6 +551,7 @@ final class FreeCamera {
 	@NotNull
 	DesktopCamera.Pose pose(double dt) {
 		final Spot spot = spots.get(active);
+		final Vec3 before = position;
 		if (isInFlight()) {
 			flight = Math.min(1.0, flight + dt / flightSeconds);
 			final double along = CamMath.smoothstep(flight);
@@ -553,6 +562,7 @@ final class FreeCamera {
 			pitch = from.pitch + (spot.pitch - from.pitch) * along;
 			fov = from.fov + (spot.fov - from.fov) * along;
 			push = Vec3.ZERO;
+			position = bounded(before, position, spot);
 			return new DesktopCamera.Pose(position, rotation(active), (float) fov);
 		}
 		velocity = velocity.lerp(push, ease(MOVE_EASE, dt));
@@ -569,7 +579,43 @@ final class FreeCamera {
 		yaw += (spot.yaw - yaw) * ease(TURN_EASE, dt);
 		pitch += (spot.pitch - pitch) * ease(TURN_EASE, dt);
 		fov += (spot.fov - fov) * ease(FOV_EASE, dt);
+		position = bounded(before, position, spot);
 		return new DesktopCamera.Pose(position, rotation(active), (float) fov);
+	}
+
+	/**
+	 * @param bounds what holds the cameras back from here on, null for nothing
+	 */
+	void bound(@Nullable Bounds bounds) {
+		this.bounds = bounds;
+	}
+
+	/**
+	 * @param before where the camera was a frame ago
+	 * @param wanted where it would be now
+	 * @return where it is let to be. A camera a server gave is not held back, the server put it where it is
+	 */
+	private Vec3 bounded(Vec3 before, Vec3 wanted, Spot spot) {
+		if (bounds == null || spot.id != null) {
+			return wanted;
+		}
+		Vec3 allowed = wanted;
+		if (!bounds.throughBlocks && !isInFlight() && spot.carrier == null && before.distanceToSqr(wanted) > 1.0E-10) {
+			final BlockHitResult wall = bounds.level.clip(new ClipContext(before, wanted, ClipContext.Block.COLLIDER,
+					ClipContext.Fluid.NONE, CollisionContext.empty()));
+			if (wall.getType() != HitResult.Type.MISS && !wall.isInside()) {
+				final double free = Math.max(0.0, wall.getLocation().distanceTo(before) - WALL_GAP);
+				allowed = before.add(wanted.subtract(before).normalize().scale(free));
+				velocity = Vec3.ZERO;
+				glide = Vec3.ZERO;
+			}
+		}
+		final Vec3 fromPlayer = allowed.subtract(bounds.player);
+		if (bounds.range > 0 && fromPlayer.length() > bounds.range) {
+			spot.carrier = null;
+			allowed = bounds.player.add(fromPlayer.normalize().scale(bounds.range));
+		}
+		return allowed;
 	}
 
 	/**
@@ -676,6 +722,16 @@ final class FreeCamera {
 			spot.y = position.y;
 			spot.z = position.z;
 		}
+	}
+
+	/**
+	 * What holds the free cameras of a player back on a server that wants it so.
+	 *
+	 * @param player        where the eyes of the player are
+	 * @param throughBlocks if a camera that is flown or thrown goes through blocks
+	 * @param range         blocks a camera gets away from the player, it is pulled along beyond that. 0 for any
+	 */
+	record Bounds(Level level, Vec3 player, boolean throughBlocks, double range) {
 	}
 
 	/**

@@ -25,7 +25,7 @@ public final class PlayerEars {
 	 * before the camera of the game is moved for a picture: on the thread that draws
 	 */
 	static void keep(Vec3 position, Vector3fc forward, Vector3fc up, Vector3fc left, Quaternionf rotation, float yRot,
-			float xRot) {
+	                 float xRot) {
 		drawing = Thread.currentThread();
 		kept = new Kept(position, new Vector3f(forward), new Vector3f(up), new Vector3f(left),
 				new Quaternionf(rotation), yRot, xRot);
@@ -65,6 +65,6 @@ public final class PlayerEars {
 	}
 
 	public record Kept(Vec3 position, Vector3f forward, Vector3f up, Vector3f left, Quaternionf rotation, float yRot,
-			float xRot) {
+	                   float xRot) {
 	}
 }

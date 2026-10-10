@@ -513,7 +513,7 @@ public final class Director {
 			return;
 		}
 		final Vec3 step = travel.scale(AHEAD_SECONDS);
-		final double needed = config.occlusionRatio + ROOM_TO_SPARE;
+		final double needed = Math.min(1.0, config.occlusionRatio + ROOM_TO_SPARE);
 		if (freeAhead(subject, current, step) >= needed) {
 			return;
 		}
@@ -767,7 +767,7 @@ public final class Director {
 			if (shot.isWorld() && free < 0.9) {
 				return;
 			}
-			if (forceType == null && !subject.seenThrough && free < config.occlusionRatio + ROOM_TO_SPARE) {
+			if (forceType == null && !subject.seenThrough && free < Math.min(1.0, config.occlusionRatio + ROOM_TO_SPARE)) {
 				return;
 			}
 			final Vec3 actual = center.lerp(wanted,

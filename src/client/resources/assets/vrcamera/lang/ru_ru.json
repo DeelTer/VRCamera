@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "ПКМ — взять камеру",
 	"vrcamera.hint.aim.free": "ПКМ — взять · %s — убрать",
 	"vrcamera.hint.aim.other": "ПКМ — взять · ЛКМ — снимать ею",
-	"vrcamera.hint.hold": "Колесо — ближе/дальше",
-	"vrcamera.hint.hold.free": "Колесо — дальше · у моба — закрепить",
+	"vrcamera.hint.hold": "Колесо — ближе/дальше · %s — развернуть",
+	"vrcamera.hint.hold.free": "Колесо — дальше · %s — развернуть · у моба — закрепить",
 	"vrcamera.hint.steer": "WASD — двигать камеру · колесо — зум",
 	"vrcamera.message.free.full": "Камер не больше %s",
 	"vrcamera.option.cameraLabelDistance": "Свободные камеры: дистанция меток",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "В буфере нет скопированных камер",
 	"vrcamera.message.free.lastHere": "Камера: рядом других нет, эта остаётся",
 	"vrcamera.message.free": "Свободная камера · %s — управлять · H — сетка",
-	"vrcamera.message.photo.wait": "Камера: следующее фото через %s с"
+	"vrcamera.message.photo.wait": "Камера: следующее фото через %s с",
+	"key.vrcamera.turn": "Повернуть камеру или фото в руках",
+	"vrcamera.hint.sheet.aim": "ПКМ — взять фото",
+	"vrcamera.hint.sheet.hold": "Колесо — ближе/дальше · %s — повернуть · у блока — прикрепить",
+	"vrcamera.message.sound": "Камера: записываете оба окна? Выключите захват звука у одного из них в программе записи, иначе звук задвоится",
+	"vrcamera.message.denied": "Камера: здесь снимать нельзя"
 }

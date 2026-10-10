@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "RMB — grab the camera",
 	"vrcamera.hint.aim.free": "RMB — grab · %s — remove",
 	"vrcamera.hint.aim.other": "RMB — grab · LMB — film with it",
-	"vrcamera.hint.hold": "Wheel — nearer/farther",
-	"vrcamera.hint.hold.free": "Wheel — nearer/farther · at a mob — attach",
+	"vrcamera.hint.hold": "Wheel — nearer/farther · %s — turn around",
+	"vrcamera.hint.hold.free": "Wheel — nearer/farther · %s — turn around · at a mob — attach",
 	"vrcamera.hint.steer": "WASD — move camera · wheel — zoom",
 	"vrcamera.message.free.full": "Camera: no more than %s cameras",
 	"vrcamera.option.cameraLabelDistance": "Free cameras: label distance",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "No copied cameras in the clipboard",
 	"vrcamera.message.free.lastHere": "Camera: no other camera nearby, this one stays",
 	"vrcamera.message.free": "Free camera · %s — steer · H — grid",
-	"vrcamera.message.photo.wait": "Camera: next photo in %s s"
+	"vrcamera.message.photo.wait": "Camera: next photo in %s s",
+	"key.vrcamera.turn": "Turn the held camera or photo",
+	"vrcamera.hint.sheet.aim": "RMB — take the photo",
+	"vrcamera.hint.sheet.hold": "Wheel — nearer/farther · %s — rotate · at a block — pin",
+	"vrcamera.message.sound": "Camera: recording both windows? Turn off audio capture for one of them in your recording program, or the sound doubles",
+	"vrcamera.message.denied": "Camera: filming is not allowed here"
 }

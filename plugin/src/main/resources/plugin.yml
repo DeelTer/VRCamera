@@ -7,8 +7,11 @@ description: Lets players with the VRCamera mod see each other's pinned photos
 commands:
   vrcamsync:
     description: Manage the pinned photos of the VRCamera mod
-    usage: /vrcamsync <stats|list <player>|purge <player>|purgenear <blocks>|purgecustom|reload|camera <place|remove|clear|show> <player> [id] [seconds]>
+    usage: /vrcamsync <stats|list <player>|purge <player>|purgenear <blocks>|purgecustom|reload|camera <place|remove|clear|show|allow|deny> <player> [id] [seconds]>
     permission: vrcamera.admin
+  vrcamphotos:
+    description: List the photos you have pinned, and take them off
+    usage: /vrcamphotos [page]
 permissions:
   vrcamera.pin:
     description: Pin photos others can see
@@ -18,6 +21,9 @@ permissions:
     default: true
   vrcamera.photo.nocooldown:
     description: Take photos without the wait of photos.cooldown-seconds
+    default: op
+  vrcamera.camera.unrestricted:
+    description: Fly the free camera through blocks and as far as it goes
     default: op
   vrcamera.remove.others:
     description: Take off photos other players pinned

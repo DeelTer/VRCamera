@@ -76,6 +76,7 @@ public final class PhotoSync {
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
 	private boolean connected;
 	private float photoCooldown;
+	private Protocol.Rules rules = Protocol.Rules.NONE;
 	private long lastPhoto;
 	private Vec3 sharedAt;
 	private long sharedNanos;
@@ -127,7 +128,7 @@ public final class PhotoSync {
 			reset();
 
 			if (ClientPlayNetworking.canSend(SyncPayload.TYPE)) {
-				send(Protocol.clientHello());
+				send(Protocol.clientHello(Vrcamera.version()));
 			}
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(this::reset));
@@ -258,7 +259,7 @@ public final class PhotoSync {
 			if (hellos < HELLO_TRIES && ticks % HELLO_INTERVAL_TICKS == 0 &&
 					ClientPlayNetworking.canSend(SyncPayload.TYPE)) {
 				hellos++;
-				send(Protocol.clientHello());
+				send(Protocol.clientHello(Vrcamera.version()));
 			}
 			return;
 		}
@@ -424,6 +425,7 @@ public final class PhotoSync {
 		DesktopCamera.INSTANCE.serverGone();
 		connected = false;
 		photoCooldown = 0.0F;
+		rules = Protocol.Rules.NONE;
 		limits = null;
 		known.clear();
 		loaded.clear();
@@ -515,6 +517,7 @@ public final class PhotoSync {
 					}
 				}
 				case Protocol.S_SHOW -> DesktopCamera.INSTANCE.serverShow(in.readUTF(), in.readFloat());
+				case Protocol.S_RULES -> rules = Protocol.readRules(in);
 				case Protocol.S_SHUTTER, Protocol.S_PRINT -> {
 					final Vec3 at = new Vec3(in.readDouble(), in.readDouble(), in.readDouble());
 					final LocalPlayer player = Minecraft.getInstance().player;
@@ -733,9 +736,23 @@ public final class PhotoSync {
 	}
 
 	/**
+	 * @return what the server lets the camera of the player do, everything where there is no such server
+	 */
+	public Protocol.Rules rules() {
+		return connected ? rules : Protocol.Rules.NONE;
+	}
+
+	/**
 	 * @return if the server lets the player take a photo right now. Says how long to wait where it does not
 	 */
 	public boolean mayTakePhoto() {
+		if (!rules.cameraAllowed()) {
+			final LocalPlayer denied = Minecraft.getInstance().player;
+			if (denied != null) {
+				denied.displayClientMessage(Component.translatable("vrcamera.message.denied"), true);
+			}
+			return false;
+		}
 		final long now = System.nanoTime();
 		final double left = connected && lastPhoto != 0 ? photoCooldown - (now - lastPhoto) / 1.0E9 : 0.0;
 		if (left > 0) {

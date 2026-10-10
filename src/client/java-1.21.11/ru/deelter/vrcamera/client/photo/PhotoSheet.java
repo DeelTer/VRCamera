@@ -62,6 +62,7 @@ public final class PhotoSheet {
 	private static final long GHOST_REST_NANOS = 450_000_000L;
 	private static final double GHOST_JUMP = 6.0;
 
+	private static final double HOVER_TIME = 6.0;
 	private static final double DEVELOP_DELAY = 0.8;
 	private static final double DEVELOP_TIME = 5.0;
 	public final Identifier texture;
@@ -108,6 +109,7 @@ public final class PhotoSheet {
 	private boolean removable = true;
 	private BlockPos support = BlockPos.ZERO;
 	private int hand = -1;
+	private double hovering;
 
 	public PhotoSheet(Identifier texture, int textureSlot, float aspect, String file) {
 		this.texture = texture;
@@ -265,6 +267,27 @@ public final class PhotoSheet {
 	}
 
 	/**
+	 * The hand of a player at a screen takes it: by its middle, and turned the way that hand is from then on
+	 */
+	public void take(int hand) {
+		gripOffset.set(0, height() / 2.0F, 0);
+		gripRotation.identity();
+		this.hand = hand;
+		velocity = Vec3.ZERO;
+		hovering = 0;
+		state = State.HELD;
+	}
+
+	/**
+	 * A sheet that was not printed by a camera: it starts in the air, in front of who took the photo, and stays
+	 * there for a moment to be taken before it falls
+	 */
+	public void hover(Vec3 position, Quaternionfc rotation) {
+		toss(position, rotation, Vec3.ZERO);
+		hovering = HOVER_TIME;
+	}
+
+	/**
 	 * a hand takes it, right where it is
 	 */
 	public void grab(int hand, Vec3 handPosition, Quaternionfc handRotation) {
@@ -274,6 +297,7 @@ public final class PhotoSheet {
 		toHand.mul(rotation, gripRotation);
 		this.hand = hand;
 		velocity = Vec3.ZERO;
+		hovering = 0;
 		state = State.HELD;
 	}
 
@@ -362,6 +386,7 @@ public final class PhotoSheet {
 
 	public void blowOff(Vec3 velocity) {
 		if (state == State.PINNED || state == State.LYING || state == State.FALLING) {
+			hovering = 0;
 			this.velocity = velocity;
 			state = State.FALLING;
 		}
@@ -381,6 +406,8 @@ public final class PhotoSheet {
 				state = State.FALLING;
 			}
 			hung = false;
+		} else if (state == State.FALLING && hovering > 0) {
+			hovering -= dt;
 		} else if (state == State.FALLING) {
 			fall(level, dt);
 		} else if (state == State.GHOST) {

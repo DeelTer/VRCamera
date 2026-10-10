@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "Clic der. — coger la cámara",
 	"vrcamera.hint.aim.free": "Clic der. — coger · %s — quitar",
 	"vrcamera.hint.aim.other": "Clic der. — coger · clic izq. — filmar con ella",
-	"vrcamera.hint.hold": "Rueda — más cerca/lejos",
-	"vrcamera.hint.hold.free": "Rueda — más cerca/lejos · junto a un mob — fijar",
+	"vrcamera.hint.hold": "Rueda — más cerca/lejos · %s — dar la vuelta",
+	"vrcamera.hint.hold.free": "Rueda — más cerca/lejos · %s — dar la vuelta · junto a un mob — fijar",
 	"vrcamera.hint.steer": "WASD — mover cámara · rueda — zoom",
 	"vrcamera.message.free.full": "Cámara: no más de %s cámaras",
 	"vrcamera.option.cameraLabelDistance": "Cámaras libres: distancia de las marcas",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "No hay cámaras copiadas en el portapapeles",
 	"vrcamera.message.free.lastHere": "Cámara: no hay otra cerca, esta se queda",
 	"vrcamera.message.free": "Cámara libre · %s — manejar · H — cuadrícula",
-	"vrcamera.message.photo.wait": "Cámara: siguiente foto en %s s"
+	"vrcamera.message.photo.wait": "Cámara: siguiente foto en %s s",
+	"key.vrcamera.turn": "Girar la cámara o la foto que sostienes",
+	"vrcamera.hint.sheet.aim": "Clic der. — coger la foto",
+	"vrcamera.hint.sheet.hold": "Rueda — más cerca/lejos · %s — girar · junto a un bloque — fijar",
+	"vrcamera.message.sound": "Cámara: ¿grabas las dos ventanas? Desactiva la captura de audio de una de ellas en tu programa de grabación o el sonido se duplica",
+	"vrcamera.message.denied": "Cámara: aquí no se permite filmar"
 }

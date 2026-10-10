@@ -71,6 +71,10 @@ public class CameraConfig {
 	 */
 	public boolean introShown = false;
 	/**
+	 * if the player was told once that a recording of both windows has the sound of the game twice
+	 */
+	public boolean soundHintShown = false;
+	/**
 	 * size of the camera icon
 	 */
 	public double indicatorSize = 1.0;

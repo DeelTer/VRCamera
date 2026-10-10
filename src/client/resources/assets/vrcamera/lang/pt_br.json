@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "Botão dir. — pegar a câmera",
 	"vrcamera.hint.aim.free": "Botão dir. — pegar · %s — remover",
 	"vrcamera.hint.aim.other": "Botão dir. — pegar · botão esq. — filmar com ela",
-	"vrcamera.hint.hold": "Roda — mais perto/longe",
-	"vrcamera.hint.hold.free": "Roda — mais perto/longe · junto a um mob — prender",
+	"vrcamera.hint.hold": "Roda — mais perto/longe · %s — virar",
+	"vrcamera.hint.hold.free": "Roda — mais perto/longe · %s — virar · junto a um mob — prender",
 	"vrcamera.hint.steer": "WASD — mover câmera · roda — zoom",
 	"vrcamera.message.free.full": "Câmera: no máximo %s câmeras",
 	"vrcamera.option.cameraLabelDistance": "Câmeras livres: distância das marcas",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "Não há câmeras copiadas na área de transferência",
 	"vrcamera.message.free.lastHere": "Câmera: nenhuma outra por perto, esta fica",
 	"vrcamera.message.free": "Câmera livre · %s — controlar · H — grade",
-	"vrcamera.message.photo.wait": "Câmera: próxima foto em %s s"
+	"vrcamera.message.photo.wait": "Câmera: próxima foto em %s s",
+	"key.vrcamera.turn": "Girar a câmera ou a foto na mão",
+	"vrcamera.hint.sheet.aim": "Botão dir. — pegar a foto",
+	"vrcamera.hint.sheet.hold": "Roda — mais perto/longe · %s — girar · junto a um bloco — fixar",
+	"vrcamera.message.sound": "Câmera: gravando as duas janelas? Desative a captura de áudio de uma delas no programa de gravação, ou o som fica duplicado",
+	"vrcamera.message.denied": "Câmera: não é permitido filmar aqui"
 }

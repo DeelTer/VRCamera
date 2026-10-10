@@ -13,13 +13,14 @@ import java.util.function.UnaryOperator;
  */
 public final class CameraIndicator {
 
+	/**
+	 * what marks a photo that lies around, from the font of the mod
+	 */
+	public static final String PHOTO_ICON = "";
 	private static final double MIN_DISTANCE = 1.2;
-
 	private static final double VIEW_ANGLE = Math.toRadians(35);
-
 	private static final double PINNED_DISTANCE = 0.6;
 	private static final double PINNED_ANGLE = Math.toRadians(30);
-
 	private static final double ICON_SCALE = 0.11;
 	private static final double TEXT_SCALE = 0.05;
 	private static final int COLOR = 0xFFFFFFFF;

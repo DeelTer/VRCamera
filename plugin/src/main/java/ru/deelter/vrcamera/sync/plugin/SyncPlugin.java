@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.sync.plugin;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
@@ -73,12 +74,18 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private final Map<UUID, Client> clients = new HashMap<>();
 	private final Set<String> worlds = new HashSet<>();
 	private SheetStore store;
+	private final PhotoList photoList = new PhotoList(this);
 	private int maxPerPlayer;
 	private int maxPerChunk;
 	private int maxTotal;
 	private int maxImageBytes;
 	private long pinCooldown;
 	private long photoCooldown;
+	private boolean freeThroughBlocks;
+	private boolean kickOutdated;
+	private String outdatedMessage;
+	private double freeRange;
+	private final Set<UUID> cameraDenied = new HashSet<>();
 	private double sendRange;
 	private double forgetRange;
 	private int imageQueue;
@@ -121,7 +128,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			} finally {
 				reader.dispose();
 			}
-			final BufferedImage plain = new BufferedImage(read.getWidth(), read.getHeight(), BufferedImage.TYPE_INT_RGB);
+			final BufferedImage plain = new BufferedImage(read.getWidth(), read.getHeight(),
+					BufferedImage.TYPE_INT_RGB);
 			plain.getGraphics().drawImage(read, 0, 0, null);
 			for (final float quality : QUALITIES) {
 				final byte[] jpeg = Jpeg.encode(plain, quality);
@@ -131,14 +139,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			}
 			return null;
 		} catch (IOException | RuntimeException e) {
-
 			return null;
 		}
 	}
 
 	private static long hash(byte[] image) {
 		try {
-			long hash = ByteBuffer.wrap(MessageDigest.getInstance("SHA-256").digest(image)).getLong();
+			final long hash = ByteBuffer.wrap(MessageDigest.getInstance("SHA-256").digest(image)).getLong();
 
 			return hash == 0 ? 1 : hash;
 		} catch (NoSuchAlgorithmException e) {
@@ -196,7 +203,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		try {
 			final DataInputStream in = Protocol.body(message);
 			switch (message[0]) {
-				case Protocol.C_HELLO -> hello(player, in.readInt());
+				case Protocol.C_HELLO -> hello(player, in.readInt(), Protocol.readMod(in));
 				case Protocol.C_PIN -> {
 					if (client != null) {
 						pin(player, client, Protocol.readPin(in));
@@ -234,17 +241,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					}
 				}
 				case Protocol.C_SHUTTER -> {
-					if (client != null) {
-						if (System.currentTimeMillis() - client.lastShutter >= photoWait(player)) {
-							client.lastShutter = System.currentTimeMillis();
-							double x = in.readDouble();
-							final double y = in.readDouble();
-							double z = in.readDouble();
-							if (cameraSound(player, Protocol.S_SHUTTER, x, y, z)) {
-								Bukkit.getPluginManager().callEvent(
-										new PhotoTakeEvent(player, new Location(player.getWorld(), x, y, z)));
-							}
-						}
+					if (client != null && System.currentTimeMillis() - client.lastShutter >= photoWait(player)) {
+						client.lastShutter = System.currentTimeMillis();
+						shutter(player, in.readDouble(), in.readDouble(), in.readDouble());
 					}
 				}
 				case Protocol.C_PRINT -> {
@@ -272,7 +271,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				}
 			}
 		} catch (IOException | RuntimeException e) {
-
 			getLogger().log(Level.FINE, "Bad message from " + player.getName(), e);
 		}
 	}
@@ -330,6 +328,11 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		shareCameras = getConfig().getBoolean("cameras.share", true);
 		cameraRange = Math.max(4.0, getConfig().getDouble("cameras.range", 32));
 		cameraWatchers = Math.max(1, getConfig().getInt("cameras.max-watchers", 24));
+		freeThroughBlocks = getConfig().getBoolean("cameras.free-through-blocks", false);
+		freeRange = Math.max(0.0, getConfig().getDouble("cameras.free-range", 64));
+		kickOutdated = getConfig().getBoolean("mod.kick-outdated", true);
+		outdatedMessage = getConfig().getString("mod.outdated-message",
+				"Update the VRCamera mod to 2.1.3 or newer to play here");
 		maxLoose = Math.max(0, getConfig().getInt("limits.loose-per-player", 8));
 		allowCustom = getConfig().getBoolean("custom-pictures", true);
 		protectBlocks = getConfig().getBoolean("photos-protect-blocks", false);
@@ -354,18 +357,29 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		player.sendPluginMessage(this, Protocol.CHANNEL, message);
 	}
 
-	private void hello(Player player, int version) {
+	private void hello(Player player, int version, Protocol.Mod mod) {
 		if (version != Protocol.VERSION) {
-
 			getLogger().info(player.getName() + " has a VRCamera mod that speaks protocol " + version + ", this is " +
 					Protocol.VERSION);
 			return;
 		}
-
+		final boolean keepsRules = mod.rulesLevel() >= Protocol.RULES_LEVEL ||
+				player.hasPermission("vrcamera.camera.unrestricted");
+		if (!keepsRules && kickOutdated) {
+			getLogger().info(player.getName() + " was kicked: their VRCamera mod is too old to keep the camera rules");
+			player.kick(Component.text(outdatedMessage, PhotoList.ERROR));
+			return;
+		}
 		if (clients.putIfAbsent(player.getUniqueId(), new Client()) == null) {
-			getLogger().info(player.getName() + " has the VRCamera mod");
+			getLogger().info(player.getName() + " has the VRCamera mod" +
+					(mod.version().isEmpty() ? "" : " " + mod.version()));
+			if (!keepsRules) {
+				player.sendMessage(Component.text("VRCamera: ", PhotoList.ERROR)
+						.append(Component.text(outdatedMessage, PhotoList.ERROR_TEXT)));
+			}
 		}
 		sendHello(player);
+		sendRules(player);
 	}
 
 	/**
@@ -376,6 +390,30 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private void sendHello(Player player) {
 		send(player, Protocol.serverHello(new Protocol.Limits(Protocol.VERSION, maxPerPlayer, maxPerChunk,
 				maxImageBytes), waitsBetweenPhotos(player) ? photoCooldown / 1000.0F : 0.0F));
+	}
+
+	/**
+	 * tells the mod of a player what its camera may do on this server, see {@link Protocol.Rules}
+	 */
+	private void sendRules(Player player) {
+		final boolean unrestricted = player.hasPermission("vrcamera.camera.unrestricted");
+		send(player, Protocol.rules(new Protocol.Rules(!cameraDenied.contains(player.getUniqueId()),
+				unrestricted || freeThroughBlocks, unrestricted ? 0.0F : (float) freeRange)));
+	}
+
+	@Override
+	public boolean setCameraAllowed(@NonNull Player player, boolean allowed) {
+		final boolean changed = allowed ? cameraDenied.remove(player.getUniqueId()) :
+				cameraDenied.add(player.getUniqueId());
+		if (changed && hasMod(player)) {
+			sendRules(player);
+		}
+		return hasMod(player);
+	}
+
+	@Override
+	public boolean isCameraAllowed(@NonNull Player player) {
+		return !cameraDenied.contains(player.getUniqueId());
 	}
 
 	private boolean waitsBetweenPhotos(Player player) {
@@ -394,7 +432,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * passes on where the camera of a player is, to the players around who have the mod
 	 */
 	private void camera(Player player, Protocol.Camera camera) {
-		float length = (float) Math.sqrt(camera.qx() * camera.qx() + camera.qy() * camera.qy() +
+		final float length = (float) Math.sqrt(camera.qx() * camera.qx() + camera.qy() * camera.qy() +
 				camera.qz() * camera.qz() + camera.qw() * camera.qw());
 		final Location at = player.getLocation();
 		final double dx = camera.x() - at.getX();
@@ -418,6 +456,12 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	/**
 	 * @return false if the camera is too far from its player to be theirs, and nobody was told
 	 */
+	private void shutter(Player player, double x, double y, double z) {
+		if (cameraSound(player, Protocol.S_SHUTTER, x, y, z)) {
+			Bukkit.getPluginManager().callEvent(new PhotoTakeEvent(player, new Location(player.getWorld(), x, y, z)));
+		}
+	}
+
 	private boolean cameraSound(Player player, byte type, double x, double y, double z) {
 		final Location at = player.getLocation();
 		final double dx = x - at.getX();
@@ -484,10 +528,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					return false;
 				}
 
-				done = placeCamera(target, CameraView.builder(id).location(admin.getEyeLocation()).replace(true).build());
+				done = placeCamera(target,
+						CameraView.builder(id).location(admin.getEyeLocation()).replace(true).build());
 			}
 			case "remove" -> done = !id.isEmpty() && removeCamera(target, id);
 			case "clear" -> done = removeCameras(target, id);
+			case "allow" -> done = setCameraAllowed(target, true);
+			case "deny" -> done = setCameraAllowed(target, false);
 			case "show" -> {
 				float seconds = 0;
 				try {
@@ -550,7 +597,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				for (int i = 0; i <= own.size() - maxLoose; i++) {
 					removeLoose(own.get(i), true);
 				}
-				long hash = hash(clean.jpeg);
+				final long hash = hash(clean.jpeg);
 				final LooseSheets.Sheet added = loose.add(world, owner, still.getName(), sheet.pose().normalized(),
 						clean.aspect, hash, clean.jpeg, sheet.custom());
 				stillClient.knownLoose.add(added.id);
@@ -595,7 +642,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				sheet.world.equals(player.getWorld().getUID()) &&
 				sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= PIN_REACH * PIN_REACH;
 		if (!allowed) {
-
 			client.knownLoose.remove(id);
 			send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, id));
 			return;
@@ -603,7 +649,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		final Player before = Bukkit.getPlayer(sheet.owner);
 		final Client beforeClient = clients.get(sheet.owner);
 		if (before != null && beforeClient != null) {
-
 			beforeClient.knownLoose.remove(id);
 			send(before, Protocol.looseId(Protocol.S_LOOSE_GONE, id));
 		}
@@ -645,7 +690,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	}
 
 	private void wantImage(Client client, long hash) {
-
 		if (client.wantedImages.size() >= imageQueue || client.wantedImages.contains(hash)) {
 			return;
 		}
@@ -668,7 +712,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	private void sendImages() {
 		for (final Map.Entry<UUID, Client> entry : clients.entrySet()) {
-			Long hash = entry.getValue().wantedImages.poll();
+			final Long hash = entry.getValue().wantedImages.poll();
 			final Player player = hash == null ? null : Bukkit.getPlayer(entry.getKey());
 			if (player == null) {
 				continue;
@@ -690,10 +734,10 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), refusal, 0, 0)));
 			return;
 		}
-		final PhotoPinEvent event = new PhotoPinEvent(player, new Location(player.getWorld(), pin.x(), pin.y(), pin.z()),
+		final Location pinnedAt = new Location(player.getWorld(), pin.x(), pin.y(), pin.z());
+		final PhotoPinEvent event = new PhotoPinEvent(player, pinnedAt,
 				player.getWorld().getBlockAt(pin.blockX(), pin.blockY(), pin.blockZ()), pin.custom());
 		if (!event.callEvent()) {
-
 			send(player, Protocol.pinResult(new Protocol.PinResult(pin.reference(), Protocol.PIN_NOT_ALLOWED, 0, 0)));
 			return;
 		}
@@ -715,7 +759,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					hash = 0;
 				}
 			}
-			long imageHash = hash;
+			final long imageHash = hash;
 			Bukkit.getScheduler().runTask(this, () -> finishPin(owner, ownerName, world, pin, clean, imageHash));
 		});
 	}
@@ -791,10 +835,11 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		final double dx = pin.x() - location.getX();
 		final double dy = pin.y() - location.getY();
 		final double dz = pin.z() - location.getZ();
-		final double bx = pin.blockX() + 0.5 - pin.x();
-		final double by = pin.blockY() + 0.5 - pin.y();
-		final double bz = pin.blockZ() + 0.5 - pin.z();
-		if (dx * dx + dy * dy + dz * dz > PIN_REACH * PIN_REACH || bx * bx + by * by + bz * bz > 4.0) {
+		final double toBlockX = pin.blockX() + 0.5 - pin.x();
+		final double toBlockY = pin.blockY() + 0.5 - pin.y();
+		final double toBlockZ = pin.blockZ() + 0.5 - pin.z();
+		final double fromBlock = toBlockX * toBlockX + toBlockY * toBlockY + toBlockZ * toBlockZ;
+		if (dx * dx + dy * dy + dz * dz > PIN_REACH * PIN_REACH || fromBlock > 4.0) {
 			return Protocol.PIN_TOO_FAR;
 		}
 
@@ -805,6 +850,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			return Protocol.PIN_SERVER_FULL;
 		}
 		if (store.ownedBy(player.getUniqueId()) >= maxPerPlayer) {
+			photoList.tellFull(player, maxPerPlayer);
 			return Protocol.PIN_TOO_MANY;
 		}
 		final UUID world = player.getWorld().getUID();
@@ -821,7 +867,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	@EventHandler
 	public void onChannel(PlayerRegisterChannelEvent event) {
-
 		if (Protocol.CHANNEL.equals(event.getChannel()) && clients.containsKey(event.getPlayer().getUniqueId())) {
 			sendHello(event.getPlayer());
 		}
@@ -831,11 +876,11 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	public void onQuit(PlayerQuitEvent event) {
 		loose.of(event.getPlayer().getUniqueId()).forEach(sheet -> removeLoose(sheet, false));
 		clients.remove(event.getPlayer().getUniqueId());
+		cameraDenied.remove(event.getPlayer().getUniqueId());
 	}
 
 	@EventHandler
 	public void onWorldChange(PlayerChangedWorldEvent event) {
-
 		loose.of(event.getPlayer().getUniqueId()).forEach(sheet -> removeLoose(sheet, false));
 		final Client client = clients.get(event.getPlayer().getUniqueId());
 		if (client != null) {
@@ -925,6 +970,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String @NonNull [] args) {
+		if (command.getName().equalsIgnoreCase(PhotoList.COMMAND)) {
+			return photoList.command(sender, args);
+		}
 		if (args.length == 1 && args[0].equalsIgnoreCase("stats")) {
 			sender.sendMessage("VRCameraSync: " + store.size() + " pinned photos, " + clients.size() +
 					" players with the mod online");
@@ -939,6 +987,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 				final Player online = Bukkit.getPlayer(id);
 				if (online != null) {
 					sendHello(online);
+					sendRules(online);
 				}
 			}
 			sender.sendMessage("VRCameraSync: config read again. Limits apply to new pins, timings after a restart");
@@ -1015,7 +1064,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private void unpin(Player player, long id) {
 		final StoredSheet sheet = store.get(id);
 		if (sheet == null) {
-
 			send(player, Protocol.remove(id, Protocol.REMOVED_TAKEN));
 			return;
 		}
@@ -1024,6 +1072,38 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			sound(sheet, Sound.ENTITY_ITEM_FRAME_REMOVE_ITEM);
 			remove(sheet, Protocol.REMOVED_TAKEN);
 		}
+	}
+
+	/**
+	 * @return the photos that player has pinned, the oldest first
+	 */
+	List<StoredSheet> photosOf(UUID owner) {
+		final List<StoredSheet> photos = new ArrayList<>();
+		for (final StoredSheet sheet : store.all()) {
+			if (sheet.owner().equals(owner)) {
+				photos.add(sheet);
+			}
+		}
+		photos.sort(Comparator.comparingLong(StoredSheet::id));
+		return photos;
+	}
+
+	int mostPhotos() {
+		return maxPerPlayer;
+	}
+
+	/**
+	 * a player takes one of their photos off from afar, with the list of them
+	 *
+	 * @return false if there is no such photo of theirs
+	 */
+	boolean takeOff(Player player, long id) {
+		final StoredSheet sheet = store.get(id);
+		if (sheet == null || !sheet.owner().equals(player.getUniqueId())) {
+			return false;
+		}
+		remove(sheet, Protocol.REMOVED_TAKEN);
+		return true;
 	}
 
 	private void remove(StoredSheet sheet, byte reason) {
@@ -1046,7 +1126,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * tells every client about the photos that came into its range, and to forget the ones that are far away
 	 */
 	private void updateRanges() {
-
 		final long expired = System.currentTimeMillis() - looseLifetime;
 		for (final LooseSheets.Sheet sheet : new ArrayList<>(loose.all())) {
 			if (sheet.touched < expired) {
@@ -1099,7 +1178,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					known.remove();
 				} else if (!sheet.owner.equals(player.getUniqueId()) && (!sheet.world.equals(world) ||
 						sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) > forget)) {
-
 					send(player, Protocol.looseId(Protocol.S_LOOSE_GONE, sheet.id));
 					known.remove();
 				}
@@ -1156,7 +1234,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * what is known about a player that has the mod
 	 */
 	private static final class Client {
-
 		private final Set<Long> known = new HashSet<>();
 
 		private final Set<Long> knownLoose = new HashSet<>();

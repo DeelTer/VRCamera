@@ -32,6 +32,7 @@ final class CameraGrab {
 
 	private static final double EASE = 9.0;
 	private static final double WHEEL_EASE = 3.5;
+	private static final double TURN_BACK_SECONDS = 0.45;
 
 	private static final double ICON = 1.35;
 	private static final double ICON_BEAT = 0.2;
@@ -40,6 +41,8 @@ final class CameraGrab {
 	private final HandThrow handThrow = new HandThrow();
 	private final Quaternionf rotation = new Quaternionf();
 	private boolean holding;
+	private boolean away;
+	private double turningBack;
 	private int aimedAt = NONE;
 
 	private double wanted;
@@ -92,6 +95,37 @@ final class CameraGrab {
 	}
 
 	/**
+	 * turns the held camera around: from looking at the player to looking where they look, to show something,
+	 * and back
+	 */
+	void turnAround() {
+		if (turningBack <= 0) {
+			away = !away;
+		}
+	}
+
+	/**
+	 * The use key is up. A camera that was turned away is not let go of at once: it is held a moment longer to
+	 * turn back to the player, in one move a viewer can follow.
+	 *
+	 * @return true while it is still kept for that
+	 */
+	boolean turnsBack(double dt) {
+		if (away) {
+			away = false;
+			turningBack = TURN_BACK_SECONDS;
+		}
+		if (turningBack <= 0) {
+			return false;
+		}
+		turningBack -= dt;
+		if (turningBack <= 0) {
+			CamMath.lookRotation(aim.subtract(position), rotation);
+		}
+		return turningBack > 0;
+	}
+
+	/**
 	 * lets go of the camera without a word on where it lands
 	 */
 	void release() {
@@ -129,6 +163,8 @@ final class CameraGrab {
 	 */
 	void take(DesktopCamera.Pose camera, Vec3 eyes) {
 		holding = true;
+		away = false;
+		turningBack = 0;
 		offset = camera.position().subtract(eyes);
 		distance = offset.length();
 		wanted = CamMath.clamp(distance, NEAR, FAR);
@@ -153,7 +189,7 @@ final class CameraGrab {
 				1.0 - CamMath.smoothstep((position.distanceTo(subject.center) - near) / near);
 		aim = subject.center.lerp(subject.head, closeness);
 		final Quaternionf facing = new Quaternionf(rotation);
-		if (CamMath.lookRotation(aim.subtract(position), facing)) {
+		if (CamMath.lookRotation(away ? position.subtract(aim) : aim.subtract(position), facing)) {
 			rotation.slerp(facing, (float) ease);
 		}
 		handThrow.sample(position);
