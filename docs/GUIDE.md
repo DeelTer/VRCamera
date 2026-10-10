@@ -23,6 +23,7 @@ Ukrainian, German, French, Spanish, Brazilian Portuguese and Simplified Chinese.
 | New own angle / free camera | `N`     | "VR Camera..." screen                             |
 | Delete own angle            | —       | "VR Camera..." screen                             |
 | Steer the PC camera         | `G`     | PC only                                           |
+| Turn the held camera/photo  | `R`     | PC only, while holding one                        |
 | Fly to the next free camera | unbound | PC only                                           |
 | Debug overlay               | unbound | "VR Camera..." screen                             |
 | VR Camera menu              | unbound | radial menu or a controller button                |
@@ -335,6 +336,7 @@ Server settings, `plugins/VRCamera/config.yml`:
 | `limits.total`                   | `20000`       | sheets on the whole server                                                                                                                                           |
 | `limits.image-bytes`             | `20000`       | largest picture a client may send                                                                                                                                    |
 | `limits.pin-cooldown-ms`         | `1500`        | wait between two pins of a player                                                                                                                                    |
+| `photos.cooldown-seconds`        | `3`           | wait between two photos of a player; their camera click is not passed on sooner. `0`: no wait |
 | `anyone-takes-off`               | `false`       | `true` lets everyone take off anyone's sheets                                                                                                                        |
 | `custom-pictures`                | `true`        | `false`: nobody may put up pictures from the internet                                                                                                                |
 | `worlds.mode`, `worlds.list`     | `deny`, empty | the worlds photos can be pinned and shared in. `deny`: everywhere but in the listed worlds. `allow`: only in the listed ones. Photos already hanging there stay      |
@@ -342,8 +344,19 @@ Server settings, `plugins/VRCamera/config.yml`:
 | `range.send`, `range.forget`     | `32`, `48`    | blocks in which clients are told about sheets, and after which they forget them                                                                                      |
 | `network.images-per-second`      | `4`           | pictures sent to one player per second                                                                                                                               |
 | `cameras.share`, `cameras.range` | `true`, `32`  | show players' cameras to the others, and within how many blocks                                                                                                      |
+| `cameras.free-through-blocks`    | `false`       | `false`: a PC player's free camera stops at blocks instead of flying through them |
+| `cameras.free-range`             | `64`          | blocks a free camera gets away from its player, it is pulled along beyond that. `0`: any distance |
+| `mod.kick-outdated`              | `true`        | a mod older than 2.1.3 does not know the camera rules. `true`: players with one are kicked; `false`: only told |
+| `mod.outdated-message`           | see config    | what they are kicked or told with |
 
-Permissions: `vrcamera.pin` (everyone), `vrcamera.remove.others` (operators), `vrcamera.admin` (operators).
+Permissions: `vrcamera.pin` (everyone), `vrcamera.photo.nocooldown`, `vrcamera.camera.unrestricted`,
+`vrcamera.remove.others`, `vrcamera.admin` (all four: operators).
+No filming in some place, like a game arena: `/vrcamsync camera deny <player>` and `allow`, or
+`CameraApi.setCameraAllowed(player, false)` from a plugin. The camera turns off and no photos are taken.
+These rules are kept by the player's mod: they stop ordinary players, not a modified client.
+Players: `/vrcamphotos` lists your pinned photos by page, with a button to take each off; click the coordinates
+for the command to go there. Shown as well when you hit the limit.
+
 Commands: `/vrcamsync stats`, `/vrcamsync purge <player>`, `/vrcamsync purgenear <blocks>`, `/vrcamsync
 reload`.
 
@@ -380,6 +393,8 @@ the game window. Both options are also in the pause menu and settings.
   monitor: a recording program gets as many pixels as the window has. `/vrcam screen size auto` undoes it.
 - Closing the camera window or leaving the world turns the PC camera off.
 - The camera keeps rendering when Minecraft loses focus or is minimized, including with Dynamic FPS.
+- Recording both windows? Both carry the game's sound. Turn off audio capture for one of them in your recording
+  program, or the sound doubles.
 - Open menus appear on a screen in front of your character, filmed over the shoulder. `menuSize` sets its size;
   `menuShotChat` includes chat. In tight spaces the camera can use your first-person view, including the HUD.
 
@@ -390,6 +405,8 @@ zooms. Director keeps your angle for `manualHoldSeconds`; Follow keeps it until 
 With a separate window, you can also aim at the camera model and hold right-click to grab it. It follows your
 look smoothly; the wheel changes its distance. Release to place it, or swing your view as you release to throw
 it (`throwPower`). While aiming at or holding a camera, right-click is reserved for it.
+`R` turns the held camera around to film what you look at. Press again to turn it back; when you let go it
+always turns back to you.
 
 **Free cameras.** These stay where you put them and film in the direction you chose. Up to 26 cameras, named
 A–Z, are saved per world and dimension. Entering Free mode selects a camera within 64 blocks, or creates one
@@ -415,6 +432,10 @@ the camera window to cycle framing guides: thirds, golden ratio, golden spiral, 
 and
 off. Guides appear while steering and disappear when you release the camera.
 
+**Camera sets.** A set is a separate group of free cameras for the same place. Pause menu → Free cameras: switch
+sets, make or delete one, copy a set to the clipboard and paste one a friend sent. The same as `/cam set`,
+`/cam export` and `/cam import <name>`. An unbound key cycles through the sets.
+
 **Smart switching.** With several free cameras, look towards one briefly to make it active. Configure this with
 `freeAutoSwitch`, `freeAutoSwitchAngle` and `freeAutoSwitchSeconds`. A manually selected camera stays active
 until you look at another.
@@ -424,7 +445,10 @@ returns to you. `/cam with Name` adds occasional shots of you together; `/cam wi
 Names are saved as `filmPlayer` and `filmWith`. Free cameras keep their own framing.
 
 **Photos and multiplayer.** `F6` photographs the active camera, or your view if cameras are off. The photo sheet
-comes out of the active camera. On Windows the image is also copied to the clipboard (`photoClipboard`).
+comes out of the active camera; with cameras off it hangs in front of you for a few seconds, then falls.
+Aim at a photo and hold right-click to take it: the wheel moves it nearer or farther, `R` rotates it a quarter
+turn. Hold it against a block and release to pin it; release in the air and it falls. Your photos lying around
+have an icon with the distance. On Windows the image is also copied to the clipboard (`photoClipboard`).
 On servers with the plugin, others can see your active camera within 48 blocks of you, subject to the server's
 sharing range. `shareCamera` disables sharing; `othersCameras` limits visible cameras from others (default 3, 0 hides
 all).

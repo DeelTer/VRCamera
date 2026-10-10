@@ -57,6 +57,7 @@ public final class PhotoSync {
 	private static final float MIN_ASPECT = 0.25F;
 
 	private static final long CAMERA_KEEP_ALIVE_NANOS = 1_000_000_000L;
+	private static final double HEARD_WITHIN = 64.0;
 	private final Quaternionf sharedTurn = new Quaternionf();
 	private final Map<Long, Protocol.Sheet> known = new HashMap<>();
 	private final Set<Long> loaded = new HashSet<>();
@@ -74,9 +75,9 @@ public final class PhotoSync {
 	private final Set<Long> ghosts = new HashSet<>();
 	private final Map<Long, PhotoSheet> sharing = new HashMap<>();
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
-	private static final double HEARD_WITHIN = 64.0;
 	private boolean connected;
 	private float photoCooldown;
+	private Protocol.Rules rules = Protocol.Rules.NONE;
 	private long lastPhoto;
 	private Vec3 sharedAt;
 	private long sharedNanos;
@@ -128,7 +129,7 @@ public final class PhotoSync {
 			reset();
 
 			if (ClientPlayNetworking.canSend(SyncPayload.TYPE)) {
-				send(Protocol.clientHello());
+				send(Protocol.clientHello(Vrcamera.version()));
 			}
 		});
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(this::reset));
@@ -258,7 +259,7 @@ public final class PhotoSync {
 			if (hellos < HELLO_TRIES && ticks % HELLO_INTERVAL_TICKS == 0 &&
 					ClientPlayNetworking.canSend(SyncPayload.TYPE)) {
 				hellos++;
-				send(Protocol.clientHello());
+				send(Protocol.clientHello(Vrcamera.version()));
 			}
 			return;
 		}
@@ -333,7 +334,7 @@ public final class PhotoSync {
 				if (loose.custom() && !showCustom) {
 					final Protocol.Pose at = loose.pose();
 					final PhotoSheet standIn = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(),
-							at.z()),
+									at.z()),
 							new Quaternionf(at.qx(), at.qy(), at.qz(), at.qw()), loose.aspect(), black(), null);
 					if (standIn != null) {
 						standIn.placeholder = true;
@@ -420,6 +421,7 @@ public final class PhotoSync {
 		DesktopCamera.INSTANCE.serverGone();
 		connected = false;
 		photoCooldown = 0.0F;
+		rules = Protocol.Rules.NONE;
 		limits = null;
 		known.clear();
 		loaded.clear();
@@ -511,6 +513,7 @@ public final class PhotoSync {
 					}
 				}
 				case Protocol.S_SHOW -> DesktopCamera.INSTANCE.serverShow(in.readUTF(), in.readFloat());
+				case Protocol.S_RULES -> rules = Protocol.readRules(in);
 				case Protocol.S_SHUTTER, Protocol.S_PRINT -> cameraSound(message[0] == Protocol.S_SHUTTER,
 						new Vec3(in.readDouble(), in.readDouble(), in.readDouble()));
 				default -> {
@@ -733,9 +736,23 @@ public final class PhotoSync {
 	}
 
 	/**
+	 * @return what the server lets the camera of the player do, everything where there is no such server
+	 */
+	public Protocol.Rules rules() {
+		return connected ? rules : Protocol.Rules.NONE;
+	}
+
+	/**
 	 * @return if the server lets the player take a photo right now. Says how long to wait where it does not
 	 */
 	public boolean mayTakePhoto() {
+		if (!rules.cameraAllowed()) {
+			final LocalPlayer denied = Minecraft.getInstance().player;
+			if (denied != null) {
+				denied.sendOverlayMessage(Component.translatable("vrcamera.message.denied"));
+			}
+			return false;
+		}
 		final long now = System.nanoTime();
 		final double left = connected && lastPhoto != 0 ? photoCooldown - (now - lastPhoto) / 1.0E9 : 0.0;
 		if (left > 0) {

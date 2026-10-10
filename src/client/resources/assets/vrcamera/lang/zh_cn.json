@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "右键 — 拿起摄像机",
 	"vrcamera.hint.aim.free": "右键 — 拿起 · %s — 移除",
 	"vrcamera.hint.aim.other": "右键 — 拿起 · 左键 — 用它拍摄",
-	"vrcamera.hint.hold": "滚轮 — 拉近/拉远",
-	"vrcamera.hint.hold.free": "滚轮 — 拉近/拉远 · 靠近生物 — 固定",
+	"vrcamera.hint.hold": "滚轮 — 拉近/拉远 · %s — 调头",
+	"vrcamera.hint.hold.free": "滚轮 — 拉近/拉远 · %s — 调头 · 靠近生物 — 固定",
 	"vrcamera.hint.steer": "WASD — 移动摄像机 · 滚轮 — 变焦",
 	"vrcamera.message.free.full": "摄像机：最多 %s 台",
 	"vrcamera.option.cameraLabelDistance": "自由摄像机：标记距离",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "剪贴板中没有复制的摄像机",
 	"vrcamera.message.free.lastHere": "摄像机：附近没有其他摄像机，保留这一台",
 	"vrcamera.message.free": "自由摄像机 · %s — 操控 · H — 网格",
-	"vrcamera.message.photo.wait": "摄像机：%s 秒后可再次拍照"
+	"vrcamera.message.photo.wait": "摄像机：%s 秒后可再次拍照",
+	"key.vrcamera.turn": "转动手中的摄像机或照片",
+	"vrcamera.hint.sheet.aim": "右键 — 拿起照片",
+	"vrcamera.hint.sheet.hold": "滚轮 — 拉近/拉远 · %s — 旋转 · 靠近方块 — 贴上",
+	"vrcamera.message.sound": "摄像机：同时录制两个窗口？请在录制软件中关闭其中一个的音频采集，否则声音会重复",
+	"vrcamera.message.denied": "摄像机：此处不允许拍摄"
 }

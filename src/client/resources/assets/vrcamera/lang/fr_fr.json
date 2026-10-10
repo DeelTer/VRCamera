@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "Clic droit — prendre la caméra",
 	"vrcamera.hint.aim.free": "Clic droit — prendre · %s — retirer",
 	"vrcamera.hint.aim.other": "Clic droit — prendre · clic gauche — filmer avec",
-	"vrcamera.hint.hold": "Molette — plus près/loin",
-	"vrcamera.hint.hold.free": "Molette — plus près/loin · près d'un mob — fixer",
+	"vrcamera.hint.hold": "Molette — plus près/loin · %s — retourner",
+	"vrcamera.hint.hold.free": "Molette — plus près/loin · %s — retourner · près d'un mob — fixer",
 	"vrcamera.hint.steer": "ZQSD — déplacer la caméra · molette — zoom",
 	"vrcamera.message.free.full": "Caméra : pas plus de %s caméras",
 	"vrcamera.option.cameraLabelDistance": "Caméras libres : distance des repères",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "Pas de caméras copiées dans le presse-papiers",
 	"vrcamera.message.free.lastHere": "Caméra : aucune autre à proximité, celle-ci reste",
 	"vrcamera.message.free": "Caméra libre · %s — piloter · H — grille",
-	"vrcamera.message.photo.wait": "Caméra : prochaine photo dans %s s"
+	"vrcamera.message.photo.wait": "Caméra : prochaine photo dans %s s",
+	"key.vrcamera.turn": "Tourner la caméra ou la photo tenue",
+	"vrcamera.hint.sheet.aim": "Clic droit — prendre la photo",
+	"vrcamera.hint.sheet.hold": "Molette — plus près/loin · %s — tourner · près d'un bloc — épingler",
+	"vrcamera.message.sound": "Caméra : vous enregistrez les deux fenêtres ? Coupez la capture audio de l'une d'elles dans votre logiciel, sinon le son est doublé",
+	"vrcamera.message.denied": "Caméra : il est interdit de filmer ici"
 }

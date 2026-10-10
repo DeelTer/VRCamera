@@ -20,9 +20,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -34,6 +37,7 @@ import ru.deelter.vrcamera.client.Vr;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
+import ru.deelter.vrcamera.client.desktop.SheetReach;
 import ru.deelter.vrcamera.client.sync.PhotoCodec;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 
@@ -554,6 +558,47 @@ public final class PhotoAlbum {
 		final boolean wasPinned = sheet.isPinned();
 		final boolean wasGhost = sheet.isGhost();
 		sheet.grab(hand, hands.position(hand), hands.rotation(hand));
+		taken(sheet, wasPinned, wasGhost);
+	}
+
+	/**
+	 * the hand of a player at a screen takes a sheet, see {@link PhotoSheet#take}
+	 */
+	public void take(PhotoSheet sheet, int hand) {
+		final boolean wasPinned = sheet.isPinned();
+		final boolean wasGhost = sheet.isGhost();
+		sheet.take(hand);
+		taken(sheet, wasPinned, wasGhost);
+	}
+
+	/**
+	 * @param aim how far beside its middle a sheet is still pointed at, in blocks
+	 * @return the sheet a player looks at and can take, the nearest one. Null if there is none in reach, or a
+	 * block is in front of it
+	 */
+	@Nullable
+	public PhotoSheet pointedAt(Vec3 eyes, Vec3 look, double reach, double aim, int hand) {
+		PhotoSheet pointedAt = null;
+		double nearest = reach;
+		for (final PhotoSheet sheet : sheets) {
+			final Vec3 toSheet = sheet.center().subtract(eyes);
+			final double along = toSheet.dot(look);
+			if (along > 0 && along < nearest && sheet.canGrab(hand) &&
+					toSheet.subtract(look.scale(along)).length() < aim) {
+				nearest = along;
+				pointedAt = sheet;
+			}
+		}
+		if (pointedAt == null || level == null) {
+			return null;
+		}
+		final Vec3 nearly = eyes.add(pointedAt.center().subtract(eyes).scale(0.9));
+		final boolean hidden = level.clip(new ClipContext(eyes, nearly, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, CollisionContext.empty())).getType() != HitResult.Type.MISS;
+		return hidden ? null : pointedAt;
+	}
+
+	private void taken(PhotoSheet sheet, boolean wasPinned, boolean wasGhost) {
 		if (wasGhost) {
 			PhotoSync.INSTANCE.takeLoose(sheet.looseId());
 		} else if (wasPinned && sheet.remoteId() != 0) {
@@ -611,7 +656,8 @@ public final class PhotoAlbum {
 		if (mc.player == null || Vr.isRunning()) {
 			return;
 		}
-		update(mc.player.level(), null, mc.isPaused() ? 0 : dt);
+		SheetReach.INSTANCE.frame(mc, dt);
+		update(mc.player.level(), SheetReach.INSTANCE, mc.isPaused() ? 0 : dt);
 		final DesktopCamera.Pose lens = DesktopCamera.INSTANCE.lens();
 		if (lens != null) {
 			hangFrom(lens.position(), lens.rotation(), mc.player.getScale());
@@ -854,7 +900,7 @@ public final class PhotoAlbum {
 			Vec3 forward = new Vec3(look.x, 0, look.z);
 			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
 			final Quaternionf rotation = new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z));
-			sheet.toss(from.add(forward.scale(0.7)), rotation, forward.scale(1.5));
+			sheet.hover(from.add(forward.scale(0.8)).add(0, 0.05, 0), rotation);
 		}));
 		return true;
 	}

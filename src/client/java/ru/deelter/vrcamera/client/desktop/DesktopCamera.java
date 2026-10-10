@@ -32,6 +32,7 @@ import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
@@ -40,6 +41,7 @@ import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
+import ru.deelter.vrcamera.sync.Protocol;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -95,6 +97,8 @@ public final class DesktopCamera {
 	private static final double NAME_SIZE = 0.75;
 	private static final double ICON_FULL = 8.0;
 	private static final double ICON_SMALLEST = 0.3;
+	private static final double PHOTO_ICON_NEAREST = 2.5;
+	private static final double PHOTO_ICON_FURTHEST = 48.0;
 	private static final String CAMERA_ICON = "";
 	private final Subject subject = new Subject();
 	private final Rig rig = new Rig(true);
@@ -224,6 +228,10 @@ public final class DesktopCamera {
 	public void setMode(Mode mode) {
 		final Minecraft mc = Minecraft.getInstance();
 		if (mode != Mode.OFF && Vr.isRunning()) {
+			return;
+		}
+		if (mode != Mode.OFF && !PhotoSync.INSTANCE.rules().cameraAllowed()) {
+			say("vrcamera.message.denied");
 			return;
 		}
 		if (mode == this.mode) {
@@ -733,7 +741,7 @@ public final class DesktopCamera {
 	 * @return false if the wheel is for the game
 	 */
 	public boolean scroll(double amount) {
-		if (mode != Mode.OFF && grab.scroll(amount)) {
+		if ((!Vr.isRunning() && SheetReach.INSTANCE.scroll(amount)) || (mode != Mode.OFF && grab.scroll(amount))) {
 			return true;
 		}
 		if (isSteered() && !steeredFromWindow) {
@@ -747,7 +755,27 @@ public final class DesktopCamera {
 	 * @return if the use key belongs to the camera right now: the player holds it, or points at it to take it
 	 */
 	public boolean wantsUseKey() {
+		return reachesForCamera() || (!Vr.isRunning() && SheetReach.INSTANCE.wantsUseKey());
+	}
+
+	/**
+	 * @return if the player holds the camera, or points at it to take it
+	 */
+	public boolean reachesForCamera() {
 		return mode != Mode.OFF && grab.wantsUseKey();
+	}
+
+	/**
+	 * The key that turns what is held: a photo by a quarter, the camera around to look where the player looks
+	 * and back
+	 */
+	public void turnHeld() {
+		if (Vr.isRunning() || SheetReach.INSTANCE.turn()) {
+			return;
+		}
+		if (mode != Mode.OFF && grab.isHolding()) {
+			grab.turnAround();
+		}
 	}
 
 	/**
@@ -824,6 +852,10 @@ public final class DesktopCamera {
 	 * one of a player in VR: every other tick, they smooth it out
 	 */
 	public void tick() {
+		if (mode != Mode.OFF && !PhotoSync.INSTANCE.rules().cameraAllowed()) {
+			setMode(Mode.OFF);
+			say("vrcamera.message.denied");
+		}
 		final Component hint = CameraHints.next(hintNow());
 		final LocalPlayer player = Minecraft.getInstance().player;
 		if (hint != null && player != null) {
@@ -936,7 +968,7 @@ public final class DesktopCamera {
 		final List<String> lines = new ArrayList<>();
 		lines.add("VRCamera on screen: " + mode + (hasOwnWindow() ? ", own window" : ", game window"));
 		final Shot shot = steered != null ? steered : mode == Mode.FOLLOW || mode == Mode.DRONE ? followShot :
-												director == null ? null : director.current();
+													  director == null ? null : director.current();
 		if (shot != null) {
 			lines.add("shot: " + shot.type + (showsOwnView() ? " (own view of the player)" : ""));
 		}
@@ -969,7 +1001,8 @@ public final class DesktopCamera {
 	public void drawLabel() {
 		final Minecraft mc = Minecraft.getInstance();
 		final LocalPlayer player = mc.player;
-		if (!showsMarker() || player == null || !CameraConfig.current().indicator) {
+		final boolean marksPhotos = !Vr.isRunning() && !DirectorPass.isActive();
+		if ((!showsMarker() && !marksPhotos) || player == null || !CameraConfig.current().indicator) {
 			return;
 		}
 		try {
@@ -978,6 +1011,12 @@ public final class DesktopCamera {
 			final Vec3 forward = new Vec3(view.forwardVector().x(), view.forwardVector().y(), view.forwardVector().z());
 			final Vec3 up = new Vec3(view.upVector().x(), view.upVector().y(), view.upVector().z());
 			final UnaryOperator<Vec3> placed = ViewBob.steady(mc, player, eye, forward, up);
+			if (marksPhotos) {
+				markPhotos(eye, forward, up, player.getScale(), placed);
+			}
+			if (!showsMarker()) {
+				return;
+			}
 			final int filming = mode == Mode.FREE ? free.active() : 0;
 			final boolean several = mode == Mode.FREE && free.count() > 1;
 			final double iconSize = farSize(eye, markerPosition()) * grab.iconSize(filming, filming);
@@ -995,8 +1034,35 @@ public final class DesktopCamera {
 		}
 	}
 
+	/**
+	 * the photos of the player that lie around, to find them again
+	 */
+	private void markPhotos(Vec3 eye, Vec3 forward, Vec3 up, float scale, UnaryOperator<Vec3> placed) {
+		PhotoAlbum.INSTANCE.forEachLoose(photo -> {
+			final double distance = photo.distanceTo(eye);
+			if (distance > PHOTO_ICON_NEAREST && distance < PHOTO_ICON_FURTHEST) {
+				CameraIndicator.draw(CameraIndicator.PHOTO_ICON, "", photo, eye, forward, up, scale, false, 1.0, placed);
+			}
+		});
+	}
+
+	/**
+	 * Told once, into the chat where it stays: a program that records the game window and the window of the
+	 * camera takes the sound of the game with both, and plays it twice
+	 */
+	private void warnOfDoubleSound(CameraConfig config) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		if (mode == Mode.OFF || !hasOwnWindow() || config.soundHintShown || player == null) {
+			return;
+		}
+		config.soundHintShown = true;
+		config.save();
+		player.sendSystemMessage(Component.translatable("vrcamera.message.sound"));
+	}
+
 	private void sayMode() {
 		final CameraConfig config = CameraConfig.current();
+		warnOfDoubleSound(config);
 		if (mode != Mode.OFF && !config.introShown) {
 			config.introShown = true;
 			config.save();
@@ -1300,7 +1366,7 @@ public final class DesktopCamera {
 		final Vec3 eyes = player.getEyePosition(partialTick);
 		final Vec3 look = player.getViewVector(partialTick);
 		if (grab.isHolding()) {
-			if (mc.options.keyUse.isDown()) {
+			if (mc.options.keyUse.isDown() || grab.turnsBack(dt)) {
 				grab.hold(player, eyes, look, subject, config, dt);
 			} else {
 				letGo(config);
@@ -1465,6 +1531,9 @@ public final class DesktopCamera {
 					held(mc.options.keyUp) - held(mc.options.keyDown)), held(mc.options.keySprint) > 0);
 		}
 		followGaze(player, partialTick, dt, config);
+		final Protocol.Rules rules = PhotoSync.INSTANCE.rules();
+		free.bound(rules.throughBlocks() && rules.freeRange() <= 0 ? null : new FreeCamera.Bounds(player.level(),
+				player.getEyePosition(partialTick), rules.throughBlocks(), rules.freeRange()));
 		final Pose filmed = free.pose(dt);
 		if (!free.isGone()) {
 			return filmed;
@@ -1604,6 +1673,10 @@ public final class DesktopCamera {
 	 */
 	@Nullable
 	private CameraHints.Hint hintNow() {
+		final CameraHints.Hint photo = Vr.isRunning() ? null : SheetReach.INSTANCE.hint();
+		if (photo != null) {
+			return photo;
+		}
 		if (!hasOwnWindow() || pose == null) {
 			return null;
 		}

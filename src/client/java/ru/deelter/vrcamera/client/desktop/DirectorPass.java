@@ -1,9 +1,9 @@
 package ru.deelter.vrcamera.client.desktop;
 
-import net.minecraft.client.Camera;
 import com.mojang.blaze3d.pipeline.MainTarget;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;

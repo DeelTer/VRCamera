@@ -1,11 +1,11 @@
 package ru.deelter.vrcamera.client;
 
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
@@ -22,8 +22,8 @@ import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.Locale;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 

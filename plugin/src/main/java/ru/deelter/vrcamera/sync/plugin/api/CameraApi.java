@@ -63,4 +63,15 @@ public interface CameraApi {
 	 * minutes.
 	 */
 	boolean showCamera(@NotNull Player player, @NotNull String id, long duration, @NotNull TimeUnit unit);
+
+	/**
+	 * Says if the player may film and take photos right now: for a place where nobody is to look around with a
+	 * camera, like the arena of a game. A camera that is on is turned off, and can't be turned on again until
+	 * this is taken back. Forgotten when the player leaves the server.
+	 *
+	 * @return false if the player has no mod to tell
+	 */
+	boolean setCameraAllowed(@NotNull Player player, boolean allowed);
+
+	boolean isCameraAllowed(@NotNull Player player);
 }

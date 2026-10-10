@@ -64,6 +64,7 @@ expect extra GPU load. On PC, lower `outputFps` if needed; render resolution fol
 | Take a photo                           | `F6`  |
 | New saved angle / free camera          | `N`   |
 | Steer the PC camera                    | `G`   |
+| Turn the held camera or photo          | `R`   |
 
 Rebind keys in Minecraft's controls; in VR you can also use Vivecraft's radial menu or SteamVR bindings. Client commands
 support Tab completion and need no server permissions. See the [full command list](docs/GUIDE.md#commands).
@@ -77,7 +78,11 @@ Film another player with `/cam follow Name`, or add a partner with `/cam with Na
 from afar, look at it, point a hand and hold interact after the controller buzzes.
 
 **PC, with a separate window:** aim at a camera and hold right-click to grab it. Move it with your look, adjust its
-distance with the wheel and release to place it. Click its window or press `G` to steer with movement keys.
+distance with the wheel and release to place it. `R` turns it around to film what you look at; let go and it turns
+back to you. Click its window or press `G` to steer with movement keys.
+
+**Photos on PC:** aim at a photo and hold right-click to take it. The wheel moves it nearer or farther, `R` rotates it.
+Hold it against a block and release to pin it; release in the air and it falls.
 
 Use **Bring camera to me** to put it within reach. In VR, save an angle with New angle → Bring camera to me → grab,
 place, release.

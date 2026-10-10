@@ -73,7 +73,7 @@ public class LevelRendererMixin {
 
 	@WrapWithCondition(method = "submitFeatures*", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/state/level/ParticlesRenderState;submit(Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V"), require = 0)
 	private boolean vrcamera$noParticles(ParticlesRenderState particles, SubmitNodeCollector output,
-			CameraRenderState camera) {
+	                                     CameraRenderState camera) {
 		return !ChromaKey.applies();
 	}
 

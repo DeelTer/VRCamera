@@ -22,6 +22,12 @@ public final class Protocol {
 	public static final int MAX_IMAGE_SIDE = 320;
 	public static final int MAX_SHEETS_PER_MESSAGE = 48;
 	public static final float MAX_PHOTO_COOLDOWN = 3600.0F;
+	/**
+	 * Which of the rules of a server a mod keeps, see {@link Rules}: counted up when a rule is added that an
+	 * older mod would not know of. 0 is a mod from before there were any
+	 */
+	public static final int RULES_LEVEL = 1;
+	public static final int MAX_MOD_VERSION = 32;
 
 	/**
 	 * to the server
@@ -59,6 +65,7 @@ public final class Protocol {
 	public static final byte S_PLACE = 15;
 	public static final byte S_TAKE = 16;
 	public static final byte S_SHOW = 17;
+	public static final byte S_RULES = 18;
 
 	public static final int MAX_CAMERA_ID = 64;
 
@@ -88,8 +95,25 @@ public final class Protocol {
 		return new DataInputStream(new ByteArrayInputStream(message, 1, message.length - 1));
 	}
 
-	public static byte[] clientHello() {
-		return message(C_HELLO, out -> out.writeInt(VERSION));
+	/**
+	 * @param modVersion the version of the mod, for a server to tell its player by name what to update
+	 */
+	public static byte[] clientHello(String modVersion) {
+		return message(C_HELLO, out -> {
+			out.writeInt(VERSION);
+			out.writeInt(RULES_LEVEL);
+			out.writeUTF(modVersion);
+		});
+	}
+
+	/**
+	 * @return what a mod said about itself after the version of the protocol. A mod from before it said
+	 * anything keeps no rules, and has no version to name
+	 */
+	public static Mod readMod(DataInputStream in) throws IOException {
+		final int rulesLevel = in.available() >= Integer.BYTES ? in.readInt() : 0;
+		final String version = in.available() > 0 ? in.readUTF() : "";
+		return new Mod(rulesLevel, version.length() > MAX_MOD_VERSION ? version.substring(0, MAX_MOD_VERSION) : version);
 	}
 
 	public static byte[] pin(Pin pin) {
@@ -420,6 +444,21 @@ public final class Protocol {
 		});
 	}
 
+	public static byte[] rules(Rules rules) {
+		return message(S_RULES, out -> {
+			out.writeBoolean(rules.cameraAllowed);
+			out.writeBoolean(rules.throughBlocks);
+			out.writeFloat(rules.freeRange);
+		});
+	}
+
+	public static Rules readRules(DataInputStream in) throws IOException {
+		final boolean cameraAllowed = in.readBoolean();
+		final boolean throughBlocks = in.readBoolean();
+		final float freeRange = in.readFloat();
+		return new Rules(cameraAllowed, throughBlocks, freeRange > 0 && Float.isFinite(freeRange) ? freeRange : 0.0F);
+	}
+
 	public static byte[] cameraSwitch(Switched camera) {
 		return message(C_SWITCH, out -> {
 			out.writeUTF(camera.name);
@@ -536,6 +575,23 @@ public final class Protocol {
 	}
 
 	public record Limits(int version, int maxOwn, int maxPerChunk, int maxImageBytes) {
+	}
+
+	/**
+	 * what the mod of a player says about itself when it greets a server
+	 */
+	public record Mod(int rulesLevel, String version) {
+	}
+
+	/**
+	 * what a server lets the camera of a player at a screen do
+	 *
+	 * @param cameraAllowed if the player may film and take photos where they are
+	 * @param throughBlocks if a free camera goes through blocks
+	 * @param freeRange     blocks a free camera gets away from its player, 0 for as far as it likes
+	 */
+	public record Rules(boolean cameraAllowed, boolean throughBlocks, float freeRange) {
+		public static final Rules NONE = new Rules(true, true, 0.0F);
 	}
 
 	/**

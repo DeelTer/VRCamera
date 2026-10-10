@@ -302,8 +302,8 @@
 	"vrcamera.hint.aim": "RMT — Kamera nehmen",
 	"vrcamera.hint.aim.free": "RMT — nehmen · %s — entfernen",
 	"vrcamera.hint.aim.other": "RMT — nehmen · LMT — damit filmen",
-	"vrcamera.hint.hold": "Mausrad — näher/weiter",
-	"vrcamera.hint.hold.free": "Mausrad — näher/weiter · am Mob — befestigen",
+	"vrcamera.hint.hold": "Mausrad — näher/weiter · %s — umdrehen",
+	"vrcamera.hint.hold.free": "Mausrad — näher/weiter · %s — umdrehen · am Mob — befestigen",
 	"vrcamera.hint.steer": "WASD — Kamera bewegen · Mausrad — Zoom",
 	"vrcamera.message.free.full": "Kamera: höchstens %s Kameras",
 	"vrcamera.option.cameraLabelDistance": "Freie Kameras: Entfernung der Marken",
@@ -362,5 +362,10 @@
 	"vrcamera.gui.sets.import.none": "Keine kopierten Kameras in der Zwischenablage",
 	"vrcamera.message.free.lastHere": "Kamera: keine andere in der Nähe, diese bleibt",
 	"vrcamera.message.free": "Freie Kamera · %s — steuern · H — Raster",
-	"vrcamera.message.photo.wait": "Kamera: nächstes Foto in %s s"
+	"vrcamera.message.photo.wait": "Kamera: nächstes Foto in %s s",
+	"key.vrcamera.turn": "Gehaltene Kamera oder Foto drehen",
+	"vrcamera.hint.sheet.aim": "RMT — Foto nehmen",
+	"vrcamera.hint.sheet.hold": "Mausrad — näher/weiter · %s — drehen · am Block — anheften",
+	"vrcamera.message.sound": "Kamera: beide Fenster in der Aufnahme? Schalte im Aufnahmeprogramm den Ton bei einem davon ab, sonst ist er doppelt",
+	"vrcamera.message.denied": "Kamera: hier darf nicht gefilmt werden"
 }
