@@ -159,7 +159,7 @@ public final class PhotoSheet {
 	}
 
 	/**
-	 * @return if this sheet was pinned before the other one, which lies on top then. On a server by the numbers
+	 * @return if this sheet was pinned or came to lie before the other one, which lies on top then. On a server by the numbers
 	 * it gave them, for everyone to see the same one on top. One it has no number for yet is the newest
 	 */
 	public boolean pinnedBefore(PhotoSheet other) {
@@ -247,6 +247,13 @@ public final class PhotoSheet {
 	/**
 	 * @return if it is on its own and nobody decided to keep it: falling or lying somewhere
 	 */
+	/**
+	 * @return if it is pinned or lies somewhere, where another sheet can be at the very same place
+	 */
+	public boolean isLaid() {
+		return state == State.PINNED || state == State.LYING || state == State.GHOST;
+	}
+
 	public boolean isLoose() {
 		return this.state == State.FALLING || this.state == State.LYING;
 	}
@@ -447,6 +454,7 @@ public final class PhotoSheet {
 		this.rotation.set(rotation);
 		this.ghostTrail.clear();
 		this.state = State.GHOST;
+		pinOrder = ++pins;
 		this.age = DEVELOP_DELAY + DEVELOP_TIME;
 	}
 
@@ -553,6 +561,7 @@ public final class PhotoSheet {
 			this.rotation.set(flat);
 			this.velocity = Vec3.ZERO;
 			this.state = State.LYING;
+			pinOrder = ++pins;
 		}
 	}
 

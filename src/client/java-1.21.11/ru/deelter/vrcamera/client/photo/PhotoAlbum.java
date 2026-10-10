@@ -214,24 +214,25 @@ public final class PhotoAlbum {
 	}
 
 	/**
-	 * Sheets pinned over each other lie in one plane, and would flicker through each other. Each is lifted off
-	 * what it is pinned to by a hair more than the ones under it, see {@link #layer}
+	 * Sheets pinned or lying over each other are in one plane, and would flicker through each other. Each is
+	 * lifted off what it is on by a hair more than the ones under it, see {@link #layer}
 	 */
 	private static float lift(PhotoSheet sheet) {
-		return sheet.isPinned() ? sheet.layer * LAYER_GAP : 0.0F;
+		return sheet.isLaid() ? sheet.layer * LAYER_GAP : 0.0F;
 	}
 
 	/**
-	 * Says how high each pinned sheet lies: one above everything it covers that was pinned before it, so the one
-	 * pinned last is on top. Only worked out again when a sheet was pinned or came off
+	 * Says how high each sheet lies that is pinned or on the ground: one above everything it covers that was there
+	 * before it, so the one that came last is on top. Only worked out again when one of them moved
 	 */
 	private void layer() {
 		final List<PhotoSheet> pinned = new ArrayList<>();
 		long stamp = 0;
 		for (final PhotoSheet sheet : sheets) {
-			if (sheet.isPinned()) {
+			if (sheet.isLaid()) {
 				pinned.add(sheet);
-				stamp += 31L * System.identityHashCode(sheet) + 17L * sheet.remoteId() + sheet.pinOrder();
+				stamp += 31L * System.identityHashCode(sheet) + 17L * sheet.remoteId() + sheet.pinOrder() +
+						sheet.position().hashCode();
 			}
 		}
 		if (stamp == layered) {
