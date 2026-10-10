@@ -49,18 +49,18 @@ public final class PhotoPreview {
 		if (shown != null && !PhotoAlbum.INSTANCE.has(shown)) {
 			shown = null;
 		}
+		if (shown == null && wanted != null) {
+			show(mc, wanted);
+			return;
+		}
 		if (shown == null) {
-			if (wanted != null) {
-				show(mc, wanted);
-			}
-		} else if (wanted != shown) {
-			out += dt / OUT_SECONDS;
-			if (out >= 1) {
-				shown = null;
-			}
-		} else {
-			in = Math.min(1, in + dt / IN_SECONDS);
-			out = Math.max(0, out - dt / OUT_SECONDS);
+			return;
+		}
+		final boolean leaving = wanted != shown;
+		in = leaving ? in : Math.min(1, in + dt / IN_SECONDS);
+		out = Math.clamp(out + (leaving ? dt : -dt) / OUT_SECONDS, 0, 1);
+		if (out >= 1) {
+			shown = null;
 		}
 	}
 

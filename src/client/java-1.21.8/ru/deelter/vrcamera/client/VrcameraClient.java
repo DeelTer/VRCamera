@@ -1,6 +1,5 @@
 package ru.deelter.vrcamera.client;
 
-import ru.deelter.vrcamera.client.gui.PhotoPreview;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -37,6 +36,8 @@ import ru.deelter.vrcamera.client.gui.CameraSetsScreen;
 import ru.deelter.vrcamera.client.gui.ClothConfig;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
+import ru.deelter.vrcamera.client.gui.PalettesScreen;
+import ru.deelter.vrcamera.client.gui.PhotoPreview;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -301,6 +302,8 @@ public class VrcameraClient implements ClientModInitializer {
 			buttons.add(chromaButton());
 			buttons.add(Button.builder(Component.translatable("vrcamera.gui.sets"),
 					button -> Minecraft.getInstance().setScreen(new CameraSetsScreen(pauseMenu))).build());
+			buttons.add(Button.builder(Component.translatable("vrcamera.gui.palettes"),
+					button -> Minecraft.getInstance().setScreen(new PalettesScreen(pauseMenu))).build());
 			for (int slot = 0; slot < buttons.size(); slot++) {
 				final Button button = buttons.get(slot);
 				final int[] at = pauseSlot(pauseMenu, slot);

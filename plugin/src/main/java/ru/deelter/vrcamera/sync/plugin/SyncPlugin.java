@@ -19,6 +19,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
+import ru.deelter.vrcamera.sync.IndexedPng;
 import ru.deelter.vrcamera.sync.Jpeg;
 import ru.deelter.vrcamera.sync.Protocol;
 import ru.deelter.vrcamera.sync.plugin.api.CameraApi;
@@ -102,11 +103,12 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	/**
 	 * Every client near the sheet will get this picture and unpack it. So no client ever gets the bytes another
-	 * client sent: the picture is unpacked here and packed again. What comes out is a plain small JPEG, whatever
-	 * went in, without anything hidden in or appended to the file. Its size in pixels is looked at before it
-	 * is unpacked, a few bytes can claim to be a picture of a billion pixels.
+	 * client sent: the picture is unpacked here and packed again. What comes out is a plain small picture, whatever
+	 * went in, without anything hidden in or appended to the file: a PNG with a palette if it came as a PNG and
+	 * has few colours, a JPEG otherwise. Its size in pixels is looked at before it is unpacked, a few bytes can
+	 * claim to be a picture of a billion pixels.
 	 *
-	 * @return null if it is not a small JPEG
+	 * @return null if it is not a small JPEG or PNG
 	 */
 	@Nullable
 	private static CleanPicture clean(byte[] image, int maxBytes) {
@@ -117,11 +119,14 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			}
 			final ImageReader reader = readers.next();
 			BufferedImage read;
+			boolean png;
 			try {
 				reader.setInput(in);
 				final int width = reader.getWidth(0);
 				final int height = reader.getHeight(0);
-				if (!reader.getFormatName().toLowerCase().contains("jp") || width < 8 || height < 8 ||
+				final String format = reader.getFormatName().toLowerCase(Locale.ROOT);
+				png = format.contains("png");
+				if (!(png || format.contains("jp")) || width < 8 || height < 8 ||
 						width > Protocol.MAX_IMAGE_SIDE || height > Protocol.MAX_IMAGE_SIDE) {
 					return null;
 				}
@@ -132,10 +137,15 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			final BufferedImage plain = new BufferedImage(read.getWidth(), read.getHeight(),
 					BufferedImage.TYPE_INT_RGB);
 			plain.getGraphics().drawImage(read, 0, 0, null);
+			final float aspect = plain.getHeight() / (float) plain.getWidth();
+			final byte[] indexed = png ? IndexedPng.encode(plain) : null;
+			if (indexed != null && indexed.length <= maxBytes) {
+				return new CleanPicture(indexed, aspect);
+			}
 			for (final float quality : QUALITIES) {
 				final byte[] jpeg = Jpeg.encode(plain, quality);
 				if (jpeg.length <= maxBytes) {
-					return new CleanPicture(jpeg, plain.getHeight() / (float) plain.getWidth());
+					return new CleanPicture(jpeg, aspect);
 				}
 			}
 			return null;

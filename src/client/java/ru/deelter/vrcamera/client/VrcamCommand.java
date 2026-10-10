@@ -17,6 +17,8 @@ import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.ClothConfig;
 import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
+import ru.deelter.vrcamera.client.gui.PalettesScreen;
+import ru.deelter.vrcamera.client.photo.Palettes;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
@@ -32,6 +34,7 @@ import java.util.regex.Pattern;
  */
 public final class VrcamCommand {
 	private static final int DONE = 1;
+	private static final String MAP_PALETTE = "map";
 	private static final Pattern SET_NAME = Pattern.compile("[A-Za-z0-9_-]{1,24}");
 
 	public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher) {
@@ -53,6 +56,21 @@ public final class VrcamCommand {
 							source::sendFeedback);
 					return DONE;
 				})));
+		root.then(ClientCommandManager.literal("palette")
+				.executes(context -> palettes(context.getSource()))
+				.then(ClientCommandManager.literal("folder").executes(context -> {
+					Palettes.openFolder();
+					return DONE;
+				}))
+				.then(ClientCommandManager.literal("add")
+						.then(ClientCommandManager.argument("address", StringArgumentType.greedyString())
+								.executes(context -> addPalette(context.getSource(),
+										StringArgumentType.getString(context, "address")))))
+				.then(ClientCommandManager.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
+					builder.suggest(MAP_PALETTE);
+					Palettes.names().forEach(builder::suggest);
+					return builder.buildFuture();
+				}).executes(context -> palette(context.getSource(), StringArgumentType.getString(context, "name")))));
 		root.then(ClientCommandManager.literal("debug").executes(context -> {
 			DebugOverlay.toggle();
 			return DONE;
@@ -230,6 +248,40 @@ public final class VrcamCommand {
 			}
 			return DONE;
 		}));
+	}
+
+	private static int palettes(FabricClientCommandSource source) {
+		final Minecraft mc = source.getClient();
+		mc.schedule(() -> mc.setScreen(new PalettesScreen(null)));
+		return DONE;
+	}
+
+	private static int palette(FabricClientCommandSource source, String name) {
+		final String picked = name.equals(MAP_PALETTE) ? Palettes.MAP_COLORS : name;
+		if (!picked.isEmpty() && !Palettes.names().contains(picked)) {
+			source.sendError(Component.translatable("vrcamera.command.palette.unknown", name));
+			return 0;
+		}
+		Palettes.select(picked);
+		source.sendFeedback(Component.translatable("vrcamera.command.palette.set", paletteName(picked)));
+		return DONE;
+	}
+
+	private static int addPalette(FabricClientCommandSource source, String address) {
+		source.sendFeedback(Component.translatable("vrcamera.command.palette.loading"));
+		Palettes.fetch(address).whenComplete((name, error) -> Minecraft.getInstance().execute(() -> {
+			if (error != null) {
+				source.sendError(Component.translatable("vrcamera.command.palette.failed"));
+				return;
+			}
+			Palettes.select(name);
+			source.sendFeedback(Component.translatable("vrcamera.command.palette.set", paletteName(name)));
+		}));
+		return DONE;
+	}
+
+	private static Component paletteName(String name) {
+		return name.isEmpty() ? Component.translatable("vrcamera.option.photoPalette.map") : Component.literal(name);
 	}
 
 	private static int status(FabricClientCommandSource source) {

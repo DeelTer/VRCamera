@@ -1,7 +1,5 @@
 package ru.deelter.vrcamera.client.desktop;
 
-import ru.deelter.vrcamera.sync.Protocol;
-import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -34,6 +32,7 @@ import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.config.ShotConfig;
 import ru.deelter.vrcamera.client.director.Director;
 import ru.deelter.vrcamera.client.math.CamMath;
+import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.rig.Rig;
 import ru.deelter.vrcamera.client.rig.Subject;
@@ -42,6 +41,7 @@ import ru.deelter.vrcamera.client.shot.Shot;
 import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
 import ru.deelter.vrcamera.client.sync.RemoteCameras;
+import ru.deelter.vrcamera.sync.Protocol;
 
 import java.io.IOException;
 import java.nio.file.Files;

@@ -7,17 +7,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Turns the picture of a sheet into pixel art in the colours of a map of the game: few large pixels, each in one
- * of the colours a map can show, with a light pattern where two of them are mixed.
+ * Turns the picture of a sheet into pixel art: few large pixels, each in one of the colours of the palette the
+ * player picked, or of those a map of the game can show. With a pattern where two of them are mixed.
  */
 public final class PixelArt {
-
 	private static final int MOST_PIXELS = 128;
 	private static final int LEAST_PIXELS = 32;
 
 	private static final int SENT_PIXELS = 256;
 
 	private static final double DITHER = 10.0;
+	private static final double MOST_DITHER = 48.0;
 	private static final int[] PATTERN = {0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5};
 
 	private static int[] palette;
@@ -30,18 +30,17 @@ public final class PixelArt {
 	 * @param strength 0 = leave it as it is, 1 = as few pixels as it gets
 	 */
 	public static NativeImage apply(NativeImage picture, double strength) {
-		if (strength <= 0) {
-			return picture;
-		}
+		final int[] own = Palettes.current();
+		final int[] colors = own != null ? own : palette();
+		final double dither = own != null ? Math.clamp(255.0 / own.length, DITHER, MOST_DITHER) : DITHER;
 		final int width = picture.getWidth();
 		final int height = picture.getHeight();
 		final int longer = (int) Math.round(MOST_PIXELS - (MOST_PIXELS - LEAST_PIXELS) * Math.min(strength, 1.0));
 		final int cellsX = width >= height ? longer : Math.max(1, Math.round(longer * width / (float) height));
 		final int cellsY = width >= height ? Math.max(1, Math.round(longer * height / (float) width)) : longer;
-		if (cellsX >= width || cellsY >= height) {
-			return picture;
+		if (strength <= 0 || cellsX >= width || cellsY >= height) {
+			return own == null ? picture : recolor(picture, colors, dither);
 		}
-		final int[] colors = palette();
 		final int square = Math.max(1, SENT_PIXELS / longer);
 		final NativeImage art = new NativeImage(cellsX * square, cellsY * square, false);
 		try {
@@ -51,26 +50,9 @@ public final class PixelArt {
 				for (int cellX = 0; cellX < cellsX; cellX++) {
 					final int left = cellX * width / cellsX;
 					final int right = Math.max(left + 1, (cellX + 1) * width / cellsX);
-					int red = 0;
-					int green = 0;
-					int blue = 0;
-					for (int y = top; y < bottom; y++) {
-						for (int x = left; x < right; x++) {
-							final int pixel = picture.getPixel(x, y);
-							red += pixel >> 16 & 0xFF;
-							green += pixel >> 8 & 0xFF;
-							blue += pixel & 0xFF;
-						}
-					}
-					final int count = (right - left) * (bottom - top);
-					final double shift = (PATTERN[(cellY & 3) * 4 + (cellX & 3)] / 16.0 - 0.47) * DITHER;
-					final int color = 0xFF000000 | nearest(colors, shifted(red / count, shift), shifted(green / count, shift),
-							shifted(blue / count, shift));
-					for (int y = 0; y < square; y++) {
-						for (int x = 0; x < square; x++) {
-							art.setPixel(cellX * square + x, cellY * square + y, color);
-						}
-					}
+					final int[] mean = meanColor(picture, left, top, right, bottom);
+					final int color = indexed(colors, mean[0], mean[1], mean[2], cellX, cellY, dither);
+					fill(art, cellX * square, cellY * square, square, color);
 				}
 			}
 		} catch (RuntimeException e) {
@@ -79,6 +61,55 @@ public final class PixelArt {
 		}
 		picture.close();
 		return art;
+	}
+
+	/**
+	 * gives every pixel of a picture a colour of the palette, without making the pixels larger
+	 */
+	private static NativeImage recolor(NativeImage picture, int[] colors, double dither) {
+		for (int y = 0; y < picture.getHeight(); y++) {
+			for (int x = 0; x < picture.getWidth(); x++) {
+				final int pixel = picture.getPixel(x, y);
+				picture.setPixel(x, y, indexed(colors, pixel >> 16 & 0xFF, pixel >> 8 & 0xFF, pixel & 0xFF, x, y,
+						dither));
+			}
+		}
+		return picture;
+	}
+
+	/**
+	 * @return red, green and blue of a part of a picture, evened out over it
+	 */
+	private static int[] meanColor(NativeImage picture, int left, int top, int right, int bottom) {
+		int red = 0;
+		int green = 0;
+		int blue = 0;
+		for (int y = top; y < bottom; y++) {
+			for (int x = left; x < right; x++) {
+				final int pixel = picture.getPixel(x, y);
+				red += pixel >> 16 & 0xFF;
+				green += pixel >> 8 & 0xFF;
+				blue += pixel & 0xFF;
+			}
+		}
+		final int count = (right - left) * (bottom - top);
+		return new int[]{red / count, green / count, blue / count};
+	}
+
+	private static void fill(NativeImage art, int left, int top, int size, int color) {
+		for (int y = 0; y < size; y++) {
+			for (int x = 0; x < size; x++) {
+				art.setPixel(left + x, top + y, color);
+			}
+		}
+	}
+
+	/**
+	 * @return the colour of the palette for a pixel, with the pattern that mixes two of them over a few pixels
+	 */
+	private static int indexed(int[] colors, int red, int green, int blue, int x, int y, double dither) {
+		final double shift = (PATTERN[(y & 3) * 4 + (x & 3)] / 16.0 - 0.47) * dither;
+		return 0xFF000000 | nearest(colors, shifted(red, shift), shifted(green, shift), shifted(blue, shift));
 	}
 
 	private static int shifted(int value, double shift) {
@@ -91,11 +122,11 @@ public final class PixelArt {
 		for (final int color : colors) {
 			final int otherRed = color >> 16 & 0xFF;
 			final int mean = (red + otherRed) / 2;
-			final long dr = red - otherRed;
-			final long dg = green - (color >> 8 & 0xFF);
-			final long db = blue - (color & 0xFF);
-
-			final long distance = ((512 + mean) * dr * dr >> 8) + 4 * dg * dg + ((767 - mean) * db * db >> 8);
+			final long redOff = red - otherRed;
+			final long greenOff = green - (color >> 8 & 0xFF);
+			final long blueOff = blue - (color & 0xFF);
+			final long distance = ((512 + mean) * redOff * redOff >> 8) + 4 * greenOff * greenOff +
+					((767 - mean) * blueOff * blueOff >> 8);
 			if (distance < bestDistance) {
 				bestDistance = distance;
 				best = color;
