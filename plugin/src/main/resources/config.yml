@@ -70,12 +70,15 @@ cameras:
   max-watchers: 24
 
 mod:
-  # A mod older than 2.1.3 does not know the rules above: its free camera flies through blocks, and it films
-  # where filming is not allowed. true: players with such a mod are kicked with the message below. false: they
-  # are only told. Players with the permission vrcamera.camera.unrestricted are let be. This holds back players
-  # who did not update, not ones who changed their mod to lie about it
+  # The oldest version of the mod players may have. An older one does not know the rules above: its free camera
+  # flies through blocks, and it films where filming is not allowed. Only the numbers count, 2.1.4+26.2 is 2.1.4
+  min-version: "2.1.3"
+  # true: players with an older mod are kicked with the message below. false: they are only told. Players with
+  # the permission vrcamera.camera.unrestricted are let be. This holds back players who did not update, not
+  # ones who changed their mod to lie about it
   kick-outdated: true
-  outdated-message: "Update the VRCamera mod to 2.1.3 or newer to play here"
+  # %min% is the version above
+  outdated-message: "Update the VRCamera mod to %min% or newer to play here"
 
 network:
   # pictures sent to one player per second. The channel is shared with everything else the server sends

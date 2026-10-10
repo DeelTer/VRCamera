@@ -64,6 +64,7 @@ public final class PhotoSheet {
 	private static final double HOVER_TIME = 6.0;
 	private static final double DEVELOP_DELAY = 0.8;
 	private static final double DEVELOP_TIME = 5.0;
+	private static long pins;
 	public final Identifier texture;
 	public final int textureSlot;
 	/**
@@ -94,6 +95,15 @@ public final class PhotoSheet {
 	 * picture, which was not even fetched
 	 */
 	public boolean placeholder;
+	/**
+	 * if this player made it: took the photo or loaded the picture. Only what is their own is theirs to
+	 * throw away
+	 */
+	public boolean own = true;
+	/**
+	 * how many pinned sheets lie under it, see PhotoAlbum
+	 */
+	int layer;
 	private State state = State.PRINTING;
 	private double age;
 	private Vec3 position = Vec3.ZERO;
@@ -104,6 +114,7 @@ public final class PhotoSheet {
 	private long looseId;
 	private Vec3 sharedPosition;
 	private long remoteId;
+	private long pinOrder;
 	private boolean awaitingServer;
 	private boolean removable = true;
 	private BlockPos support = BlockPos.ZERO;
@@ -157,7 +168,26 @@ public final class PhotoSheet {
 		this.position = position;
 		this.rotation.set(rotation);
 		state = State.PINNED;
+		pinOrder = ++pins;
 		age = DEVELOP_DELAY + DEVELOP_TIME;
+	}
+
+	/**
+	 * @return if this sheet was pinned before the other one, which lies on top then. On a server by the numbers
+	 * it gave them, for everyone to see the same one on top. One it has no number for yet is the newest
+	 */
+	public boolean pinnedBefore(PhotoSheet other) {
+		if (remoteId != 0 && other.remoteId != 0) {
+			return remoteId < other.remoteId;
+		}
+		if (remoteId != 0 || other.remoteId != 0) {
+			return remoteId != 0;
+		}
+		return pinOrder < other.pinOrder;
+	}
+
+	public long pinOrder() {
+		return pinOrder;
 	}
 
 	public long remoteId() {
@@ -244,6 +274,13 @@ public final class PhotoSheet {
 		}
 
 		return !placeholder && (isLoose() || isGhost() || (state == State.HELD && this.hand != hand));
+	}
+
+	/**
+	 * @return if there is a picture on it to show large, and nobody has it in a hand
+	 */
+	public boolean canPreview() {
+		return !placeholder && (isPinned() || isLoose() || isGhost());
 	}
 
 	public int hand() {
@@ -492,6 +529,7 @@ public final class PhotoSheet {
 		position = flat.add(up.x * half, up.y * half, up.z * half);
 		velocity = Vec3.ZERO;
 		this.state = State.PINNED;
+		pinOrder = ++pins;
 		return true;
 	}
 

@@ -1,5 +1,10 @@
 package ru.deelter.vrcamera.client.photo;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.ArrayList;
+import org.joml.Vector3f;
+import ru.deelter.vrcamera.client.gui.PhotoPreview;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -58,6 +63,14 @@ import java.util.function.Consumer;
  */
 public final class PhotoAlbum {
 	public static final PhotoAlbum INSTANCE = new PhotoAlbum();
+	/**
+	 * for {@link #pointedAt}: every sheet with a picture counts, not only the ones a hand could take
+	 */
+	public static final int ANY_HAND = -1;
+	private static final int LAYERS = 24;
+	private static final float LAYER_GAP = 0.0015F;
+	private static final float SAME_WAY = 0.99F;
+	private static final float SAME_PLANE = 0.05F;
 
 	private static final double MAX_FRAME_TIME = 0.1;
 
@@ -82,6 +95,7 @@ public final class PhotoAlbum {
 			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
+	private long layered;
 	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
 	private long frameNanos;
 	private int nextTexture;
@@ -172,6 +186,7 @@ public final class PhotoAlbum {
 				sheet.position().z - viewPosition.z);
 
 		poseStack.mulPose(new Matrix4f().rotation(sheet.rotation()));
+		poseStack.translate(0.0F, 0.0F, lift(sheet));
 
 		output.submitCustomGeometry(poseStack, RenderTypes.entityCutoutCull(sheet.texture), (pose, consumer) -> {
 			vertex(consumer, pose, -half, bottom, 0, 0, 1, light, 1.0F);
@@ -195,6 +210,72 @@ public final class PhotoAlbum {
 			});
 		}
 		poseStack.popPose();
+	}
+
+	/**
+	 * Sheets pinned over each other lie in one plane, and would flicker through each other. Each is lifted off
+	 * what it is pinned to by a hair more than the ones under it, see {@link #layer}
+	 */
+	private static float lift(PhotoSheet sheet) {
+		return sheet.isPinned() ? sheet.layer * LAYER_GAP : 0.0F;
+	}
+
+	/**
+	 * Says how high each pinned sheet lies: one above everything it covers that was pinned before it, so the one
+	 * pinned last is on top. Only worked out again when a sheet was pinned or came off
+	 */
+	private void layer() {
+		final List<PhotoSheet> pinned = new ArrayList<>();
+		long stamp = 0;
+		for (final PhotoSheet sheet : sheets) {
+			if (sheet.isPinned()) {
+				pinned.add(sheet);
+				stamp += 31L * System.identityHashCode(sheet) + 17L * sheet.remoteId() + sheet.pinOrder();
+			}
+		}
+		if (stamp == layered) {
+			return;
+		}
+		layered = stamp;
+		pinned.sort((one, other) -> one == other ? 0 : one.pinnedBefore(other) ? -1 : 1);
+		for (int index = 0; index < pinned.size(); index++) {
+			final PhotoSheet sheet = pinned.get(index);
+			int layer = 0;
+			for (int under = 0; under < index && layer < LAYERS; under++) {
+				final PhotoSheet lower = pinned.get(under);
+				if (lower.layer >= layer && overlap(lower, sheet)) {
+					layer = lower.layer + 1;
+				}
+			}
+			sheet.layer = Math.min(layer, LAYERS);
+		}
+	}
+
+	/**
+	 * @return if two pinned sheets lie in one plane and one covers a part of the other
+	 */
+	private static boolean overlap(PhotoSheet one, PhotoSheet other) {
+		final double reach = PhotoSheet.WIDTH + one.height() + other.height();
+		if (one.position().distanceToSqr(other.position()) > reach * reach) {
+			return false;
+		}
+		final Quaternionf turned = one.rotation();
+		final Quaternionf otherTurned = other.rotation();
+		final Vector3f front = turned.transform(new Vector3f(0, 0, 1));
+		if (front.dot(otherTurned.transform(new Vector3f(0, 0, 1))) < SAME_WAY) {
+			return false;
+		}
+		final Vector3f apart = other.center().subtract(one.center()).toVector3f();
+		if (Math.abs(apart.dot(front)) > SAME_PLANE) {
+			return false;
+		}
+		final Vector3f right = turned.transform(new Vector3f(1, 0, 0));
+		final Vector3f up = turned.transform(new Vector3f(0, 1, 0));
+		final Vector3f otherRight = otherTurned.transform(new Vector3f(1, 0, 0)).mul(PhotoSheet.WIDTH / 2.0F);
+		final Vector3f otherUp = otherTurned.transform(new Vector3f(0, 1, 0)).mul(other.height() / 2.0F);
+		return Math.abs(apart.dot(right)) < PhotoSheet.WIDTH / 2.0F + Math.abs(right.dot(otherRight)) +
+				Math.abs(right.dot(otherUp)) &&
+				Math.abs(apart.dot(up)) < one.height() / 2.0F + Math.abs(up.dot(otherRight)) + Math.abs(up.dot(otherUp));
 	}
 
 	private static void vertex(
@@ -285,6 +366,7 @@ public final class PhotoAlbum {
 		final PhotoSheet sheet = add(picture, aspect, null);
 		sheet.restore(position, rotation);
 		sheet.setRemote(id, removable);
+		sheet.own = false;
 		sheet.packed = packed;
 		return sheet;
 	}
@@ -532,7 +614,9 @@ public final class PhotoAlbum {
 		}
 		unsaved = false;
 		final List<PhotoStore.Pinned> pinned = new ArrayList<>(elsewhere);
-		for (final PhotoSheet sheet : sheets) {
+		final List<PhotoSheet> inOrder = new ArrayList<>(sheets);
+		inOrder.sort(Comparator.comparingLong(PhotoSheet::pinOrder));
+		for (final PhotoSheet sheet : inOrder) {
 			if (!sheet.isPinned() || sheet.file == null) {
 				continue;
 			}
@@ -583,7 +667,7 @@ public final class PhotoAlbum {
 		for (final PhotoSheet sheet : sheets) {
 			final Vec3 toSheet = sheet.center().subtract(eyes);
 			final double along = toSheet.dot(look);
-			if (along > 0 && along < nearest && sheet.canGrab(hand) &&
+			if (along > 0 && along < nearest && (hand == ANY_HAND ? sheet.canPreview() : sheet.canGrab(hand)) &&
 					toSheet.subtract(look.scale(along)).length() < aim) {
 				nearest = along;
 				pointedAt = sheet;
@@ -610,6 +694,27 @@ public final class PhotoAlbum {
 			CameraEffects.takenOff(level, sheet.center());
 			save();
 		}
+	}
+
+	/**
+	 * The player throws away the sheet they hold, for good. Only one they made themselves.
+	 *
+	 * @return null if the hand is empty, otherwise if the sheet is gone
+	 */
+	@Nullable
+	public Boolean discard(int hand) {
+		final PhotoSheet sheet = held(hand);
+		if (sheet == null) {
+			return null;
+		}
+		if (!sheet.own) {
+			return false;
+		}
+		if (level != null) {
+			CameraEffects.takenOff(level, sheet.center());
+		}
+		remove(sheets.indexOf(sheet), true);
+		return true;
 	}
 
 	public boolean isHolding(int hand) {
@@ -657,6 +762,7 @@ public final class PhotoAlbum {
 			return;
 		}
 		SheetReach.INSTANCE.frame(mc, dt);
+		PhotoPreview.INSTANCE.frame(mc, dt);
 		update(mc.player.level(), SheetReach.INSTANCE, mc.isPaused() ? 0 : dt);
 		final DesktopCamera.Pose lens = DesktopCamera.INSTANCE.lens();
 		if (lens != null) {
@@ -668,6 +774,7 @@ public final class PhotoAlbum {
 		if (level != this.level) {
 			enter(level);
 		}
+		layer();
 		for (int i = sheets.size() - 1; i >= 0; i--) {
 			final PhotoSheet sheet = sheets.get(i);
 			if (sheet.hand() >= 0 && hands != null) {
@@ -741,6 +848,7 @@ public final class PhotoAlbum {
 		}
 		final PhotoSheet sheet = add(picture, aspect, null);
 		sheet.makeGhost(looseId, position, rotation);
+		sheet.own = false;
 		sheet.packed = packed;
 		return sheet;
 	}

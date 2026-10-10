@@ -158,6 +158,12 @@ public final class ConfigScreen {
 				0.05, "%.2f", value -> config.photoPixels = value));
 		photo.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
 				value -> config.photoSounds = value));
+		photo.addEntry(screen.toggle("photoPreview", config.photoPreview, defaults.photoPreview,
+				value -> config.photoPreview = value));
+		photo.addEntry(screen.slider("photoPreviewSeconds", config.photoPreviewSeconds, defaults.photoPreviewSeconds,
+				0, 3, 0.1, "%.1f s", value -> config.photoPreviewSeconds = value));
+		photo.addEntry(screen.slider("photoPreviewDistance", config.photoPreviewDistance,
+				defaults.photoPreviewDistance, 1, 8, 0.5, "%.1f", value -> config.photoPreviewDistance = value));
 		photo.addEntry(screen.toggle("photoClipboard", config.photoClipboard, defaults.photoClipboard,
 				value -> config.photoClipboard = value));
 		photo.addEntry(screen.toggle("showOthersPhotos", config.showOthersPhotos, defaults.showOthersPhotos,

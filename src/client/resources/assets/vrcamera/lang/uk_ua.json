@@ -365,7 +365,15 @@
 	"vrcamera.message.photo.wait": "Камера: наступне фото через %s с",
 	"key.vrcamera.turn": "Повернути камеру або фото в руках",
 	"vrcamera.hint.sheet.aim": "ПКМ — взяти фото",
-	"vrcamera.hint.sheet.hold": "Колесо — ближче/далі · %s — повернути · біля блока — прикріпити",
+	"vrcamera.hint.sheet.hold": "Колесо — далі · %s — повернути · %s — викинути · біля блока — прикріпити",
 	"vrcamera.message.sound": "Камера: записуєте обидва вікна? Вимкніть захоплення звуку в одного з них у програмі запису, інакше звук подвоїться",
-	"vrcamera.message.denied": "Камера: тут знімати не можна"
+	"vrcamera.message.denied": "Камера: тут знімати не можна",
+	"vrcamera.option.photoPreview": "Попередній перегляд фото",
+	"vrcamera.option.photoPreview.tooltip": "Без VR: затримайте погляд на фото — воно великим з'явиться збоку екрана. Відведете погляд — зникне. У картинку камери не потрапляє",
+	"vrcamera.option.photoPreviewSeconds": "Дивитися на фото",
+	"vrcamera.option.photoPreviewSeconds.tooltip": "Скільки дивитися на фото, перш ніж воно з'явиться великим",
+	"vrcamera.message.photo.discarded": "Фото викинуто",
+	"vrcamera.message.photo.others": "Камера: це не ваше фото, викинути не можна",
+	"vrcamera.option.photoPreviewDistance": "Перегляд з відстані",
+	"vrcamera.option.photoPreviewDistance.tooltip": "З якої відстані в блоках фото, на яке ви дивитеся, показується великим"
 }

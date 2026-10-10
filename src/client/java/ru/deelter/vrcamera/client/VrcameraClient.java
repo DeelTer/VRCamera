@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.client;
 
+import ru.deelter.vrcamera.client.gui.PhotoPreview;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -211,7 +212,10 @@ public class VrcameraClient implements ClientModInitializer {
 				}));
 
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath(Vrcamera.MOD_ID, "debug"),
-				(graphics, deltaTracker) -> DebugOverlay.extract(graphics));
+				(graphics, deltaTracker) -> {
+					DebugOverlay.extract(graphics);
+					PhotoPreview.INSTANCE.draw(graphics);
+				});
 
 		ScreenEvents.AFTER_INIT.register((mc, screen, width, height) -> {
 			if (screen instanceof PauseScreen) {
