@@ -872,9 +872,10 @@ public final class PhotoAlbum {
 	 * Puts a picture from the internet on a sheet and drops it in front of the player. The address is opened
 	 * by this client alone.
 	 *
+	 * @param inPalette if it is put in the palette and the pixels of the player, the way a photo is
 	 * @param feedback told how it went, on the game thread
 	 */
-	public void loadCustom(String address, Consumer<Component> feedback) {
+	public void loadCustom(String address, boolean inPalette, Consumer<Component> feedback) {
 		if (level == null || loadingCustom) {
 			feedback.accept(Component.translatable("vrcamera.message.load.busy"));
 			return;
@@ -902,7 +903,8 @@ public final class PhotoAlbum {
 			if (player == null || this.level != level) {
 				return;
 			}
-			final NativeImage pixels = image(picture);
+			final NativeImage pixels = inPalette ? PixelArt.apply(image(picture), CameraConfig.current().photoPixels) :
+					image(picture);
 			String file = "custom_" + System.currentTimeMillis() + ".png";
 			try {
 				PhotoStore.prepare(cache);
@@ -919,7 +921,7 @@ public final class PhotoAlbum {
 			forward = forward.lengthSqr() < 1.0E-4 ? new Vec3(0, 0, 1) : forward.normalize();
 			sheet.toss(player.getEyePosition().add(forward.scale(0.7)),
 					new Quaternionf().rotationY((float) Math.atan2(-forward.x, -forward.z)), forward.scale(1.5));
-			PhotoSync.INSTANCE.shareLoose(sheet, picture);
+			PhotoSync.INSTANCE.shareLoose(sheet, inPalette ? pixels(sheet) : picture);
 			feedback.accept(Component.translatable("vrcamera.message.load.done"));
 		}, Minecraft.getInstance());
 	}

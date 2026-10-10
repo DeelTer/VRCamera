@@ -19,6 +19,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
@@ -42,8 +43,16 @@ public final class Palettes {
 	private static final String[] KINDS = {".hex", ".gpl", ".pal", ".txt"};
 	public static final String BUILT_IN = "justparchment8";
 	private static final String SITE = "https://lospec.com/palette-list";
-	private static final String[] BUILT_IN_COLORS = {"292418", "524839", "73654a", "8b7d62", "a48d6a", "bda583",
-			"cdba94", "e6ceac"};
+	/**
+	 * the palettes the folder starts with, from lospec.com: JustParchment8 by JustJimmy, Carob Treat by
+	 * SurrealEmber, Gothic Bit by HiroHi and smoky 09 by green guy
+	 */
+	private static final Map<String, List<String>> STARTERS = Map.of(
+			BUILT_IN, List.of("292418", "524839", "73654a", "8b7d62", "a48d6a", "bda583", "cdba94", "e6ceac"),
+			"carob-treat", List.of("271a1e", "432c2a", "6b4439", "906954", "b4936e", "d6bd94", "e3e2c8"),
+			"gothic-bit", List.of("0e0e12", "1a1a24", "333346", "535373", "8080a4", "a6a6bf", "c1c1d2", "e6e6ec"),
+			"smoky-09", List.of("fafafa", "d4d8e0", "acacac", "918b8c", "6b615e", "3b342e", "24211a", "0e0d0a",
+					"030201"));
 	private static final int MOST_COLORS = 256;
 	private static final int FETCH_SECONDS = 15;
 	private static final int MOST_ANSWER = 100_000;
@@ -205,7 +214,7 @@ public final class Palettes {
 	}
 
 	/**
-	 * makes the folder, with one palette in it to start with: JustParchment8 by JustJimmy
+	 * makes the folder, with the {@link #STARTERS} in it
 	 */
 	private static void prepare() {
 		if (Files.isDirectory(FOLDER)) {
@@ -213,7 +222,9 @@ public final class Palettes {
 		}
 		try {
 			Files.createDirectories(FOLDER);
-			Files.write(FOLDER.resolve(BUILT_IN + KINDS[0]), List.of(BUILT_IN_COLORS));
+			for (final Map.Entry<String, List<String>> starter : STARTERS.entrySet()) {
+				Files.write(FOLDER.resolve(starter.getKey() + KINDS[0]), starter.getValue());
+			}
 		} catch (IOException | RuntimeException e) {
 			Vrcamera.LOGGER.warn("VRCamera: could not make {}", FOLDER, e);
 		}

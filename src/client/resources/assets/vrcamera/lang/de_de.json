@@ -378,7 +378,7 @@
 	"vrcamera.option.photoPreviewDistance.tooltip": "Aus wie vielen Blöcken Entfernung ein angesehenes Foto groß gezeigt wird",
 	"vrcamera.option.photoPalette": "Foto: Farben",
 	"vrcamera.option.photoPalette.tooltip": "Die Palette, in der neue Fotos auf Blättern gezeichnet werden. Der Knopf „Fotopalette“ im Pausenmenü oder /vrcam palette zeigt alle mit ihren Farben und lädt neue von lospec.com.",
-	"vrcamera.option.photoPalette.map": "Wie auf einer Minecraft-Karte",
+	"vrcamera.option.photoPalette.map": "Normale Farben",
 	"vrcamera.command.palette.set": "Fotopalette: %s",
 	"vrcamera.command.palette.unknown": "Keine Palette namens %s, siehe /vrcam palette",
 	"vrcamera.command.palette.loading": "Palette wird geladen…",
@@ -391,5 +391,6 @@
 	"vrcamera.gui.palettes.get": "Herunterladen",
 	"vrcamera.gui.palettes.folder": "Ordner",
 	"vrcamera.gui.palettes.help": "Eigene Dateien (HEX, GPL, PAL, TXT) kommen in den Ordner",
-	"vrcamera.gui.palettes.find": "Palette suchen"
+	"vrcamera.gui.palettes.find": "Palette suchen",
+	"vrcamera.command.load.palette": "in deiner Fotopalette und Pixelgröße"
 }

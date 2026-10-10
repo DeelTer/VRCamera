@@ -2,6 +2,7 @@ package ru.deelter.vrcamera.client.gui;
 
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.ImageWidget;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -9,14 +10,19 @@ import net.minecraft.network.chat.MutableComponent;
 import ru.deelter.vrcamera.client.photo.Palettes;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
- * The palettes of the photos as buttons, each with its colours on it: picking one, getting one from lospec.com by
+ * The palettes of the photos as buttons, each with its colours on it, and a photo in those of the one the mouse
+ * is over: picking one, getting one from lospec.com by
  * its link, looking for one there, and opening the folder they are in. The same as the command /vrcam palette does.
  */
 public class PalettesScreen extends Screen {
-	private static final int WIDTH = 280;
+	private static final int WIDTH = 240;
+	private static final int MOST_SAMPLE = 220;
+	private static final int LEAST_SAMPLE = 90;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int GAP = 4;
 	private static final int ROWS = 5;
@@ -26,11 +32,13 @@ public class PalettesScreen extends Screen {
 
 	private final Screen parent;
 	private final List<String> names = new ArrayList<>();
+	private final Map<Button, String> rows = new HashMap<>();
 	private EditBox link;
 	private StringWidget status;
 	private Component said = HELP;
 	private String typed = "";
 	private int page = -1;
+	private String sampled;
 	private boolean open = true;
 
 	public PalettesScreen(Screen parent) {
@@ -53,18 +61,26 @@ public class PalettesScreen extends Screen {
 		}
 		page = Math.min(page, pages - 1);
 
-		final int x = width / 2 - WIDTH / 2;
-		final int half = (WIDTH - GAP) / 2;
+		final int room = width - WIDTH - GAP * 6;
+		final int sampleWidth = room < LEAST_SAMPLE ? 0 : Math.min(MOST_SAMPLE, room);
+		final int x = (width - WIDTH - (sampleWidth > 0 ? sampleWidth + GAP * 2 : 0)) / 2;
 		final int row = BUTTON_HEIGHT + GAP;
 		int y = Math.max(4, height / 2 - 122);
 		addRenderableWidget(new StringWidget(x, y, WIDTH, BUTTON_HEIGHT, title, font));
 		y += row;
+		rows.clear();
 		for (int index = page * ROWS; index < Math.min(names.size(), (page + 1) * ROWS); index++) {
 			final String name = names.get(index);
-			addRenderableWidget(Button.builder(label(name), button -> {
+			rows.put(addRenderableWidget(Button.builder(label(name), button -> {
 				Palettes.select(name);
 				say(Component.translatable("vrcamera.gui.palettes.picked", name(name)));
-			}).bounds(x, y + (index - page * ROWS) * row, WIDTH, BUTTON_HEIGHT).build());
+			}).bounds(x, y + (index - page * ROWS) * row, WIDTH, BUTTON_HEIGHT).build()), name);
+		}
+		sampled = sampleWidth > 0 && PaletteSample.show(minecraft, Palettes.selected()) ? Palettes.selected() : null;
+		if (sampled != null) {
+			final int sampleHeight = Math.round(sampleWidth * PaletteSample.ASPECT);
+			addRenderableWidget(ImageWidget.texture(sampleWidth, sampleHeight, PaletteSample.TEXTURE, sampleWidth,
+					sampleHeight)).setPosition(x + WIDTH + GAP * 2, y);
 		}
 		y += ROWS * row;
 		if (pages > 1) {
@@ -97,6 +113,30 @@ public class PalettesScreen extends Screen {
 		y += row;
 		addRenderableWidget(Button.builder(Component.translatable("gui.done"), button -> onClose())
 				.bounds(x, Math.min(height - BUTTON_HEIGHT - GAP, y), WIDTH, BUTTON_HEIGHT).build());
+	}
+
+	/**
+	 * the picture shows the palette the mouse is over, the picked one otherwise
+	 */
+	@Override
+	public void tick() {
+		super.tick();
+		if (sampled == null) {
+			return;
+		}
+		String looked = Palettes.selected();
+		for (final Map.Entry<Button, String> row : rows.entrySet()) {
+			looked = row.getKey().isHovered() ? row.getValue() : looked;
+		}
+		if (!looked.equals(sampled) && PaletteSample.show(minecraft, looked)) {
+			sampled = looked;
+		}
+	}
+
+	@Override
+	public void removed() {
+		super.removed();
+		PaletteSample.close(minecraft);
 	}
 
 	@Override

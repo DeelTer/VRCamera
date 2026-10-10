@@ -378,7 +378,7 @@
 	"vrcamera.option.photoPreviewDistance.tooltip": "A quantos blocos de distância a foto que você olha aparece grande",
 	"vrcamera.option.photoPalette": "Foto: cores",
 	"vrcamera.option.photoPalette.tooltip": "A paleta em que as fotos novas nas folhas são desenhadas. O botão \"Paleta das fotos\" no menu de pausa ou /vrcam palette mostra todas com suas cores e baixa novas do lospec.com.",
-	"vrcamera.option.photoPalette.map": "Como em um mapa do Minecraft",
+	"vrcamera.option.photoPalette.map": "Cores normais",
 	"vrcamera.command.palette.set": "Paleta das fotos: %s",
 	"vrcamera.command.palette.unknown": "Não há paleta chamada %s, veja /vrcam palette",
 	"vrcamera.command.palette.loading": "Baixando a paleta…",
@@ -391,5 +391,6 @@
 	"vrcamera.gui.palettes.get": "Baixar",
 	"vrcamera.gui.palettes.folder": "Pasta",
 	"vrcamera.gui.palettes.help": "Seus arquivos (HEX, GPL, PAL, TXT) vão na pasta",
-	"vrcamera.gui.palettes.find": "Achar paleta"
+	"vrcamera.gui.palettes.find": "Achar paleta",
+	"vrcamera.command.load.palette": "na sua paleta de fotos e tamanho de pixel"
 }
