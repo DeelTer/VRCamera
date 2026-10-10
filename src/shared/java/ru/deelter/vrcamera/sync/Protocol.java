@@ -169,7 +169,8 @@ public final class Protocol {
 
 	/**
 	 * @param photoCooldown seconds this player has to wait between two photos, 0 for none. At the end of the
-	 *                      message: a mod from before there was such a thing does not read that far
+	 *                      message: a mod from before there was such a thing does not read that far. After it, that
+	 *                      this server takes pictures as {@link IndexedPng} too
 	 */
 	public static byte[] serverHello(Limits limits, float photoCooldown) {
 		return message(S_HELLO, out -> {
@@ -178,6 +179,7 @@ public final class Protocol {
 			out.writeInt(limits.maxPerChunk);
 			out.writeInt(limits.maxImageBytes);
 			out.writeFloat(photoCooldown);
+			out.writeBoolean(true);
 		});
 	}
 
@@ -187,6 +189,14 @@ public final class Protocol {
 	public static float readPhotoCooldown(DataInputStream in) throws IOException {
 		final float seconds = in.available() >= Float.BYTES ? in.readFloat() : 0.0F;
 		return seconds > 0.0F && seconds <= MAX_PHOTO_COOLDOWN ? seconds : 0.0F;
+	}
+
+	/**
+	 * @return if the server takes a picture of few colours as {@link IndexedPng}, after {@link #readPhotoCooldown}.
+	 * One that does not say only takes JPEG
+	 */
+	public static boolean readTakesIndexed(DataInputStream in) throws IOException {
+		return in.available() > 0 && in.readBoolean();
 	}
 
 	@NotNull

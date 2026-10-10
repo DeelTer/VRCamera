@@ -1,6 +1,7 @@
 package ru.deelter.vrcamera.client.sync;
 
 import org.jetbrains.annotations.NotNull;
+import ru.deelter.vrcamera.sync.IndexedPng;
 import ru.deelter.vrcamera.sync.Jpeg;
 import ru.deelter.vrcamera.sync.Protocol;
 
@@ -17,8 +18,8 @@ import java.util.Iterator;
  * Packs the picture of a sheet for the network and unpacks what comes from it. Plain Java, safe to run off the
  * game thread.
  * <p>
- * JPEG and small: a sheet is a hand wide in the world, and the channel it travels on is shared with the game and
- * every other mod.
+ * Small, and a JPEG unless it is pixel art, see {@link IndexedPng}: a sheet is a hand wide in the world, and
+ * the channel it travels on is shared with the game and every other mod.
  */
 public final class PhotoCodec {
 	private static final int SENT_WIDTH = 256;
@@ -29,12 +30,22 @@ public final class PhotoCodec {
 
 	/**
 	 * @param maxBytes what the server takes
-	 * @return the picture as a JPEG no larger than that
+	 * @param indexed  if the server takes a PNG with a palette
+	 * @return the picture no larger than that: one of few colours as a PNG with a palette where that is taken,
+	 * as a JPEG otherwise
 	 */
-	public static byte[] pack(Picture picture, int maxBytes) throws IOException {
+	public static byte[] pack(Picture picture, int maxBytes, boolean indexed) throws IOException {
 		final BufferedImage source = new BufferedImage(picture.width, picture.height, BufferedImage.TYPE_INT_RGB);
 		source.setRGB(0, 0, picture.width, picture.height, picture.argb, 0, picture.width);
 		int width = Math.min(SENT_WIDTH, picture.width);
+		if (indexed) {
+			final int height = Math.max(1, Math.round(width * picture.height / (float) picture.width));
+			final byte[] packed = height > Protocol.MAX_IMAGE_SIDE ? null : IndexedPng.encode(
+					scale(source, width, height, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR));
+			if (packed != null && packed.length <= maxBytes) {
+				return packed;
+			}
+		}
 
 		for (int attempt = 0; attempt < 4; attempt++) {
 			int height = Math.max(1, Math.round(width * picture.height / (float) picture.width));
@@ -43,7 +54,8 @@ public final class PhotoCodec {
 				scaledWidth = Math.max(1, Math.round(width * Protocol.MAX_IMAGE_SIDE / (float) height));
 				height = Protocol.MAX_IMAGE_SIDE;
 			}
-			final BufferedImage scaled = scale(source, scaledWidth, height);
+			final BufferedImage scaled = scale(source, scaledWidth, height,
+					RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			for (final float quality : QUALITIES) {
 				final byte[] packed = Jpeg.encode(scaled, quality);
 				if (packed.length <= maxBytes) {
@@ -87,13 +99,13 @@ public final class PhotoCodec {
 		}
 	}
 
-	private static BufferedImage scale(BufferedImage source, int width, int height) {
+	private static BufferedImage scale(BufferedImage source, int width, int height, Object smoothing) {
 		if (source.getWidth() == width && source.getHeight() == height) {
 			return source;
 		}
 		final BufferedImage scaled = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
 		final Graphics2D graphics = scaled.createGraphics();
-		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, smoothing);
 		graphics.drawImage(source, 0, 0, width, height, null);
 		graphics.dispose();
 		return scaled;

@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import ru.deelter.vrcamera.client.config.*;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
+import ru.deelter.vrcamera.client.photo.Palettes;
 import ru.deelter.vrcamera.client.shot.ShotType;
 
 import java.util.*;
@@ -156,6 +157,7 @@ public final class ConfigScreen {
 				0.05, "%.2f", value -> config.photoBrightness = value));
 		photo.addEntry(screen.slider("photoPixels", config.photoPixels, defaults.photoPixels, 0, 1,
 				0.05, "%.2f", value -> config.photoPixels = value));
+		photo.addEntry(screen.palette(config));
 		photo.addEntry(screen.toggle("photoSounds", config.photoSounds, defaults.photoSounds,
 				value -> config.photoSounds = value));
 		photo.addEntry(screen.toggle("photoPreview", config.photoPreview, defaults.photoPreview,
@@ -319,6 +321,24 @@ public final class ConfigScreen {
 				.setNameProvider(option -> Component.translatable(key + "." + option.name().toLowerCase(Locale.ROOT)))
 				.setTooltipSupplier(help(key + ".tooltip"))
 				.setSaveConsumer(save)
+				.build();
+	}
+
+	private AbstractConfigListEntry<?> palette(CameraConfig config) {
+		final String key = "vrcamera.option.photoPalette";
+		final List<String> names = new ArrayList<>();
+		names.add(Palettes.MAP_COLORS);
+		names.addAll(Palettes.names());
+		final String current = Palettes.selected();
+		if (!names.contains(current)) {
+			names.add(current);
+		}
+		return entries.startSelector(Component.translatable(key), names.toArray(new String[0]), current)
+				.setDefaultValue(Palettes.BUILT_IN)
+				.setNameProvider(name -> name.isEmpty() ? Component.translatable(key + ".map") :
+						Component.literal(name))
+				.setTooltipSupplier(help(key + ".tooltip"))
+				.setSaveConsumer(name -> config.photoPalette = name)
 				.build();
 	}
 

@@ -77,6 +77,7 @@ public final class PhotoSync {
 	private final List<PhotoSheet> packedToShare = new ArrayList<>();
 	private boolean connected;
 	private float photoCooldown;
+	private boolean takesIndexed;
 	private Protocol.Rules rules = Protocol.Rules.NONE;
 	private long lastPhoto;
 	private Vec3 sharedAt;
@@ -209,10 +210,11 @@ public final class PhotoSync {
 			return;
 		}
 		final int maxBytes = Math.min(limits.maxImageBytes(), Protocol.MAX_IMAGE_BYTES);
+		final boolean indexed = takesIndexed;
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				return sheet.packed != null && sheet.packed.length <= maxBytes ? sheet.packed :
-						PhotoCodec.pack(picture, maxBytes);
+						PhotoCodec.pack(picture, maxBytes, indexed);
 			} catch (IOException | RuntimeException e) {
 				Vrcamera.LOGGER.warn("VRCamera: the photo could not be packed for the server", e);
 				return null;
@@ -382,10 +384,11 @@ public final class PhotoSync {
 	public void pin(PhotoSheet sheet, PhotoCodec.Picture picture) {
 		sheet.awaitServer();
 		final int maxBytes = Math.min(limits.maxImageBytes(), Protocol.MAX_IMAGE_BYTES);
+		final boolean indexed = takesIndexed;
 		CompletableFuture.supplyAsync(() -> {
 			try {
 				return sheet.packed != null && sheet.packed.length <= maxBytes ? sheet.packed :
-						PhotoCodec.pack(picture, maxBytes);
+						PhotoCodec.pack(picture, maxBytes, indexed);
 			} catch (IOException | RuntimeException e) {
 				Vrcamera.LOGGER.warn("VRCamera: the photo could not be packed for the server", e);
 				return null;
@@ -421,6 +424,7 @@ public final class PhotoSync {
 		DesktopCamera.INSTANCE.serverGone();
 		connected = false;
 		photoCooldown = 0.0F;
+		takesIndexed = false;
 		rules = Protocol.Rules.NONE;
 		limits = null;
 		known.clear();
@@ -447,6 +451,7 @@ public final class PhotoSync {
 				case Protocol.S_HELLO -> {
 					final Protocol.Limits limits = Protocol.readLimits(in);
 					photoCooldown = Protocol.readPhotoCooldown(in);
+					takesIndexed = Protocol.readTakesIndexed(in);
 					if (connected) {
 						return;
 					}

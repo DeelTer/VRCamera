@@ -205,6 +205,11 @@ public class CameraConfig {
 	 */
 	public double photoPixels = 0.3;
 	/**
+	 * the name of the palette in config/vrcamera/palettes a photo on a sheet is made of, empty for the colours of
+	 * a map. Only the sheet, not the file
+	 */
+	public String photoPalette = "justparchment8";
+	/**
 	 * the click of a photo and the whirr of printing it, of this player and of the others. Off they are still
 	 * heard by the others
 	 */
