@@ -59,13 +59,13 @@ public final class VrcamCommand {
 		root.then(ClientCommands.literal("load")
 				.then(ClientCommands.argument("address", StringArgumentType.greedyString())
 						.suggests(VrcamCommand::suggestInPalette).executes(context -> {
-					final FabricClientCommandSource source = context.getSource();
-					final String typed = StringArgumentType.getString(context, "address").trim();
-					final boolean inPalette = typed.endsWith(IN_PALETTE);
-					PhotoAlbum.INSTANCE.loadCustom(inPalette ? typed.substring(0, typed.length() - IN_PALETTE.length()) :
-							typed, inPalette, source::sendFeedback);
-					return DONE;
-				})));
+							final FabricClientCommandSource source = context.getSource();
+							final String typed = StringArgumentType.getString(context, "address").trim();
+							final boolean inPalette = typed.endsWith(IN_PALETTE);
+							PhotoAlbum.INSTANCE.loadCustom(inPalette ? typed.substring(0, typed.length() - IN_PALETTE.length()) :
+									typed, inPalette, source::sendFeedback);
+							return DONE;
+						})));
 		root.then(ClientCommands.literal("palette")
 				.executes(context -> palettes(context.getSource()))
 				.then(ClientCommands.literal("folder").executes(context -> {
@@ -76,11 +76,11 @@ public final class VrcamCommand {
 						.then(ClientCommands.argument("address", StringArgumentType.greedyString())
 								.executes(context -> addPalette(context.getSource(),
 										StringArgumentType.getString(context, "address")))))
-				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
+				.then(ClientCommands.literal("use").then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
 					builder.suggest(MAP_PALETTE);
 					Palettes.names().forEach(builder::suggest);
 					return builder.buildFuture();
-				}).executes(context -> palette(context.getSource(), StringArgumentType.getString(context, "name")))));
+				}).executes(context -> palette(context.getSource(), StringArgumentType.getString(context, "name"))))));
 		root.then(ClientCommands.literal("debug").executes(context -> {
 			DebugOverlay.toggle();
 			return DONE;
@@ -213,7 +213,7 @@ public final class VrcamCommand {
 								importCameraSet(context.getSource(), StringArgumentType.getString(context, "set")))))
 				.then(player("follow", DesktopCamera.INSTANCE::film))
 				.then(player("with", DesktopCamera.INSTANCE::filmWith))
-				.then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
+				.then(ClientCommands.literal("show").then(ClientCommands.argument("name", StringArgumentType.word()).suggests((context, builder) -> {
 					DesktopCamera.INSTANCE.cameraNames().forEach(builder::suggest);
 					return builder.buildFuture();
 				}).executes(context -> {
@@ -223,7 +223,7 @@ public final class VrcamCommand {
 						return 0;
 					}
 					return DONE;
-				})));
+				}))));
 	}
 
 	static String name(Enum<?> value) {

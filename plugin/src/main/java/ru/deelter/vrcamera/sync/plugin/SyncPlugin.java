@@ -74,8 +74,9 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private final LooseSheets loose = new LooseSheets();
 	private final Map<UUID, Client> clients = new HashMap<>();
 	private final Set<String> worlds = new HashSet<>();
-	private SheetStore store;
 	private final PhotoList photoList = new PhotoList(this);
+	private final Set<UUID> cameraDenied = new HashSet<>();
+	private SheetStore store;
 	private int maxPerPlayer;
 	private int maxPerChunk;
 	private int maxTotal;
@@ -87,7 +88,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private String outdatedMessage;
 	private String minModVersion;
 	private double freeRange;
-	private final Set<UUID> cameraDenied = new HashSet<>();
 	private double sendRange;
 	private double forgetRange;
 	private int imageQueue;
@@ -170,6 +170,40 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			world.playSound(new Location(world, sheet.x(), sheet.y(), sheet.z()), sound, SoundCategory.PLAYERS, 0.6F,
 					1.3F);
 		}
+	}
+
+	/**
+	 * @param version what a mod calls itself, like 2.1.4+26.2. Empty from a mod too old to say
+	 * @return if that is a version before the least one, by its numbers. What comes after them is not looked at
+	 */
+	private static boolean isOlder(String version, String least) {
+		final int[] has = numbers(version);
+		final int[] needs = numbers(least);
+		for (int part = 0; part < Math.max(has.length, needs.length); part++) {
+			final int mine = part < has.length ? has[part] : 0;
+			final int wanted = part < needs.length ? needs[part] : 0;
+			if (mine != wanted) {
+				return mine < wanted;
+			}
+		}
+		return false;
+	}
+
+	private static int[] numbers(String version) {
+		final String plain = version.split("[+-]", 2)[0].trim();
+		if (plain.isEmpty()) {
+			return new int[0];
+		}
+		final String[] parts = plain.split("[.]");
+		final int[] numbers = new int[parts.length];
+		for (int part = 0; part < parts.length; part++) {
+			try {
+				numbers[part] = Integer.parseInt(parts[part]);
+			} catch (NumberFormatException e) {
+				numbers[part] = 0;
+			}
+		}
+		return numbers;
 	}
 
 	@Override
@@ -367,40 +401,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	private void send(Player player, byte[] message) {
 		player.sendPluginMessage(this, Protocol.CHANNEL, message);
-	}
-
-	/**
-	 * @param version what a mod calls itself, like 2.1.4+26.2. Empty from a mod too old to say
-	 * @return if that is a version before the least one, by its numbers. What comes after them is not looked at
-	 */
-	private static boolean isOlder(String version, String least) {
-		final int[] has = numbers(version);
-		final int[] needs = numbers(least);
-		for (int part = 0; part < Math.max(has.length, needs.length); part++) {
-			final int mine = part < has.length ? has[part] : 0;
-			final int wanted = part < needs.length ? needs[part] : 0;
-			if (mine != wanted) {
-				return mine < wanted;
-			}
-		}
-		return false;
-	}
-
-	private static int[] numbers(String version) {
-		final String plain = version.split("[+-]", 2)[0].trim();
-		if (plain.isEmpty()) {
-			return new int[0];
-		}
-		final String[] parts = plain.split("[.]");
-		final int[] numbers = new int[parts.length];
-		for (int part = 0; part < parts.length; part++) {
-			try {
-				numbers[part] = Integer.parseInt(parts[part]);
-			} catch (NumberFormatException e) {
-				numbers[part] = 0;
-			}
-		}
-		return numbers;
 	}
 
 	private void hello(Player player, int version, Protocol.Mod mod) {

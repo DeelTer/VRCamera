@@ -16,11 +16,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,10 +34,9 @@ public final class Palettes {
 	 * no palette of the player: the colours of a map
 	 */
 	public static final String MAP_COLORS = "";
-
+	public static final String BUILT_IN = "justparchment8";
 	private static final Path FOLDER = FabricLoader.getInstance().getConfigDir().resolve("vrcamera").resolve("palettes");
 	private static final String[] KINDS = {".hex", ".gpl", ".pal", ".txt"};
-	public static final String BUILT_IN = "justparchment8";
 	private static final String SITE = "https://lospec.com/palette-list";
 	/**
 	 * the palettes the folder starts with, from lospec.com: JustParchment8 by JustJimmy, Carob Treat by
@@ -115,6 +110,28 @@ public final class Palettes {
 		} catch (IOException | RuntimeException e) {
 			return null;
 		}
+	}
+
+	/**
+	 * Removes the file of a palette from the folder. One the player had picked leaves them with the colours of
+	 * a map.
+	 *
+	 * @return false if there is no such palette, or its file can't be removed
+	 */
+	public static boolean delete(String name) {
+		final Path file = file(name);
+		try {
+			if (file == null || !Files.deleteIfExists(file)) {
+				return false;
+			}
+		} catch (IOException | RuntimeException e) {
+			Vrcamera.LOGGER.warn("VRCamera: could not remove the palette {}", file, e);
+			return false;
+		}
+		if (name.equals(selected())) {
+			select(MAP_COLORS);
+		}
+		return true;
 	}
 
 	/**

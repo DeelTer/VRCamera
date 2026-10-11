@@ -64,6 +64,17 @@ public final class SheetStore {
 		}
 	}
 
+	/**
+	 * @return the hash a picture file is named after, 0 if it is not one of these files
+	 */
+	private static long hashOf(String fileName) {
+		try {
+			return Long.parseUnsignedLong(fileName.substring(0, fileName.length() - IMAGE_KIND.length()), 16);
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
+
 	public int size() {
 		return byId.size();
 	}
@@ -224,17 +235,6 @@ public final class SheetStore {
 		}
 		if (removed > 0) {
 			logger.info(removed + " pictures no pinned photo uses were removed");
-		}
-	}
-
-	/**
-	 * @return the hash a picture file is named after, 0 if it is not one of these files
-	 */
-	private static long hashOf(String fileName) {
-		try {
-			return Long.parseUnsignedLong(fileName.substring(0, fileName.length() - IMAGE_KIND.length()), 16);
-		} catch (NumberFormatException e) {
-			return 0;
 		}
 	}
 

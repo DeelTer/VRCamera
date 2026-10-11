@@ -19,11 +19,10 @@ import java.util.Locale;
  */
 final class PhotoList {
 	static final String COMMAND = "vrcamphotos";
-
-	private static final TextColor ACCENT = TextColor.color(0xFFD700);
-	private static final TextColor TEXT = TextColor.color(0xC7B9A6);
 	static final TextColor ERROR = TextColor.color(0xEA4B3C);
 	static final TextColor ERROR_TEXT = TextColor.color(0xC7A6AB);
+	private static final TextColor ACCENT = TextColor.color(0xFFD700);
+	private static final TextColor TEXT = TextColor.color(0xC7B9A6);
 	private static final int PER_PAGE = 8;
 
 	private final SyncPlugin plugin;

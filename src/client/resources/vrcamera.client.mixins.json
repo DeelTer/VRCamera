@@ -2,6 +2,7 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "ru.deelter.vrcamera.mixin.client",
+	"plugin": "ru.deelter.vrcamera.mixin.ClientMixins",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"BlockDitheringConfigMixin",

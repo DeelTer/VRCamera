@@ -390,7 +390,11 @@
 	"vrcamera.gui.palettes.link.none": "Сначала вставьте ссылку на палитру",
 	"vrcamera.gui.palettes.get": "Скачать",
 	"vrcamera.gui.palettes.folder": "Папка",
-	"vrcamera.gui.palettes.help": "Свои файлы (HEX, GPL, PAL, TXT) кладите в папку",
+	"vrcamera.gui.palettes.help": "Свои файлы кладите в папку",
 	"vrcamera.gui.palettes.find": "Найти палитру",
-	"vrcamera.command.load.palette": "в вашей палитре фото и с вашим размером пикселей"
+	"vrcamera.command.load.palette": "в вашей палитре фото и с вашим размером пикселей",
+	"key.vrcamera.guide": "Окно камеры: следующая сетка",
+	"vrcamera.gui.palettes.delete.confirm": "Нажмите ✕ ещё раз, чтобы удалить %s",
+	"vrcamera.gui.palettes.deleted": "Удалено: %s",
+	"vrcamera.gui.palettes.delete.failed": "Не удалось удалить %s"
 }

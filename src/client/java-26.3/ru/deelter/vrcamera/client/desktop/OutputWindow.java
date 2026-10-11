@@ -421,6 +421,11 @@ public final class OutputWindow {
 		}
 
 		@Override
+		public void focusGame() {
+			SDLVideo.SDL_RaiseWindow(Minecraft.getInstance().getWindow().handle());
+		}
+
+		@Override
 		public void setMouseCaptured(boolean captured) {
 			SDLMouse.SDL_SetWindowRelativeMouseMode(window, captured);
 

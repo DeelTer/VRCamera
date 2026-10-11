@@ -696,6 +696,16 @@ public final class DesktopCamera {
 	}
 
 	/**
+	 * the next kind of lines over the picture in the window of the camera, while the player steers it: from that
+	 * window or from the one of the game
+	 */
+	public void nextGuide() {
+		if (hasOwnWindow() && isSteered()) {
+			WindowInput.nextGuide();
+		}
+	}
+
+	/**
 	 * The player takes the camera over, or gives it back. Taken over, the keys to walk move it: closer and away,
 	 * around the player, up and down, and a free camera flies. Given back it stays where it was put, like a camera
 	 * placed by hand in VR: the director keeps it for a while and then goes on, the others keep it for good.

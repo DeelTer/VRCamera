@@ -23,6 +23,7 @@ public class PalettesScreen extends Screen {
 	private static final int WIDTH = 240;
 	private static final int MOST_SAMPLE = 220;
 	private static final int LEAST_SAMPLE = 90;
+	private static final int FIND_WIDTH = 100;
 	private static final int BUTTON_HEIGHT = 20;
 	private static final int GAP = 4;
 	private static final int ROWS = 5;
@@ -39,6 +40,7 @@ public class PalettesScreen extends Screen {
 	private String typed = "";
 	private int page = -1;
 	private String sampled;
+	private String deleting;
 	private boolean open = true;
 
 	public PalettesScreen(Screen parent) {
@@ -71,10 +73,18 @@ public class PalettesScreen extends Screen {
 		rows.clear();
 		for (int index = page * ROWS; index < Math.min(names.size(), (page + 1) * ROWS); index++) {
 			final String name = names.get(index);
+			final int rowY = y + (index - page * ROWS) * row;
+			final boolean own = !name.isEmpty();
 			rows.put(addRenderableWidget(Button.builder(label(name), button -> {
+				deleting = null;
 				Palettes.select(name);
 				say(Component.translatable("vrcamera.gui.palettes.picked", name(name)));
-			}).bounds(x, y + (index - page * ROWS) * row, WIDTH, BUTTON_HEIGHT).build()), name);
+			}).bounds(x, rowY, own ? WIDTH - BUTTON_HEIGHT - GAP : WIDTH, BUTTON_HEIGHT).build()), name);
+			if (own) {
+				addRenderableWidget(Button.builder(Component.literal(name.equals(deleting) ? "?" : "✕"),
+								button -> delete(name))
+						.bounds(x + WIDTH - BUTTON_HEIGHT, rowY, BUTTON_HEIGHT, BUTTON_HEIGHT).build());
+			}
 		}
 		sampled = sampleWidth > 0 && PaletteSample.show(minecraft, Palettes.selected()) ? Palettes.selected() : null;
 		if (sampled != null) {
@@ -86,8 +96,9 @@ public class PalettesScreen extends Screen {
 		if (pages > 1) {
 			addRenderableWidget(Button.builder(Component.literal("←"), button -> turn(pages - 1, pages))
 					.bounds(x, y, BUTTON_HEIGHT * 2, BUTTON_HEIGHT).build());
-			addRenderableWidget(new StringWidget(x + BUTTON_HEIGHT * 2, y, WIDTH - BUTTON_HEIGHT * 4, BUTTON_HEIGHT,
-					Component.translatable("vrcamera.gui.palettes.page", page + 1, pages), font));
+			final Component paged = Component.translatable("vrcamera.gui.palettes.page", page + 1, pages);
+			addRenderableWidget(new StringWidget(x + (WIDTH - font.width(paged)) / 2, y, font.width(paged),
+					BUTTON_HEIGHT, paged, font));
 			addRenderableWidget(Button.builder(Component.literal("→"), button -> turn(1, pages))
 					.bounds(x + WIDTH - BUTTON_HEIGHT * 2, y, BUTTON_HEIGHT * 2, BUTTON_HEIGHT).build());
 			y += row;
@@ -99,15 +110,15 @@ public class PalettesScreen extends Screen {
 		link.setHint(Component.translatable("vrcamera.gui.palettes.link"));
 		link.setValue(typed);
 		y += row;
-		final int third = (WIDTH - GAP * 2) / 3;
+		final int side = (WIDTH - FIND_WIDTH - GAP * 2) / 2;
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.find"),
 						button -> Palettes.openSite())
-				.bounds(x, y, third, BUTTON_HEIGHT).build());
+				.bounds(x, y, FIND_WIDTH, BUTTON_HEIGHT).build());
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.get"), button -> get())
-				.bounds(x + third + GAP, y, third, BUTTON_HEIGHT).build());
+				.bounds(x + FIND_WIDTH + GAP, y, side, BUTTON_HEIGHT).build());
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.folder"),
 						button -> Palettes.openFolder())
-				.bounds(x + WIDTH - third, y, third, BUTTON_HEIGHT).build());
+				.bounds(x + WIDTH - side, y, side, BUTTON_HEIGHT).build());
 		y += row;
 		status = addRenderableWidget(new StringWidget(x, y, WIDTH, BUTTON_HEIGHT, said, font));
 		y += row;
@@ -146,11 +157,27 @@ public class PalettesScreen extends Screen {
 	}
 
 	private void turn(int by, int pages) {
+		deleting = null;
 		page = (page + by) % pages;
 		say(HELP);
 	}
 
+	/**
+	 * the first press asks, the second one on the same palette removes its file
+	 */
+	private void delete(String name) {
+		if (!name.equals(deleting)) {
+			deleting = name;
+			say(Component.translatable("vrcamera.gui.palettes.delete.confirm", name));
+			return;
+		}
+		deleting = null;
+		say(Component.translatable(Palettes.delete(name) ? "vrcamera.gui.palettes.deleted" :
+				"vrcamera.gui.palettes.delete.failed", name));
+	}
+
 	private void get() {
+		deleting = null;
 		final String address = link.getValue().trim();
 		if (address.isEmpty()) {
 			say(Component.translatable("vrcamera.gui.palettes.link.none"));

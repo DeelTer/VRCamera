@@ -10,7 +10,7 @@ final class WindowInput {
 	private static FrameGuide guide = FrameGuide.THIRDS;
 	private final Native window;
 	private boolean fullKeyDown;
-	private boolean guideKeyDown;
+	private boolean escapeDown;
 	private boolean captured;
 	private boolean letGo;
 
@@ -23,8 +23,15 @@ final class WindowInput {
 	}
 
 	/**
-	 * F11: over the whole monitor the window is on, and back. H: the next kind of lines over the picture, see
-	 * {@link FrameGuide}
+	 * the next kind of lines over the picture, see {@link FrameGuide}. It has a key of the game, which works in
+	 * the window of the game as well
+	 */
+	static void nextGuide() {
+		guide = guide.next();
+	}
+
+	/**
+	 * F11: over the whole monitor the window is on, and back
 	 */
 	void handleKeys(Runnable toggleFullscreen) {
 		final boolean full = window.isKeyDown(InputConstants.KEY_F11);
@@ -32,23 +39,24 @@ final class WindowInput {
 			toggleFullscreen.run();
 		}
 		fullKeyDown = full;
-		final boolean next = window.isKeyDown(InputConstants.KEY_H);
-		if (next && !guideKeyDown) {
-			guide = guide.next();
-		}
-		guideKeyDown = next;
 	}
 
 	/**
 	 * Holds the mouse in the window while that is wanted. Escape lets it go all the same, to move the window or to
-	 * leave it, and a click into the window takes it back.
+	 * leave it, and a click into the window takes it back. Escape with the mouse free goes back to the game.
 	 *
 	 * @return if the window has the mouse now
 	 */
 	boolean capture(boolean wanted) {
+		final boolean escape = window.isKeyDown(InputConstants.KEY_ESCAPE);
+		final boolean pressed = escape && !escapeDown;
+		escapeDown = escape;
+		if (pressed && !captured) {
+			window.focusGame();
+		}
 		if (!wanted) {
 			letGo = false;
-		} else if (window.isKeyDown(InputConstants.KEY_ESCAPE)) {
+		} else if (escape) {
 			letGo = true;
 		} else if (window.isLeftButtonDown()) {
 			letGo = false;
@@ -80,5 +88,10 @@ final class WindowInput {
 		 * takes the mouse for the window, hidden and held inside of it, or lets it go again
 		 */
 		void setMouseCaptured(boolean captured);
+
+		/**
+		 * the keyboard goes to the window of the game, which comes to the front
+		 */
+		void focusGame();
 	}
 }
