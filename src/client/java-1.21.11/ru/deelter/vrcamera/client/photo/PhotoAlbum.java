@@ -3,6 +3,7 @@ package ru.deelter.vrcamera.client.photo;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
+
 import org.joml.Vector3f;
 import ru.deelter.vrcamera.client.gui.PhotoPreview;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -95,8 +96,8 @@ public final class PhotoAlbum {
 			"textures/misc/white.png");
 
 	private final List<PhotoSheet> sheets = new ArrayList<>();
-	private long layered;
 	private final ArrayDeque<Integer> freeTextures = new ArrayDeque<>();
+	private long layered;
 	private long frameNanos;
 	private int nextTexture;
 	private boolean broken;
@@ -222,38 +223,6 @@ public final class PhotoAlbum {
 	}
 
 	/**
-	 * Says how high each sheet lies that is pinned or on the ground: one above everything it covers that was there
-	 * before it, so the one that came last is on top. Only worked out again when one of them moved
-	 */
-	private void layer() {
-		final List<PhotoSheet> pinned = new ArrayList<>();
-		long stamp = 0;
-		for (final PhotoSheet sheet : sheets) {
-			if (sheet.isLaid()) {
-				pinned.add(sheet);
-				stamp += 31L * System.identityHashCode(sheet) + 17L * sheet.remoteId() + sheet.pinOrder() +
-						sheet.position().hashCode();
-			}
-		}
-		if (stamp == layered) {
-			return;
-		}
-		layered = stamp;
-		pinned.sort((one, other) -> one == other ? 0 : one.pinnedBefore(other) ? -1 : 1);
-		for (int index = 0; index < pinned.size(); index++) {
-			final PhotoSheet sheet = pinned.get(index);
-			int layer = 0;
-			for (int under = 0; under < index && layer < LAYERS; under++) {
-				final PhotoSheet lower = pinned.get(under);
-				if (lower.layer >= layer && overlap(lower, sheet)) {
-					layer = lower.layer + 1;
-				}
-			}
-			sheet.layer = Math.min(layer, LAYERS);
-		}
-	}
-
-	/**
 	 * @return if two pinned sheets lie in one plane and one covers a part of the other
 	 */
 	private static boolean overlap(PhotoSheet one, PhotoSheet other) {
@@ -290,6 +259,38 @@ public final class PhotoAlbum {
 				.setLight(light)
 
 				.setNormal(0, 1, 0);
+	}
+
+	/**
+	 * Says how high each sheet lies that is pinned or on the ground: one above everything it covers that was there
+	 * before it, so the one that came last is on top. Only worked out again when one of them moved
+	 */
+	private void layer() {
+		final List<PhotoSheet> pinned = new ArrayList<>();
+		long stamp = 0;
+		for (final PhotoSheet sheet : sheets) {
+			if (sheet.isLaid()) {
+				pinned.add(sheet);
+				stamp += 31L * System.identityHashCode(sheet) + 17L * sheet.remoteId() + sheet.pinOrder() +
+						sheet.position().hashCode();
+			}
+		}
+		if (stamp == layered) {
+			return;
+		}
+		layered = stamp;
+		pinned.sort((one, other) -> one == other ? 0 : one.pinnedBefore(other) ? -1 : 1);
+		for (int index = 0; index < pinned.size(); index++) {
+			final PhotoSheet sheet = pinned.get(index);
+			int layer = 0;
+			for (int under = 0; under < index && layer < LAYERS; under++) {
+				final PhotoSheet lower = pinned.get(under);
+				if (lower.layer >= layer && overlap(lower, sheet)) {
+					layer = lower.layer + 1;
+				}
+			}
+			sheet.layer = Math.min(layer, LAYERS);
+		}
 	}
 
 	/**
@@ -873,7 +874,7 @@ public final class PhotoAlbum {
 	 * by this client alone.
 	 *
 	 * @param inPalette if it is put in the palette and the pixels of the player, the way a photo is
-	 * @param feedback told how it went, on the game thread
+	 * @param feedback  told how it went, on the game thread
 	 */
 	public void loadCustom(String address, boolean inPalette, Consumer<Component> feedback) {
 		if (level == null || loadingCustom) {
@@ -905,7 +906,7 @@ public final class PhotoAlbum {
 			}
 			final NativeImage pixels = inPalette ? PixelArt.apply(image(picture), CameraConfig.current().photoPixels) :
 					image(picture);
-			String file = "custom_" + System.currentTimeMillis() + ".png";
+			String file = PhotoStore.newCustomSheet(cache);
 			try {
 				PhotoStore.prepare(cache);
 				pixels.writeToFile(cache.resolve(file));

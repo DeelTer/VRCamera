@@ -390,7 +390,11 @@
 	"vrcamera.gui.palettes.link.none": "Collez d'abord un lien vers une palette",
 	"vrcamera.gui.palettes.get": "Télécharger",
 	"vrcamera.gui.palettes.folder": "Dossier",
-	"vrcamera.gui.palettes.help": "Vos fichiers (HEX, GPL, PAL, TXT) vont dans le dossier",
+	"vrcamera.gui.palettes.help": "Vos fichiers vont dans le dossier",
 	"vrcamera.gui.palettes.find": "Trouver une palette",
-	"vrcamera.command.load.palette": "dans votre palette et taille de pixels"
+	"vrcamera.command.load.palette": "dans votre palette et taille de pixels",
+	"key.vrcamera.guide": "Fenêtre caméra : grille suivante",
+	"vrcamera.gui.palettes.delete.confirm": "Appuyez encore sur ✕ pour supprimer %s",
+	"vrcamera.gui.palettes.deleted": "Supprimée : %s",
+	"vrcamera.gui.palettes.delete.failed": "Impossible de supprimer %s"
 }

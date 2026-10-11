@@ -113,6 +113,11 @@ public final class PhotoSync {
 		}
 	}
 
+	private static boolean isOwn(UUID owner) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		return player != null && owner.equals(player.getUUID());
+	}
+
 	public void init() {
 		PayloadTypeRegistry.playC2S().register(SyncPayload.TYPE, SyncPayload.CODEC);
 		PayloadTypeRegistry.playS2C().register(SyncPayload.TYPE, SyncPayload.CODEC);
@@ -639,7 +644,7 @@ public final class PhotoSync {
 					PhotoAlbum.image(picture), image);
 			if (shown != null) {
 				shown.custom = sheet.custom();
-				shown.own = isOwn(sheet.owner());
+				shown.own = isOwn(sheet.owner()) || sheet.removable();
 			}
 			this.loaded.add(sheet.id());
 		}
@@ -717,11 +722,6 @@ public final class PhotoSync {
 		if (this.connected) {
 			send(Protocol.unpin(id));
 		}
-	}
-
-	private static boolean isOwn(UUID owner) {
-		final LocalPlayer player = Minecraft.getInstance().player;
-		return player != null && owner.equals(player.getUUID());
 	}
 
 	/**

@@ -84,8 +84,8 @@ public final class PhotoSheet {
 	 */
 	public boolean placeholder;
 	/**
-	 * if this player made it: took the photo or loaded the picture. Only what is their own is theirs to
-	 * throw away
+	 * if it is this player's to throw away: they took the photo or loaded the picture, or the server lets
+	 * them take it off what it was pinned to
 	 */
 	public boolean own = true;
 	/**

@@ -390,7 +390,11 @@
 	"vrcamera.gui.palettes.link.none": "请先粘贴调色板链接",
 	"vrcamera.gui.palettes.get": "下载",
 	"vrcamera.gui.palettes.folder": "文件夹",
-	"vrcamera.gui.palettes.help": "自己的文件（HEX、GPL、PAL、TXT）放入文件夹",
+	"vrcamera.gui.palettes.help": "自己的文件放入文件夹",
 	"vrcamera.gui.palettes.find": "查找调色板",
-	"vrcamera.command.load.palette": "使用你的照片调色板和像素大小"
+	"vrcamera.command.load.palette": "使用你的照片调色板和像素大小",
+	"key.vrcamera.guide": "摄像机窗口：下一种网格",
+	"vrcamera.gui.palettes.delete.confirm": "再按一次 ✕ 删除 %s",
+	"vrcamera.gui.palettes.deleted": "已删除：%s",
+	"vrcamera.gui.palettes.delete.failed": "无法删除 %s"
 }

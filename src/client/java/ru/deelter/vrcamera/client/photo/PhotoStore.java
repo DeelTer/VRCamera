@@ -39,6 +39,7 @@ public final class PhotoStore {
 
 	private static final String OWNER_FILE = "world.txt";
 	private static final String PINNED_FILE = "pinned.json";
+	private static final String CUSTOM_SHEET = "custom_";
 	private static final String LOCAL = "local:";
 	private static final String SERVER = "server:";
 
@@ -57,6 +58,19 @@ public final class PhotoStore {
 		Path file = dir.resolve(name + ".png");
 		for (int i = 2; Files.exists(file); i++) {
 			file = dir.resolve(name + "_" + i + ".png");
+		}
+		return file;
+	}
+
+	/**
+	 * @param cache the cache folder of a world
+	 * @return a name for the sheet of a picture loaded from the internet now, that no file there has yet
+	 */
+	public static String newCustomSheet(Path cache) {
+		final String name = CUSTOM_SHEET + LocalDateTime.now().format(FILE_TIME);
+		String file = name + ".png";
+		for (int i = 2; Files.exists(cache.resolve(file)); i++) {
+			file = name + "_" + i + ".png";
 		}
 		return file;
 	}

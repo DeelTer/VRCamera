@@ -168,6 +168,7 @@ public class VrcameraClient implements ClientModInitializer {
 
 		gameOnly = key("steer", InputConstants.KEY_G, desktop::toggleSteering);
 		key("turn", InputConstants.KEY_R, desktop::turnHeld, NO_ACTION);
+		key("guide", InputConstants.KEY_H, desktop::nextGuide, NO_ACTION);
 
 		key("menu", UNBOUND, () -> {
 			final Minecraft mc = Minecraft.getInstance();

@@ -350,6 +350,11 @@ public final class OutputWindow {
 		}
 
 		@Override
+		public void focusGame() {
+			GLFW.glfwFocusWindow(Minecraft.getInstance().getWindow().getWindow());
+		}
+
+		@Override
 		public void setMouseCaptured(boolean captured) {
 			moving = false;
 			GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR,

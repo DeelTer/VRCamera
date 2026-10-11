@@ -120,6 +120,11 @@ public final class PhotoSync {
 		}
 	}
 
+	private static boolean isOwn(UUID owner) {
+		final LocalPlayer player = Minecraft.getInstance().player;
+		return player != null && owner.equals(player.getUUID());
+	}
+
 	public void init() {
 		PayloadTypeRegistry.playC2S().register(SyncPayload.TYPE, SyncPayload.CODEC);
 		PayloadTypeRegistry.playS2C().register(SyncPayload.TYPE, SyncPayload.CODEC);
@@ -603,6 +608,10 @@ public final class PhotoSync {
 		}
 	}
 
+	/**
+	 * gets the picture with that hash, from where it is closest: memory, disk, server
+	 */
+
 	private void removed(long id, byte reason) {
 		known.remove(id);
 		if (loaded.remove(id)) {
@@ -610,9 +619,6 @@ public final class PhotoSync {
 		}
 	}
 
-	/**
-	 * gets the picture with that hash, from where it is closest: memory, disk, server
-	 */
 	/**
 	 * @return if {@link #fetch} would start to get that picture now
 	 */
@@ -704,7 +710,7 @@ public final class PhotoSync {
 					PhotoAlbum.image(picture), image);
 			if (shown != null) {
 				shown.custom = sheet.custom();
-				shown.own = isOwn(sheet.owner());
+				shown.own = isOwn(sheet.owner()) || sheet.removable();
 			}
 			loaded.add(sheet.id());
 		}
@@ -739,11 +745,6 @@ public final class PhotoSync {
 					sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect, result.imageHash(),
 					true, sheet.custom));
 		}
-	}
-
-	private static boolean isOwn(UUID owner) {
-		final LocalPlayer player = Minecraft.getInstance().player;
-		return player != null && owner.equals(player.getUUID());
 	}
 
 	/**

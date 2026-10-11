@@ -69,7 +69,7 @@ expect extra GPU load. On PC, lower `outputFps` if needed; render resolution fol
 Rebind keys in Minecraft's controls; in VR you can also use Vivecraft's radial menu or SteamVR bindings. Client commands
 support Tab completion and need no server permissions. See the [full command list](docs/GUIDE.md#commands).
 
-Free-camera shortcuts: `/cam add`, `/cam B`, `/cam next`, `/cam fly`, `/cam clear`.
+Free-camera shortcuts: `/cam add`, `/cam show B`, `/cam next`, `/cam fly`, `/cam clear`.
 Film another player with `/cam follow Name`, or add a partner with `/cam with Name`.
 
 ## Camera in your hands

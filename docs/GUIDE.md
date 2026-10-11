@@ -49,7 +49,7 @@ permissions.
 | `/vrcam summon`                                   | brings the camera to you                                                                                                                                        |
 | `/vrcam photo`                                    | takes a photo                                                                                                                                                   |
 | `/vrcam load <address> [true]`                    | puts a picture from the internet on a sheet; with `true` in your photo palette and pixel size                                                                                                                     |
-| `/vrcam palette [name\|map]`                      | opens the palette screen (also the **Photo palette** button in the pause menu), with a name picks one (`map` = map colours); `add <lospec link>` fetches one from lospec.com, `folder` opens the folder                          |
+| `/vrcam palette [use <name\|map>]`                | opens the palette screen (also the **Photo palette** button in the pause menu), `use` picks one (`map` = map colours); `add <lospec link>` fetches one from lospec.com, `folder` opens the folder                          |
 | `/vrcam preset next`, `new`, `delete`             | own angles                                                                                                                                                      |
 | `/vrcam preset <number>`                          | picks an own angle, counted from 1                                                                                                                              |
 | `/vrcam debug`                                    | debug overlay                                                                                                                                                   |
@@ -354,6 +354,8 @@ Server settings, `plugins/VRCamera/config.yml`:
 
 Permissions: `vrcamera.pin` (everyone), `vrcamera.photo.nocooldown`, `vrcamera.camera.unrestricted`,
 `vrcamera.remove.others`, `vrcamera.admin` (all four: operators).
+Who may take a photo of someone else off (`vrcamera.remove.others`, or everyone with `anyone-takes-off`) may also
+throw it away with Delete or Backspace while holding it.
 No filming in some place, like a game arena: `/vrcamsync camera deny <player>` and `allow`, or
 `CameraApi.setCameraAllowed(player, false)` from a plugin. The camera turns off and no photos are taken.
 These rules are kept by the player's mod: they stop ordinary players, not a modified client.
@@ -418,7 +420,7 @@ at your eyes if none is nearby.
 | Action                                | Control                                                                 |
 |---------------------------------------|-------------------------------------------------------------------------|
 | Add a camera                          | `N`, `/cam add`, or `/vrcam screen free` again                          |
-| Cut to a camera                       | left-click its model, `/cam B`, or `1`–`9` for A–I in the camera window |
+| Cut to a camera                       | left-click its model, `/cam show B`, or `1`–`9` for A–I in the camera window |
 | Next camera within 64 blocks          | `F7` or `/cam next`                                                     |
 | Fly to the next camera                | `/cam fly` or the unbound fly-to-next key                               |
 | Bring the active camera to your eyes  | the unbound summon key                                                  |

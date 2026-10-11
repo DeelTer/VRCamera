@@ -33,8 +33,6 @@ import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.*;
-import ru.deelter.vrcamera.client.gui.PalettesScreen;
-import ru.deelter.vrcamera.client.gui.PhotoPreview;
 import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.shot.ShotType;
@@ -165,6 +163,7 @@ public class VrcameraClient implements ClientModInitializer {
 
 		gameOnly = key("steer", InputConstants.KEY_G, desktop::toggleSteering);
 		key("turn", InputConstants.KEY_R, desktop::turnHeld, NO_ACTION);
+		key("guide", InputConstants.KEY_H, desktop::nextGuide, NO_ACTION);
 
 		key("menu", UNBOUND, () -> {
 			final Minecraft mc = Minecraft.getInstance();

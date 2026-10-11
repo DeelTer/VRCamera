@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -19,7 +20,10 @@ import java.util.logging.Logger;
  * is stored once.
  */
 public final class SheetStore {
-
+	/**
+	 * how picture files end. Kept for the ones that are a PNG too: the name says nothing, what is in it does
+	 */
+	private static final String IMAGE_KIND = ".jpg";
 	private static final int FILE_VERSION = 2;
 
 	private static final int CACHED_IMAGES = 256;
@@ -108,7 +112,8 @@ public final class SheetStore {
 		drop(byBlock, sheet.block(), sheet);
 		owned.computeIfPresent(sheet.owner(), (owner, count) -> count > 1 ? count - 1 : null);
 		dirty = true;
-		final Integer left = imageUses.computeIfPresent(sheet.imageHash(), (hash, count) -> count > 1 ? count - 1 : null);
+		final Integer left = imageUses.computeIfPresent(sheet.imageHash(),
+				(hash, count) -> count > 1 ? count - 1 : null);
 		if (left != null) {
 			return 0;
 		}
@@ -175,6 +180,7 @@ public final class SheetStore {
 		if (Files.isRegularFile(listFile)) {
 			try {
 				read(listFile);
+				sweep();
 				return;
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, "Can't read " + listFile, e);
@@ -194,6 +200,41 @@ public final class SheetStore {
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, "Can't read " + backupFile + " either, starting without pinned photos",
 					e);
+		}
+	}
+
+	/**
+	 * Removes the pictures no pinned photo uses: left by a server that stopped before the list was written or
+	 * before a picture was deleted. Only after the list was read whole, or every picture would look unused.
+	 */
+	private void sweep() {
+		if (!Files.isDirectory(imageDir)) {
+			return;
+		}
+		int removed = 0;
+		try (final DirectoryStream<Path> files = Files.newDirectoryStream(imageDir, "*" + IMAGE_KIND)) {
+			for (final Path file : files) {
+				final long hash = hashOf(file.getFileName().toString());
+				if (hash != 0 && !imageUses.containsKey(hash) && Files.deleteIfExists(file)) {
+					removed++;
+				}
+			}
+		} catch (IOException | RuntimeException e) {
+			logger.log(Level.WARNING, "Can't look for unused pictures in " + imageDir, e);
+		}
+		if (removed > 0) {
+			logger.info(removed + " pictures no pinned photo uses were removed");
+		}
+	}
+
+	/**
+	 * @return the hash a picture file is named after, 0 if it is not one of these files
+	 */
+	private static long hashOf(String fileName) {
+		try {
+			return Long.parseUnsignedLong(fileName.substring(0, fileName.length() - IMAGE_KIND.length()), 16);
+		} catch (NumberFormatException e) {
+			return 0;
 		}
 	}
 
@@ -218,7 +259,8 @@ public final class SheetStore {
 			Files.createDirectories(listFile.getParent());
 
 			final Path temp = listFile.resolveSibling("sheets.dat.tmp");
-			try (final DataOutputStream out = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(temp)))) {
+			final OutputStream file = new BufferedOutputStream(Files.newOutputStream(temp));
+			try (final DataOutputStream out = new DataOutputStream(file)) {
 				out.writeInt(FILE_VERSION);
 				out.writeLong(nextId);
 				out.writeInt(sheets.size());
@@ -262,7 +304,7 @@ public final class SheetStore {
 	}
 
 	private Path imageFile(long hash) {
-		return imageDir.resolve(Long.toHexString(hash) + ".jpg");
+		return imageDir.resolve(Long.toHexString(hash) + IMAGE_KIND);
 	}
 
 	private void putAside() {
@@ -298,7 +340,6 @@ public final class SheetStore {
 			this.nextId = nextId;
 			int missing = 0;
 			for (final StoredSheet sheet : sheets) {
-
 				if (Files.isRegularFile(imageFile(sheet.imageHash()))) {
 					index(sheet);
 				} else {
