@@ -104,6 +104,7 @@ public final class DesktopCamera {
 	private final Rig rig = new Rig(true);
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
+	private boolean useWasDown;
 	private final List<Runnable> fromServer = new ArrayList<>();
 	private Mode mode = Mode.OFF;
 	private boolean ownView;
@@ -1371,17 +1372,22 @@ public final class DesktopCamera {
 	}
 
 	/**
-	 * the mouse of the player takes the camera they point at, holds it, and lets go of it
+	 * the mouse of the player takes the camera they point at, holds it, and lets go of it. Only a new press of
+	 * the use key takes one, and none while a photo is held: a key held down for something else goes by
 	 */
 	private void reach(Minecraft mc, LocalPlayer player, float partialTick, double dt, CameraConfig config) {
-		if (!hasOwnWindow() || isSteered() || pose == null || mc.gui.screen() != null || showsOwnView()) {
+		final boolean use = mc.options.keyUse.isDown();
+		final boolean pressed = use && !useWasDown;
+		useWasDown = use;
+		if (!hasOwnWindow() || isSteered() || pose == null || mc.gui.screen() != null || showsOwnView() ||
+				SheetReach.INSTANCE.isHolding()) {
 			grab.reset();
 			return;
 		}
 		final Vec3 eyes = player.getEyePosition(partialTick);
 		final Vec3 look = player.getViewVector(partialTick);
 		if (grab.isHolding()) {
-			if (mc.options.keyUse.isDown() || grab.turnsBack(dt)) {
+			if (use || grab.turnsBack(dt)) {
 				grab.hold(player, eyes, look, subject, config, dt);
 			} else {
 				letGo(config);
@@ -1392,7 +1398,7 @@ public final class DesktopCamera {
 		grab.aim(eyes, look, several ? free.count() : 1,
 				camera -> several ? free.position(camera) : pose.position(),
 				camera -> !several || isAround(camera, eyes));
-		if (grab.isAiming() && mc.options.keyUse.isDown()) {
+		if (grab.isAiming() && pressed) {
 			if (several && grab.aimedAt() != free.active()) {
 				free.show(grab.aimedAt());
 				pose = free.pose(0);

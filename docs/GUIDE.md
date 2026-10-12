@@ -588,6 +588,8 @@ and by `/vrcam reload`.
 | `indicator`              | `true`          | camera icon with the distance                                                                                                                                                 |
 | `indicatorSize`          | `1.0`           | size of the icon                                                                                                                                                              |
 | `throwPower`             | `1.3`           | throw range multiplier in every mode, 0 = no throwing                                                                                                                         |
+| `holdLag`                | `0.1`           | seconds the camera held with the right mouse button takes to follow the look; higher is smoother, 0 = at once |
+| `keepCentered`           | `false`         | the camera looks right at you all the time: no lead room, no late turn, in every mode and while held |
 | `handStabilize`          | `0.6`           | steadying of a held camera, 0 = off, 1 = most                                                                                                                                 |
 | `attachToSelf`           | `true`          | the camera can be put on your own head by holding it there                                                                                                                    |
 | `screenOutput`           | `"screen"`      | without VR: `"screen"` films into the game window, `"window"` into a window of its own                                                                                        |

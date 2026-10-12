@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "Fenêtre caméra : grille suivante",
 	"vrcamera.gui.palettes.delete.confirm": "Appuyez encore sur ✕ pour supprimer %s",
 	"vrcamera.gui.palettes.deleted": "Supprimée : %s",
-	"vrcamera.gui.palettes.delete.failed": "Impossible de supprimer %s"
+	"vrcamera.gui.palettes.delete.failed": "Impossible de supprimer %s",
+	"vrcamera.option.holdLag": "Fluidité de la caméra tenue",
+	"vrcamera.option.holdLag.tooltip": "Temps que met la caméra tenue avec le bouton droit pour suivre votre regard. Plus haut : plus fluide et plus lent, 0 : immédiat.",
+	"vrcamera.option.keepCentered": "Me garder au centre",
+	"vrcamera.option.keepCentered.tooltip": "Non : la caméra vise un peu en avant de votre marche et tourne avec un léger retard. Oui : elle vous vise toujours exactement, dans tous les modes et quand vous la tenez."
 }

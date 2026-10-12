@@ -229,7 +229,7 @@ public final class Rig {
 			final double closeness = 1.0 - CamMath.smoothstep((away - near) / near);
 			aim = aim.add(subject.head.subtract(subject.center).scale(closeness));
 		}
-		if (config.leadRoom > 0 && !shot.exactAim()) {
+		if (config.leadRoom > 0 && !shot.exactAim() && !config.keepCentered) {
 			Vec3 lead = new Vec3(subject.velocity.x, 0, subject.velocity.z).scale(config.leadRoom);
 			final double max = config.leadRoomMax * subject.unit;
 			if (lead.length() > max) {
@@ -237,7 +237,10 @@ public final class Rig {
 			}
 			aim = aim.add(lead);
 		}
-		final Vec3 target = look.update(aim, config.lookLag, dt)
+		if (config.keepCentered) {
+			look.reset(aim);
+		}
+		final Vec3 target = config.keepCentered ? aim : look.update(aim, config.lookLag, dt)
 				.add(subject.velocity.scale(config.lookLag));
 		CamMath.lookRotation(target.subtract(position), rotation);
 

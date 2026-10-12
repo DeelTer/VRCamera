@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "Camera window: next grid",
 	"vrcamera.gui.palettes.delete.confirm": "Press ✕ again to delete %s",
 	"vrcamera.gui.palettes.deleted": "Deleted: %s",
-	"vrcamera.gui.palettes.delete.failed": "Could not delete %s"
+	"vrcamera.gui.palettes.delete.failed": "Could not delete %s",
+	"vrcamera.option.holdLag": "Held camera smoothness",
+	"vrcamera.option.holdLag.tooltip": "How long the camera you hold with the right mouse button takes to follow your look. Higher is smoother and slower, 0 follows at once.",
+	"vrcamera.option.keepCentered": "Keep me centered",
+	"vrcamera.option.keepCentered.tooltip": "Off: the camera aims a little ahead of where you go and turns to you a moment late. On: it looks right at you all the time, in every mode and while you hold it."
 }

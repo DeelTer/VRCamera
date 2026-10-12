@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "Janela da câmera: próxima grade",
 	"vrcamera.gui.palettes.delete.confirm": "Pressione ✕ de novo para apagar %s",
 	"vrcamera.gui.palettes.deleted": "Apagada: %s",
-	"vrcamera.gui.palettes.delete.failed": "Não foi possível apagar %s"
+	"vrcamera.gui.palettes.delete.failed": "Não foi possível apagar %s",
+	"vrcamera.option.holdLag": "Suavidade da câmera segurada",
+	"vrcamera.option.holdLag.tooltip": "Quanto tempo a câmera que você segura com o botão direito leva para seguir seu olhar. Maior é mais suave e lento, 0 segue na hora.",
+	"vrcamera.option.keepCentered": "Manter-me no centro",
+	"vrcamera.option.keepCentered.tooltip": "Não: a câmera mira um pouco à frente do seu caminho e vira com um pequeno atraso. Sim: ela olha sempre direto para você, em todos os modos e enquanto você a segura."
 }

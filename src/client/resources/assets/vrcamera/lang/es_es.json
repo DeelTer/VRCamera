@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "Ventana de cámara: siguiente cuadrícula",
 	"vrcamera.gui.palettes.delete.confirm": "Pulsa ✕ otra vez para borrar %s",
 	"vrcamera.gui.palettes.deleted": "Borrada: %s",
-	"vrcamera.gui.palettes.delete.failed": "No se pudo borrar %s"
+	"vrcamera.gui.palettes.delete.failed": "No se pudo borrar %s",
+	"vrcamera.option.holdLag": "Suavidad de la cámara sujetada",
+	"vrcamera.option.holdLag.tooltip": "Cuánto tarda la cámara que sujetas con el botón derecho en seguir tu mirada. Más alto es más suave y lento, 0 la sigue al instante.",
+	"vrcamera.option.keepCentered": "Mantenerme centrado",
+	"vrcamera.option.keepCentered.tooltip": "No: la cámara apunta un poco por delante de tu marcha y gira con algo de retraso. Sí: te mira siempre de lleno, en todos los modos y mientras la sujetas."
 }

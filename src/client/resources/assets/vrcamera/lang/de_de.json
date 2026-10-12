@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "Kamerafenster: nächstes Raster",
 	"vrcamera.gui.palettes.delete.confirm": "✕ erneut drücken, um %s zu löschen",
 	"vrcamera.gui.palettes.deleted": "Gelöscht: %s",
-	"vrcamera.gui.palettes.delete.failed": "%s konnte nicht gelöscht werden"
+	"vrcamera.gui.palettes.delete.failed": "%s konnte nicht gelöscht werden",
+	"vrcamera.option.holdLag": "Trägheit der gehaltenen Kamera",
+	"vrcamera.option.holdLag.tooltip": "Wie lange die mit der rechten Maustaste gehaltene Kamera braucht, um dem Blick zu folgen. Höher ist weicher und langsamer, 0 folgt sofort.",
+	"vrcamera.option.keepCentered": "Mich mittig halten",
+	"vrcamera.option.keepCentered.tooltip": "Aus: die Kamera zielt etwas voraus in Laufrichtung und dreht sich leicht verzögert. An: sie schaut immer genau auf dich, in jedem Modus und während du sie hältst."
 }

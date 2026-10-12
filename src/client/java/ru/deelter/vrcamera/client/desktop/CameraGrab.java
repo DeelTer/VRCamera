@@ -18,6 +18,11 @@ import java.util.function.IntPredicate;
  * The hand of a player at a screen is where they look. A camera they point at and hold the use key on is taken: it
  * hangs in front of them at the distance it was taken from, goes where they look, looks at them, and the wheel moves
  * it away and back. What happens to it when they let go is up to the mode the camera is in.
+ * <p>
+ * It follows the look in two steps, one after the other: it starts to move and comes to rest softly, however the
+ * mouse is jerked. It turns to the player a moment late, which lets them drift in the picture while it is moved,
+ * or looks right at them however fast it is moved, if that is what the player wants: then only a turn it was
+ * taken in, or asked for, is eased out.
  */
 final class CameraGrab {
 	private static final int NONE = -1;
@@ -30,7 +35,8 @@ final class CameraGrab {
 	private static final double FAR = 32.0;
 	private static final double WHEEL = 0.12;
 
-	private static final double EASE = 9.0;
+	private static final double TURN_EASE = 9.0;
+	private static final double STEPS = 2.0;
 	private static final double WHEEL_EASE = 3.5;
 	private static final double TURN_BACK_SECONDS = 0.45;
 
@@ -40,6 +46,8 @@ final class CameraGrab {
 
 	private final HandThrow handThrow = new HandThrow();
 	private final Quaternionf rotation = new Quaternionf();
+	private final Quaternionf behind = new Quaternionf();
+	private boolean turned;
 	private boolean holding;
 	private boolean away;
 	private double turningBack;
@@ -47,6 +55,7 @@ final class CameraGrab {
 
 	private double wanted;
 	private double distance;
+	private Vec3 lead = Vec3.ZERO;
 	private Vec3 offset = Vec3.ZERO;
 	private Vec3 position = Vec3.ZERO;
 	private Vec3 aim = Vec3.ZERO;
@@ -101,6 +110,7 @@ final class CameraGrab {
 	void turnAround() {
 		if (turningBack <= 0) {
 			away = !away;
+			turned = true;
 		}
 	}
 
@@ -113,6 +123,7 @@ final class CameraGrab {
 	boolean turnsBack(double dt) {
 		if (away) {
 			away = false;
+			turned = true;
 			turningBack = TURN_BACK_SECONDS;
 		}
 		if (turningBack <= 0) {
@@ -166,6 +177,8 @@ final class CameraGrab {
 		away = false;
 		turningBack = 0;
 		offset = camera.position().subtract(eyes);
+		lead = offset;
+		turned = true;
 		distance = offset.length();
 		wanted = CamMath.clamp(distance, NEAR, FAR);
 		position = camera.position();
@@ -178,20 +191,39 @@ final class CameraGrab {
 	 * moves the held camera on by one frame
 	 */
 	void hold(LocalPlayer player, Vec3 eyes, Vec3 look, Subject subject, CameraConfig config, double dt) {
-		final double ease = 1.0 - Math.exp(-EASE * dt);
+		final double ease = config.holdLag <= 0 ? 1.0 : 1.0 - Math.exp(-STEPS * dt / config.holdLag);
 		distance += (wanted - distance) * (1.0 - Math.exp(-WHEEL_EASE * dt));
-		offset = offset.lerp(look.scale(distance), ease);
+		lead = lead.lerp(look.scale(distance), ease);
+		offset = offset.lerp(lead, ease);
 		position = shownAt(player, eyes);
 
 		final double near = config.faceDistance * subject.unit;
 		final double closeness = near <= 0 ? 0 :
 				1.0 - CamMath.smoothstep((position.distanceTo(subject.center) - near) / near);
 		aim = subject.center.lerp(subject.head, closeness);
-		final Quaternionf facing = new Quaternionf(rotation);
+		final Quaternionf facing = new Quaternionf();
 		if (CamMath.lookRotation(away ? position.subtract(aim) : aim.subtract(position), facing)) {
-			rotation.slerp(facing, (float) ease);
+			face(facing, dt, config.keepCentered);
 		}
 		handThrow.sample(position);
+	}
+
+	/**
+	 * @param facing   how the camera is turned once it looks right at what it films
+	 * @param centered if it is to look there at once, and not a moment late
+	 */
+	private void face(Quaternionf facing, double dt, boolean centered) {
+		if (!centered) {
+			turned = true;
+			rotation.slerp(facing, (float) (1.0 - Math.exp(-TURN_EASE * dt)));
+			return;
+		}
+		if (turned) {
+			facing.conjugate(behind).mul(rotation);
+			turned = false;
+		}
+		behind.slerp(new Quaternionf(), (float) (1.0 - Math.exp(-TURN_EASE * dt)));
+		facing.mul(behind, rotation);
 	}
 
 	/**
