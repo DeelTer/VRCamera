@@ -83,6 +83,15 @@ public class CameraConfig {
 	 */
 	public double throwPower = 1.3;
 	/**
+	 * seconds the camera a player at a screen holds needs to catch up with where they look, 0 = at once
+	 */
+	public double holdLag = 0.1;
+	/**
+	 * the camera looks right at the player all the time: it does not aim ahead of where they go, and does not
+	 * turn to them a moment late. In every mode, and while a player at a screen holds it
+	 */
+	public boolean keepCentered = false;
+	/**
 	 * How much a dropped camera turns its lens to the player while it comes to rest, in the physics mode.
 	 * 0 = it lies however it fell, 1 = it looks right at the player
 	 */

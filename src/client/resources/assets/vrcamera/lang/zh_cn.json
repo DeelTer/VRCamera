@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "摄像机窗口：下一种网格",
 	"vrcamera.gui.palettes.delete.confirm": "再按一次 ✕ 删除 %s",
 	"vrcamera.gui.palettes.deleted": "已删除：%s",
-	"vrcamera.gui.palettes.delete.failed": "无法删除 %s"
+	"vrcamera.gui.palettes.delete.failed": "无法删除 %s",
+	"vrcamera.option.holdLag": "手持摄像机平滑度",
+	"vrcamera.option.holdLag.tooltip": "用鼠标右键拿着的摄像机跟上视线所需的时间。越大越平滑、越慢，0 为立即跟随。",
+	"vrcamera.option.keepCentered": "让我保持居中",
+	"vrcamera.option.keepCentered.tooltip": "关：摄像机会略微瞄向你前进的方向，并稍晚一点转向你。开：在所有模式下以及手持时都始终正对着你。"
 }

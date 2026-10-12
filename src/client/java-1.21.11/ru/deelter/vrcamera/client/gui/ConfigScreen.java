@@ -56,6 +56,10 @@ public final class ConfigScreen {
 				"%.1f", value -> config.indicatorSize = value));
 		general.addEntry(screen.slider("throwPower", config.throwPower, defaults.throwPower, 0, 3, 0.1, "%.1f",
 				value -> config.throwPower = value));
+		general.addEntry(screen.slider("holdLag", config.holdLag, defaults.holdLag, 0, 2, 0.05, "%.2f s",
+				value -> config.holdLag = value));
+		general.addEntry(screen.toggle("keepCentered", config.keepCentered, defaults.keepCentered,
+				value -> config.keepCentered = value));
 		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
 				value -> config.menuShotChat = value));
 		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.chromaColor"),

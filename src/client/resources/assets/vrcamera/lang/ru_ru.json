@@ -396,5 +396,9 @@
 	"key.vrcamera.guide": "Окно камеры: следующая сетка",
 	"vrcamera.gui.palettes.delete.confirm": "Нажмите ✕ ещё раз, чтобы удалить %s",
 	"vrcamera.gui.palettes.deleted": "Удалено: %s",
-	"vrcamera.gui.palettes.delete.failed": "Не удалось удалить %s"
+	"vrcamera.gui.palettes.delete.failed": "Не удалось удалить %s",
+	"vrcamera.option.holdLag": "Плавность камеры в руке",
+	"vrcamera.option.holdLag.tooltip": "За сколько секунд камера, которую вы держите правой кнопкой мыши, догоняет взгляд. Больше — плавнее и медленнее, 0 — сразу.",
+	"vrcamera.option.keepCentered": "Держать меня в центре",
+	"vrcamera.option.keepCentered.tooltip": "Выкл: камера целится немного вперёд по ходу движения и доворачивается с небольшим запозданием. Вкл: всегда смотрит точно на вас — во всех режимах и когда вы держите её в руке."
 }
