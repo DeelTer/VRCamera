@@ -219,7 +219,10 @@ public final class Palettes {
 		open(SITE);
 	}
 
-	private static void open(String target) {
+	/**
+	 * shows a file, a folder or a web page in what the system opens it with
+	 */
+	public static void open(String target) {
 		final String system = System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
 		final List<String> opener = system.contains("win") ? List.of("rundll32", "url.dll,FileProtocolHandler", target) :
 				List.of(system.contains("mac") ? "open" : "xdg-open", target);

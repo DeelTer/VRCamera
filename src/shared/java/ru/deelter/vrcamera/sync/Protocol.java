@@ -133,6 +133,7 @@ public final class Protocol {
 			out.writeShort(pin.image.length);
 			out.write(pin.image);
 			out.writeBoolean(pin.custom);
+			out.writeBoolean(pin.replaceOldest);
 		});
 	}
 
@@ -156,7 +157,9 @@ public final class Protocol {
 		}
 		final byte[] image = new byte[length];
 		in.readFully(image);
-		return new Pin(reference, blockX, blockY, blockZ, x, y, z, qx, qy, qz, qw, aspect, image, in.readBoolean());
+		final boolean custom = in.readBoolean();
+		return new Pin(reference, blockX, blockY, blockZ, x, y, z, qx, qy, qz, qw, aspect, image, custom,
+				in.available() > 0 && in.readBoolean());
 	}
 
 	public static byte[] unpin(long id) {
@@ -539,9 +542,13 @@ public final class Protocol {
 	 * @param reference picked by the client, the answer names it again
 	 * @param blockX    the block it is pinned to, the sheet falls when that goes
 	 */
+	/**
+	 * @param replaceOldest the player wants their oldest pinned photo taken off if this one is over their limit.
+	 *                      Not sent by an older mod, read as false then
+	 */
 	public record Pin(
 			long reference, int blockX, int blockY, int blockZ, double x, double y, double z, float qx, float qy,
-			float qz, float qw, float aspect, byte[] image, boolean custom) {
+			float qz, float qw, float aspect, byte[] image, boolean custom, boolean replaceOldest) {
 	}
 
 	public record PinResult(long reference, byte result, long id, long imageHash) {

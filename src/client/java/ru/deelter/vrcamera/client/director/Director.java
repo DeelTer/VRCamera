@@ -62,6 +62,12 @@ public final class Director {
 	private static final double TIGHT_DISTANCE_SCALE = 0.7;
 
 	private static final double FALLBACK_DISTANCE_SCALE = 0.6;
+	/**
+	 * Seconds the view from the eyes stays at least, at most, when no shot had room: not a cut away and back
+	 * every moment. It goes when a shot has room again
+	 */
+	private static final double FORCED_POV_LEAST = 6.0;
+	private static final double FORCED_POV_MOST = 15.0;
 	private static final double BOOST = 4.0;
 
 	private static final double TIGHT_POV_FIT = 0.6;
@@ -439,6 +445,10 @@ public final class Director {
 		next.forced = forceType != null;
 		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, random.nextDouble()) *
 				(context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
+		if (next.type == ShotType.POV && selection.best == null && !next.forced) {
+			next.duration = Math.max(next.duration,
+					CamMath.lerp(FORCED_POV_LEAST, FORCED_POV_MOST, random.nextDouble()));
+		}
 		if (isHome() && !next.forced) {
 			if (next.type == ShotType.POV) {
 				next.duration = config.povHomeSeconds;

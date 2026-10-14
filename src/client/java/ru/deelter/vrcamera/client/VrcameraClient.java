@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientLoginConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -15,6 +16,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
@@ -36,6 +38,7 @@ import ru.deelter.vrcamera.client.photo.PhotoAlbum;
 import ru.deelter.vrcamera.client.photo.PhotoStore;
 import ru.deelter.vrcamera.client.shot.ShotType;
 import ru.deelter.vrcamera.client.sync.PhotoSync;
+import ru.deelter.vrcamera.client.voice.VoiceEars;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -80,11 +83,6 @@ public class VrcameraClient implements ClientModInitializer {
 		}
 	}
 
-	private static Component screenModeLabel() {
-		return Component.translatable("vrcamera.gui.mode", Component.translatable(
-				"vrcamera.mode." + DesktopCamera.INSTANCE.mode().name().toLowerCase(Locale.ROOT)));
-	}
-
 	/**
 	 * Where a button of the camera goes in the pause menu without VR: in a column to the left of the menu while
 	 * there is room for one, and into the four corners of the screen on a large gui scale.
@@ -110,7 +108,7 @@ public class VrcameraClient implements ClientModInitializer {
 		return Button.builder(chromaLabel(), button -> {
 			ChromaKey.cycle();
 			button.setMessage(chromaLabel());
-		}).build();
+		}).tooltip(Tooltip.create(Component.translatable("vrcamera.gui.chroma.tooltip"))).build();
 	}
 
 	private static Component chromaLabel() {
@@ -171,9 +169,7 @@ public class VrcameraClient implements ClientModInitializer {
 		});
 		key("settings", UNBOUND, () -> {
 			final Minecraft mc = Minecraft.getInstance();
-			if (ClothConfig.isInstalled()) {
-				mc.gui.setScreen(ConfigScreen.create(mc.gui.screen()));
-			}
+			mc.gui.setScreen(ClothConfig.settings(mc.gui.screen()));
 		});
 
 		ClientCommandRegistrationCallback.EVENT.register(
@@ -184,6 +180,7 @@ public class VrcameraClient implements ClientModInitializer {
 				CameraController.INSTANCE.tick();
 			}
 			DesktopCamera.INSTANCE.tick();
+			VoiceEars.refresh();
 			PhotoSync.INSTANCE.tick();
 
 			final boolean inWindow = OutputWindow.isFocused();
@@ -205,6 +202,8 @@ public class VrcameraClient implements ClientModInitializer {
 		});
 
 		ClientPlayConnectionEvents.DISCONNECT.register((listener, mc) -> mc.execute(PhotoAlbum.INSTANCE::clear));
+		ClientLoginConnectionEvents.INIT.register(
+				(handler, mc) -> mc.execute(DesktopCamera.INSTANCE::forgetWorld));
 		ClientLifecycleEvents.CLIENT_STARTED.register(
 				mc -> CompletableFuture.runAsync(() -> {
 					PhotoStore.removeDeletedWorlds();
@@ -277,27 +276,26 @@ public class VrcameraClient implements ClientModInitializer {
 		final List<AbstractWidget> widgets = Screens.getWidgets(pauseMenu);
 
 		if (onScreen()) {
+			final ModePicker modes = new ModePicker();
 			final List<Button> buttons = new ArrayList<>();
-			buttons.add(Button.builder(screenModeLabel(), button -> {
-				DesktopCamera.INSTANCE.cycleMode();
-				button.setMessage(screenModeLabel());
-			}).build());
+			buttons.add(modes.opener());
 			buttons.add(Button.builder(screenOutputLabel(), button -> {
 				final CameraConfig config = CameraConfig.current();
 				config.screenOutput = config.screenOutput == ScreenOutput.WINDOW ? ScreenOutput.SCREEN :
 						ScreenOutput.WINDOW;
 				config.save();
 				button.setMessage(screenOutputLabel());
-			}).build());
-			if (ClothConfig.isInstalled()) {
-				buttons.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
-						button -> Minecraft.getInstance().gui.setScreen(ConfigScreen.create(pauseMenu))).build());
-			}
+			}).tooltip(Tooltip.create(Component.translatable("vrcamera.option.screenOutput.tooltip"))).build());
+			buttons.add(Button.builder(Component.translatable("vrcamera.gui.settings"),
+							button -> Minecraft.getInstance().gui.setScreen(ClothConfig.settings(pauseMenu)))
+					.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.settings.tooltip"))).build());
 			buttons.add(chromaButton());
 			buttons.add(Button.builder(Component.translatable("vrcamera.gui.sets"),
-					button -> Minecraft.getInstance().gui.setScreen(new CameraSetsScreen(pauseMenu))).build());
+							button -> Minecraft.getInstance().gui.setScreen(new CameraSetsScreen(pauseMenu)))
+					.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.sets.tooltip"))).build());
 			buttons.add(Button.builder(Component.translatable("vrcamera.gui.palettes"),
-					button -> Minecraft.getInstance().gui.setScreen(new PalettesScreen(pauseMenu))).build());
+							button -> Minecraft.getInstance().gui.setScreen(new PalettesScreen(pauseMenu)))
+					.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.tooltip"))).build());
 			for (int slot = 0; slot < buttons.size(); slot++) {
 				final Button button = buttons.get(slot);
 				final int[] at = pauseSlot(pauseMenu, slot);
@@ -306,6 +304,14 @@ public class VrcameraClient implements ClientModInitializer {
 				DesktopGui.leaveOut(button);
 				widgets.add(button);
 			}
+			for (int choice = 0; choice < modes.choices().size(); choice++) {
+				final Button button = modes.choices().get(choice);
+				final int[] at = pauseSlot(pauseMenu, choice + 1);
+				button.setRectangle(at[2], BUTTON_HEIGHT, at[0], at[1]);
+				DesktopGui.leaveOut(button);
+				widgets.add(button);
+			}
+			buttons.subList(1, buttons.size()).forEach(modes::covers);
 			return;
 		}
 		if (!Vr.isRunning() && CameraController.INSTANCE.mode() == CameraController.Mode.OFF) {

@@ -1,9 +1,6 @@
 package ru.deelter.vrcamera.client.gui;
 
-import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.ImageWidget;
-import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.*;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -83,6 +80,7 @@ public class PalettesScreen extends Screen {
 			if (own) {
 				addRenderableWidget(Button.builder(Component.literal(name.equals(deleting) ? "?" : "✕"),
 								button -> delete(name))
+						.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.delete.tooltip")))
 						.bounds(x + WIDTH - BUTTON_HEIGHT, rowY, BUTTON_HEIGHT, BUTTON_HEIGHT).build());
 			}
 		}
@@ -113,11 +111,14 @@ public class PalettesScreen extends Screen {
 		final int side = (WIDTH - FIND_WIDTH - GAP * 2) / 2;
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.find"),
 						button -> Palettes.openSite())
+				.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.find.tooltip")))
 				.bounds(x, y, FIND_WIDTH, BUTTON_HEIGHT).build());
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.get"), button -> get())
+				.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.get.tooltip")))
 				.bounds(x + FIND_WIDTH + GAP, y, side, BUTTON_HEIGHT).build());
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.folder"),
 						button -> Palettes.openFolder())
+				.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.folder.tooltip")))
 				.bounds(x + WIDTH - side, y, side, BUTTON_HEIGHT).build());
 		y += row;
 		status = addRenderableWidget(new StringWidget(x, y, WIDTH, BUTTON_HEIGHT, said, font));

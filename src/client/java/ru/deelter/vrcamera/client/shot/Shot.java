@@ -13,6 +13,10 @@ import ru.deelter.vrcamera.client.rig.Subject;
  * the camera there and keeps it out of walls.
  */
 public final class Shot {
+	/**
+	 * how much further away the camera goes for each block the people it films together are spread
+	 */
+	private static final double CROWD_ROOM = 1.5;
 	private static final double POV_AIM_LAG = 0.25;
 
 	public final ShotType type;
@@ -202,6 +206,10 @@ public final class Shot {
 			}
 		}
 
+		if (subject.crowdWeight > 0 && !exactAim()) {
+			lookTarget = lookTarget.lerp(subject.crowd, subject.crowdWeight);
+			distance += subject.crowdSpread * CROWD_ROOM * subject.crowdWeight;
+		}
 		if (config.speedFov) {
 			fov += CamMath.clamp((subject.speed - 6.0) * 0.8, 0.0, 14.0);
 		}

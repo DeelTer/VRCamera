@@ -74,6 +74,17 @@ repositories {
             includeGroup "maven.modrinth"
         }
     }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Henkel"
+                url = "https://maven.maxhenkel.de/repository/public"
+            }
+        }
+        filter {
+            includeGroup "de.maxhenkel.voicechat"
+        }
+    }
 }
 
 dependencies {
@@ -97,6 +108,9 @@ dependencies {
     } else {
         compileOnly "maven.modrinth:nofigura:${project.figura_version}"
     }
+
+    // optional, voices of Simple Voice Chat are heard the way the camera looks
+    compileOnly "de.maxhenkel.voicechat:voicechat-api:${project.voicechat_api_version}"
 
     // optional, for the settings screen
     implementation "maven.modrinth:cloth-config:${project.cloth_config_version}"

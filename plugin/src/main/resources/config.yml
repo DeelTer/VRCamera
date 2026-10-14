@@ -1,7 +1,9 @@
 # VRCameraSync: pinned photos of the VRCamera mod, shared between the players that have it.
 
 limits:
-  # photos one player may have pinned at once, in all worlds
+  # photos one player may have pinned at once, in all worlds. A player can have their mod take off their oldest
+  # one when they pin over it. Players with the permission vrcamera.pin.unlimited (operators by default) have
+  # no limits for pinning, not this one, per-chunk or total
   per-player: 64
   # photos in one chunk, of all players together. Keeps a single spot from being plastered
   per-chunk: 24

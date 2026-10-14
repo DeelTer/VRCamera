@@ -18,7 +18,6 @@ import ru.deelter.vrcamera.client.desktop.ChromaKey;
 import ru.deelter.vrcamera.client.desktop.DesktopCamera;
 import ru.deelter.vrcamera.client.desktop.OutputWindow;
 import ru.deelter.vrcamera.client.gui.ClothConfig;
-import ru.deelter.vrcamera.client.gui.ConfigScreen;
 import ru.deelter.vrcamera.client.gui.DebugOverlay;
 import ru.deelter.vrcamera.client.gui.PalettesScreen;
 import ru.deelter.vrcamera.client.photo.Palettes;
@@ -160,13 +159,8 @@ public final class VrcamCommand {
 		}));
 		root.then(ClientCommands.literal("status").executes(context -> status(context.getSource())));
 		root.then(ClientCommands.literal("settings").executes(context -> {
-			if (!ClothConfig.isInstalled()) {
-				context.getSource().sendError(Component.translatable("vrcamera.command.nocloth"));
-				return 0;
-			}
-
 			final Minecraft mc = context.getSource().getClient();
-			mc.schedule(() -> mc.gui.setScreen(ConfigScreen.create(mc.gui.screen())));
+			mc.schedule(() -> mc.gui.setScreen(ClothConfig.settings(mc.gui.screen())));
 			return DONE;
 		}));
 

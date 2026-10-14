@@ -8,6 +8,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ru.deelter.vrcamera.client.desktop.CameraHud;
 import ru.deelter.vrcamera.client.desktop.DesktopGui;
 import ru.deelter.vrcamera.client.desktop.DirectorPass;
 import ru.deelter.vrcamera.client.desktop.PlayerEars;
@@ -16,7 +17,7 @@ import ru.deelter.vrcamera.client.desktop.PlayerEars;
 public class GameRendererMixin {
 	@WrapWithCondition(method = "extract", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;extractRenderState(Lnet/minecraft/client/DeltaTracker;ZZ)V"), require = 0)
 	private boolean vrcamera$noHudForCamera(Gui gui, DeltaTracker deltaTracker, boolean renderLevel, boolean loaded) {
-		return !DirectorPass.isActive() || DesktopGui.isDrawing();
+		return !DirectorPass.isActive() || DesktopGui.isDrawing() || CameraHud.shown();
 	}
 
 	@Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/Profiler;get()Lnet/minecraft/util/profiling/ProfilerFiller;", ordinal = 0), require = 0)

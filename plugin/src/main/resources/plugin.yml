@@ -16,6 +16,9 @@ permissions:
   vrcamera.pin:
     description: Pin photos others can see
     default: true
+  vrcamera.pin.unlimited:
+    description: Pin photos over every limit of how many
+    default: op
   vrcamera.custom:
     description: Put up pictures loaded from the internet instead of photos
     default: true
