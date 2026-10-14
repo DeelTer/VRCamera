@@ -37,6 +37,11 @@ public final class PhotoSync {
 	private static final double LOAD_DISTANCE = 16.0;
 	private static final double UNLOAD_DISTANCE = 24.0;
 	private static final int MAX_LOADED = 48;
+	/**
+	 * sheets of the others that are not pinned, shown at once: apart from the pinned ones, a wall full of
+	 * those does not keep a photo that was just taken from being seen
+	 */
+	private static final int MAX_GHOSTS = 16;
 	private static final int MAX_WAITING = 2;
 	private static final double EVICT_MARGIN = 2.0;
 	private static final int WAIT_TICKS = 100;
@@ -329,6 +334,23 @@ public final class PhotoSync {
 				sheet.qw() / length, sheet.aspect(), sheet.imageHash(), sheet.removable(), sheet.custom()));
 	}
 
+	/**
+	 * @return if one more sheet of the others that is not pinned can be shown. The newest go first: the oldest one
+	 * shown makes room for a newer one, a photo that was just taken is always seen coming out
+	 */
+	private boolean ghostRoom(long id) {
+		if (this.ghosts.size() < MAX_GHOSTS) {
+			return true;
+		}
+		final long oldest = this.ghosts.stream().mapToLong(Long::longValue).min().orElse(id);
+		if (oldest >= id) {
+			return false;
+		}
+		this.ghosts.remove(oldest);
+		PhotoAlbum.INSTANCE.removeLoose(oldest);
+		return true;
+	}
+
 	private void looseGone(long id) {
 		this.looseKnown.remove(id);
 		this.ghosts.remove(id);
@@ -510,7 +532,7 @@ public final class PhotoSync {
 					PhotoAlbum.INSTANCE.removeLoose(loose.id());
 				}
 			} else if (showOthers && distance < LOAD_DISTANCE * LOAD_DISTANCE &&
-					this.loaded.size() + this.ghosts.size() + this.waiting.size() < MAX_LOADED) {
+					ghostRoom(loose.id())) {
 				if (loose.custom() && !showCustom) {
 					Protocol.Pose at = loose.pose();
 					PhotoSheet standIn = PhotoAlbum.INSTANCE.addGhost(loose.id(), new Vec3(at.x(), at.y(), at.z()),
