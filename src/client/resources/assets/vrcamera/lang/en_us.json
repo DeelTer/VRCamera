@@ -412,7 +412,7 @@
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: the hole around you has a clean edge and opens by growing. Higher: its edge fades out in dots, which can look grainy in a stream.",
 	"vrcamera.option.voiceFromCamera": "Voice chat: heard from the camera",
 	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat and Plasmo Voice: voices come from where the camera looks, a voice on the left of the picture is heard on the left. Loudness stays as you hear it.",
-	"vrcamera.option.photoReplaceOldest": "Photo: take off my oldest on the limit",
+	"vrcamera.option.photoReplaceOldest": "Photo: delete the oldest on the limit",
 	"vrcamera.option.photoReplaceOldest.tooltip": "On a server, pinning one more photo than you may have pinned takes off your oldest pinned one, instead of being refused.",
 	"vrcamera.option.groupShotsReach": "Group shot reach",
 	"vrcamera.option.groupShotsReach.tooltip": "Blocks around you in which other players are filmed together with you.",
@@ -433,5 +433,8 @@
 	"vrcamera.option.cameraHud": "PC: HUD in the camera window",
 	"vrcamera.option.cameraHud.tooltip": "The hotbar, hearts, food, armour, boss bars and titles also in the picture of the camera in its own window, for a stream. Crosshair, chat, the line over the hotbar and menus stay out.",
 	"vrcamera.option.holdShake": "Held camera: body cam shake",
-	"vrcamera.option.holdShake.tooltip": "Turned away from you with R, the camera in your hand shakes like a body camera: with every step, and jolts when you get hurt. 0 = off."
+	"vrcamera.option.holdShake.tooltip": "Turned away from you with R, the camera in your hand shakes like a body camera: with every step, and jolts when you get hurt. 0 = off.",
+	"key.vrcamera.hud": "Camera window: HUD on/off",
+	"vrcamera.message.hud.on": "Camera: HUD in the camera window on",
+	"vrcamera.message.hud.off": "Camera: HUD in the camera window off"
 }

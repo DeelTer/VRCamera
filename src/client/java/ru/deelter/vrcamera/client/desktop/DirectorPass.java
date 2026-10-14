@@ -156,7 +156,13 @@ public final class DirectorPass {
 			DesktopGui.draw(mc, deltaTracker, own);
 			CloudSlots.swap(mc);
 			try {
-				draw(mc, deltaTracker, own, target);
+				if (CameraHud.shown()) {
+					try (final HudWindow ignored = HudWindow.fit(mc, DirectorPass.shownShape(target))) {
+						draw(mc, deltaTracker, own, target);
+					}
+				} else {
+					draw(mc, deltaTracker, own, target);
+				}
 				SeeThrough.set(cutThrough(mc, deltaTracker, own, camera, width, height));
 			} finally {
 				CloudSlots.swap(mc);
@@ -178,6 +184,14 @@ public final class DirectorPass {
 						framesPerSecond, drawMillis, showMillis),
 				String.format(Locale.ROOT, "that is %.0f%% of a second on the processor",
 						framesPerSecond * (drawMillis + showMillis) / 10.0));
+	}
+
+	/**
+	 * @return width and height the picture of the camera is shown in. The HUD on it takes its shape from that,
+	 * not from the size it is drawn in
+	 */
+	static int[] shownShape(RenderTarget target) {
+		return shape != null ? shape : new int[]{target.width, target.height};
 	}
 
 	static void setTarget(Minecraft mc, RenderTarget to) {

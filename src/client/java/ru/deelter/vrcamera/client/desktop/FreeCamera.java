@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
+import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Quaternionf;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
 
 import java.io.IOException;
@@ -35,6 +37,10 @@ import java.util.stream.Stream;
  */
 final class FreeCamera {
 	static final int MOST = 26;
+	/**
+	 * blocks a thrown camera stays away from what it hits
+	 */
+	private static final double THROWN_GAP = 0.25;
 	private static final String FILES = "cameras-";
 	private static final String SET_MARK = "@";
 	private static final String SHARED = "vrcamera-cameras:";
@@ -567,7 +573,7 @@ final class FreeCamera {
 		push = Vec3.ZERO;
 		position = position.add(velocity.scale(dt));
 		if (glide.lengthSqr() > 0) {
-			position = position.add(glide.scale(dt));
+			position = stopsAtBlocks(position, position.add(glide.scale(dt)));
 			glided += glide.length() * dt;
 			glide = glide.scale(Math.exp(-GLIDE_DRAG * dt));
 			if (glide.lengthSqr() < 0.01) {
@@ -579,6 +585,27 @@ final class FreeCamera {
 		fov += (spot.fov - fov) * ease(FOV_EASE, dt);
 		position = bounded(before, position, spot);
 		return new DesktopCamera.Pose(position, rotation(active), (float) fov);
+	}
+
+	/**
+	 * A camera that was thrown flies until it hits a block: it does not go into them and show what is behind, as
+	 * long as the player is not shown through blocks anyway
+	 *
+	 * @return where it gets to on its way from one place to the other
+	 */
+	private Vec3 stopsAtBlocks(Vec3 from, Vec3 to) {
+		final Level level = Minecraft.getInstance().level;
+		if (level == null || CameraConfig.current().seeThrough) {
+			return to;
+		}
+		final BlockHitResult hit = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, CollisionContext.empty()));
+		if (hit.getType() == HitResult.Type.MISS) {
+			return to;
+		}
+		fling(Vec3.ZERO);
+		final Vec3 way = to.subtract(from);
+		return way.lengthSqr() < 1.0E-8 ? from : hit.getLocation().subtract(way.normalize().scale(THROWN_GAP));
 	}
 
 	/**

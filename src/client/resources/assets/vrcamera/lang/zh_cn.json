@@ -412,7 +412,7 @@
 	"vrcamera.option.seeThroughSoftness.tooltip": "0：你周围的透视窗边缘清晰，打开时逐渐扩大。更高：边缘以网点渐隐，在直播中可能显得有颗粒感。",
 	"vrcamera.option.voiceFromCamera": "语音聊天：从摄像机处收听",
 	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat 和 Plasmo Voice：声音按摄像机朝向定位，画面左边的人声从左边传来。音量仍按你自己听到的来。",
-	"vrcamera.option.photoReplaceOldest": "照片：达到上限时撤下我最旧的",
+	"vrcamera.option.photoReplaceOldest": "照片：达到上限时删除最旧的",
 	"vrcamera.option.photoReplaceOldest.tooltip": "在服务器上，超出上限再固定照片时，会撤下你最早固定的那张，而不是被拒绝。",
 	"vrcamera.option.groupShotsReach": "全景范围",
 	"vrcamera.option.groupShotsReach.tooltip": "你周围多少格内的其他玩家会和你一起入镜。",
@@ -433,5 +433,8 @@
 	"vrcamera.option.cameraHud": "PC：摄像机窗口显示 HUD",
 	"vrcamera.option.cameraHud.tooltip": "在摄像机独立窗口的画面中也显示快捷栏、生命、饱食度、护甲、Boss 血条和标题，方便直播。准星、聊天、快捷栏上方的提示和菜单不会出现。",
 	"vrcamera.option.holdShake": "手持摄像机：随身摄像机抖动",
-	"vrcamera.option.holdShake.tooltip": "按 R 转向前方后，手中的摄像机会像随身摄像机一样抖动：随步伐晃动，受伤时猛地一震。0 为关闭。"
+	"vrcamera.option.holdShake.tooltip": "按 R 转向前方后，手中的摄像机会像随身摄像机一样抖动：随步伐晃动，受伤时猛地一震。0 为关闭。",
+	"key.vrcamera.hud": "摄像机窗口：开关 HUD",
+	"vrcamera.message.hud.on": "摄像机：摄像机窗口 HUD 已开启",
+	"vrcamera.message.hud.off": "摄像机：摄像机窗口 HUD 已关闭"
 }

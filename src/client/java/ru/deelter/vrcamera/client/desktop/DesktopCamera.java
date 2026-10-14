@@ -259,6 +259,16 @@ public final class DesktopCamera {
 		waiting = null;
 	}
 
+	/**
+	 * the HUD in the window of the camera on or off, see {@link CameraHud}
+	 */
+	public void toggleHud() {
+		final CameraConfig config = CameraConfig.current();
+		config.cameraHud = !config.cameraHud;
+		config.save();
+		say(config.cameraHud ? "vrcamera.message.hud.on" : "vrcamera.message.hud.off");
+	}
+
 	public void cycleMode() {
 		setMode(Mode.values()[(mode.ordinal() + 1) % Mode.values().length]);
 	}
@@ -1427,7 +1437,8 @@ public final class DesktopCamera {
 		final Vec3 look = player.getViewVector(partialTick);
 		if (grab.isHolding()) {
 			if (use || grab.turnsBack(dt)) {
-				grab.hold(player, eyes, look, subject, config, dt);
+				grab.hold(player, eyes, look, subject, config, dt,
+						PhotoSync.INSTANCE.rules().throughBlocks());
 			} else {
 				letGo(config);
 			}

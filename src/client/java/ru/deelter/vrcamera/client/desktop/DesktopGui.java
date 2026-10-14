@@ -13,6 +13,7 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
@@ -57,6 +58,10 @@ public final class DesktopGui {
 	private static final int FRAME_MARGIN = 8;
 
 	private static final int CONTAINER_MARGIN = 34;
+	/**
+	 * between the open recipe book and the window of the inventory next to it
+	 */
+	private static final int RECIPE_BOOK_GAP = 3;
 
 	private static final double WIDGETS_PART = 0.4;
 
@@ -280,6 +285,10 @@ public final class DesktopGui {
 			top = Math.min(top, window.vrcamera$top());
 			right = Math.max(right, window.vrcamera$left() + window.vrcamera$width());
 			bottom = Math.max(bottom, window.vrcamera$top() + window.vrcamera$height());
+			if (screen.children().stream().anyMatch(part -> part instanceof RecipeBookComponent<?> book &&
+					book.isVisible())) {
+				left = Math.min(left, window.vrcamera$left() - RecipeBookComponent.IMAGE_WIDTH - RECIPE_BOOK_GAP);
+			}
 		}
 
 		final boolean drawn = !(screen instanceof AbstractContainerScreen<?>) &&

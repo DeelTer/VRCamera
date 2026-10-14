@@ -27,7 +27,8 @@
 		"ScreenMixin",
 		"SkyRendererAccessor",
 		"SodiumCameraTimingMixin",
-		"SodiumSectionManagerMixin"
+		"SodiumSectionManagerMixin",
+		"WindowAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1
