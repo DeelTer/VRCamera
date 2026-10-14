@@ -641,12 +641,18 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		final double dy = sheet.pose().y() - at.getY();
 		final double dz = sheet.pose().z() - at.getZ();
 
-		final boolean refused = maxLoose == 0 || client.sharingLoose || now - client.lastLoose < LOOSE_COOLDOWN ||
-				!player.hasPermission("vrcamera.pin") || (sheet.custom() && !mayCustom(player)) ||
-				!worldAllowed(player.getWorld()) || !sheet.pose().isSane() ||
-				!(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH) ||
-				sheet.image().length < 4 || sheet.image().length > maxImageBytes;
-		if (refused) {
+		final String refused = maxLoose == 0 ? "limits.loose-per-player is 0" :
+				client.sharingLoose ? "the last one is still being checked" :
+				now - client.lastLoose < LOOSE_COOLDOWN ? "too soon after the last one" :
+				!player.hasPermission("vrcamera.pin") ? "no permission vrcamera.pin" :
+				sheet.custom() && !mayCustom(player) ? "custom pictures are not allowed" :
+				!worldAllowed(player.getWorld()) ? "photos are off in this world" :
+				!sheet.pose().isSane() || !(dx * dx + dy * dy + dz * dz <= CAMERA_LEASH * CAMERA_LEASH) ?
+						"too far from the player" :
+				sheet.image().length < 4 || sheet.image().length > maxImageBytes ?
+						"picture of " + sheet.image().length + " bytes" : null;
+		if (refused != null) {
+			getLogger().info("Loose photo of " + player.getName() + " not shared: " + refused);
 			send(player, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), 0, 0)));
 			return;
 		}
@@ -666,6 +672,8 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 					return;
 				}
 				if (clean == null || !still.getWorld().getUID().equals(world)) {
+					getLogger().info("Loose photo of " + still.getName() + " not shared: " +
+							(clean == null ? "not a picture that can be read" : "they changed worlds"));
 					send(still, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), 0, 0)));
 					return;
 				}
@@ -679,8 +687,29 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 						clean.aspect, hash, clean.jpeg, sheet.custom());
 				stillClient.knownLoose.add(added.id);
 				send(still, Protocol.looseResult(new Protocol.LooseResult(sheet.reference(), added.id, hash)));
+				offerLoose(added);
 			});
 		});
+	}
+
+	/**
+	 * tells the players around about a sheet that just came out of a camera right away, and not only with the
+	 * next look at who is near what: it is to be seen coming out
+	 */
+	private void offerLoose(LooseSheets.Sheet sheet) {
+		final double send = sendRange * sendRange;
+		for (final Map.Entry<UUID, Client> entry : clients.entrySet()) {
+			final Player watcher = Bukkit.getPlayer(entry.getKey());
+			if (watcher == null || entry.getKey().equals(sheet.owner) ||
+					!watcher.getWorld().getUID().equals(sheet.world)) {
+				continue;
+			}
+			final Location at = watcher.getLocation();
+			if (sheet.distanceSquared(at.getX(), at.getY(), at.getZ()) <= send &&
+					entry.getValue().knownLoose.add(sheet.id)) {
+				send(watcher, Protocol.loose(sheet.toProtocol()));
+			}
+		}
 	}
 
 	private void moveLoose(Player player, long id, Protocol.Pose pose) {
