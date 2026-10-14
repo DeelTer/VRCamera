@@ -431,5 +431,7 @@
 	"vrcamera.gui.palettes.folder.tooltip": "Abre a pasta das paletas, seus arquivos .hex, .gpl, .pal e .txt vão lá",
 	"vrcamera.gui.palettes.delete.tooltip": "Apaga esta paleta, pressione duas vezes",
 	"vrcamera.option.cameraHud": "PC: HUD na janela da câmera",
-	"vrcamera.option.cameraHud.tooltip": "A hotbar, corações, fome, armadura, barras de chefe e títulos também na imagem da câmera na janela própria, para uma live. Mira, chat, a linha acima da hotbar e menus ficam de fora."
+	"vrcamera.option.cameraHud.tooltip": "A hotbar, corações, fome, armadura, barras de chefe e títulos também na imagem da câmera na janela própria, para uma live. Mira, chat, a linha acima da hotbar e menus ficam de fora.",
+	"vrcamera.option.holdShake": "Câmera segurada: tremor de bodycam",
+	"vrcamera.option.holdShake.tooltip": "Virada com R, a câmera na mão treme como uma câmera corporal: a cada passo e com um tranco quando você leva dano. 0 = desligado."
 }

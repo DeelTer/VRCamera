@@ -602,6 +602,7 @@ and by `/vrcam reload`.
 | `jumpSteady` | `"series"` | If the camera goes up and down with a player who jumps. In a row: it goes along with a single jump and holds still from the second one in a row. Always: it holds still for every jump. |
 | `followTurns` | `false` | On, the camera goes around the player when they turn, to stay behind or in front of them. Off, it keeps its place in the world: looking around is no reason for it to move. |
 | `holdLag`                | `0.1`           | seconds the camera held with the right mouse button takes to follow the look; higher is smoother, 0 = at once |
+| `holdShake` | `0.0` | the held camera turned away with R shakes like a body cam: with steps, a jolt when hurt; 0 = off |
 | `calmShots` | `true` | The director leaves out the shots from close by and from the ground: from the front and the low angle. They are the first to end up in a tree or a slope. |
 | `seeThrough` | `false` | The camera stays where the shot has it also when blocks are in the way, and shows the player through a round hole in them. Only in the camera window. The world is drawn once more while the hole is open. |
 | `seeThroughRadius` | `2.0` | Blocks across half of the hole around the player. |

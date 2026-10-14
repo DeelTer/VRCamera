@@ -431,5 +431,7 @@
 	"vrcamera.gui.palettes.folder.tooltip": "打开调色板文件夹，自己的 .hex、.gpl、.pal 和 .txt 文件放在这里",
 	"vrcamera.gui.palettes.delete.tooltip": "删除这个调色板，需按两次",
 	"vrcamera.option.cameraHud": "PC：摄像机窗口显示 HUD",
-	"vrcamera.option.cameraHud.tooltip": "在摄像机独立窗口的画面中也显示快捷栏、生命、饱食度、护甲、Boss 血条和标题，方便直播。准星、聊天、快捷栏上方的提示和菜单不会出现。"
+	"vrcamera.option.cameraHud.tooltip": "在摄像机独立窗口的画面中也显示快捷栏、生命、饱食度、护甲、Boss 血条和标题，方便直播。准星、聊天、快捷栏上方的提示和菜单不会出现。",
+	"vrcamera.option.holdShake": "手持摄像机：随身摄像机抖动",
+	"vrcamera.option.holdShake.tooltip": "按 R 转向前方后，手中的摄像机会像随身摄像机一样抖动：随步伐晃动，受伤时猛地一震。0 为关闭。"
 }

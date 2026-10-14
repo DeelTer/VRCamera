@@ -431,5 +431,7 @@
 	"vrcamera.gui.palettes.folder.tooltip": "Ouvre le dossier des palettes, vos fichiers .hex, .gpl, .pal et .txt vont là",
 	"vrcamera.gui.palettes.delete.tooltip": "Supprime cette palette, appuyez deux fois",
 	"vrcamera.option.cameraHud": "PC : HUD dans la fenêtre de la caméra",
-	"vrcamera.option.cameraHud.tooltip": "La barre d'action, les cœurs, la faim, l'armure, les barres de boss et les titres aussi dans l'image de la caméra dans sa fenêtre, pour un stream. Le viseur, le chat, la ligne au-dessus de la barre et les menus restent dehors."
+	"vrcamera.option.cameraHud.tooltip": "La barre d'action, les cœurs, la faim, l'armure, les barres de boss et les titres aussi dans l'image de la caméra dans sa fenêtre, pour un stream. Le viseur, le chat, la ligne au-dessus de la barre et les menus restent dehors.",
+	"vrcamera.option.holdShake": "Caméra tenue : tremblement bodycam",
+	"vrcamera.option.holdShake.tooltip": "Tournée avec R, la caméra en main tremble comme une caméra-piéton : à chaque pas, et d'un coup quand vous êtes blessé. 0 = désactivé."
 }

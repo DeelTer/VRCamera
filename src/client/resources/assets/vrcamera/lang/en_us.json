@@ -431,5 +431,7 @@
 	"vrcamera.gui.palettes.folder.tooltip": "Opens the folder of the palettes, own .hex, .gpl, .pal and .txt files go there",
 	"vrcamera.gui.palettes.delete.tooltip": "Deletes this palette, press twice",
 	"vrcamera.option.cameraHud": "PC: HUD in the camera window",
-	"vrcamera.option.cameraHud.tooltip": "The hotbar, hearts, food, armour, boss bars and titles also in the picture of the camera in its own window, for a stream. Crosshair, chat, the line over the hotbar and menus stay out."
+	"vrcamera.option.cameraHud.tooltip": "The hotbar, hearts, food, armour, boss bars and titles also in the picture of the camera in its own window, for a stream. Crosshair, chat, the line over the hotbar and menus stay out.",
+	"vrcamera.option.holdShake": "Held camera: body cam shake",
+	"vrcamera.option.holdShake.tooltip": "Turned away from you with R, the camera in your hand shakes like a body camera: with every step, and jolts when you get hurt. 0 = off."
 }

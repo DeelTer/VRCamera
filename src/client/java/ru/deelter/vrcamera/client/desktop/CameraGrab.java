@@ -8,6 +8,7 @@ import org.joml.Vector3f;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.math.CamMath;
 import ru.deelter.vrcamera.client.rig.HandThrow;
+import ru.deelter.vrcamera.client.rig.HandheldShake;
 import ru.deelter.vrcamera.client.rig.Subject;
 import ru.deelter.vrcamera.client.rig.WorldProbe;
 
@@ -23,6 +24,9 @@ import java.util.function.IntPredicate;
  * mouse is jerked. It turns to the player a moment late, which lets them drift in the picture while it is moved,
  * or looks right at them however fast it is moved, if that is what the player wants: then only a turn it was
  * taken in, or asked for, is eased out.
+ * <p>
+ * Turned away from the player, to film what they look at, it can shake in the hand like a body camera: with
+ * every step, and a jolt when they get hurt, if the player wants that.
  */
 final class CameraGrab {
 	private static final int NONE = -1;
@@ -39,12 +43,16 @@ final class CameraGrab {
 	private static final double STEPS = 2.0;
 	private static final double WHEEL_EASE = 3.5;
 	private static final double TURN_BACK_SECONDS = 0.45;
+	private static final double SHAKE_FADE = 0.3;
 
 	private static final double ICON = 1.35;
 	private static final double ICON_BEAT = 0.2;
 	private static final double ICON_RATE = 9.0;
 
 	private final HandThrow handThrow = new HandThrow();
+	private final HandheldShake shake = new HandheldShake();
+	private final Quaternionf shaken = new Quaternionf();
+	private double shaking;
 	private final Quaternionf rotation = new Quaternionf();
 	private final Quaternionf behind = new Quaternionf();
 	private boolean turned;
@@ -93,9 +101,12 @@ final class CameraGrab {
 		return aim;
 	}
 
+	/**
+	 * @return how the held camera is turned, with the shake of the hand
+	 */
 	@NotNull
 	Quaternionf rotation() {
-		return new Quaternionf(rotation);
+		return new Quaternionf(rotation).mul(shaken);
 	}
 
 	@NotNull
@@ -175,6 +186,8 @@ final class CameraGrab {
 	void take(DesktopCamera.Pose camera, Vec3 eyes) {
 		holding = true;
 		away = false;
+		shaking = 0;
+		shaken.identity();
 		turningBack = 0;
 		offset = camera.position().subtract(eyes);
 		lead = offset;
@@ -205,7 +218,22 @@ final class CameraGrab {
 		if (CamMath.lookRotation(away ? position.subtract(aim) : aim.subtract(position), facing)) {
 			face(facing, dt, config.keepCentered);
 		}
+		shake(player, subject, config, dt);
 		handThrow.sample(position);
+	}
+
+	/**
+	 * the shake of a body camera, while the camera is turned away from the player. It comes and goes softly with
+	 * the turn
+	 */
+	private void shake(LocalPlayer player, Subject subject, CameraConfig config, double dt) {
+		shaking += ((away ? 1.0 : 0.0) - shaking) * (1.0 - Math.exp(-dt / SHAKE_FADE));
+		final double strength = config.holdShake * shaking;
+		if (strength < 1.0E-3) {
+			shaken.identity();
+			return;
+		}
+		shaken.set(shake.update(dt, subject.speed, player.hurtTime > 0, strength));
 	}
 
 	/**
