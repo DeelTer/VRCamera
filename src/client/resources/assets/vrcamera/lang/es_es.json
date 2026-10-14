@@ -436,5 +436,7 @@
 	"vrcamera.option.holdShake.tooltip": "Girada con R, la cámara en tu mano tiembla como una cámara corporal: a cada paso y con un tirón al recibir daño. 0 = apagado.",
 	"key.vrcamera.hud": "Ventana de cámara: HUD sí/no",
 	"vrcamera.message.hud.on": "Cámara: HUD en la ventana de cámara activado",
-	"vrcamera.message.hud.off": "Cámara: HUD en la ventana de cámara desactivado"
+	"vrcamera.message.hud.off": "Cámara: HUD en la ventana de cámara desactivado",
+	"vrcamera.option.cameraRenderDistance": "Ventana de cámara: distancia de renderizado",
+	"vrcamera.option.cameraRenderDistance.tooltip": "Cuántos chunks alcanza la imagen de la cámara, ahí termina su niebla. Menos es más ligero: el mundo se dibuja otra vez para la cámara. 0 = tanto como ves tú."
 }

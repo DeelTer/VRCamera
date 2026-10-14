@@ -436,5 +436,7 @@
 	"vrcamera.option.holdShake.tooltip": "按 R 转向前方后，手中的摄像机会像随身摄像机一样抖动：随步伐晃动，受伤时猛地一震。0 为关闭。",
 	"key.vrcamera.hud": "摄像机窗口：开关 HUD",
 	"vrcamera.message.hud.on": "摄像机：摄像机窗口 HUD 已开启",
-	"vrcamera.message.hud.off": "摄像机：摄像机窗口 HUD 已关闭"
+	"vrcamera.message.hud.off": "摄像机：摄像机窗口 HUD 已关闭",
+	"vrcamera.option.cameraRenderDistance": "摄像机窗口：渲染距离",
+	"vrcamera.option.cameraRenderDistance.tooltip": "摄像机画面能看到多少区块，它的雾就在那里结束。越少越轻：世界会为摄像机再画一次。0 = 和你看到的一样远。"
 }

@@ -6,8 +6,9 @@ import ru.deelter.vrcamera.mixin.client.WindowAccessor;
 
 /**
  * The window of the game as big as the picture of the camera for a moment, while the HUD is laid out and drawn for
- * it: the HUD is then in the shape of that picture, with the size the game picks for it, and not stretched from
- * the shape of the window
+ * it: the HUD is then in the shape of that picture, and not stretched from the shape of the window. The scale
+ * of the HUD stays the one of the game, another one would have the game build its pictures of items anew
+ * twice a frame
  */
 final class HudWindow implements AutoCloseable {
 	private final Window window;
@@ -31,7 +32,7 @@ final class HudWindow implements AutoCloseable {
 		final WindowAccessor window = (WindowAccessor) (Object) mc.getWindow();
 		window.vrcamera$setFramebufferWidth(size[0]);
 		window.vrcamera$setFramebufferHeight(size[1]);
-		mc.getWindow().setGuiScale(mc.getWindow().calculateScale(mc.options.guiScale().get(), mc.isEnforceUnicode()));
+		mc.getWindow().setGuiScale(before.scale);
 		return before;
 	}
 

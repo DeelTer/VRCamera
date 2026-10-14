@@ -436,5 +436,7 @@
 	"vrcamera.option.holdShake.tooltip": "Turned away from you with R, the camera in your hand shakes like a body camera: with every step, and jolts when you get hurt. 0 = off.",
 	"key.vrcamera.hud": "Camera window: HUD on/off",
 	"vrcamera.message.hud.on": "Camera: HUD in the camera window on",
-	"vrcamera.message.hud.off": "Camera: HUD in the camera window off"
+	"vrcamera.message.hud.off": "Camera: HUD in the camera window off",
+	"vrcamera.option.cameraRenderDistance": "Camera window: render distance",
+	"vrcamera.option.cameraRenderDistance.tooltip": "How many chunks far the picture of the camera reaches, its fog ends there. Fewer is lighter: the world is drawn a second time for the camera. 0 = as far as you see."
 }

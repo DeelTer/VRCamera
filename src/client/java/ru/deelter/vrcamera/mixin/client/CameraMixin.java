@@ -33,6 +33,11 @@ public abstract class CameraMixin {
 	@Shadow
 	public abstract float getCameraEntityPartialTicks(DeltaTracker deltaTracker);
 
+	@ModifyExpressionValue(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;getEffectiveRenderDistance()I"), require = 0)
+	private int vrcamera$cameraReach(int chunks) {
+		return DirectorPass.renderDistance(chunks);
+	}
+
 	@Inject(method = "update", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Camera;alignWithEntity(F)V", shift = At.Shift.AFTER), require = 0)
 	private void vrcamera$filmFromDirector(DeltaTracker deltaTracker, CallbackInfo ci) {
 		final DesktopCamera.Pose pose = DesktopCamera.INSTANCE.update(getCameraEntityPartialTicks(deltaTracker));

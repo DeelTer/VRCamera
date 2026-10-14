@@ -436,5 +436,7 @@
 	"vrcamera.option.holdShake.tooltip": "Развёрнутая на R камера в руке трясётся как нательная: в такт шагам и рывком, когда вас бьют. 0 — выкл.",
 	"key.vrcamera.hud": "Окно камеры: HUD вкл/выкл",
 	"vrcamera.message.hud.on": "Камера: HUD в окне камеры включён",
-	"vrcamera.message.hud.off": "Камера: HUD в окне камеры выключен"
+	"vrcamera.message.hud.off": "Камера: HUD в окне камеры выключен",
+	"vrcamera.option.cameraRenderDistance": "Окно камеры: дальность прорисовки",
+	"vrcamera.option.cameraRenderDistance.tooltip": "На сколько чанков видит картинка камеры, там кончается её туман. Меньше — легче: мир для камеры рисуется второй раз. 0 — как у вас."
 }

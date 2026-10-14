@@ -597,6 +597,7 @@ and by `/vrcam reload`.
 | `screenOutput`           | `"screen"`      | without VR: `"screen"` films into the game window, `"window"` into a window of its own                                                                                        |
 | `outputWidth`, `outputHeight` | `0` | size of the camera picture in pixels, 0 = as the window |
 | `outputFps`              | `60`            | pictures per second in the window of the camera, 0 = as many as the game draws                                                                                                |
+| `cameraRenderDistance` | `0` | chunks the camera picture reaches, its fog ends there; 0 = as far as you see |
 | `cameraHud`              | `false`         | hotbar, hearts, food, boss bars and titles in the camera's own window too; no crosshair, chat or menus |
 | `jumpSteady` | `"series"` | If the camera goes up and down with a player who jumps. In a row: it goes along with a single jump and holds still from the second one in a row. Always: it holds still for every jump. |
 | `followTurns` | `false` | On, the camera goes around the player when they turn, to stay behind or in front of them. Off, it keeps its place in the world: looking around is no reason for it to move. |
