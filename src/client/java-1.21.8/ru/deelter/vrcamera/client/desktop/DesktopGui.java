@@ -13,6 +13,7 @@ import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.recipebook.RecipeBookComponent;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -52,6 +53,10 @@ public final class DesktopGui {
 	private static final double MIN_DISTANCE = 0.35;
 	private static final int FRAME_MARGIN = 8;
 	private static final int CONTAINER_MARGIN = 34;
+	/**
+	 * between the open recipe book and the window of the inventory next to it
+	 */
+	private static final int RECIPE_BOOK_GAP = 3;
 	private static final double WIDGETS_PART = 0.4;
 	private static final int BACKGROUND = 0;
 	private static final double FAR = 1.0;
@@ -138,6 +143,10 @@ public final class DesktopGui {
 			top = Math.min(top, window.vrcamera$top());
 			right = Math.max(right, window.vrcamera$left() + window.vrcamera$width());
 			bottom = Math.max(bottom, window.vrcamera$top() + window.vrcamera$height());
+			if (screen.children().stream().anyMatch(part -> part instanceof RecipeBookComponent<?> book &&
+					book.isVisible())) {
+				left = Math.min(left, window.vrcamera$left() - RecipeBookComponent.IMAGE_WIDTH - RECIPE_BOOK_GAP);
+			}
 		}
 		boolean drawn = !(screen instanceof AbstractContainerScreen<?>) && bottom - top < screen.height * WIDGETS_PART;
 		if (right <= left || bottom <= top || screen instanceof ChatScreen || drawn || screen.width < 1 ||

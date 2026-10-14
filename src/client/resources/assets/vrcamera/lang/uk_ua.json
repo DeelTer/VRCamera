@@ -412,7 +412,7 @@
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: у вікна навколо вас чіткий край, і воно відкривається, розширюючись. Більше: край розчиняється крапками — на стрімі це може виглядати зернисто.",
 	"vrcamera.option.voiceFromCamera": "Голосовий чат: чути від камери",
 	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat і Plasmo Voice: голоси звучать з того боку, куди дивиться камера, — голос ліворуч у кадрі чути ліворуч. Гучність лишається як у вас.",
-	"vrcamera.option.photoReplaceOldest": "Фото: знімати моє старе на ліміті",
+	"vrcamera.option.photoReplaceOldest": "Фото: видаляти найстаріше на ліміті",
 	"vrcamera.option.photoReplaceOldest.tooltip": "На сервері, якщо ви закріплюєте фото понад ліміт, ваше найстаріше закріплене фото знімається, а не приходить відмова.",
 	"vrcamera.option.groupShotsReach": "Радіус загального плану",
 	"vrcamera.option.groupShotsReach.tooltip": "У скількох блоках від вас інші гравці потрапляють у загальний план.",
@@ -433,5 +433,8 @@
 	"vrcamera.option.cameraHud": "ПК: HUD у вікні камери",
 	"vrcamera.option.cameraHud.tooltip": "Хотбар, серця, їжа, броня, боссбари й титри ще й у картинці камери в окремому вікні — для стріму. Приціл, чат, рядок над хотбаром і меню туди не потрапляють.",
 	"vrcamera.option.holdShake": "Камера в руці: трусіння bodycam",
-	"vrcamera.option.holdShake.tooltip": "Розвернута на R камера в руці труситься як натільна: у такт крокам і ривком, коли вас б'ють. 0 — вимк."
+	"vrcamera.option.holdShake.tooltip": "Розвернута на R камера в руці труситься як натільна: у такт крокам і ривком, коли вас б'ють. 0 — вимк.",
+	"key.vrcamera.hud": "Вікно камери: HUD увімк/вимк",
+	"vrcamera.message.hud.on": "Камера: HUD у вікні камери увімкнено",
+	"vrcamera.message.hud.off": "Камера: HUD у вікні камери вимкнено"
 }

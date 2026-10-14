@@ -412,7 +412,7 @@
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: el hueco a tu alrededor tiene un borde limpio y se abre creciendo. Más alto: el borde se deshace en puntos, que en un directo pueden verse granulados.",
 	"vrcamera.option.voiceFromCamera": "Chat de voz: se oye desde la cámara",
 	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat y Plasmo Voice: las voces llegan según mira la cámara, una voz a la izquierda de la imagen se oye a la izquierda. El volumen sigue siendo el tuyo.",
-	"vrcamera.option.photoReplaceOldest": "Foto: quitar la más antigua al llegar al límite",
+	"vrcamera.option.photoReplaceOldest": "Foto: borrar la más antigua al llegar al límite",
 	"vrcamera.option.photoReplaceOldest.tooltip": "En un servidor, fijar una foto por encima de tu límite quita tu foto fijada más antigua en vez de rechazarla.",
 	"vrcamera.option.groupShotsReach": "Alcance del plano general",
 	"vrcamera.option.groupShotsReach.tooltip": "Bloques a tu alrededor en los que otros jugadores salen contigo en el plano.",
@@ -433,5 +433,8 @@
 	"vrcamera.option.cameraHud": "PC: HUD en la ventana de la cámara",
 	"vrcamera.option.cameraHud.tooltip": "La barra rápida, corazones, comida, armadura, barras de jefe y títulos también en la imagen de la cámara en su ventana, para un directo. La mira, el chat, la línea sobre la barra y los menús quedan fuera.",
 	"vrcamera.option.holdShake": "Cámara sujetada: temblor de bodycam",
-	"vrcamera.option.holdShake.tooltip": "Girada con R, la cámara en tu mano tiembla como una cámara corporal: a cada paso y con un tirón al recibir daño. 0 = apagado."
+	"vrcamera.option.holdShake.tooltip": "Girada con R, la cámara en tu mano tiembla como una cámara corporal: a cada paso y con un tirón al recibir daño. 0 = apagado.",
+	"key.vrcamera.hud": "Ventana de cámara: HUD sí/no",
+	"vrcamera.message.hud.on": "Cámara: HUD en la ventana de cámara activado",
+	"vrcamera.message.hud.off": "Cámara: HUD en la ventana de cámara desactivado"
 }

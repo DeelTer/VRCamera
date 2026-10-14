@@ -1,6 +1,9 @@
 package ru.deelter.vrcamera.client.desktop;
 
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Quaternionf;
@@ -44,6 +47,7 @@ final class CameraGrab {
 	private static final double WHEEL_EASE = 3.5;
 	private static final double TURN_BACK_SECONDS = 0.45;
 	private static final double SHAKE_FADE = 0.3;
+	private static final double WALL_GAP = 0.3;
 
 	private static final double ICON = 1.35;
 	private static final double ICON_BEAT = 0.2;
@@ -53,6 +57,7 @@ final class CameraGrab {
 	private final HandheldShake shake = new HandheldShake();
 	private final Quaternionf shaken = new Quaternionf();
 	private double shaking;
+	private boolean throughBlocks;
 	private final Quaternionf rotation = new Quaternionf();
 	private final Quaternionf behind = new Quaternionf();
 	private boolean turned;
@@ -203,9 +208,15 @@ final class CameraGrab {
 	/**
 	 * moves the held camera on by one frame
 	 */
-	void hold(LocalPlayer player, Vec3 eyes, Vec3 look, Subject subject, CameraConfig config, double dt) {
+	void hold(LocalPlayer player, Vec3 eyes, Vec3 look, Subject subject, CameraConfig config, double dt,
+			boolean throughBlocks) {
+		this.throughBlocks = throughBlocks;
 		final double ease = config.holdLag <= 0 ? 1.0 : 1.0 - Math.exp(-STEPS * dt / config.holdLag);
+		final double before = distance;
 		distance += (wanted - distance) * (1.0 - Math.exp(-WHEEL_EASE * dt));
+		if (distance > before) {
+			stopAtBlock(player, eyes, before);
+		}
 		lead = lead.lerp(look.scale(distance), ease);
 		offset = offset.lerp(lead, ease);
 		position = shownAt(player, eyes);
@@ -255,10 +266,28 @@ final class CameraGrab {
 	}
 
 	/**
-	 * @return where the held camera is for a player whose eyes are there: in front of them, and not in a wall
+	 * Pushed away with the wheel, the camera stops at a block on its way, as near to the player as it can be. Pulled
+	 * back it comes through blocks, and once it is away it stays behind them while the player looks around
+	 *
+	 * @param before how far away the camera was
+	 */
+	private void stopAtBlock(LocalPlayer player, Vec3 eyes, double before) {
+		final Vec3 way = offset.lengthSqr() < 1.0E-8 ? Vec3.ZERO : offset.normalize();
+		final BlockHitResult wall = player.level().clip(new ClipContext(eyes.add(way.scale(before)),
+				eyes.add(way.scale(distance)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+		if (wall.getType() == HitResult.Type.MISS) {
+			return;
+		}
+		distance = Math.max(before, wall.getLocation().distanceTo(eyes) - WALL_GAP);
+		wanted = Math.min(wanted, distance);
+	}
+
+	/**
+	 * @return where the held camera is for a player whose eyes are there: in front of them. Not in a wall where the
+	 * server does not let cameras go through blocks, anywhere else it flies on behind them
 	 */
 	Vec3 shownAt(LocalPlayer player, Vec3 eyes) {
-		return WorldProbe.reach(player, eyes, eyes.add(offset));
+		return throughBlocks ? eyes.add(offset) : WorldProbe.reach(player, eyes, eyes.add(offset));
 	}
 
 	/**

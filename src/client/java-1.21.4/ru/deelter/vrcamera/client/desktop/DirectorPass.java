@@ -162,6 +162,14 @@ public final class DirectorPass {
 	}
 
 	/**
+	 * @return width and height the picture of the camera is shown in. The HUD on it takes its shape from that,
+	 * not from the size it is drawn in
+	 */
+	static int[] shownShape(RenderTarget target) {
+		return shape != null ? shape : new int[]{target.width, target.height};
+	}
+
+	/**
 	 * Draws the picture once more without what is nearer to the camera than the player, for {@link SeeThrough}.
 	 *
 	 * @return where in the picture the player is seen through what is in the way, null if nothing is

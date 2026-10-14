@@ -25,7 +25,8 @@
 		"PlasmoListenerMixin",
 		"ScreenMixin",
 		"SodiumCameraTimingMixin",
-		"SodiumSectionManagerMixin"
+		"SodiumSectionManagerMixin",
+		"WindowAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

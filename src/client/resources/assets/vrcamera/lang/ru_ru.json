@@ -412,7 +412,7 @@
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: у окна вокруг вас чёткий край, и оно открывается, расширяясь. Больше: край растворяется точками — на стриме это может выглядеть зернисто.",
 	"vrcamera.option.voiceFromCamera": "Голосовой чат: слышно от камеры",
 	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat и Plasmo Voice: голоса звучат с той стороны, куда смотрит камера, — голос слева в кадре слышен слева. Громкость остаётся как у вас.",
-	"vrcamera.option.photoReplaceOldest": "Фото: снимать моё старое на лимите",
+	"vrcamera.option.photoReplaceOldest": "Фото: удалять самое старое при лимите",
 	"vrcamera.option.photoReplaceOldest.tooltip": "На сервере, если вы закрепляете фото сверх лимита, ваше самое старое закреплённое фото снимается, а не приходит отказ.",
 	"vrcamera.option.groupShotsReach": "Радиус общего плана",
 	"vrcamera.option.groupShotsReach.tooltip": "В скольких блоках от вас другие игроки попадают в общий план.",
@@ -433,5 +433,8 @@
 	"vrcamera.option.cameraHud": "ПК: HUD в окне камеры",
 	"vrcamera.option.cameraHud.tooltip": "Хотбар, сердечки, еда, броня, боссбары и титры ещё и в картинке камеры в отдельном окне — для стрима. Прицел, чат, строка над хотбаром и меню туда не попадают.",
 	"vrcamera.option.holdShake": "Камера в руке: тряска bodycam",
-	"vrcamera.option.holdShake.tooltip": "Развёрнутая на R камера в руке трясётся как нательная: в такт шагам и рывком, когда вас бьют. 0 — выкл."
+	"vrcamera.option.holdShake.tooltip": "Развёрнутая на R камера в руке трясётся как нательная: в такт шагам и рывком, когда вас бьют. 0 — выкл.",
+	"key.vrcamera.hud": "Окно камеры: HUD вкл/выкл",
+	"vrcamera.message.hud.on": "Камера: HUD в окне камеры включён",
+	"vrcamera.message.hud.off": "Камера: HUD в окне камеры выключен"
 }

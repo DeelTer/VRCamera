@@ -24,7 +24,7 @@ final class HudPicture {
 		if (broken || !CameraHud.shown()) {
 			return;
 		}
-		try {
+		try (final HudWindow ignored = HudWindow.fit(mc, DirectorPass.shownShape(target))) {
 			final GameRendererAccessor renderer = (GameRendererAccessor) mc.gameRenderer;
 			RenderSystem.getDevice().createCommandEncoder().clearDepthTexture(target.getDepthTexture(), 1.0);
 			mc.gameRenderer.getLighting().setupFor(Lighting.Entry.ITEMS_3D);

@@ -112,10 +112,10 @@ public class PalettesScreen extends Screen {
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.find"),
 						button -> Palettes.openSite())
 				.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.find.tooltip")))
-				.bounds(x, y, FIND_WIDTH, BUTTON_HEIGHT).build());
+				.bounds(x + side + GAP, y, FIND_WIDTH, BUTTON_HEIGHT).build());
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.get"), button -> get())
 				.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.get.tooltip")))
-				.bounds(x + FIND_WIDTH + GAP, y, side, BUTTON_HEIGHT).build());
+				.bounds(x, y, side, BUTTON_HEIGHT).build());
 		addRenderableWidget(Button.builder(Component.translatable("vrcamera.gui.palettes.folder"),
 						button -> Palettes.openFolder())
 				.tooltip(Tooltip.create(Component.translatable("vrcamera.gui.palettes.folder.tooltip")))

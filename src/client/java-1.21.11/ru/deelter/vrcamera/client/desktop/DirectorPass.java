@@ -181,6 +181,14 @@ public final class DirectorPass {
 						framesPerSecond * (drawMillis + showMillis) / 10.0));
 	}
 
+	/**
+	 * @return width and height the picture of the camera is shown in. The HUD on it takes its shape from that,
+	 * not from the size it is drawn in
+	 */
+	static int[] shownShape(RenderTarget target) {
+		return shape != null ? shape : new int[]{target.width, target.height};
+	}
+
 	static void setTarget(Minecraft mc, RenderTarget to) {
 		((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(to);
 	}
