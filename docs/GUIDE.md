@@ -601,14 +601,14 @@ and by `/vrcam reload`.
 | `jumpSteady` | `"series"` | If the camera goes up and down with a player who jumps. In a row: it goes along with a single jump and holds still from the second one in a row. Always: it holds still for every jump. |
 | `followTurns` | `false` | On, the camera goes around the player when they turn, to stay behind or in front of them. Off, it keeps its place in the world: looking around is no reason for it to move. |
 | `holdLag`                | `0.1`           | seconds the camera held with the right mouse button takes to follow the look; higher is smoother, 0 = at once |
-| `holdShake` | `0.0` | the held camera turned away with R shakes like a body cam: with steps, a jolt when hurt; 0 = off |
+| `holdShake` | `0.3` | the held camera turned away with R shakes like a body cam: with steps, a jolt when hurt; 0 = off |
 | `calmShots` | `true` | The director leaves out the shots from close by and from the ground: from the front and the low angle. They are the first to end up in a tree or a slope. |
 | `seeThrough` | `false` | The camera stays where the shot has it also when blocks are in the way, and shows the player through a round hole in them. Only in the camera window. The world is drawn once more while the hole is open. |
 | `seeThroughRadius` | `2.0` | Blocks across half of the hole around the player. |
 | `seeThroughSoftness`     | `0.0`           | edge of the hole you are seen through behind blocks (`seeThrough`): 0 clean, up to 1 fading out in dots |
 | `menuSize`               | `1.0`           | size of the screen with an open menu that stands in front of your character for the camera                                                                                    |
 | `filmPlayer`, `filmWith` | empty           | Player to film, and a partner to include in shots                                                                                                                             |
-| `voiceFromCamera`        | `false`         | Simple Voice Chat and Plasmo Voice: voices are heard the way the camera looks, as loud as before |
+| `voiceFromCamera`        | `false`         | Simple Voice Chat and Plasmo Voice: voices are heard from the camera, as loud as before |
 
 ### VR
 
@@ -649,7 +649,7 @@ and by `/vrcam reload`.
 | `photoSheet`             | `true`          | a taken photo comes out of the camera as a sheet; `false` only saves it                                                                                                       |
 | `photoBrightness`        | `0.3`           | how much the picture on a sheet is brightened, 0 = as taken, 1 = most. New photos only; the saved file is not changed                                                         |
 | `photoPixels`            | `0`             | pixel art on the sheet, in the colours of a map: 0 = off, 1 = fewest pixels (128 down to 32 along the longer side). New photos only; the saved file is not changed            |
-| `photoPalette`           | `"justparchment8"` | the colours of the photo on a sheet: empty = map colours, otherwise the name of a file in `config/vrcamera/palettes` (HEX, GPL, PAL, TXT as on [lospec.com](https://lospec.com/palette-list)). The folder starts with four: `justparchment8` by JustJimmy, `carob-treat` by SurrealEmber, `gothic-bit` by HiroHi, `smoky-09` by green guy. Works with and without pixel art; the others see the sheet in your colours. New photos only |
+| `photoPalette`           | `"justparchment8"` | the colours of the photo on a sheet: empty = map colours, otherwise the name of a file in `config/vrcamera/palettes` (HEX, GPL, PAL, TXT as on [lospec.com](https://lospec.com/palette-list)). The folder starts with five: `justparchment8` by JustJimmy, `carob-treat` by SurrealEmber, `gothic-bit` by HiroHi, `smoky-09` by green guy, `31` by catastrofie. Works with and without pixel art; the others see the sheet in your colours. New photos only |
 | `photoSounds`            | `true`          | the click of a photo and the whirr of printing it, yours and of others. `false` mutes them for you; the others still hear yours                                               |
 | `photoPreview` | `true` | PC: look at a photo for a moment and it is shown large at the side of the screen. Look away and it goes. Not in the picture of the camera |
 | `photoPreviewSeconds` | `0.5` | How long you look at a photo before it is shown large |

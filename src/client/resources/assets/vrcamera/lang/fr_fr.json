@@ -411,7 +411,7 @@
 	"vrcamera.option.seeThroughSoftness": "Douceur du bord de la fenêtre",
 	"vrcamera.option.seeThroughSoftness.tooltip": "0 : le trou autour de vous a un bord net et s'ouvre en grandissant. Plus haut : le bord se fond en points, ce qui peut paraître granuleux en stream.",
 	"vrcamera.option.voiceFromCamera": "Chat vocal : entendu depuis la caméra",
-	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat et Plasmo Voice : les voix viennent selon le regard de la caméra, une voix à gauche de l'image s'entend à gauche. Le volume reste le vôtre.",
+	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat et Plasmo Voice : les voix s'entendent depuis la caméra, une voix à gauche de l'image s'entend à gauche. Le volume reste le vôtre.",
 	"vrcamera.option.photoReplaceOldest": "Photo : supprimer la plus ancienne à la limite",
 	"vrcamera.option.photoReplaceOldest.tooltip": "Sur un serveur, épingler une photo au-delà de votre limite retire votre plus ancienne au lieu d'être refusé.",
 	"vrcamera.option.groupShotsReach": "Portée du plan d'ensemble",

@@ -40,14 +40,18 @@ public final class Palettes {
 	private static final String SITE = "https://lospec.com/palette-list";
 	/**
 	 * the palettes the folder starts with, from lospec.com: JustParchment8 by JustJimmy, Carob Treat by
-	 * SurrealEmber, Gothic Bit by HiroHi and smoky 09 by green guy
+	 * SurrealEmber, Gothic Bit by HiroHi, smoky 09 by green guy and 31 by catastrofie
 	 */
 	private static final Map<String, List<String>> STARTERS = Map.of(
 			BUILT_IN, List.of("292418", "524839", "73654a", "8b7d62", "a48d6a", "bda583", "cdba94", "e6ceac"),
 			"carob-treat", List.of("271a1e", "432c2a", "6b4439", "906954", "b4936e", "d6bd94", "e3e2c8"),
 			"gothic-bit", List.of("0e0e12", "1a1a24", "333346", "535373", "8080a4", "a6a6bf", "c1c1d2", "e6e6ec"),
 			"smoky-09", List.of("fafafa", "d4d8e0", "acacac", "918b8c", "6b615e", "3b342e", "24211a", "0e0d0a",
-					"030201"));
+					"030201"),
+			"31", List.of("636663", "87857c", "bcad9f", "f2b888", "eb9661", "b55945", "734c44", "3d3333", "593e47",
+					"7a5859", "a57855", "de9f47", "fdd179", "fee1b8", "d4c692", "a6b04f", "819447", "44702d", "2f4d2f",
+					"546756", "89a477", "a4c5af", "cae6d9", "f1f6f0", "d5d6db", "bbc3d0", "96a9c1", "6c81a1", "405273",
+					"303843", "14233a"));
 	private static final int MOST_COLORS = 256;
 	private static final int FETCH_SECONDS = 15;
 	private static final int MOST_ANSWER = 100_000;

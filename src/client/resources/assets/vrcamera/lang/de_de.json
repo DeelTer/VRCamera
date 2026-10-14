@@ -411,7 +411,7 @@
 	"vrcamera.option.seeThroughSoftness": "Weichheit des Durchblick-Rands",
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: das Loch um dich hat einen klaren Rand und öffnet sich, indem es wächst. Höher: der Rand löst sich in Punkte auf, im Stream kann das körnig wirken.",
 	"vrcamera.option.voiceFromCamera": "Sprachchat: von der Kamera aus hören",
-	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat und Plasmo Voice: Stimmen kommen aus der Blickrichtung der Kamera, links im Bild heißt links im Ohr. Die Lautstärke bleibt wie bei dir.",
+	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat und Plasmo Voice: Stimmen hört man vom Ort der Kamera, links im Bild heißt links im Ohr. Die Lautstärke bleibt wie bei dir.",
 	"vrcamera.option.photoReplaceOldest": "Foto: am Limit das älteste löschen",
 	"vrcamera.option.photoReplaceOldest.tooltip": "Auf einem Server nimmt ein Foto über deinem Limit dein ältestes angeheftetes ab, statt abgelehnt zu werden.",
 	"vrcamera.option.groupShotsReach": "Reichweite der Gruppenaufnahme",

@@ -411,7 +411,7 @@
 	"vrcamera.option.seeThroughSoftness": "Мягкость края «окна»",
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: у окна вокруг вас чёткий край, и оно открывается, расширяясь. Больше: край растворяется точками — на стриме это может выглядеть зернисто.",
 	"vrcamera.option.voiceFromCamera": "Голосовой чат: слышно от камеры",
-	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat и Plasmo Voice: голоса звучат с той стороны, куда смотрит камера, — голос слева в кадре слышен слева. Громкость остаётся как у вас.",
+	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat и Plasmo Voice: голоса слышны с места камеры — голос слева в кадре звучит слева. Громкость остаётся как у вас.",
 	"vrcamera.option.photoReplaceOldest": "Фото: удалять самое старое при лимите",
 	"vrcamera.option.photoReplaceOldest.tooltip": "На сервере, если вы закрепляете фото сверх лимита, ваше самое старое закреплённое фото снимается, а не приходит отказ.",
 	"vrcamera.option.groupShotsReach": "Радиус общего плана",

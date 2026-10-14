@@ -411,7 +411,7 @@
 	"vrcamera.option.seeThroughSoftness": "Suavidad del borde de la ventana",
 	"vrcamera.option.seeThroughSoftness.tooltip": "0: el hueco a tu alrededor tiene un borde limpio y se abre creciendo. Más alto: el borde se deshace en puntos, que en un directo pueden verse granulados.",
 	"vrcamera.option.voiceFromCamera": "Chat de voz: se oye desde la cámara",
-	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat y Plasmo Voice: las voces llegan según mira la cámara, una voz a la izquierda de la imagen se oye a la izquierda. El volumen sigue siendo el tuyo.",
+	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat y Plasmo Voice: las voces se oyen desde donde está la cámara, una voz a la izquierda de la imagen suena a la izquierda. El volumen sigue siendo el tuyo.",
 	"vrcamera.option.photoReplaceOldest": "Foto: borrar la más antigua al llegar al límite",
 	"vrcamera.option.photoReplaceOldest.tooltip": "En un servidor, fijar una foto por encima de tu límite quita tu foto fijada más antigua en vez de rechazarla.",
 	"vrcamera.option.groupShotsReach": "Alcance del plano general",
