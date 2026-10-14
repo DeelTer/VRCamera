@@ -156,6 +156,10 @@ public class CameraConfig {
 	 */
 	public double outputFps = 60;
 	/**
+	 * chunks the picture of the camera reaches at most, 0 = as far as the player sees
+	 */
+	public double cameraRenderDistance = 0;
+	/**
 	 * pixels the picture of a camera with a window of its own has, 0 = as many as the game window. Set with
 	 * /vrcam screen size
 	 */

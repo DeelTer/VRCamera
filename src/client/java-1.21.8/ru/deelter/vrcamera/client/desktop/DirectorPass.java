@@ -137,7 +137,7 @@ public final class DirectorPass {
 				return;
 			}
 			final int[] size = ownSize ? new int[]{config.outputWidth, config.outputHeight} :
-					pictureSize(window, own);
+					new int[]{own.width, own.height};
 			final int width = size[0];
 			final int height = size[1];
 			if (target == null) {
@@ -166,20 +166,20 @@ public final class DirectorPass {
 	}
 
 	/**
+	 * @return how many chunks far what is drawn right now reaches: the picture of the camera can stop sooner than
+	 * the view of the player, in its fog. The game keeps loading and drawing as far as the player sees
+	 */
+	public static int renderDistance(int ofGame) {
+		final int own = (int) Math.round(CameraConfig.current().cameraRenderDistance);
+		return active && own > 0 ? Math.min(ofGame, own) : ofGame;
+	}
+
+	/**
 	 * @return width and height the picture of the camera is shown in. The HUD on it takes its shape from that,
 	 * not from the size it is drawn in
 	 */
 	static int[] shownShape(RenderTarget target) {
 		return shape != null ? shape : new int[]{target.width, target.height};
-	}
-
-	/**
-	 * @return the size to draw the picture of the camera in: that of its window, so no pixel is drawn that is not
-	 * seen, but never more pixels than the window of the game has
-	 */
-	private static int[] pictureSize(int[] window, RenderTarget game) {
-		final double scale = Math.min(1.0, Math.sqrt((double) game.width * game.height / ((double) window[0] * window[1])));
-		return new int[]{Math.max(1, (int) (window[0] * scale)), Math.max(1, (int) (window[1] * scale))};
 	}
 
 	/**

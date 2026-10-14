@@ -436,5 +436,7 @@
 	"vrcamera.option.holdShake.tooltip": "Virada com R, a câmera na mão treme como uma câmera corporal: a cada passo e com um tranco quando você leva dano. 0 = desligado.",
 	"key.vrcamera.hud": "Janela da câmera: HUD liga/desliga",
 	"vrcamera.message.hud.on": "Câmera: HUD na janela da câmera ligado",
-	"vrcamera.message.hud.off": "Câmera: HUD na janela da câmera desligado"
+	"vrcamera.message.hud.off": "Câmera: HUD na janela da câmera desligado",
+	"vrcamera.option.cameraRenderDistance": "Janela da câmera: distância de renderização",
+	"vrcamera.option.cameraRenderDistance.tooltip": "Até quantos chunks a imagem da câmera alcança, a névoa dela termina ali. Menos é mais leve: o mundo é desenhado de novo para a câmera. 0 = até onde você vê."
 }

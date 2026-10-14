@@ -436,5 +436,7 @@
 	"vrcamera.option.holdShake.tooltip": "Tournée avec R, la caméra en main tremble comme une caméra-piéton : à chaque pas, et d'un coup quand vous êtes blessé. 0 = désactivé.",
 	"key.vrcamera.hud": "Fenêtre caméra : HUD oui/non",
 	"vrcamera.message.hud.on": "Caméra : HUD dans la fenêtre caméra activé",
-	"vrcamera.message.hud.off": "Caméra : HUD dans la fenêtre caméra désactivé"
+	"vrcamera.message.hud.off": "Caméra : HUD dans la fenêtre caméra désactivé",
+	"vrcamera.option.cameraRenderDistance": "Fenêtre caméra : distance d'affichage",
+	"vrcamera.option.cameraRenderDistance.tooltip": "Combien de chunks l'image de la caméra atteint, son brouillard s'arrête là. Moins est plus léger : le monde est dessiné une seconde fois pour la caméra. 0 = aussi loin que vous voyez."
 }

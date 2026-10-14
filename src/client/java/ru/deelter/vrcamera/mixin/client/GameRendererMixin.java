@@ -17,6 +17,11 @@ import ru.deelter.vrcamera.client.desktop.OutputWindow;
 
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
+	@ModifyExpressionValue(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;getEffectiveRenderDistance()I"), require = 0)
+	private int vrcamera$cameraReach(int chunks) {
+		return DirectorPass.renderDistance(chunks);
+	}
+
 	@Inject(method = "bobView", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$noBobForCamera(CallbackInfo ci) {
 		if (DirectorPass.isActive()) {

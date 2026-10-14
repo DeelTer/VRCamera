@@ -75,6 +75,8 @@ public final class ConfigScreen {
 		desktop.addEntry(screen.outputSize(config));
 		desktop.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
 				value -> config.outputFps = value));
+		desktop.addEntry(screen.slider("cameraRenderDistance", config.cameraRenderDistance,
+				defaults.cameraRenderDistance, 0, 32, 1, "%.0f", value -> config.cameraRenderDistance = value));
 		desktop.addEntry(screen.toggle("cameraHud", config.cameraHud, defaults.cameraHud,
 				value -> config.cameraHud = value));
 		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
