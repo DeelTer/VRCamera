@@ -5,13 +5,23 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ru.deelter.vrcamera.client.desktop.CameraHud;
 import ru.deelter.vrcamera.client.desktop.ChromaKey;
 
 @Mixin(Gui.class)
 public class GuiMixin {
 	@Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$noVignetteOverGreen(CallbackInfo ci) {
-		if (ChromaKey.isOn()) {
+		if (ChromaKey.isOn() || CameraHud.isCameraPicture()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = {"renderCrosshair", "renderChat", "renderOverlayMessage", "renderTabList",
+			"renderScoreboardSidebar", "renderSubtitleOverlay", "renderCameraOverlays", "renderSleepOverlay",
+			"renderDemoOverlay", "renderDebugOverlay"}, at = @At("HEAD"), cancellable = true, require = 0)
+	private void vrcamera$onlyForThePlayer(CallbackInfo ci) {
+		if (CameraHud.isCameraPicture()) {
 			ci.cancel();
 		}
 	}

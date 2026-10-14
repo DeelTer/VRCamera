@@ -11,6 +11,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -33,9 +34,7 @@ import ru.deelter.vrcamera.client.rig.Subject;
 import ru.deelter.vrcamera.mixin.client.ContainerScreenAccessor;
 import ru.deelter.vrcamera.mixin.client.MinecraftAccessor;
 
-import java.util.Collections;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.*;
 
 /**
  * The menu a player without VR has open, as something in the world: a screen that stands in front of them, for the
@@ -61,6 +60,7 @@ public final class DesktopGui {
 	private static final int FULL_LIGHT = 0xF000F0;
 
 	private static final Set<GuiEventListener> LEFT_OUT = Collections.newSetFromMap(new WeakHashMap<>());
+	private static final List<AbstractWidget> HIDDEN = new ArrayList<>();
 	private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(Vrcamera.MOD_ID, "menu");
 	private static RenderTarget target;
 	private static TargetTexture texture;
@@ -99,15 +99,12 @@ public final class DesktopGui {
 			facing = subject.facing;
 		}
 		Vec3 ahead = CamMath.forward(facing);
-		double distance = DISTANCE * subject.unit;
-		BlockHitResult wall = subject.player.level().clip(new ClipContext(subject.head,
-				subject.head.add(ahead.scale(distance + WALL_GAP)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-				subject.player));
-		if (wall.getType() != HitResult.Type.MISS) {
-			distance = Math.max(MIN_DISTANCE * subject.unit, wall.getLocation().distanceTo(subject.head) - WALL_GAP);
-		}
-		center = subject.head.add(ahead.scale(distance)).add(0, -DROP * subject.unit, 0);
-		size = (float) (Math.clamp(config.menuSize, 0.25, 4.0) * subject.unit);
+		final double distance = DISTANCE * subject.unit;
+		final float wanted = (float) (Math.clamp(config.menuSize, 0.25, 4.0) * subject.unit);
+		final Vec3 middle = subject.head.add(ahead.scale(distance)).add(0, -DROP * subject.unit, 0);
+		final double room = room(subject, middle, ahead, wanted);
+		center = subject.head.add(middle.subtract(subject.head).scale(room));
+		size = (float) (wanted * room);
 		frame(screen);
 		return center;
 	}
@@ -179,6 +176,7 @@ public final class DesktopGui {
 			}
 			GameFrame.begin();
 			drawing = true;
+			hideLeftOut(mc.screen);
 			((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(target);
 			target.setClearColor(0.0F, 0.0F, 0.0F, 0.0F);
 			target.clear();
@@ -202,6 +200,7 @@ public final class DesktopGui {
 			Vrcamera.LOGGER.error("VRCamera: the menu can't be put into the world, the camera films without it", e);
 		} finally {
 			drawing = false;
+			showLeftOut();
 			modelView.popMatrix();
 			RenderSystem.restoreProjectionMatrix();
 			((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(own);
@@ -263,6 +262,49 @@ public final class DesktopGui {
 				.setOverlay(OverlayTexture.NO_OVERLAY)
 				.setLight(FULL_LIGHT)
 				.setNormal(0.0F, 1.0F, 0.0F);
+	}
+
+	/**
+	 * @return how much of the way to the screen is free, for its middle and its four corners: it comes that much
+	 * closer and gets that much smaller, which looks the same from the eyes, and does not go into a wall
+	 */
+	private static double room(Subject subject, Vec3 middle, Vec3 ahead, float size) {
+		final Vec3 right = new Vec3(-ahead.z, 0, ahead.x).normalize().scale(WIDTH / 2.0F * size);
+		final Vec3 up = new Vec3(0, HEIGHT / 2.0F * size, 0);
+		double room = 1.0;
+		for (final Vec3 point : List.of(middle, middle.add(right).add(up), middle.add(right).subtract(up),
+				middle.subtract(right).add(up), middle.subtract(right).subtract(up))) {
+			final Vec3 way = point.subtract(subject.head);
+			final double length = way.length();
+			final BlockHitResult wall = subject.player.level().clip(new ClipContext(subject.head,
+					point.add(way.scale(WALL_GAP / length)), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+					subject.player));
+			if (wall.getType() != HitResult.Type.MISS) {
+				room = Math.min(room, (wall.getLocation().distanceTo(subject.head) - WALL_GAP) / length);
+			}
+		}
+		return Math.clamp(room, MIN_DISTANCE / DISTANCE, 1.0);
+	}
+
+	/**
+	 * hides the buttons that are left out of the menu while it is drawn for the screen in the world: they would
+	 * be cut through at its edge
+	 */
+	private static void hideLeftOut(Screen screen) {
+		if (screen == null) {
+			return;
+		}
+		for (final GuiEventListener part : screen.children()) {
+			if (part instanceof AbstractWidget widget && widget.visible && LEFT_OUT.contains(widget)) {
+				widget.visible = false;
+				HIDDEN.add(widget);
+			}
+		}
+	}
+
+	private static void showLeftOut() {
+		HIDDEN.forEach(widget -> widget.visible = true);
+		HIDDEN.clear();
 	}
 
 	public static void close() {

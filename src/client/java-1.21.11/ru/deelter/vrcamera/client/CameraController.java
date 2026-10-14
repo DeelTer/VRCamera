@@ -923,6 +923,7 @@ public final class CameraController implements Tracker {
 		final VRData vr = dh.vrPlayer.vrdata_world_render;
 		final float partialTick = Minecraft.getInstance().getDeltaTracker().getGameTimeDeltaPartialTick(true);
 		VrSubject.update(subject, player, vr, partialTick, dt, realDt, config);
+		subject.gather(config.groupShots, config.groupShotsReach, dt);
 		subject.guiCenter = openMenuPosition(vr);
 		dropped.allowSelf(config.attachToSelf);
 		final ResourceKey<Level> dimension = player.level().dimension();

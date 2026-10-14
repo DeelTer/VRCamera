@@ -1,5 +1,6 @@
 package ru.deelter.vrcamera.sync.plugin;
 
+import com.destroystokyo.paper.event.block.BlockDestroyEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -10,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -74,8 +76,13 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private final LooseSheets loose = new LooseSheets();
 	private final Map<UUID, Client> clients = new HashMap<>();
 	private final Set<String> worlds = new HashSet<>();
-	private SheetStore store;
 	private final PhotoList photoList = new PhotoList(this);
+	private final Set<UUID> cameraDenied = new HashSet<>();
+	private SheetStore store;
+	private static final List<String> ADMIN_COMMANDS = List.of("stats", "list", "purge", "purgenear",
+			"purgecustom", "reload", "camera");
+	private static final List<String> CAMERA_COMMANDS = List.of("place", "remove", "clear", "show", "allow",
+			"deny");
 	private int maxPerPlayer;
 	private int maxPerChunk;
 	private int maxTotal;
@@ -87,7 +94,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	private String outdatedMessage;
 	private String minModVersion;
 	private double freeRange;
-	private final Set<UUID> cameraDenied = new HashSet<>();
 	private double sendRange;
 	private double forgetRange;
 	private int imageQueue;
@@ -170,6 +176,40 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 			world.playSound(new Location(world, sheet.x(), sheet.y(), sheet.z()), sound, SoundCategory.PLAYERS, 0.6F,
 					1.3F);
 		}
+	}
+
+	/**
+	 * @param version what a mod calls itself, like 2.1.4+26.2. Empty from a mod too old to say
+	 * @return if that is a version before the least one, by its numbers. What comes after them is not looked at
+	 */
+	private static boolean isOlder(String version, String least) {
+		final int[] has = numbers(version);
+		final int[] needs = numbers(least);
+		for (int part = 0; part < Math.max(has.length, needs.length); part++) {
+			final int mine = part < has.length ? has[part] : 0;
+			final int wanted = part < needs.length ? needs[part] : 0;
+			if (mine != wanted) {
+				return mine < wanted;
+			}
+		}
+		return false;
+	}
+
+	private static int[] numbers(String version) {
+		final String plain = version.split("[+-]", 2)[0].trim();
+		if (plain.isEmpty()) {
+			return new int[0];
+		}
+		final String[] parts = plain.split("[.]");
+		final int[] numbers = new int[parts.length];
+		for (int part = 0; part < parts.length; part++) {
+			try {
+				numbers[part] = Integer.parseInt(parts[part]);
+			} catch (NumberFormatException e) {
+				numbers[part] = 0;
+			}
+		}
+		return numbers;
 	}
 
 	@Override
@@ -367,40 +407,6 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 
 	private void send(Player player, byte[] message) {
 		player.sendPluginMessage(this, Protocol.CHANNEL, message);
-	}
-
-	/**
-	 * @param version what a mod calls itself, like 2.1.4+26.2. Empty from a mod too old to say
-	 * @return if that is a version before the least one, by its numbers. What comes after them is not looked at
-	 */
-	private static boolean isOlder(String version, String least) {
-		final int[] has = numbers(version);
-		final int[] needs = numbers(least);
-		for (int part = 0; part < Math.max(has.length, needs.length); part++) {
-			final int mine = part < has.length ? has[part] : 0;
-			final int wanted = part < needs.length ? needs[part] : 0;
-			if (mine != wanted) {
-				return mine < wanted;
-			}
-		}
-		return false;
-	}
-
-	private static int[] numbers(String version) {
-		final String plain = version.split("[+-]", 2)[0].trim();
-		if (plain.isEmpty()) {
-			return new int[0];
-		}
-		final String[] parts = plain.split("[.]");
-		final int[] numbers = new int[parts.length];
-		for (int part = 0; part < parts.length; part++) {
-			try {
-				numbers[part] = Integer.parseInt(parts[part]);
-			} catch (NumberFormatException e) {
-				numbers[part] = 0;
-			}
-		}
-		return numbers;
 	}
 
 	private void hello(Player player, int version, Protocol.Mod mod) {
@@ -826,15 +832,20 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		byte result = imageHash == 0 ? Protocol.PIN_BAD_IMAGE : Protocol.PIN_OK;
 
-		if (result == Protocol.PIN_OK && store.ownedBy(owner) >= maxPerPlayer) {
+		final boolean unlimited = player != null && unlimited(player);
+		if (result == Protocol.PIN_OK && store.ownedBy(owner) >= maxPerPlayer && !unlimited &&
+				!replacesOldest(pin)) {
 			result = Protocol.PIN_TOO_MANY;
 		}
 
 		final StoredSheet sheet = new StoredSheet(store.newId(), world, owner, ownerName, pin.blockX(), pin.blockY(),
 				pin.blockZ(), pin.x(), pin.y(), pin.z(), pin.qx() / length, pin.qy() / length, pin.qz() / length,
 				pin.qw() / length, clean == null ? 1.0F : clean.aspect, imageHash, pin.custom());
-		if (result == Protocol.PIN_OK && store.inChunk(sheet.chunk()).size() >= maxPerChunk) {
+		if (result == Protocol.PIN_OK && store.inChunk(sheet.chunk()).size() >= maxPerChunk && !unlimited) {
 			result = Protocol.PIN_CHUNK_FULL;
+		}
+		if (result == Protocol.PIN_OK && player != null && client != null && !unlimited && replacesOldest(pin)) {
+			makeRoom(owner);
 		}
 		final long kept = imageHash;
 		if (result != Protocol.PIN_OK || player == null || client == null) {
@@ -892,10 +903,14 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		if (player.getWorld().getBlockAt(pin.blockX(), pin.blockY(), pin.blockZ()).getType().isAir()) {
 			return Protocol.PIN_TOO_FAR;
 		}
+		if (unlimited(player)) {
+			return pin.image().length < 4 || pin.image().length > maxImageBytes ? Protocol.PIN_BAD_IMAGE :
+					Protocol.PIN_OK;
+		}
 		if (store.size() >= maxTotal) {
 			return Protocol.PIN_SERVER_FULL;
 		}
-		if (store.ownedBy(player.getUniqueId()) >= maxPerPlayer) {
+		if (store.ownedBy(player.getUniqueId()) >= maxPerPlayer && !replacesOldest(pin)) {
 			photoList.tellFull(player, maxPerPlayer);
 			return Protocol.PIN_TOO_MANY;
 		}
@@ -1014,6 +1029,45 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		event.getBlocks().forEach(this::blockGone);
 	}
 
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onFlow(@NonNull BlockFromToEvent event) {
+		recheck(event.getToBlock());
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onFade(@NonNull BlockFadeEvent event) {
+		recheck(event.getBlock());
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onEntityChange(@NonNull EntityChangeBlockEvent event) {
+		recheck(event.getBlock());
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onFallApart(@NonNull BlockDestroyEvent event) {
+		recheck(event.getBlock());
+	}
+
+	@Override
+	public List<String> onTabComplete(CommandSender sender, Command command, String label, String @NonNull [] args) {
+		if (!command.getName().equalsIgnoreCase("vrcamsync")) {
+			return List.of();
+		}
+		if (args.length == 1) {
+			return starting(ADMIN_COMMANDS, args[0]);
+		}
+		if (args[0].equalsIgnoreCase("camera")) {
+			return args.length == 2 ? starting(CAMERA_COMMANDS, args[1]) : args.length == 3 ? null : List.of();
+		}
+		return args.length == 2 && (args[0].equalsIgnoreCase("purge") || args[0].equalsIgnoreCase("list")) ? null :
+				List.of();
+	}
+
+	private static List<String> starting(List<String> names, String typed) {
+		return names.stream().filter(name -> name.startsWith(typed.toLowerCase(Locale.ROOT))).toList();
+	}
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String @NonNull [] args) {
 		if (command.getName().equalsIgnoreCase(PhotoList.COMMAND)) {
@@ -1041,8 +1095,11 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 		if (args.length == 2 && args[0].equalsIgnoreCase("purge")) {
 			final UUID owner = Bukkit.getOfflinePlayer(args[1]).getUniqueId();
+			final List<LooseSheets.Sheet> loosened = new ArrayList<>(loose.of(owner));
+			loosened.forEach(sheet -> removeLoose(sheet, false));
 			sender.sendMessage("VRCameraSync: removed " + purge(sheet -> sheet.owner().equals(owner) ||
-					sheet.ownerName().equalsIgnoreCase(args[1])) + " photos of " + args[1]);
+					sheet.ownerName().equalsIgnoreCase(args[1])) + " pinned and " + loosened.size() +
+					" loose photos of " + args[1]);
 			return true;
 		}
 		if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
@@ -1250,8 +1307,7 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 	 * what a photo is pinned to is gone, it falls
 	 */
 	private void blockGone(Block block) {
-		final List<StoredSheet> pinned = store.onBlock(new StoredSheet.BlockKey(block.getWorld().getUID(),
-				block.getX(), block.getY(), block.getZ()));
+		final List<StoredSheet> pinned = store.onBlock(key(block));
 		if (!pinned.isEmpty()) {
 			for (final StoredSheet sheet : new ArrayList<>(pinned)) {
 				sound(sheet, Sound.ENTITY_ITEM_FRAME_BREAK);
@@ -1260,9 +1316,66 @@ public final class SyncPlugin extends JavaPlugin implements PluginMessageListene
 		}
 	}
 
+	/**
+	 * @return if the player has no limits to how many photos they pin, and where
+	 */
+	private static boolean unlimited(Player player) {
+		return player.hasPermission("vrcamera.pin.unlimited");
+	}
+
+	/**
+	 * @return if a player at their limit of pinned photos asked to pin one more by taking off their oldest one
+	 */
+	private boolean replacesOldest(Protocol.Pin pin) {
+		return pin.replaceOldest() && maxPerPlayer > 0;
+	}
+
+	/**
+	 * takes off the oldest photos of a player until one more fits under their limit, as they asked for
+	 */
+	private void makeRoom(UUID owner) {
+		while (maxPerPlayer > 0 && store.ownedBy(owner) >= maxPerPlayer) {
+			final StoredSheet oldest = store.all().stream().filter(sheet -> sheet.owner().equals(owner))
+					.min(Comparator.comparingLong(StoredSheet::id)).orElse(null);
+			if (oldest == null) {
+				return;
+			}
+			sound(oldest, Sound.ENTITY_ITEM_FRAME_REMOVE_ITEM);
+			remove(oldest, Protocol.REMOVED_TAKEN);
+		}
+	}
+
+	/**
+	 * Looks at a block with photos on it once the game is done with it: water flowed into it, an entity changed
+	 * it. Whatever it turned into, photos only stay on what they can be pinned to.
+	 */
+	private void recheck(Block block) {
+		if (store.onBlock(key(block)).isEmpty()) {
+			return;
+		}
+		Bukkit.getScheduler().runTask(this, () -> {
+			if (!holdsSheets(block)) {
+				blockGone(block);
+			}
+		});
+	}
+
+	/**
+	 * @return if photos can be pinned to that block, as the mod sees it: what is in the way of a player, and
+	 * what is made to be on a wall
+	 */
+	private static boolean holdsSheets(Block block) {
+		final Material type = block.getType();
+		return block.isCollidable() || Tag.ALL_SIGNS.isTagged(type) || Tag.BANNERS.isTagged(type) ||
+				Tag.BUTTONS.isTagged(type) || type == Material.LEVER || type == Material.TRIPWIRE_HOOK;
+	}
+
+	private static StoredSheet.BlockKey key(Block block) {
+		return new StoredSheet.BlockKey(block.getWorld().getUID(), block.getX(), block.getY(), block.getZ());
+	}
+
 	private boolean holdsPhoto(Block block) {
-		return protectBlocks && !store.onBlock(new StoredSheet.BlockKey(block.getWorld().getUID(),
-				block.getX(), block.getY(), block.getZ())).isEmpty();
+		return protectBlocks && !store.onBlock(key(block)).isEmpty();
 	}
 
 	private int purge(java.util.function.Predicate<StoredSheet> which) {

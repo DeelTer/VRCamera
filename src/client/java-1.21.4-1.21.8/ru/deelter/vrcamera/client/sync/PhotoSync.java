@@ -679,7 +679,7 @@ public final class PhotoSync {
 			send(Protocol.pin(new Protocol.Pin(reference, sheet.support().getX(), sheet.support().getY(),
 					sheet.support().getZ(), sheet.position().x, sheet.position().y, sheet.position().z,
 					sheet.rotation().x, sheet.rotation().y, sheet.rotation().z, sheet.rotation().w, sheet.aspect,
-					image, sheet.custom)));
+					image, sheet.custom, CameraConfig.current().photoReplaceOldest)));
 		}, Minecraft.getInstance());
 	}
 

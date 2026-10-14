@@ -5,10 +5,11 @@ import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 import ru.deelter.vrcamera.Vrcamera;
+import ru.deelter.vrcamera.client.config.CameraConfig;
 
 /**
- * Shows a player who is behind blocks as the camera sees them: through a round hole in what is in the way, with a
- * dithered edge.
+ * Shows a player who is behind blocks as the camera sees them: through a round hole in what is in the way. It
+ * opens by growing, and has a clean edge, or one that fades out in dots if the player wants that.
  * <p>
  * The world is drawn a second time for that, without everything nearer to the camera than the player, and that
  * picture is put over the first one where the hole is. No block is drawn any differently, and nothing is seen that
@@ -34,13 +35,16 @@ final class SeeThrough {
 			uniform float aspect;
 			uniform float amount;
 			uniform float feet;
+			uniform float soft;
 			in vec2 uv;
 			out vec4 color;
 			const float bayer[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0,
 					13.0, 5.0);
 			void main() {
-				float away = length((uv - center) * vec2(aspect, 1.0)) / radius;
-				float open = (1.0 - smoothstep(0.55, 1.0, away)) * amount * smoothstep(feet - 0.01, feet + 0.03, uv.y);
+				float away = length((uv - center) * vec2(aspect, 1.0)) / (radius * max(amount, 0.001));
+				float edge = max(soft, 0.002);
+				float open = (1.0 - smoothstep(1.0 - 0.45 * edge, 1.0, away)) *
+						smoothstep(feet - 0.01 * edge, feet + 0.03 * edge, uv.y);
 				ivec2 cell = ivec2(gl_FragCoord.xy / 2.0) & 3;
 				if (open <= (bayer[cell.y * 4 + cell.x] + 0.5) / 16.0) {
 					discard;
@@ -98,6 +102,8 @@ final class SeeThrough {
 			GL20.glUniform1f(GL20.glGetUniformLocation(program, "aspect"), open.aspect());
 			GL20.glUniform1f(GL20.glGetUniformLocation(program, "amount"), open.amount());
 			GL20.glUniform1f(GL20.glGetUniformLocation(program, "feet"), open.floor());
+			GL20.glUniform1f(GL20.glGetUniformLocation(program, "soft"),
+					(float) Math.clamp(CameraConfig.current().seeThroughSoftness, 0.0, 1.0));
 			GL30.glBindVertexArray(vertices);
 			GL11.glDrawArrays(GL11.GL_TRIANGLE_STRIP, 0, 4);
 		} catch (RuntimeException e) {
@@ -140,7 +146,7 @@ final class SeeThrough {
 	 * @param x       where the player is in the picture from its left, from 0 to 1, and {@code y} from its bottom
 	 * @param radius  of the hole, in heights of the picture
 	 * @param aspect  how many times wider than high the picture is
-	 * @param amount  how far the hole is open, from 0 to 1
+	 * @param amount  how far the hole is open, from 0 to 1: how much of its size it has
 	 * @param floor   where the feet of the player are in the picture, from its bottom. The hole ends there: below
 	 *                it is the ground in front of the player, which a picture that begins behind what is in the way
 	 *                has holes in

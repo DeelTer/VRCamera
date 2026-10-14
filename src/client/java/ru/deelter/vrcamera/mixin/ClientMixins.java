@@ -10,15 +10,21 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * the mixins into Sodium are left out while there is no Sodium to mix into, the others always go in
+ * the mixins into Sodium and Plasmo Voice are left out while there is no such mod to mix into, the others
+ * always go in
  */
 public final class ClientMixins implements IMixinConfigPlugin {
 	private static final boolean SODIUM = FabricLoader.getInstance().isModLoaded("sodium");
 	private static final String FOR_SODIUM = ".Sodium";
+	private static final boolean PLASMO = FabricLoader.getInstance().isModLoaded("plasmovoice");
+	private static final String FOR_PLASMO = ".Plasmo";
 
 	@Override
 	public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-		return SODIUM || !mixinClassName.contains(FOR_SODIUM);
+		if (mixinClassName.contains(FOR_SODIUM)) {
+			return SODIUM;
+		}
+		return PLASMO || !mixinClassName.contains(FOR_PLASMO);
 	}
 
 	@Override

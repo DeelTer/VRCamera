@@ -63,6 +63,10 @@ public class CameraConfig {
 	public boolean seeThrough = false;
 	public double seeThroughRadius = 2.0;
 	/**
+	 * 0: the hole the player is seen through has a clean edge, up to 1: it fades out in dots
+	 */
+	public double seeThroughSoftness = 0.0;
+	/**
 	 * if the director of a player at a screen leaves out the shots from close by and from the ground
 	 */
 	public boolean calmShots = true;
@@ -140,6 +144,10 @@ public class CameraConfig {
 	 */
 	public ScreenOutput screenOutput = ScreenOutput.SCREEN;
 	/**
+	 * the hotbar, hearts, food, boss bars and titles in the window of the camera, for a stream
+	 */
+	public boolean cameraHud = false;
+	/**
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */
 	public double outputFps = 60;
@@ -162,6 +170,18 @@ public class CameraConfig {
 	public double cameraLabelDistance = 48;
 	public String filmPlayer = "";
 	public String filmWith = "";
+	/**
+	 * other players close by are filmed together with the one the camera films
+	 */
+	public boolean groupShots = true;
+	/**
+	 * blocks around the player in which others are filmed with them
+	 */
+	public double groupShotsReach = 6.0;
+	/**
+	 * voices of a voice chat mod are heard the way the camera looks, as loud as the player hears them
+	 */
+	public boolean voiceFromCamera = false;
 	public boolean freeAutoSwitch = true;
 	public double freeAutoSwitchAngle = 35;
 	public double freeAutoSwitchSeconds = 0.2;
@@ -219,6 +239,10 @@ public class CameraConfig {
 	 */
 	public String photoPalette = "justparchment8";
 	/**
+	 * on a server, a photo pinned over the limit of the player takes off their oldest pinned one
+	 */
+	public boolean photoReplaceOldest = false;
+	/**
 	 * the click of a photo and the whirr of printing it, of this player and of the others. Off they are still
 	 * heard by the others
 	 */
@@ -234,7 +258,7 @@ public class CameraConfig {
 	/**
 	 * blocks from which a photo that is looked at is shown large
 	 */
-	public double photoPreviewDistance = 2.0;
+	public double photoPreviewDistance = 3.0;
 	public boolean photoClipboard = true;
 	/**
 	 * the director shows the menu shot for the chat as well, like for an inventory
@@ -359,6 +383,13 @@ public class CameraConfig {
 			current = load();
 		}
 		return current;
+	}
+
+	/**
+	 * @return the file the settings are kept in
+	 */
+	public static Path file() {
+		return PATH;
 	}
 
 	/**

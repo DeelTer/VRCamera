@@ -8,6 +8,7 @@
 		"BlockDitheringConfigMixin",
 		"CameraMixin",
 		"ClientPacketListenerMixin",
+		"CloudRendererMixin",
 		"ContainerScreenAccessor",
 		"EntityMixin",
 		"EntityRenderDispatcherMixin",
@@ -22,6 +23,7 @@
 		"MinecraftMixin",
 		"MobAccessor",
 		"MouseHandlerMixin",
+		"PlasmoListenerMixin",
 		"ScreenMixin",
 		"SodiumCameraTimingMixin",
 		"SodiumSectionManagerMixin"

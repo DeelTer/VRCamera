@@ -23,6 +23,9 @@
 		],
 		"figura_api": [
 			"ru.deelter.vrcamera.client.figura.FiguraEyes"
+		],
+		"voicechat": [
+			"ru.deelter.vrcamera.client.voice.SimpleVoiceChatEars"
 		]
 	},
 	"mixins": [

@@ -56,12 +56,6 @@ public final class ConfigScreen {
 				"%.1f", value -> config.indicatorSize = value));
 		general.addEntry(screen.slider("throwPower", config.throwPower, defaults.throwPower, 0, 3, 0.1, "%.1f",
 				value -> config.throwPower = value));
-		general.addEntry(screen.slider("holdLag", config.holdLag, defaults.holdLag, 0, 2, 0.05, "%.2f s",
-				value -> config.holdLag = value));
-		general.addEntry(screen.toggle("keepCentered", config.keepCentered, defaults.keepCentered,
-				value -> config.keepCentered = value));
-		general.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
-				value -> config.menuShotChat = value));
 		general.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.chromaColor"),
 						config.chromaColor)
 				.setDefaultValue(defaults.chromaColor)
@@ -81,18 +75,22 @@ public final class ConfigScreen {
 		desktop.addEntry(screen.outputSize(config));
 		desktop.addEntry(screen.slider("outputFps", config.outputFps, defaults.outputFps, 0, 144, 6, "%.0f",
 				value -> config.outputFps = value));
+		desktop.addEntry(screen.toggle("cameraHud", config.cameraHud, defaults.cameraHud,
+				value -> config.cameraHud = value));
 		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
 				value -> config.jumpSteady = value));
 		desktop.addEntry(screen.toggle("followTurns", config.followTurns, defaults.followTurns,
 				value -> config.followTurns = value));
-		desktop.addEntry(screen.slider("droneSpeed", config.droneSpeed, defaults.droneSpeed, -30, 30, 1, "%.0f",
-				value -> config.droneSpeed = value));
+		desktop.addEntry(screen.slider("holdLag", config.holdLag, defaults.holdLag, 0, 2, 0.05, "%.2f s",
+				value -> config.holdLag = value));
 		desktop.addEntry(screen.toggle("calmShots", config.calmShots, defaults.calmShots,
 				value -> config.calmShots = value));
 		desktop.addEntry(screen.toggle("seeThrough", config.seeThrough, defaults.seeThrough,
 				value -> config.seeThrough = value));
 		desktop.addEntry(screen.slider("seeThroughRadius", config.seeThroughRadius, defaults.seeThroughRadius, 0.5,
 				6, 0.25, "%.2f", value -> config.seeThroughRadius = value));
+		desktop.addEntry(screen.slider("seeThroughSoftness", config.seeThroughSoftness,
+				defaults.seeThroughSoftness, 0, 1, 0.05, "%.2f", value -> config.seeThroughSoftness = value));
 		desktop.addEntry(screen.slider("menuSize", config.menuSize, defaults.menuSize, 0.5, 3, 0.25, "%.2fx",
 				value -> config.menuSize = value));
 		desktop.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmPlayer"),
@@ -107,18 +105,8 @@ public final class ConfigScreen {
 				.setTooltipSupplier(help("vrcamera.option.filmWith.tooltip"))
 				.setSaveConsumer(value -> config.filmWith = value.trim())
 				.build());
-		final ConfigCategory free = builder.getOrCreateCategory(Component.translatable("vrcamera.config.free"));
-		free.addEntry(screen.entries.startTextDescription(
-				Component.translatable("vrcamera.config.free.description")).build());
-		free.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
-				value -> config.freeAutoSwitch = value));
-		free.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
-				defaults.freeAutoSwitchAngle, 10, 90, 5, "%.0f", value -> config.freeAutoSwitchAngle = value));
-		free.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
-				defaults.freeAutoSwitchSeconds, 0, 1.5, 0.05, "%.2f s", value -> config.freeAutoSwitchSeconds = value));
-		free.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
-				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
-
+		desktop.addEntry(screen.toggle("voiceFromCamera", config.voiceFromCamera, defaults.voiceFromCamera,
+				value -> config.voiceFromCamera = value));
 		final ConfigCategory vr = builder.getOrCreateCategory(Component.translatable("vrcamera.config.vr"));
 		vr.addEntry(screen.toggle("forceMirror", config.forceMirror, defaults.forceMirror,
 				value -> config.forceMirror = value));
@@ -157,6 +145,18 @@ public final class ConfigScreen {
 		vr.addEntry(screen.slider("photoHoldSeconds", config.photoHoldSeconds, defaults.photoHoldSeconds, 0, 3,
 				0.25, "%.2f s", value -> config.photoHoldSeconds = value));
 
+		final ConfigCategory free = builder.getOrCreateCategory(Component.translatable("vrcamera.config.free"));
+		free.addEntry(screen.entries.startTextDescription(
+				Component.translatable("vrcamera.config.free.description")).build());
+		free.addEntry(screen.toggle("freeAutoSwitch", config.freeAutoSwitch, defaults.freeAutoSwitch,
+				value -> config.freeAutoSwitch = value));
+		free.addEntry(screen.slider("freeAutoSwitchAngle", config.freeAutoSwitchAngle,
+				defaults.freeAutoSwitchAngle, 10, 90, 5, "%.0f", value -> config.freeAutoSwitchAngle = value));
+		free.addEntry(screen.slider("freeAutoSwitchSeconds", config.freeAutoSwitchSeconds,
+				defaults.freeAutoSwitchSeconds, 0, 1.5, 0.05, "%.2f s", value -> config.freeAutoSwitchSeconds = value));
+		free.addEntry(screen.slider("cameraLabelDistance", config.cameraLabelDistance,
+				defaults.cameraLabelDistance, 0, 256, 8, "%.0f", value -> config.cameraLabelDistance = value));
+
 		final ConfigCategory photo = builder.getOrCreateCategory(Component.translatable("vrcamera.config.photo"));
 		photo.addEntry(screen.toggle("photoSheet", config.photoSheet, defaults.photoSheet,
 				value -> config.photoSheet = value));
@@ -175,15 +175,19 @@ public final class ConfigScreen {
 				defaults.photoPreviewDistance, 1, 8, 0.5, "%.1f", value -> config.photoPreviewDistance = value));
 		photo.addEntry(screen.toggle("photoClipboard", config.photoClipboard, defaults.photoClipboard,
 				value -> config.photoClipboard = value));
-		photo.addEntry(screen.toggle("showOthersPhotos", config.showOthersPhotos, defaults.showOthersPhotos,
+
+		final ConfigCategory server = builder.getOrCreateCategory(Component.translatable("vrcamera.config.server"));
+		server.addEntry(screen.toggle("photoReplaceOldest", config.photoReplaceOldest, defaults.photoReplaceOldest,
+				value -> config.photoReplaceOldest = value));
+		server.addEntry(screen.toggle("showOthersPhotos", config.showOthersPhotos, defaults.showOthersPhotos,
 				value -> config.showOthersPhotos = value));
-		photo.addEntry(screen.toggle("showCustomPhotos", config.showCustomPhotos, defaults.showCustomPhotos,
+		server.addEntry(screen.toggle("showCustomPhotos", config.showCustomPhotos, defaults.showCustomPhotos,
 				value -> config.showCustomPhotos = value));
-		photo.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
+		server.addEntry(screen.toggle("shareCamera", config.shareCamera, defaults.shareCamera,
 				value -> config.shareCamera = value));
-		photo.addEntry(screen.toggle("serverCameras", config.serverCameras, defaults.serverCameras,
+		server.addEntry(screen.toggle("serverCameras", config.serverCameras, defaults.serverCameras,
 				value -> config.serverCameras = value));
-		photo.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
+		server.addEntry(screen.slider("othersCameras", config.othersCameras, defaults.othersCameras, 0, 16, 1,
 				"%.0f", value -> config.othersCameras = value));
 
 		final ConfigCategory motion = builder.getOrCreateCategory(Component.translatable("vrcamera.config.motion"));
@@ -203,8 +207,16 @@ public final class ConfigScreen {
 				value -> config.leadRoom = value));
 		motion.addEntry(screen.slider("leadRoomMax", config.leadRoomMax, defaults.leadRoomMax, 0, 3, 0.1, "%.1f",
 				value -> config.leadRoomMax = value));
+		motion.addEntry(screen.toggle("keepCentered", config.keepCentered, defaults.keepCentered,
+				value -> config.keepCentered = value));
+		motion.addEntry(screen.toggle("groupShots", config.groupShots, defaults.groupShots,
+				value -> config.groupShots = value));
+		motion.addEntry(screen.slider("groupShotsReach", config.groupShotsReach, defaults.groupShotsReach, 2, 16,
+				0.5, "%.1f", value -> config.groupShotsReach = value));
 		motion.addEntry(screen.slider("orbitSpeed", config.orbitSpeed, defaults.orbitSpeed, 0, 60, 1, "%.0f°/s",
 				value -> config.orbitSpeed = value));
+		motion.addEntry(screen.slider("droneSpeed", config.droneSpeed, defaults.droneSpeed, -30, 30, 1, "%.0f",
+				value -> config.droneSpeed = value));
 		motion.addEntry(screen.toggle("speedFov", config.speedFov, defaults.speedFov,
 				value -> config.speedFov = value));
 
@@ -234,6 +246,8 @@ public final class ConfigScreen {
 		director.addEntry(screen.slider("manualHoldSeconds", config.manualHoldSeconds, defaults.manualHoldSeconds,
 				0, 120, 1, "%.0f s", value -> config.manualHoldSeconds = value));
 		director.addEntry(screen.toggle("events", config.events, defaults.events, value -> config.events = value));
+		director.addEntry(screen.toggle("menuShotChat", config.menuShotChat, defaults.menuShotChat,
+				value -> config.menuShotChat = value));
 		director.addEntry(screen.toggle("customInRotation", config.customInRotation, defaults.customInRotation,
 				value -> config.customInRotation = value));
 		director.addEntry(screen.toggle("povHome", config.povHome, defaults.povHome, value -> config.povHome = value));

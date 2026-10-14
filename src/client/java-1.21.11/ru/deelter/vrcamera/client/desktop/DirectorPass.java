@@ -96,10 +96,7 @@ public final class DirectorPass {
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
 		GameFrame.newFrame();
 		final DesktopCamera camera = DesktopCamera.INSTANCE;
-		if (camera.isOn() && (mc.level == null || mc.player == null)) {
-
-			camera.setMode(DesktopCamera.Mode.OFF);
-		}
+		camera.followWorld(mc.level != null && mc.player != null);
 		camera.keepView(mc);
 		final boolean wanted = camera.isOn() && !Vr.isRunning() &&
 				CameraConfig.current().screenOutput == ScreenOutput.WINDOW;
@@ -157,8 +154,13 @@ public final class DirectorPass {
 			}
 			shape = ownSize ? new int[]{width, height} : window;
 			DesktopGui.draw(mc, deltaTracker, own);
-			draw(mc, deltaTracker, own, target);
-			SeeThrough.set(cutThrough(mc, deltaTracker, own, camera, width, height));
+			CloudSlots.swap(mc);
+			try {
+				draw(mc, deltaTracker, own, target);
+				SeeThrough.set(cutThrough(mc, deltaTracker, own, camera, width, height));
+			} finally {
+				CloudSlots.swap(mc);
+			}
 			final long drawn = System.nanoTime();
 			OutputWindow.show(mc, target, camera.showsGrid(), shape != null && !ownSize);
 			measure(started, drawn, System.nanoTime());
@@ -257,6 +259,7 @@ public final class DirectorPass {
 			mc.gameRenderer.updateCamera(deltaTracker);
 			tellShaders(mc, deltaTracker, target.width, target.height);
 			mc.gameRenderer.renderLevel(deltaTracker);
+			HudPicture.draw(mc, deltaTracker, target);
 			((GameRendererAccessor) mc.gameRenderer).vrcamera$fogRenderer().endFrame();
 			mc.gameRenderer.getSubmitNodeStorage().endFrame();
 			mc.gameRenderer.getFeatureRenderDispatcher().endFrame();

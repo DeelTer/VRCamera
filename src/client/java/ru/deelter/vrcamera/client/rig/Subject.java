@@ -7,14 +7,25 @@ import net.minecraft.world.phys.Vec3;
 
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.JumpSteady;
+import ru.deelter.vrcamera.client.math.Smooth;
 import ru.deelter.vrcamera.client.math.SmoothAngle;
 import ru.deelter.vrcamera.client.math.SmoothVec;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * per frame snapshot of the player the camera films
  */
 public final class Subject {
 	private static final double PARTNER_REACH = 24.0;
+	/**
+	 * how many of the nearest others are filmed together with the player at most, and the seconds it takes to
+	 * go over to a shot of all of them and back
+	 */
+	private static final int CROWD_MOST = 4;
+	private static final double CROWD_LAG = 1.2;
 	private static final double JUMP_HEIGHT = 1.3;
 	private static final double SETTLED_SPEED = 0.3;
 	private static final double SETTLE_AFTER = 0.12;
@@ -24,6 +35,9 @@ public final class Subject {
 	private static final double LOOSE_TIME = 0.4;
 	private final SmoothVec velocitySmooth = new SmoothVec();
 	private final SmoothAngle facingSmooth = new SmoothAngle();
+	private final SmoothVec crowdSmooth = new SmoothVec();
+	private final Smooth crowdSpreadSmooth = new Smooth();
+	private final Smooth crowdWeightSmooth = new Smooth();
 	public Player player;
 	/**
 	 * how far the current frame is between two game ticks, to get where entities are drawn
@@ -87,6 +101,15 @@ public final class Subject {
 	 * middle of the {@link #target}, null without one
 	 */
 	public Vec3 targetCenter;
+	/**
+	 * halfway between the player and the middle of the others close to them, so the player is never pushed to the
+	 * edge by a crowd, how far they are all spread around it, and how much
+	 * the camera films them together right now: from 0, the player alone, to 1. It goes over to that softly,
+	 * people come and go
+	 */
+	public Vec3 crowd = Vec3.ZERO;
+	public double crowdSpread;
+	public double crowdWeight;
 	private boolean first = true;
 	private double rest;
 	private double ground;
@@ -116,7 +139,6 @@ public final class Subject {
 	 * @param realDt actual seconds since the last update
 	 */
 	public void updateWithoutVR(Player player, float partialTick, double dt, double realDt, CameraConfig config) {
-
 		feet = feet.add(0, hop, 0);
 		move(player, partialTick, dt, realDt);
 		hop = hop(player, dt, config.jumpSteady);
@@ -173,6 +195,41 @@ public final class Subject {
 	}
 
 	/**
+	 * Finds the others the player stands with: the nearest few in a circle around them. Not while the
+	 * camera already films the player with someone, a partner or a foe
+	 *
+	 * @param wanted if a shot of the player is to show the others around them too
+	 * @param reach  blocks around the player in which others are
+	 */
+	public void gather(boolean wanted, double reach, double dt) {
+		final List<Vec3> around = new ArrayList<>();
+		if (wanted && partner == null && target == null) {
+			player.level().players().stream()
+					.filter(other -> other != player && other.isAlive() && !other.isSpectator() &&
+							!other.isInvisible() && other.distanceTo(player) < reach * unit)
+					.sorted(Comparator.comparingDouble(other -> other.distanceToSqr(player)))
+					.limit(CROWD_MOST)
+					.forEach(other -> around.add(other.getPosition(partialTick).add(0, other.getBbHeight() * 0.5, 0)));
+		}
+		Vec3 others = Vec3.ZERO;
+		for (final Vec3 other : around) {
+			others = others.add(other);
+		}
+		final Vec3 middle = around.isEmpty() ? center : center.lerp(others.scale(1.0 / around.size()), 0.5);
+		double spread = middle.distanceTo(center);
+		for (final Vec3 other : around) {
+			spread = Math.max(spread, middle.distanceTo(other));
+		}
+		if (teleported) {
+			crowdSmooth.reset(middle.subtract(center));
+			crowdSpreadSmooth.reset(spread);
+		}
+		crowdWeight = crowdWeightSmooth.update(around.isEmpty() ? 0.0 : 1.0, CROWD_LAG, dt);
+		crowd = center.add(crowdSmooth.update(middle.subtract(center), CROWD_LAG, dt));
+		crowdSpread = crowdSpreadSmooth.update(spread, CROWD_LAG, dt);
+	}
+
+	/**
 	 * A player at a screen gets around in jumps, one right after the other, and a camera that goes up and down
 	 * with every one of them is hard to watch. From the second jump in a row on the camera films them from the
 	 * height they jump off: they jump in its picture. It goes to another height once they stay on it, and where no
@@ -207,8 +264,7 @@ public final class Subject {
 
 		rest = !jumps || settled > SETTLE_AFTER ? y : Math.clamp(rest, y - reach, y);
 		if (dt > 0) {
-
-			double pull = 2.0 / GROUND_LAG;
+			final double pull = 2.0 / GROUND_LAG;
 			final double step = pull * dt;
 			final double fade = 1.0 / (1.0 + step + 0.48 * step * step + 0.235 * step * step * step);
 			final double off = ground - rest;
@@ -238,7 +294,6 @@ public final class Subject {
 				hops = 0;
 			}
 		} else {
-
 			if (wasGrounded && rising > 1.0) {
 				hops++;
 			}

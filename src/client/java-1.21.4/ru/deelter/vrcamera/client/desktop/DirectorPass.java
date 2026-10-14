@@ -87,9 +87,7 @@ public final class DirectorPass {
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
 		GameFrame.newFrame();
 		final DesktopCamera camera = DesktopCamera.INSTANCE;
-		if (camera.isOn() && (mc.level == null || mc.player == null)) {
-			camera.setMode(DesktopCamera.Mode.OFF);
-		}
+		camera.followWorld(mc.level != null && mc.player != null);
 		camera.keepView(mc);
 		boolean wanted = camera.isOn() && !Vr.isRunning() &&
 				CameraConfig.current().screenOutput == ScreenOutput.WINDOW;
@@ -146,8 +144,13 @@ public final class DirectorPass {
 			}
 			shape = ownSize ? new int[]{width, height} : window;
 			DesktopGui.draw(mc, deltaTracker, own);
-			draw(mc, deltaTracker, own, target, partialTick);
-			SeeThrough.set(cutThrough(mc, deltaTracker, own, camera, width, height, partialTick));
+			CloudSlots.swap(mc);
+			try {
+				draw(mc, deltaTracker, own, target, partialTick);
+				SeeThrough.set(cutThrough(mc, deltaTracker, own, camera, width, height, partialTick));
+			} finally {
+				CloudSlots.swap(mc);
+			}
 			final long drawn = System.nanoTime();
 			OutputWindow.show(mc, target, camera.showsGrid(), shape != null && !ownSize);
 			own.bindWrite(true);
@@ -232,6 +235,7 @@ public final class DirectorPass {
 			target.clear();
 			target.bindWrite(true);
 			mc.gameRenderer.renderLevel(deltaTracker);
+			HudPicture.draw(mc, deltaTracker, target);
 		} finally {
 			active = false;
 			mc.options.setCameraType(view);

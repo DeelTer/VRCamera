@@ -28,7 +28,6 @@ import java.util.Random;
  * player gets blocked from view, it switches to an angle that can see them.
  */
 public final class Director {
-
 	private static final double OCCLUSION_GRACE = 1.0;
 	private static final List<TagKey<Biome>> ROUGH_BIOMES = List.of(BiomeTags.IS_MOUNTAIN, BiomeTags.IS_HILL,
 			BiomeTags.IS_FOREST, BiomeTags.IS_TAIGA, BiomeTags.IS_JUNGLE, BiomeTags.IS_BADLANDS);
@@ -63,6 +62,12 @@ public final class Director {
 	private static final double TIGHT_DISTANCE_SCALE = 0.7;
 
 	private static final double FALLBACK_DISTANCE_SCALE = 0.6;
+	/**
+	 * Seconds the view from the eyes stays at least, at most, when no shot had room: not a cut away and back
+	 * every moment. It goes when a shot has room again
+	 */
+	private static final double FORCED_POV_LEAST = 6.0;
+	private static final double FORCED_POV_MOST = 15.0;
 	private static final double BOOST = 4.0;
 
 	private static final double TIGHT_POV_FIT = 0.6;
@@ -223,11 +228,9 @@ public final class Director {
 		final boolean held = hold || config.directorManual;
 		final Event detected = held ? Event.NONE : detectEvent(subject, dt);
 		if (detected != dismissed) {
-
 			dismissed = Event.NONE;
 		}
 		if (forceNext && detected != Event.NONE) {
-
 			dismissed = detected;
 		}
 		final Event newEvent = detected == dismissed ? Event.NONE : detected;
@@ -239,7 +242,6 @@ public final class Director {
 			}
 		}
 		if (event != Event.NONE && current != null && rig.ready()) {
-
 			if (subject.teleported) {
 				rig.rebase(subject);
 			}
@@ -261,7 +263,6 @@ public final class Director {
 			cut = true;
 		} else {
 			if (subject.teleported) {
-
 				rig.rebase(subject);
 				occludedTime = -OCCLUSION_GRACE;
 			}
@@ -269,7 +270,6 @@ public final class Director {
 			if (rig.arm() < limit) {
 				occludedTime += dt;
 			} else {
-
 				occludedTime = Math.min(0, occludedTime + dt);
 			}
 			final boolean blocked = occludedTime > config.occlusionCutTime;
@@ -280,7 +280,6 @@ public final class Director {
 			} else if (eventOver) {
 				reason = "event over";
 			} else if (held) {
-
 				if (current.isWorld() && (blocked || finished)) {
 					reason = "held shot ended";
 					cut = true;
@@ -306,7 +305,6 @@ public final class Director {
 				if (fit(current.type) <= 0) {
 					reason = "unfit for " + context;
 				} else if (now != Context.WALK && now != activity(shotContext)) {
-
 					reason = "now " + context;
 					canStay = true;
 				}
@@ -333,12 +331,10 @@ public final class Director {
 			if (player.fallDistance > 5.0) {
 				falling = true;
 			} else if (player.getDeltaMovement().y < -0.3) {
-
 				falling = WorldProbe.groundDistance(subject, 24.0) > 6.0 * subject.unit;
 			}
 		}
 		if (falling) {
-
 			fallTimer = 1.0;
 		} else {
 			fallTimer -= dt;
@@ -391,7 +387,6 @@ public final class Director {
 			}
 		}
 		if (bestRoom < type.minDistance * subject.unit && config.shot(ShotType.POV).enabled) {
-
 			final Shot shot = new Shot(ShotType.POV, config.shot(ShotType.POV), 1);
 			shot.start(subject, config);
 			return shot;
@@ -407,7 +402,6 @@ public final class Director {
 		if (forceType == ShotType.CUSTOM) {
 			selection.consider(new Shot(ShotType.CUSTOM, config.preset(), 1), 1.0, 1.0);
 		} else if (forceType != null) {
-
 			selection.considerBothSides(forceType, 1.0, distanceScale);
 		} else if (isHome() && asides <= 0 && (current == null || current.type != ShotType.POV)) {
 			selection.considerBothSides(ShotType.POV, 1.0, distanceScale);
@@ -431,7 +425,6 @@ public final class Director {
 				}
 			}
 			if (config.customInRotation) {
-
 				for (final ShotConfig preset : config.presets) {
 					if (preset.enabled && preset.weight > 0) {
 						selection.consider(new Shot(ShotType.CUSTOM, preset, 1), preset.weight, 1.0);
@@ -452,6 +445,10 @@ public final class Director {
 		next.forced = forceType != null;
 		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, random.nextDouble()) *
 				(context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
+		if (next.type == ShotType.POV && selection.best == null && !next.forced) {
+			next.duration = Math.max(next.duration,
+					CamMath.lerp(FORCED_POV_LEAST, FORCED_POV_MOST, random.nextDouble()));
+		}
 		if (isHome() && !next.forced) {
 			if (next.type == ShotType.POV) {
 				next.duration = config.povHomeSeconds;
@@ -462,7 +459,6 @@ public final class Director {
 		}
 
 		if (next == current) {
-
 			next.age = 0;
 			reason += ", kept";
 		} else if (!cut && next.blends() && current != null && current.blends() && wantsBlend(next)) {
@@ -492,9 +488,6 @@ public final class Director {
 	}
 
 	/**
-	 * @return how well a shot fits what the player is doing and where, 0 means it should not be used
-	 */
-	/**
 	 * Looks where the player is going. A wall that will be between them and the camera in a moment is no reason
 	 * to wait until it is: if the other side of them is free, now and then, the camera swings over to there in
 	 * one move
@@ -513,7 +506,7 @@ public final class Director {
 			return;
 		}
 		final Vec3 step = travel.scale(AHEAD_SECONDS);
-		final double needed = Math.min(1.0, config.occlusionRatio + ROOM_TO_SPARE);
+		final double needed = roomNeeded();
 		if (freeAhead(subject, current, step) >= needed) {
 			return;
 		}
@@ -541,10 +534,6 @@ public final class Director {
 	}
 
 	/**
-	 * @return how much more or less a shot is worth where the ground is steep or grown over: a camera near the
-	 * ground is in a slope or behind a tree there, one high above is not
-	 */
-	/**
 	 * @return how far out a shot is, of what its settings say. A drone is not as far every time
 	 */
 	private double reach(ShotType type, double scale) {
@@ -552,6 +541,18 @@ public final class Director {
 				scale * (DRONE_NEAREST + (DRONE_FURTHEST - DRONE_NEAREST) * random.nextDouble());
 	}
 
+	/**
+	 * @return how much of the way to its place has to be free for a camera to be put there: a little more than
+	 * what it is taken away for again. Never more than all of the way, or no place would do
+	 */
+	private double roomNeeded() {
+		return Math.min(1.0, config.occlusionRatio + ROOM_TO_SPARE);
+	}
+
+	/**
+	 * @return how much more or less a shot is worth where the ground is steep or grown over: a camera near the
+	 * ground is in a slope or behind a tree there, one high above is not
+	 */
 	private double terrainFit(ShotType type) {
 		if (!rough) {
 			return 1.0;
@@ -565,13 +566,14 @@ public final class Director {
 		};
 	}
 
+	/**
+	 * @return how well a shot fits what the player is doing and where, 0 means it should not be used
+	 */
 	private double fit(ShotType type) {
 		if (type == ShotType.POV) {
-
 			return tight ? TIGHT_POV_FIT : atScreen ? SCREEN_POV_FIT : 0.0;
 		}
 		if (type == ShotType.DUEL && partnered) {
-
 			return PARTNER_FIT;
 		}
 		return type.weight(context) * (tight ? type.tightFactor : 1.0);
@@ -583,7 +585,6 @@ public final class Director {
 	 */
 	private Shot fallback(Subject subject, double distanceScale) {
 		if (forceType != null) {
-
 			final Shot shot = new Shot(forceType, config.shot(forceType),
 					forceType == ShotType.CUSTOM ? 1 : randomSide());
 			shot.distanceScale = reach(forceType, distanceScale);
@@ -625,11 +626,9 @@ public final class Director {
 		final Entity attacked = this.attacked;
 		this.attacked = null;
 		if (attacked instanceof LivingEntity && attacked.isAlive()) {
-
 			combatTimer = 5.0;
 			subject.target = attacked;
 		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
-
 			final DamageSource source = player.getLastDamageSource();
 			final Entity attacker = source == null ? null : source.getEntity();
 			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
@@ -638,7 +637,6 @@ public final class Director {
 			}
 		}
 		if (player.isDeadOrDying() && subject.target != null) {
-
 			combatTimer = 5.0;
 		}
 		if (subject.target != null && (combatTimer <= 0 ||
@@ -681,11 +679,9 @@ public final class Director {
 		} else if (stillTime > 1.2) {
 			context = Context.IDLE;
 		} else if (subject.speed > 0.5 || context != Context.IDLE) {
-
 			context = Context.WALK;
 		}
 		if (context == Context.FLY && previous != Context.FLY) {
-
 			boost = ShotType.FLYBY;
 		}
 
@@ -767,7 +763,7 @@ public final class Director {
 			if (shot.isWorld() && free < 0.9) {
 				return;
 			}
-			if (forceType == null && !subject.seenThrough && free < Math.min(1.0, config.occlusionRatio + ROOM_TO_SPARE)) {
+			if (forceType == null && !subject.seenThrough && free < roomNeeded()) {
 				return;
 			}
 			final Vec3 actual = center.lerp(wanted,
@@ -814,5 +810,4 @@ public final class Director {
 			return Math.abs(lateral) < 0.2 ? 0 : (int) Math.signum(lateral);
 		}
 	}
-
 }

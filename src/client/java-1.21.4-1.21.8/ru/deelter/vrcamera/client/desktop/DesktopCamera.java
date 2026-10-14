@@ -77,6 +77,12 @@ public final class DesktopCamera {
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
 	/**
+	 * Seconds the view stays at the eyes once blocks pushed the camera in there, at least and at most. Then it
+	 * goes back only when nothing is in the way of the camera any more: not back and forth every moment
+	 */
+	private static final double OWN_VIEW_LEAST = 6.0;
+	private static final double OWN_VIEW_MOST = 15.0;
+	/**
 	 * how much sooner the view goes over to the eyes of the player while blocks push the camera up to them: from
 	 * that close it shows a back and nothing else
 	 */
@@ -104,8 +110,8 @@ public final class DesktopCamera {
 	private final Rig rig = new Rig(true);
 	private final FreeCamera free = new FreeCamera();
 	private final CameraGrab grab = new CameraGrab();
-	private boolean useWasDown;
 	private final List<Runnable> fromServer = new ArrayList<>();
+	private boolean useWasDown;
 	private Mode mode = Mode.OFF;
 	private boolean ownView;
 	private ClientLevel fromServerLevel;
@@ -116,6 +122,10 @@ public final class DesktopCamera {
 	private String lentBefore;
 	private String toldFilming;
 	private Mode lastMode = Mode.DIRECTOR;
+	/**
+	 * the mode to go back to once there is a world again, null for none
+	 */
+	private Mode waiting;
 	private ShotType askedFor;
 	private CameraConfig config;
 	private Director director;
@@ -133,6 +143,8 @@ public final class DesktopCamera {
 	private int gazeAt = -1;
 	private double gazeTime;
 	private boolean inside;
+	private boolean pushedIn;
+	private long ownViewUntil;
 	private CameraType viewBefore;
 	private long lastNanos;
 	private Pose pose;
@@ -222,6 +234,31 @@ public final class DesktopCamera {
 		return mode != Mode.OFF;
 	}
 
+	/**
+	 * The world is gone for a moment, as when a proxy like Velocity moves the player to another server: the camera
+	 * goes off, and on again in the mode it was in once there is a world again. A new connection forgets that, see
+	 * {@link #forgetWorld}
+	 */
+	public void followWorld(boolean inWorld) {
+		if (!inWorld && mode != Mode.OFF) {
+			waiting = mode;
+			setMode(Mode.OFF);
+			return;
+		}
+		if (inWorld && waiting != null) {
+			final Mode back = waiting;
+			waiting = null;
+			setMode(back);
+		}
+	}
+
+	/**
+	 * the player connects anew, to a server or to a world of their own: the camera stays off there
+	 */
+	public void forgetWorld() {
+		waiting = null;
+	}
+
 	public void cycleMode() {
 		setMode(Mode.values()[(mode.ordinal() + 1) % Mode.values().length]);
 	}
@@ -248,6 +285,7 @@ public final class DesktopCamera {
 		steered = null;
 		flying = false;
 		inside = false;
+		pushedIn = false;
 		ownView = false;
 		steeredFromWindow = false;
 		grab.reset();
@@ -1316,6 +1354,7 @@ public final class DesktopCamera {
 		subject.seenThrough = config.seeThrough && hasOwnWindow() && OutputWindow.showsThrough();
 		final Player partner = find(mc, config.filmWith);
 		subject.partner = partner == subject.player ? null : partner;
+		subject.gather(config.groupShots, config.groupShotsReach, dt);
 		if (mode == Mode.FREE && mc.level != freeLevel) {
 			openFree(mc, player, partialTick);
 		}
@@ -1669,7 +1708,14 @@ public final class DesktopCamera {
 
 		final double fromHead = rig.position().distanceTo(subject.head);
 		final double pushed = rig.arm() < 0.999 ? PUSHED_IN : 0.0;
-		inside = filmsSelf && fromHead < ((inside ? INSIDE_OUT : INSIDE_IN) + pushed) * subject.unit;
+		final boolean wasInside = inside;
+		pushedIn = filmsSelf && fromHead < ((pushedIn ? INSIDE_OUT : INSIDE_IN) + pushed) * subject.unit;
+		if (pushedIn && !wasInside) {
+			ownViewUntil = System.nanoTime() +
+					(long) (CamMath.lerp(OWN_VIEW_LEAST, OWN_VIEW_MOST, Math.random()) * 1.0E9);
+		}
+		inside = filmsSelf && (pushedIn ||
+				(wasInside && (System.nanoTime() < ownViewUntil || rig.arm() < 0.999)));
 		return new Pose(rig.position(), new Quaternionf(rig.rotation()),
 				(float) Math.clamp(rig.fov(), 1.0, 179.0));
 	}
