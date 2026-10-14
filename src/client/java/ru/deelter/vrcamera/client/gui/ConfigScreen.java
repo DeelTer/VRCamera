@@ -80,6 +80,8 @@ public final class ConfigScreen {
 				value -> config.followTurns = value));
 		desktop.addEntry(screen.slider("holdLag", config.holdLag, defaults.holdLag, 0, 2, 0.05, "%.2f s",
 				value -> config.holdLag = value));
+		desktop.addEntry(screen.slider("holdShake", config.holdShake, defaults.holdShake, 0, 3, 0.1, "%.1f",
+				value -> config.holdShake = value));
 		desktop.addEntry(screen.toggle("calmShots", config.calmShots, defaults.calmShots,
 				value -> config.calmShots = value));
 		desktop.addEntry(screen.toggle("seeThrough", config.seeThrough, defaults.seeThrough,

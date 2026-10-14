@@ -91,6 +91,10 @@ public class CameraConfig {
 	 */
 	public double holdLag = 0.1;
 	/**
+	 * how much the camera a player at a screen holds shakes while it is turned away from them, 0 = not at all
+	 */
+	public double holdShake = 0.0;
+	/**
 	 * the camera looks right at the player all the time: it does not aim ahead of where they go, and does not
 	 * turn to them a moment late. In every mode, and while a player at a screen holds it
 	 */

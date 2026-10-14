@@ -431,5 +431,7 @@
 	"vrcamera.gui.palettes.folder.tooltip": "Öffnet den Palettenordner, eigene .hex-, .gpl-, .pal- und .txt-Dateien kommen dorthin",
 	"vrcamera.gui.palettes.delete.tooltip": "Löscht diese Palette, zweimal drücken",
 	"vrcamera.option.cameraHud": "PC: HUD im Kamerafenster",
-	"vrcamera.option.cameraHud.tooltip": "Hotbar, Herzen, Hunger, Rüstung, Bossleisten und Titel auch im Bild der Kamera im eigenen Fenster, für einen Stream. Fadenkreuz, Chat, die Zeile über der Hotbar und Menüs bleiben draußen."
+	"vrcamera.option.cameraHud.tooltip": "Hotbar, Herzen, Hunger, Rüstung, Bossleisten und Titel auch im Bild der Kamera im eigenen Fenster, für einen Stream. Fadenkreuz, Chat, die Zeile über der Hotbar und Menüs bleiben draußen.",
+	"vrcamera.option.holdShake": "Gehaltene Kamera: Bodycam-Wackeln",
+	"vrcamera.option.holdShake.tooltip": "Mit R von dir weggedreht wackelt die Kamera in der Hand wie eine Bodycam: mit jedem Schritt und mit einem Ruck, wenn du getroffen wirst. 0 = aus."
 }
