@@ -9,7 +9,7 @@ import ru.deelter.vrcamera.client.voice.VoiceEars;
 
 /**
  * Plasmo Voice sets where the player hears the voices from many times a second, and has no way for another mod to
- * say otherwise: right after it, they are heard the way the camera looks, see {@link VoiceEars}. Only while Plasmo
+ * say otherwise: right after it, they are heard from the camera, see {@link VoiceEars}. Only while Plasmo
  * Voice is installed
  */
 @Pseudo

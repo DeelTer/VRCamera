@@ -411,7 +411,7 @@
 	"vrcamera.option.seeThroughSoftness": "透视窗边缘柔和度",
 	"vrcamera.option.seeThroughSoftness.tooltip": "0：你周围的透视窗边缘清晰，打开时逐渐扩大。更高：边缘以网点渐隐，在直播中可能显得有颗粒感。",
 	"vrcamera.option.voiceFromCamera": "语音聊天：从摄像机处收听",
-	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat 和 Plasmo Voice：声音按摄像机朝向定位，画面左边的人声从左边传来。音量仍按你自己听到的来。",
+	"vrcamera.option.voiceFromCamera.tooltip": "Simple Voice Chat 和 Plasmo Voice：从摄像机所在位置收听，画面左边的人声从左边传来。音量仍按你自己听到的来。",
 	"vrcamera.option.photoReplaceOldest": "照片：达到上限时删除最旧的",
 	"vrcamera.option.photoReplaceOldest.tooltip": "在服务器上，超出上限再固定照片时，会撤下你最早固定的那张，而不是被拒绝。",
 	"vrcamera.option.groupShotsReach": "全景范围",

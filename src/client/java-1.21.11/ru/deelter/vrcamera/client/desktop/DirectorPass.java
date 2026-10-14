@@ -139,8 +139,14 @@ public final class DirectorPass {
 			}
 			final CameraConfig config = CameraConfig.current();
 			final boolean ownSize = config.hasOutputSize();
-			final int width = ownSize ? config.outputWidth : own.width;
-			final int height = ownSize ? config.outputHeight : own.height;
+			final int[] window = OutputWindow.size();
+			if (window == null) {
+				return;
+			}
+			final int[] size = ownSize ? new int[]{config.outputWidth, config.outputHeight} :
+					pictureSize(window, own);
+			final int width = size[0];
+			final int height = size[1];
 			if (target == null) {
 				target = new MainTarget(width, height);
 			} else if (target.width != width || target.height != height) {
@@ -148,11 +154,7 @@ public final class DirectorPass {
 			}
 			final long started = System.nanoTime();
 
-			final int[] window = OutputWindow.size();
-			if (window == null) {
-				return;
-			}
-			shape = ownSize ? new int[]{width, height} : window;
+			shape = ownSize ? size : window;
 			DesktopGui.draw(mc, deltaTracker, own);
 			CloudSlots.swap(mc);
 			try {
@@ -191,6 +193,15 @@ public final class DirectorPass {
 
 	static void setTarget(Minecraft mc, RenderTarget to) {
 		((MinecraftAccessor) mc).vrcamera$setMainRenderTarget(to);
+	}
+
+	/**
+	 * @return the size to draw the picture of the camera in: that of its window, so no pixel is drawn that is not
+	 * seen, but never more pixels than the window of the game has
+	 */
+	private static int[] pictureSize(int[] window, RenderTarget game) {
+		final double scale = Math.min(1.0, Math.sqrt((double) game.width * game.height / ((double) window[0] * window[1])));
+		return new int[]{Math.max(1, (int) (window[0] * scale)), Math.max(1, (int) (window[1] * scale))};
 	}
 
 	/**

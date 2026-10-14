@@ -247,19 +247,26 @@ public final class PhotoAlbum {
 	 * before it, so the one that came last is on top. Only worked out again when one of them moved
 	 */
 	private void layer() {
-		final List<PhotoSheet> pinned = new ArrayList<>();
-		long stamp = 0;
+		long stamp = 1;
 		for (final PhotoSheet sheet : sheets) {
 			if (sheet.isLaid()) {
-				pinned.add(sheet);
-				stamp += 31L * System.identityHashCode(sheet) + 17L * sheet.remoteId() + sheet.pinOrder() +
-						sheet.position().hashCode();
+				final Vec3 at = sheet.position();
+				stamp = stamp * 31 + System.identityHashCode(sheet);
+				stamp = stamp * 31 + sheet.remoteId();
+				stamp = stamp * 31 + sheet.pinOrder();
+				stamp = stamp * 31 + Double.hashCode(at.x) + 7L * Double.hashCode(at.y) + 13L * Double.hashCode(at.z);
 			}
 		}
 		if (stamp == layered) {
 			return;
 		}
 		layered = stamp;
+		final List<PhotoSheet> pinned = new ArrayList<>();
+		for (final PhotoSheet sheet : sheets) {
+			if (sheet.isLaid()) {
+				pinned.add(sheet);
+			}
+		}
 		pinned.sort((one, other) -> one == other ? 0 : one.pinnedBefore(other) ? -1 : 1);
 		for (int index = 0; index < pinned.size(); index++) {
 			final PhotoSheet sheet = pinned.get(index);

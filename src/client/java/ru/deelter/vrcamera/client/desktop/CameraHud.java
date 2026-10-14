@@ -16,7 +16,14 @@ public final class CameraHud {
 	 * @return if the picture of the camera that is drawn right now has the HUD on it
 	 */
 	public static boolean shown() {
-		return isCameraPicture() && CameraConfig.current().cameraHud && !ChromaKey.isOn();
+		return isCameraPicture() && wanted();
+	}
+
+	/**
+	 * @return if the player wants the HUD on the picture of the camera, whether one is drawn right now or not
+	 */
+	public static boolean wanted() {
+		return CameraConfig.current().cameraHud && !ChromaKey.isOn();
 	}
 
 	/**
