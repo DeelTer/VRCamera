@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Câmera: HUD na janela da câmera ligado",
 	"vrcamera.message.hud.off": "Câmera: HUD na janela da câmera desligado",
 	"vrcamera.option.cameraRenderDistance": "Janela da câmera: distância de renderização",
-	"vrcamera.option.cameraRenderDistance.tooltip": "Até quantos chunks a imagem da câmera alcança, a névoa dela termina ali. Menos é mais leve: o mundo é desenhado de novo para a câmera. 0 = até onde você vê."
+	"vrcamera.option.cameraRenderDistance.tooltip": "Até quantos chunks a imagem da câmera alcança, a névoa dela termina ali. Menos é mais leve: o mundo é desenhado de novo para a câmera. 0 = até onde você vê.",
+	"vrcamera.option.aimView": "Diretor: puxar o arco",
+	"vrcamera.option.aimView.tooltip": "O que o diretor faz enquanto você puxa um arco, uma besta ou um tridente. Virar para o alvo: plano sobre o ombro, a câmera vira para onde você mira. Primeira pessoa: sua visão enquanto mira.",
+	"vrcamera.option.aimView.off": "Nada",
+	"vrcamera.option.aimView.target": "Virar para o alvo",
+	"vrcamera.option.aimView.first_person": "Primeira pessoa",
+	"vrcamera.option.cameraTab": "PC: lista de jogadores na janela da câmera",
+	"vrcamera.option.cameraTab.tooltip": "Enquanto você segura Tab, a lista de jogadores também aparece na imagem da câmera na janela própria."
 }

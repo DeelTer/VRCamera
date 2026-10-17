@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Камера: HUD у вікні камери увімкнено",
 	"vrcamera.message.hud.off": "Камера: HUD у вікні камери вимкнено",
 	"vrcamera.option.cameraRenderDistance": "Вікно камери: дальність промальовки",
-	"vrcamera.option.cameraRenderDistance.tooltip": "На скільки чанків бачить картинка камери, там закінчується її туман. Менше — легше: світ для камери малюється вдруге. 0 — як у вас."
+	"vrcamera.option.cameraRenderDistance.tooltip": "На скільки чанків бачить картинка камери, там закінчується її туман. Менше — легше: світ для камери малюється вдруге. 0 — як у вас.",
+	"vrcamera.option.aimView": "Режисер: натягую лук",
+	"vrcamera.option.aimView.tooltip": "Що робить режисер, поки ви натягуєте лук, арбалет чи тризуб. Поворот до цілі — план з-за плеча, камера повертається до того, у що ви цілитеся. Перша особа — ваш вигляд, поки цілитеся.",
+	"vrcamera.option.aimView.off": "Нічого",
+	"vrcamera.option.aimView.target": "Поворот до цілі",
+	"vrcamera.option.aimView.first_person": "Перша особа",
+	"vrcamera.option.cameraTab": "ПК: список гравців у вікні камери",
+	"vrcamera.option.cameraTab.tooltip": "Поки затиснуто Tab, список гравців видно й у картинці камери в окремому вікні."
 }

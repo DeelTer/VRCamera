@@ -17,11 +17,26 @@ public class GuiMixin {
 		}
 	}
 
-	@Inject(method = {"renderCrosshair", "renderChat", "renderOverlayMessage", "renderTabList",
+	@Inject(method = {"renderCrosshair", "renderChat", "renderOverlayMessage",
 			"renderScoreboardSidebar", "renderSubtitleOverlay", "renderCameraOverlays", "renderSleepOverlay",
 			"renderDemoOverlay", "renderDebugOverlay"}, at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$onlyForThePlayer(CallbackInfo ci) {
 		if (CameraHud.isCameraPicture()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "renderTabList", at = @At("HEAD"), cancellable = true, require = 0)
+	private void vrcamera$tabForCamera(CallbackInfo ci) {
+		if (CameraHud.isCameraPicture() && !CameraHud.showsTab()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = {"renderHotbarAndDecorations", "renderEffects", "renderBossOverlay", "renderTitle"}, at = @At("HEAD"),
+			cancellable = true, require = 0)
+	private void vrcamera$onlyTheTab(CallbackInfo ci) {
+		if (CameraHud.isCameraPicture() && !CameraHud.showsHud()) {
 			ci.cancel();
 		}
 	}

@@ -29,6 +29,11 @@ import java.util.Random;
  */
 public final class Director {
 	private static final double OCCLUSION_GRACE = 1.0;
+	/**
+	 * blocks a foe can be away and still be filmed with the player: one that came close, one that shoots from afar
+	 */
+	private static final double NEAR_FOE = 16.0;
+	private static final double FAR_FOE = 48.0;
 	private static final List<TagKey<Biome>> ROUGH_BIOMES = List.of(BiomeTags.IS_MOUNTAIN, BiomeTags.IS_HILL,
 			BiomeTags.IS_FOREST, BiomeTags.IS_TAIGA, BiomeTags.IS_JUNGLE, BiomeTags.IS_BADLANDS);
 	private static final double TERRAIN_INTERVAL = 1.0;
@@ -123,6 +128,11 @@ public final class Director {
 	private Event dismissed = Event.NONE;
 	private double stillTime;
 	private Entity attacked;
+	private boolean wasAiming;
+	/**
+	 * if the foe hit the player from afar, with an arrow or the like: it stays the foe further away
+	 */
+	private boolean shotFromAfar;
 
 	public Director(CameraConfig config) {
 		this.config = config;
@@ -253,6 +263,8 @@ public final class Director {
 			lookAhead(subject, rig, dt);
 		}
 		canStay = false;
+		final boolean startedAiming = subject.aiming && !wasAiming;
+		wasAiming = subject.aiming;
 		String reason = null;
 		boolean cut = false;
 		if (current == null || !rig.ready()) {
@@ -290,6 +302,11 @@ public final class Director {
 				cut = true;
 			} else if (finished) {
 				reason = "finished";
+			} else if (startedAiming && !current.forced && current.type != ShotType.SHOULDER &&
+					current.type != ShotType.POV && current.type != ShotType.CUSTOM) {
+				reason = "aiming";
+				boost = ShotType.SHOULDER;
+				canStay = true;
 			} else if (current.age >= current.duration) {
 				reason = "time";
 				canStay = true;
@@ -628,19 +645,21 @@ public final class Director {
 		if (attacked instanceof LivingEntity && attacked.isAlive()) {
 			combatTimer = 5.0;
 			subject.target = attacked;
+			shotFromAfar = false;
 		} else if (player.hurtTime > 0 || player.isDeadOrDying()) {
 			final DamageSource source = player.getLastDamageSource();
 			final Entity attacker = source == null ? null : source.getEntity();
 			if (attacker instanceof LivingEntity && attacker != player && attacker.isAlive()) {
 				combatTimer = 5.0;
 				subject.target = attacker;
+				shotFromAfar = source.getDirectEntity() != attacker;
 			}
 		}
 		if (player.isDeadOrDying() && subject.target != null) {
 			combatTimer = 5.0;
 		}
 		if (subject.target != null && (combatTimer <= 0 ||
-				subject.target.distanceTo(player) > 16.0 + 8.0 * subject.unit
+				subject.target.distanceTo(player) > (shotFromAfar ? FAR_FOE : NEAR_FOE) + 8.0 * subject.unit
 		)) {
 			subject.target = null;
 		}

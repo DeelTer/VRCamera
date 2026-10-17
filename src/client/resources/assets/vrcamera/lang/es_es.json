@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Cámara: HUD en la ventana de cámara activado",
 	"vrcamera.message.hud.off": "Cámara: HUD en la ventana de cámara desactivado",
 	"vrcamera.option.cameraRenderDistance": "Ventana de cámara: distancia de renderizado",
-	"vrcamera.option.cameraRenderDistance.tooltip": "Cuántos chunks alcanza la imagen de la cámara, ahí termina su niebla. Menos es más ligero: el mundo se dibuja otra vez para la cámara. 0 = tanto como ves tú."
+	"vrcamera.option.cameraRenderDistance.tooltip": "Cuántos chunks alcanza la imagen de la cámara, ahí termina su niebla. Menos es más ligero: el mundo se dibuja otra vez para la cámara. 0 = tanto como ves tú.",
+	"vrcamera.option.aimView": "Director: tensar el arco",
+	"vrcamera.option.aimView.tooltip": "Qué hace el director mientras tensas un arco, una ballesta o un tridente. Girar al objetivo: plano sobre el hombro, la cámara gira hacia lo que apuntas. Primera persona: tu vista mientras apuntas.",
+	"vrcamera.option.aimView.off": "Nada",
+	"vrcamera.option.aimView.target": "Girar al objetivo",
+	"vrcamera.option.aimView.first_person": "Primera persona",
+	"vrcamera.option.cameraTab": "PC: lista de jugadores en la ventana de cámara",
+	"vrcamera.option.cameraTab.tooltip": "Mientras mantienes Tab, la lista de jugadores también sale en la imagen de la cámara en su ventana."
 }

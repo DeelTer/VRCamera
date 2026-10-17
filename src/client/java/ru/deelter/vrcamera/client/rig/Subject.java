@@ -3,6 +3,12 @@ package ru.deelter.vrcamera.client.rig;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import ru.deelter.vrcamera.client.config.CameraConfig;
@@ -14,6 +20,7 @@ import ru.deelter.vrcamera.client.math.SmoothVec;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * per frame snapshot of the player the camera films
@@ -26,6 +33,12 @@ public final class Subject {
 	 */
 	private static final int CROWD_MOST = 4;
 	private static final double CROWD_LAG = 1.2;
+	/**
+	 * blocks a drawn bow is looked along for what it aims at, and the seconds the camera takes to turn to that
+	 */
+	private static final double AIM_REACH = 64.0;
+	private static final double AIM_LAG = 0.4;
+	private static final Set<String> AIMING = Set.of("BOW", "CROSSBOW", "SPEAR", "TRIDENT");
 	private static final double JUMP_HEIGHT = 1.3;
 	private static final double SETTLED_SPEED = 0.3;
 	private static final double SETTLE_AFTER = 0.12;
@@ -38,6 +51,7 @@ public final class Subject {
 	private final SmoothVec crowdSmooth = new SmoothVec();
 	private final Smooth crowdSpreadSmooth = new Smooth();
 	private final Smooth crowdWeightSmooth = new Smooth();
+	private final Smooth aimSmooth = new Smooth();
 	public Player player;
 	/**
 	 * how far the current frame is between two game ticks, to get where entities are drawn
@@ -110,6 +124,13 @@ public final class Subject {
 	public Vec3 crowd = Vec3.ZERO;
 	public double crowdSpread;
 	public double crowdWeight;
+	/**
+	 * if the player draws a bow, a crossbow or a trident, or holds a loaded crossbow. What they aim at then, the
+	 * first block or entity on their line of sight, and how much the camera turns to it right now, from 0 to 1
+	 */
+	public boolean aiming;
+	public Vec3 aimTarget = Vec3.ZERO;
+	public double aimWeight;
 	private boolean first = true;
 	private double rest;
 	private double ground;
@@ -192,6 +213,46 @@ public final class Subject {
 		targetCenter = framed == null ? null :
 				framed.getPosition(partialTick).add(0, framed.getBbHeight() * 0.5, 0);
 		first = false;
+	}
+
+	/**
+	 * Finds out if the player aims with a bow, a crossbow or a trident, and at what
+	 *
+	 * @param wanted if the camera is to turn to what they aim at
+	 */
+	public void aim(boolean wanted, double dt) {
+		aiming = wanted && isAiming(player);
+		if (aiming) {
+			aimTarget = aimedAt();
+		}
+		aimWeight = aimSmooth.update(aiming ? 1.0 : 0.0, AIM_LAG, dt);
+	}
+
+	private static boolean isAiming(Player player) {
+		if (player.isUsingItem() && AIMING.contains(player.getUseItem().getUseAnimation().name())) {
+			return true;
+		}
+		final ItemStack held = player.getMainHandItem();
+		return held.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(held);
+	}
+
+	/**
+	 * @return the first block or entity on the line of sight of the player, or the end of it
+	 */
+	private Vec3 aimedAt() {
+		final Vec3 eyes = player.getEyePosition(partialTick);
+		final Vec3 end = eyes.add(player.getViewVector(partialTick).scale(AIM_REACH));
+		final BlockHitResult wall = player.level().clip(new ClipContext(eyes, end, ClipContext.Block.COLLIDER,
+				ClipContext.Fluid.NONE, player));
+		Vec3 hit = wall.getType() == HitResult.Type.MISS ? end : wall.getLocation();
+		for (final Entity entity : player.level().getEntities(player, new AABB(eyes, hit).inflate(1.0),
+				entity -> entity.isPickable() && !entity.isSpectator())) {
+			final Vec3 on = entity.getBoundingBox().inflate(0.3).clip(eyes, hit).orElse(null);
+			if (on != null) {
+				hit = on;
+			}
+		}
+		return hit;
 	}
 
 	/**
