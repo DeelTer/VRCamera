@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Caméra : HUD dans la fenêtre caméra activé",
 	"vrcamera.message.hud.off": "Caméra : HUD dans la fenêtre caméra désactivé",
 	"vrcamera.option.cameraRenderDistance": "Fenêtre caméra : distance d'affichage",
-	"vrcamera.option.cameraRenderDistance.tooltip": "Combien de chunks l'image de la caméra atteint, son brouillard s'arrête là. Moins est plus léger : le monde est dessiné une seconde fois pour la caméra. 0 = aussi loin que vous voyez."
+	"vrcamera.option.cameraRenderDistance.tooltip": "Combien de chunks l'image de la caméra atteint, son brouillard s'arrête là. Moins est plus léger : le monde est dessiné une seconde fois pour la caméra. 0 = aussi loin que vous voyez.",
+	"vrcamera.option.aimView": "Réalisateur : bander l'arc",
+	"vrcamera.option.aimView.tooltip": "Ce que fait le réalisateur pendant que vous bandez un arc, une arbalète ou un trident. Vers la cible : par-dessus l'épaule, la caméra se tourne vers ce que vous visez. Première personne : votre vue pendant la visée.",
+	"vrcamera.option.aimView.off": "Rien",
+	"vrcamera.option.aimView.target": "Vers la cible",
+	"vrcamera.option.aimView.first_person": "Première personne",
+	"vrcamera.option.cameraTab": "PC : liste des joueurs dans la fenêtre caméra",
+	"vrcamera.option.cameraTab.tooltip": "Tant que Tab est enfoncé, la liste des joueurs apparaît aussi dans l'image de la caméra dans sa fenêtre."
 }

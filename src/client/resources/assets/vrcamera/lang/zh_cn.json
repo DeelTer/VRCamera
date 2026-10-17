@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "摄像机：摄像机窗口 HUD 已开启",
 	"vrcamera.message.hud.off": "摄像机：摄像机窗口 HUD 已关闭",
 	"vrcamera.option.cameraRenderDistance": "摄像机窗口：渲染距离",
-	"vrcamera.option.cameraRenderDistance.tooltip": "摄像机画面能看到多少区块，它的雾就在那里结束。越少越轻：世界会为摄像机再画一次。0 = 和你看到的一样远。"
+	"vrcamera.option.cameraRenderDistance.tooltip": "摄像机画面能看到多少区块，它的雾就在那里结束。越少越轻：世界会为摄像机再画一次。0 = 和你看到的一样远。",
+	"vrcamera.option.aimView": "导演：拉弓时",
+	"vrcamera.option.aimView.tooltip": "当你拉弓、弩或三叉戟时导演的行为。转向目标：过肩镜头，摄像机转向你瞄准的东西。第一人称：瞄准时使用你的视角。",
+	"vrcamera.option.aimView.off": "不做什么",
+	"vrcamera.option.aimView.target": "转向目标",
+	"vrcamera.option.aimView.first_person": "第一人称",
+	"vrcamera.option.cameraTab": "PC：摄像机窗口显示玩家列表",
+	"vrcamera.option.cameraTab.tooltip": "按住 Tab 时，玩家列表也会出现在摄像机独立窗口的画面中。"
 }

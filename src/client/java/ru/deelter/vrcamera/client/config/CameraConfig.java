@@ -152,6 +152,10 @@ public class CameraConfig {
 	 */
 	public boolean cameraHud = false;
 	/**
+	 * the player list in the window of the camera, while the player holds the key for it
+	 */
+	public boolean cameraTab = false;
+	/**
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */
 	public double outputFps = 60;
@@ -348,6 +352,10 @@ public class CameraConfig {
 	 * if the director leaves it to the player when the shot changes
 	 */
 	public boolean directorManual = false;
+	/**
+	 * what the director does while the player draws a bow, a crossbow or a trident
+	 */
+	public AimView aimView = AimView.TARGET;
 	/**
 	 * seconds the director keeps a hand placed camera, before it takes over again
 	 */

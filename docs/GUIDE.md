@@ -599,6 +599,7 @@ and by `/vrcam reload`.
 | `outputFps`              | `60`            | pictures per second in the window of the camera, 0 = as many as the game draws                                                                                                |
 | `cameraRenderDistance` | `0` | chunks the camera picture reaches, its fog ends there; 0 = as far as you see |
 | `cameraHud`              | `false`         | hotbar, hearts, food, boss bars and titles in the camera's own window too; no crosshair, chat or menus |
+| `cameraTab` | `false` | while you hold Tab, the player list is in the camera's own window too |
 | `jumpSteady` | `"series"` | If the camera goes up and down with a player who jumps. In a row: it goes along with a single jump and holds still from the second one in a row. Always: it holds still for every jump. |
 | `followTurns` | `false` | On, the camera goes around the player when they turn, to stay behind or in front of them. Off, it keeps its place in the world: looking around is no reason for it to move. |
 | `holdLag`                | `0.1`           | seconds the camera held with the right mouse button takes to follow the look; higher is smoother, 0 = at once |
@@ -702,6 +703,7 @@ and by `/vrcam reload`.
 | Field | Default | Meaning |
 |---|---|---|
 | `directorManual` | `false` | The director never changes the shot by itself: only you do, with the key for the next shot, the keys for single shots or /cam shot. It still leaves a shot the camera can't see the player from. |
+| `aimView` | `"target"` | drawing a bow, crossbow or trident: `"off"`, `"target"` (over the shoulder, turns to what you aim at), `"first_person"` |
 | `pace`              | `"default"` | the pace picked last: `"alpha"`, `"default"` or `"faster"`. See below |
 | `transition`        | `"auto"`    | `"auto"`, `"cut"` or `"blend"` (fly-overs only)                       |
 | `blendChance`       | `0.6`       | chance of a fly-over with `"auto"`                                    |

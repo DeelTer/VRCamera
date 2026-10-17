@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Camera: HUD in the camera window on",
 	"vrcamera.message.hud.off": "Camera: HUD in the camera window off",
 	"vrcamera.option.cameraRenderDistance": "Camera window: render distance",
-	"vrcamera.option.cameraRenderDistance.tooltip": "How many chunks far the picture of the camera reaches, its fog ends there. Fewer is lighter: the world is drawn a second time for the camera. 0 = as far as you see."
+	"vrcamera.option.cameraRenderDistance.tooltip": "How many chunks far the picture of the camera reaches, its fog ends there. Fewer is lighter: the world is drawn a second time for the camera. 0 = as far as you see.",
+	"vrcamera.option.aimView": "Director: drawing a bow",
+	"vrcamera.option.aimView.tooltip": "What the director does while you draw a bow, a crossbow or a trident. Turn to the target: it goes over your shoulder and turns to what you aim at. First person: your own view while you aim.",
+	"vrcamera.option.aimView.off": "Nothing",
+	"vrcamera.option.aimView.target": "Turn to the target",
+	"vrcamera.option.aimView.first_person": "First person",
+	"vrcamera.option.cameraTab": "PC: player list in the camera window",
+	"vrcamera.option.cameraTab.tooltip": "While you hold Tab, the player list is in the picture of the camera in its own window too."
 }

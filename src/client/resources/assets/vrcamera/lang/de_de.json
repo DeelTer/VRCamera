@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Kamera: HUD im Kamerafenster an",
 	"vrcamera.message.hud.off": "Kamera: HUD im Kamerafenster aus",
 	"vrcamera.option.cameraRenderDistance": "Kamerafenster: Sichtweite",
-	"vrcamera.option.cameraRenderDistance.tooltip": "Wie viele Chunks weit das Bild der Kamera reicht, dort endet ihr Nebel. Weniger ist leichter: die Welt wird für die Kamera ein zweites Mal gezeichnet. 0 = so weit wie du siehst."
+	"vrcamera.option.cameraRenderDistance.tooltip": "Wie viele Chunks weit das Bild der Kamera reicht, dort endet ihr Nebel. Weniger ist leichter: die Welt wird für die Kamera ein zweites Mal gezeichnet. 0 = so weit wie du siehst.",
+	"vrcamera.option.aimView": "Regisseur: Bogen spannen",
+	"vrcamera.option.aimView.tooltip": "Was der Regisseur tut, während du einen Bogen, eine Armbrust oder einen Dreizack spannst. Zum Ziel drehen: über die Schulter, die Kamera dreht sich zu dem, worauf du zielst. Ich-Perspektive: deine Sicht beim Zielen.",
+	"vrcamera.option.aimView.off": "Nichts",
+	"vrcamera.option.aimView.target": "Zum Ziel drehen",
+	"vrcamera.option.aimView.first_person": "Ich-Perspektive",
+	"vrcamera.option.cameraTab": "PC: Spielerliste im Kamerafenster",
+	"vrcamera.option.cameraTab.tooltip": "Solange du Tab hältst, ist die Spielerliste auch im Bild der Kamera im eigenen Fenster."
 }

@@ -27,6 +27,7 @@ import org.joml.Vector3f;
 import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.CameraIndicator;
 import ru.deelter.vrcamera.client.Vr;
+import ru.deelter.vrcamera.client.config.AimView;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 import ru.deelter.vrcamera.client.config.ScreenOutput;
 import ru.deelter.vrcamera.client.config.ShotConfig;
@@ -998,7 +999,14 @@ public final class DesktopCamera {
 	public boolean showsOwnView() {
 		return ownView || (filmsSelf && steered == null && mode == Mode.DIRECTOR &&
 				director != null && director.current() != null &&
-				(director.current().type == ShotType.POV || inside));
+				(director.current().type == ShotType.POV || inside || aimsInFirstPerson()));
+	}
+
+	/**
+	 * @return if the director shows the view of the player while they aim, as they want it
+	 */
+	private boolean aimsInFirstPerson() {
+		return subject.aiming && CameraConfig.current().aimView == AimView.FIRST_PERSON;
 	}
 
 	/**
@@ -1353,6 +1361,7 @@ public final class DesktopCamera {
 		final Player partner = find(mc, config.filmWith);
 		subject.partner = partner == subject.player ? null : partner;
 		subject.gather(config.groupShots, config.groupShotsReach, dt);
+		subject.aim(mode == Mode.DIRECTOR && config.aimView != AimView.OFF, dt);
 		if (mode == Mode.FREE && mc.level != freeLevel) {
 			openFree(mc, player, partialTick);
 		}

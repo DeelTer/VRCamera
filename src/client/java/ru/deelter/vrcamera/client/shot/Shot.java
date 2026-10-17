@@ -17,6 +17,10 @@ public final class Shot {
 	 * how much further away the camera goes for each block the people it films together are spread
 	 */
 	private static final double CROWD_ROOM = 1.5;
+	/**
+	 * blocks from the player at most the camera looks to on the way to what they aim at, they stay in the picture
+	 */
+	private static final double AIM_LOOK = 4.0;
 	private static final double POV_AIM_LAG = 0.25;
 
 	public final ShotType type;
@@ -206,6 +210,13 @@ public final class Shot {
 			}
 		}
 
+		if (subject.aimWeight > 0 && !exactAim()) {
+			final Vec3 way = subject.aimTarget.subtract(subject.center);
+			final double length = way.length();
+			final Vec3 between = length < 1.0E-3 ? subject.center :
+					subject.center.add(way.scale(Math.min(length / 2.0, AIM_LOOK * subject.unit) / length));
+			lookTarget = lookTarget.lerp(between, subject.aimWeight);
+		}
 		if (subject.crowdWeight > 0 && !exactAim()) {
 			lookTarget = lookTarget.lerp(subject.crowd, subject.crowdWeight);
 			distance += subject.crowdSpread * CROWD_ROOM * subject.crowdWeight;

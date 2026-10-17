@@ -18,11 +18,26 @@ public class HudMixin {
 		}
 	}
 
-	@Inject(method = {"extractCrosshair", "extractChat", "extractOverlayMessage", "extractTabList",
+	@Inject(method = {"extractCrosshair", "extractChat", "extractOverlayMessage",
 			"extractScoreboardSidebar", "extractSubtitleOverlay", "extractCameraOverlays", "extractSleepOverlay",
 			"extractDemoOverlay", "extractDebugOverlay"}, at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$onlyForThePlayer(CallbackInfo ci) {
 		if (CameraHud.isCameraPicture()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = "extractTabList", at = @At("HEAD"), cancellable = true, require = 0)
+	private void vrcamera$tabForCamera(CallbackInfo ci) {
+		if (CameraHud.isCameraPicture() && !CameraHud.showsTab()) {
+			ci.cancel();
+		}
+	}
+
+	@Inject(method = {"extractHotbarAndDecorations", "extractEffects", "extractBossOverlay", "extractTitle"}, at = @At("HEAD"),
+			cancellable = true, require = 0)
+	private void vrcamera$onlyTheTab(CallbackInfo ci) {
+		if (CameraHud.isCameraPicture() && !CameraHud.showsHud()) {
 			ci.cancel();
 		}
 	}

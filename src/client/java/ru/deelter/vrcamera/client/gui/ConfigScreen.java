@@ -76,6 +76,8 @@ public final class ConfigScreen {
 				defaults.cameraRenderDistance, 0, 32, 1, "%.0f", value -> config.cameraRenderDistance = value));
 		desktop.addEntry(screen.toggle("cameraHud", config.cameraHud, defaults.cameraHud,
 				value -> config.cameraHud = value));
+		desktop.addEntry(screen.toggle("cameraTab", config.cameraTab, defaults.cameraTab,
+				value -> config.cameraTab = value));
 		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
 				value -> config.jumpSteady = value));
 		desktop.addEntry(screen.toggle("followTurns", config.followTurns, defaults.followTurns,
@@ -237,6 +239,8 @@ public final class ConfigScreen {
 		final ConfigCategory director = builder.getOrCreateCategory(Component.translatable("vrcamera.config.director"));
 		director.addEntry(screen.toggle("directorManual", config.directorManual, defaults.directorManual,
 				value -> config.directorManual = value));
+		director.addEntry(screen.selector("aimView", AimView.values(), config.aimView, defaults.aimView,
+				value -> config.aimView = value));
 		director.addEntry(screen.selector("pace", Pace.values(), config.pace, defaults.pace,
 				value -> config.pace = value));
 		director.addEntry(screen.selector("transition", Transition.values(), config.transition, defaults.transition,

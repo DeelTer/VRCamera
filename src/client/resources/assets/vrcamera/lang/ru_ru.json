@@ -438,5 +438,12 @@
 	"vrcamera.message.hud.on": "Камера: HUD в окне камеры включён",
 	"vrcamera.message.hud.off": "Камера: HUD в окне камеры выключен",
 	"vrcamera.option.cameraRenderDistance": "Окно камеры: дальность прорисовки",
-	"vrcamera.option.cameraRenderDistance.tooltip": "На сколько чанков видит картинка камеры, там кончается её туман. Меньше — легче: мир для камеры рисуется второй раз. 0 — как у вас."
+	"vrcamera.option.cameraRenderDistance.tooltip": "На сколько чанков видит картинка камеры, там кончается её туман. Меньше — легче: мир для камеры рисуется второй раз. 0 — как у вас.",
+	"vrcamera.option.aimView": "Режиссёр: натягиваю лук",
+	"vrcamera.option.aimView.tooltip": "Что делает режиссёр, пока вы натягиваете лук, арбалет или трезубец. Доворот к цели — план из-за плеча, камера поворачивается к тому, во что вы целитесь. Первое лицо — ваш вид, пока целитесь.",
+	"vrcamera.option.aimView.off": "Ничего",
+	"vrcamera.option.aimView.target": "Доворот к цели",
+	"vrcamera.option.aimView.first_person": "Первое лицо",
+	"vrcamera.option.cameraTab": "ПК: список игроков в окне камеры",
+	"vrcamera.option.cameraTab.tooltip": "Пока зажат Tab, список игроков виден и в картинке камеры в отдельном окне."
 }
