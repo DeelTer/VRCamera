@@ -1,7 +1,9 @@
 package ru.deelter.vrcamera.mixin.client;
 
 import net.minecraft.client.gui.Hud;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,7 +20,7 @@ public class HudMixin {
 		}
 	}
 
-	@Inject(method = {"extractCrosshair", "extractChat", "extractOverlayMessage",
+	@Inject(method = {"extractCrosshair", "extractChat",
 			"extractScoreboardSidebar", "extractSubtitleOverlay", "extractCameraOverlays", "extractSleepOverlay",
 			"extractDemoOverlay", "extractDebugOverlay"}, at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$onlyForThePlayer(CallbackInfo ci) {
@@ -38,6 +40,16 @@ public class HudMixin {
 			cancellable = true, require = 0)
 	private void vrcamera$onlyTheTab(CallbackInfo ci) {
 		if (CameraHud.isCameraPicture() && !CameraHud.showsHud()) {
+			ci.cancel();
+		}
+	}
+
+	@Shadow
+	private Component overlayMessageString;
+
+	@Inject(method = "extractOverlayMessage", at = @At("HEAD"), cancellable = true, require = 0)
+	private void vrcamera$serverMessagesForCamera(CallbackInfo ci) {
+		if (CameraHud.isCameraPicture() && (!CameraHud.showsHud() || CameraHud.isOwn(overlayMessageString))) {
 			ci.cancel();
 		}
 	}

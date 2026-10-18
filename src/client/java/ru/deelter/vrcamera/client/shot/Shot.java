@@ -190,7 +190,7 @@ public final class Shot {
 			}
 			case MENU -> {
 				if (subject.guiCenter != null) {
-					lookTarget = subject.center.lerp(subject.guiCenter, 0.8);
+					lookTarget = subject.center.lerp(subject.guiCenter, 0.6);
 				}
 			}
 			case HANDS -> {

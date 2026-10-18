@@ -55,7 +55,7 @@ public enum ShotType {
 	 * Close over the shoulder onto an open menu: inventory, chest, pause menu. Only shown while one is open. The
 	 * azimuth is relative to the direction to the menu.
 	 */
-	MENU(new ShotConfig(1.0, 138, 18, 1.7, 55, 8, 14), 1.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+	MENU(new ShotConfig(1.0, 118, 18, 2.2, 60, 8, 14), 1.0, 0.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
 	/**
 	 * High above the player and to the side, circling them on a course of its own whichever way they turn: the
 	 * player in the place they are in

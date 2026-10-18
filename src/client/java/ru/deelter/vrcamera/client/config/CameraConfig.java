@@ -19,7 +19,7 @@ public class CameraConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
-	private static final int VERSION = 6;
+	private static final int VERSION = 7;
 	private static CameraConfig current;
 	public int version = VERSION;
 	/**
@@ -525,6 +525,15 @@ public class CameraConfig {
 		}
 		if (from < 6 && throwPower == 1.0) {
 			throwPower = 1.3;
+		}
+		if (from < 7) {
+			final ShotConfig menu = shot(ShotType.MENU);
+			if (menu.azimuth == 138 && menu.distance == 1.7 && menu.fov == 55) {
+				final ShotConfig now = ShotType.MENU.defaults();
+				menu.azimuth = now.azimuth;
+				menu.distance = now.distance;
+				menu.fov = now.fov;
+			}
 		}
 		if (from < 5) {
 			if (minShotTime == 2.5) {

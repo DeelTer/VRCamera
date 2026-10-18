@@ -1,6 +1,9 @@
 package ru.deelter.vrcamera.client.desktop;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import ru.deelter.vrcamera.Vrcamera;
 import ru.deelter.vrcamera.client.config.CameraConfig;
 
 /**
@@ -48,5 +51,14 @@ public final class CameraHud {
 	 */
 	public static boolean isCameraPicture() {
 		return DirectorPass.isActive() && !DesktopGui.isDrawing();
+	}
+
+	/**
+	 * @return if a message over the hotbar is one of this mod, a hint or what the camera does: that is for the
+	 * player alone. The ones of the server, of its plugins, go into the picture with the HUD
+	 */
+	public static boolean isOwn(Component message) {
+		return message != null && message.getContents() instanceof TranslatableContents text &&
+				text.getKey().startsWith(Vrcamera.MOD_ID + ".");
 	}
 }
