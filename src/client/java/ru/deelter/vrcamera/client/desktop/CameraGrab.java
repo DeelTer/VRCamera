@@ -56,10 +56,10 @@ final class CameraGrab {
 	private final HandThrow handThrow = new HandThrow();
 	private final HandheldShake shake = new HandheldShake();
 	private final Quaternionf shaken = new Quaternionf();
-	private double shaking;
-	private boolean throughBlocks;
 	private final Quaternionf rotation = new Quaternionf();
 	private final Quaternionf behind = new Quaternionf();
+	private double shaking;
+	private boolean throughBlocks;
 	private boolean turned;
 	private boolean holding;
 	private boolean away;
@@ -209,7 +209,7 @@ final class CameraGrab {
 	 * moves the held camera on by one frame
 	 */
 	void hold(LocalPlayer player, Vec3 eyes, Vec3 look, Subject subject, CameraConfig config, double dt,
-			boolean throughBlocks) {
+	          boolean throughBlocks) {
 		this.throughBlocks = throughBlocks;
 		final double ease = config.holdLag <= 0 ? 1.0 : 1.0 - Math.exp(-STEPS * dt / config.holdLag);
 		final double before = distance;

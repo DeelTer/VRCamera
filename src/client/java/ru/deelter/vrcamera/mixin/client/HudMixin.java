@@ -13,6 +13,9 @@ import ru.deelter.vrcamera.client.desktop.ChromaKey;
 
 @Mixin(Hud.class)
 public class HudMixin {
+	@Shadow
+	private Component overlayMessageString;
+
 	@Inject(method = "extractVignette", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$noVignetteOverGreen(CallbackInfo ci) {
 		if (ChromaKey.isOn() || CameraHud.isCameraPicture()) {
@@ -43,9 +46,6 @@ public class HudMixin {
 			ci.cancel();
 		}
 	}
-
-	@Shadow
-	private Component overlayMessageString;
 
 	@Inject(method = "extractOverlayMessage", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$serverMessagesForCamera(CallbackInfo ci) {

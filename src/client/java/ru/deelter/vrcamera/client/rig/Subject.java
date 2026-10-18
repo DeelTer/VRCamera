@@ -146,6 +146,14 @@ public final class Subject {
 
 	private double loose;
 
+	private static boolean isAiming(Player player) {
+		if (player.isUsingItem() && AIMING.contains(player.getUseItem().getUseAnimation().name())) {
+			return true;
+		}
+		final ItemStack held = player.getMainHandItem();
+		return held.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(held);
+	}
+
 	public void reset() {
 		first = true;
 		target = null;
@@ -226,14 +234,6 @@ public final class Subject {
 			aimTarget = aimedAt();
 		}
 		aimWeight = aimSmooth.update(aiming ? 1.0 : 0.0, AIM_LAG, dt);
-	}
-
-	private static boolean isAiming(Player player) {
-		if (player.isUsingItem() && AIMING.contains(player.getUseItem().getUseAnimation().name())) {
-			return true;
-		}
-		final ItemStack held = player.getMainHandItem();
-		return held.getItem() instanceof CrossbowItem && CrossbowItem.isCharged(held);
 	}
 
 	/**
