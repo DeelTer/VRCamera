@@ -445,5 +445,7 @@
 	"vrcamera.option.aimView.target": "Turn to the target",
 	"vrcamera.option.aimView.first_person": "First person",
 	"vrcamera.option.cameraTab": "PC: player list in the camera window",
-	"vrcamera.option.cameraTab.tooltip": "While you hold Tab, the player list is in the picture of the camera in its own window too."
+	"vrcamera.option.cameraTab.tooltip": "While you hold Tab, the player list is in the picture of the camera in its own window too.",
+	"vrcamera.shot.field.aimTurn": "Turn to the bow target",
+	"vrcamera.shot.field.aimTurn.tooltip": "While you draw a bow, a crossbow or a trident, the camera turns to what you aim at on this shot. See Director: drawing a bow."
 }

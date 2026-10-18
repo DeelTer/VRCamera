@@ -445,5 +445,7 @@
 	"vrcamera.option.aimView.target": "Доворот к цели",
 	"vrcamera.option.aimView.first_person": "Первое лицо",
 	"vrcamera.option.cameraTab": "ПК: список игроков в окне камеры",
-	"vrcamera.option.cameraTab.tooltip": "Пока зажат Tab, список игроков виден и в картинке камеры в отдельном окне."
+	"vrcamera.option.cameraTab.tooltip": "Пока зажат Tab, список игроков виден и в картинке камеры в отдельном окне.",
+	"vrcamera.shot.field.aimTurn": "Доворот к цели лука",
+	"vrcamera.shot.field.aimTurn.tooltip": "Пока вы натягиваете лук, арбалет или трезубец, на этом плане камера доворачивается к тому, во что вы целитесь. См. «Режиссёр: натягиваю лук»."
 }

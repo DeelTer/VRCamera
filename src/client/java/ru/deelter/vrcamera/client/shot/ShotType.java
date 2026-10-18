@@ -87,6 +87,14 @@ public enum ShotType {
 	/**
 	 * @return a fresh copy of the default settings
 	 */
+	/**
+	 * @return if the camera turns to what the player aims at with a bow on this shot, unless they said otherwise.
+	 * Not where the shot has its own aim: the view of the player, an open menu, a death and a fall
+	 */
+	public boolean turnsToAim() {
+		return this != POV && this != MENU && this != DEATH && this != FALL;
+	}
+
 	public ShotConfig defaults() {
 		return defaults.copy();
 	}
