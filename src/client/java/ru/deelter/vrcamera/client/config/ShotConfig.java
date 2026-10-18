@@ -21,6 +21,10 @@ public class ShotConfig {
 	public double fov = 70;
 	public double minDuration = 6;
 	public double maxDuration = 10;
+	/**
+	 * if the camera turns to what the player aims at with a bow, null for what suits the shot
+	 */
+	public Boolean aimTurn;
 
 	public ShotConfig() {
 	}
@@ -41,6 +45,7 @@ public class ShotConfig {
 		final ShotConfig copy = new ShotConfig(weight, azimuth, elevation, distance, fov,
 				minDuration, maxDuration);
 		copy.enabled = enabled;
+		copy.aimTurn = aimTurn;
 		return copy;
 	}
 }

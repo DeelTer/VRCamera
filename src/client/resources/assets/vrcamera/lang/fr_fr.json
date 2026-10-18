@@ -445,5 +445,7 @@
 	"vrcamera.option.aimView.target": "Vers la cible",
 	"vrcamera.option.aimView.first_person": "Première personne",
 	"vrcamera.option.cameraTab": "PC : liste des joueurs dans la fenêtre caméra",
-	"vrcamera.option.cameraTab.tooltip": "Tant que Tab est enfoncé, la liste des joueurs apparaît aussi dans l'image de la caméra dans sa fenêtre."
+	"vrcamera.option.cameraTab.tooltip": "Tant que Tab est enfoncé, la liste des joueurs apparaît aussi dans l'image de la caméra dans sa fenêtre.",
+	"vrcamera.shot.field.aimTurn": "Vers la cible de l'arc",
+	"vrcamera.shot.field.aimTurn.tooltip": "Pendant que vous bandez un arc, une arbalète ou un trident, la caméra se tourne vers votre cible dans ce plan. Voir Réalisateur : bander l'arc."
 }

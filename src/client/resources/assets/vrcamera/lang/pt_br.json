@@ -445,5 +445,7 @@
 	"vrcamera.option.aimView.target": "Virar para o alvo",
 	"vrcamera.option.aimView.first_person": "Primeira pessoa",
 	"vrcamera.option.cameraTab": "PC: lista de jogadores na janela da câmera",
-	"vrcamera.option.cameraTab.tooltip": "Enquanto você segura Tab, a lista de jogadores também aparece na imagem da câmera na janela própria."
+	"vrcamera.option.cameraTab.tooltip": "Enquanto você segura Tab, a lista de jogadores também aparece na imagem da câmera na janela própria.",
+	"vrcamera.shot.field.aimTurn": "Virar para o alvo do arco",
+	"vrcamera.shot.field.aimTurn.tooltip": "Enquanto você puxa um arco, uma besta ou um tridente, neste plano a câmera vira para onde você mira. Veja Diretor: puxar o arco."
 }

@@ -743,6 +743,7 @@ After that each of them can be changed on its own again.
 | `distance`                   | blocks, for a player of regular size                                       |
 | `fov`                        | field of view                                                              |
 | `minDuration`, `maxDuration` | length of the shot in seconds                                              |
+| `aimTurn`                    | on this shot the camera turns to what you aim at with a bow; empty = what suits the shot (all but `pov`, `menu`, `death`, `fall`) |
 
 Exceptions:
 

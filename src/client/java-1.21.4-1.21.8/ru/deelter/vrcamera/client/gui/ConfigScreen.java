@@ -270,7 +270,7 @@ public final class ConfigScreen {
 			final String name = type.name().toLowerCase(Locale.ROOT);
 			final SubCategoryBuilder group = screen.entries.startSubCategory(Component.translatable("vrcamera.shot." + name))
 					.setTooltip(Component.translatable("vrcamera.shot." + name + ".tooltip"));
-			screen.addShot(group, shot, type.defaults(), true);
+			screen.addShot(group, shot, type.defaults(), true, type.turnsToAim());
 			shots.addEntry(group.build());
 		}
 
@@ -282,7 +282,7 @@ public final class ConfigScreen {
 			final SubCategoryBuilder group = screen.entries.startSubCategory(
 							Component.translatable("vrcamera.config.preset", i + 1))
 					.setExpanded(i == config.activePreset);
-			screen.addShot(group, config.presets.get(i), presetDefaults, false);
+			screen.addShot(group, config.presets.get(i), presetDefaults, false, true);
 			presets.addEntry(group.build());
 		}
 
@@ -305,7 +305,8 @@ public final class ConfigScreen {
 	/**
 	 * @param regular if this is a shot of the director, and not one placed by hand
 	 */
-	private void addShot(SubCategoryBuilder group, ShotConfig shot, ShotConfig defaults, boolean regular) {
+	private void addShot(
+			SubCategoryBuilder group, ShotConfig shot, ShotConfig defaults, boolean regular, boolean aims) {
 		group.add(shotToggle("enabled", shot.enabled, defaults.enabled, value -> shot.enabled = value));
 		group.add(shotSlider("weight", shot.weight, defaults.weight, 0, 3, 0.1, "%.1f",
 				value -> shot.weight = value));
@@ -321,6 +322,8 @@ public final class ConfigScreen {
 				value -> shot.minDuration = value));
 		group.add(shotSlider("maxDuration", shot.maxDuration, defaults.maxDuration, 1, 180, 0.5, "%.1f s",
 				value -> shot.maxDuration = value));
+		group.add(shotToggle("aimTurn", shot.aimTurn != null ? shot.aimTurn : aims, aims,
+				value -> shot.aimTurn = value));
 	}
 
 	private AbstractConfigListEntry<?> toggle(String field, boolean value, boolean def, Consumer<Boolean> save) {

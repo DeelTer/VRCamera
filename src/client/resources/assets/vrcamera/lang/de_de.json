@@ -445,5 +445,7 @@
 	"vrcamera.option.aimView.target": "Zum Ziel drehen",
 	"vrcamera.option.aimView.first_person": "Ich-Perspektive",
 	"vrcamera.option.cameraTab": "PC: Spielerliste im Kamerafenster",
-	"vrcamera.option.cameraTab.tooltip": "Solange du Tab hältst, ist die Spielerliste auch im Bild der Kamera im eigenen Fenster."
+	"vrcamera.option.cameraTab.tooltip": "Solange du Tab hältst, ist die Spielerliste auch im Bild der Kamera im eigenen Fenster.",
+	"vrcamera.shot.field.aimTurn": "Zum Bogenziel drehen",
+	"vrcamera.shot.field.aimTurn.tooltip": "Während du Bogen, Armbrust oder Dreizack spannst, dreht sich die Kamera in dieser Einstellung zu deinem Ziel. Siehe Regisseur: Bogen spannen."
 }

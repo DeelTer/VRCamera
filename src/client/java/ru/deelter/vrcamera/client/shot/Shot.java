@@ -210,7 +210,7 @@ public final class Shot {
 			}
 		}
 
-		if (subject.aimWeight > 0 && !exactAim()) {
+		if (subject.aimWeight > 0 && (this.config.aimTurn != null ? this.config.aimTurn : type.turnsToAim())) {
 			final Vec3 way = subject.aimTarget.subtract(subject.center);
 			final double length = way.length();
 			final Vec3 between = length < 1.0E-3 ? subject.center :
