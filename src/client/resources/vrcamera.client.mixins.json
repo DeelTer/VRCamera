@@ -15,6 +15,7 @@
 		"FramerateLimitTrackerMixin",
 		"GameRendererAccessor",
 		"GameRendererMixin",
+		"GuiRendererMixin",
 		"GuiMixin",
 		"HudMixin",
 		"KeyboardInputMixin",

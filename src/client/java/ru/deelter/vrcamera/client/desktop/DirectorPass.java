@@ -159,7 +159,7 @@ public final class DirectorPass {
 			CloudSlots.swap(mc);
 			try {
 				if (CameraHud.wanted()) {
-					try (final HudWindow ignored = HudWindow.fit(mc, DirectorPass.shownShape(target))) {
+					try (final HudWindow ignored = HudWindow.fit(mc, DirectorPass.shownShape(target), target)) {
 						draw(mc, deltaTracker, own, target);
 					}
 				} else {
