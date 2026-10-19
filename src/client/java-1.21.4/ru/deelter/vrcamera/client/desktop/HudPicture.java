@@ -33,7 +33,7 @@ final class HudPicture {
 		final Matrix4fStack modelView = RenderSystem.getModelViewStack();
 		RenderSystem.backupProjectionMatrix();
 		modelView.pushMatrix();
-		try (final HudWindow ignored = HudWindow.fit(mc, DirectorPass.shownShape(target))) {
+		try (final HudWindow ignored = HudWindow.fit(mc, DirectorPass.shownShape(target), target)) {
 			target.bindWrite(true);
 			RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT);
 			final Window window = mc.getWindow();
