@@ -12,6 +12,9 @@ import ru.deelter.vrcamera.client.desktop.ChromaKey;
 
 @Mixin(Gui.class)
 public class GuiMixin {
+	@Shadow
+	private Component overlayMessageString;
+
 	@Inject(method = "renderVignette", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$noVignetteOverGreen(CallbackInfo ci) {
 		if (ChromaKey.isOn() || CameraHud.isCameraPicture()) {
@@ -42,9 +45,6 @@ public class GuiMixin {
 			ci.cancel();
 		}
 	}
-
-	@Shadow
-	private Component overlayMessageString;
 
 	@Inject(method = "renderOverlayMessage", at = @At("HEAD"), cancellable = true, require = 0)
 	private void vrcamera$serverMessagesForCamera(CallbackInfo ci) {

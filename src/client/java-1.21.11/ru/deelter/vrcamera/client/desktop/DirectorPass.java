@@ -92,6 +92,9 @@ public final class DirectorPass {
 
 	/**
 	 * Called once per frame, after the game drew the view of the player and before it shows it.
+	 * <p>
+	 * The game may be told by another mod not to draw the world for a while, as Xaero's World Map does while its map
+	 * is open: the camera goes on filming all the same. Not while the game loads, then there is nothing to film
 	 */
 	public static void onFrame(Minecraft mc, DeltaTracker deltaTracker, boolean renderLevel) {
 		GameFrame.newFrame();
@@ -114,7 +117,7 @@ public final class DirectorPass {
 			return;
 		}
 		OutputWindow.handleKeys();
-		if (!camera.isOn() || !renderLevel) {
+		if (!camera.isOn() || !(renderLevel || mc.getOverlay() == null)) {
 			return;
 		}
 		final double fps = CameraConfig.current().outputFps;

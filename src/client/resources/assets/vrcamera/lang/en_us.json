@@ -447,5 +447,7 @@
 	"vrcamera.option.cameraTab": "PC: player list in the camera window",
 	"vrcamera.option.cameraTab.tooltip": "While you hold Tab, the player list is in the picture of the camera in its own window too.",
 	"vrcamera.shot.field.aimTurn": "Turn to the bow target",
-	"vrcamera.shot.field.aimTurn.tooltip": "While you draw a bow, a crossbow or a trident, the camera turns to what you aim at on this shot. See Director: drawing a bow."
+	"vrcamera.shot.field.aimTurn.tooltip": "While you draw a bow, a crossbow or a trident, the camera turns to what you aim at on this shot. See Director: drawing a bow.",
+	"vrcamera.option.mapFullScreen": "PC: Xaero's map fills the camera",
+	"vrcamera.option.mapFullScreen.tooltip": "While the big map of Xaero's World Map is open, the camera shows it over its whole picture, the way you see it. Off: the camera films you, with the map as a screen in front of you."
 }

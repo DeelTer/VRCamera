@@ -447,5 +447,7 @@
 	"vrcamera.option.cameraTab": "PC: lista de jugadores en la ventana de cámara",
 	"vrcamera.option.cameraTab.tooltip": "Mientras mantienes Tab, la lista de jugadores también sale en la imagen de la cámara en su ventana.",
 	"vrcamera.shot.field.aimTurn": "Girar al objetivo del arco",
-	"vrcamera.shot.field.aimTurn.tooltip": "Mientras tensas un arco, una ballesta o un tridente, en este plano la cámara gira hacia lo que apuntas. Ver Director: tensar el arco."
+	"vrcamera.shot.field.aimTurn.tooltip": "Mientras tensas un arco, una ballesta o un tridente, en este plano la cámara gira hacia lo que apuntas. Ver Director: tensar el arco.",
+	"vrcamera.option.mapFullScreen": "PC: el mapa de Xaero llena la cámara",
+	"vrcamera.option.mapFullScreen.tooltip": "Mientras el mapa grande de Xaero's World Map está abierto, la cámara lo muestra en toda la imagen, como lo ves tú. No: la cámara te filma y el mapa queda como una pantalla delante."
 }
