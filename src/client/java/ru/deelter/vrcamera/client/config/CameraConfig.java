@@ -150,11 +150,15 @@ public class CameraConfig {
 	/**
 	 * the hotbar, hearts, food, boss bars and titles in the window of the camera, for a stream
 	 */
-	public boolean cameraHud = false;
+	public boolean cameraHud = true;
 	/**
 	 * the player list in the window of the camera, while the player holds the key for it
 	 */
-	public boolean cameraTab = false;
+	public boolean cameraTab = true;
+	/**
+	 * the big map of Xaero's World Map fills the picture of the camera while it is open, as the player sees it
+	 */
+	public boolean mapFullScreen = true;
 	/**
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */

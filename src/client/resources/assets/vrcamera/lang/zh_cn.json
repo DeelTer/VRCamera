@@ -447,5 +447,7 @@
 	"vrcamera.option.cameraTab": "PC：摄像机窗口显示玩家列表",
 	"vrcamera.option.cameraTab.tooltip": "按住 Tab 时，玩家列表也会出现在摄像机独立窗口的画面中。",
 	"vrcamera.shot.field.aimTurn": "转向弓的目标",
-	"vrcamera.shot.field.aimTurn.tooltip": "当你拉弓、弩或三叉戟时，此镜头中摄像机会转向你瞄准的东西。参见“导演：拉弓时”。"
+	"vrcamera.shot.field.aimTurn.tooltip": "当你拉弓、弩或三叉戟时，此镜头中摄像机会转向你瞄准的东西。参见“导演：拉弓时”。",
+	"vrcamera.option.mapFullScreen": "PC：Xaero 地图铺满摄像机画面",
+	"vrcamera.option.mapFullScreen.tooltip": "打开 Xaero's World Map 的大地图时，摄像机会像你看到的一样把它铺满整个画面。关闭：摄像机拍你，地图作为屏幕挂在你面前。"
 }

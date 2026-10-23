@@ -25,7 +25,7 @@ public final class HudWindow implements AutoCloseable {
 		this.window = window;
 		width = ((WindowAccessor) (Object) window).vrcamera$framebufferWidth();
 		height = ((WindowAccessor) (Object) window).vrcamera$framebufferHeight();
-		scale = (int) window.getGuiScale();
+		scale = window.getGuiScale();
 	}
 
 	/**

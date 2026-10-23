@@ -7,6 +7,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -75,6 +76,10 @@ public final class DesktopCamera {
 	private static final double FREE_AROUND = 64.0;
 	private static final double THROW_SPEED = 4.0;
 	private static final double GAZE_NEAR = 1.5;
+	/**
+	 * the screen of the big map of Xaero's World Map
+	 */
+	private static final String XAERO_MAP = "xaero.map.gui.GuiMap";
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
 	/**
@@ -225,6 +230,16 @@ public final class DesktopCamera {
 	 */
 	private static String dimension(Minecraft mc) {
 		return mc.level.dimension().identifier().toDebugFileName();
+	}
+
+	/**
+	 * @return if the big map of Xaero's World Map is open and the player wants it in the picture of the camera as
+	 * they see it: the whole picture, for the people watching to read it
+	 */
+	private static boolean showsMap() {
+		final Screen screen = Minecraft.getInstance().gui.screen();
+		return screen != null && CameraConfig.current().mapFullScreen &&
+				screen.getClass().getName().startsWith(XAERO_MAP);
 	}
 
 	public Mode mode() {
@@ -997,7 +1012,7 @@ public final class DesktopCamera {
 	 * their menus in it
 	 */
 	public boolean showsOwnView() {
-		return ownView || (filmsSelf && steered == null && mode == Mode.DIRECTOR &&
+		return ownView || showsMap() || (filmsSelf && steered == null && mode == Mode.DIRECTOR &&
 				director != null && director.current() != null &&
 				(director.current().type == ShotType.POV || inside || aimsInFirstPerson()));
 	}

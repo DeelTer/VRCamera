@@ -447,5 +447,7 @@
 	"vrcamera.option.cameraTab": "PC: Spielerliste im Kamerafenster",
 	"vrcamera.option.cameraTab.tooltip": "Solange du Tab hältst, ist die Spielerliste auch im Bild der Kamera im eigenen Fenster.",
 	"vrcamera.shot.field.aimTurn": "Zum Bogenziel drehen",
-	"vrcamera.shot.field.aimTurn.tooltip": "Während du Bogen, Armbrust oder Dreizack spannst, dreht sich die Kamera in dieser Einstellung zu deinem Ziel. Siehe Regisseur: Bogen spannen."
+	"vrcamera.shot.field.aimTurn.tooltip": "Während du Bogen, Armbrust oder Dreizack spannst, dreht sich die Kamera in dieser Einstellung zu deinem Ziel. Siehe Regisseur: Bogen spannen.",
+	"vrcamera.option.mapFullScreen": "PC: Xaeros Karte füllt die Kamera",
+	"vrcamera.option.mapFullScreen.tooltip": "Solange die große Karte von Xaero's World Map offen ist, zeigt die Kamera sie im ganzen Bild, so wie du sie siehst. Aus: die Kamera filmt dich, die Karte schwebt als Bildschirm vor dir."
 }
