@@ -67,6 +67,11 @@ public class CameraConfig {
 	 */
 	public double seeThroughSoftness = 0.0;
 	/**
+	 * the hole the player is seen through is a whole circle. Off it ends at their feet: below them is the ground in
+	 * front of them, cut open by the picture that begins behind what is in the way
+	 */
+	public boolean seeThroughFullCircle = true;
+	/**
 	 * if the director of a player at a screen leaves out the shots from close by and from the ground
 	 */
 	public boolean calmShots = true;

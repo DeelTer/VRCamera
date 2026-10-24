@@ -256,7 +256,7 @@ public final class DirectorPass {
 		return new SeeThrough.Hole(PictureBlit.textureId(cut), (float) (to.x / (depth * half * aspect)) * 0.5F + 0.5F,
 				(float) (to.y / (depth * half)) * 0.5F + 0.5F,
 				(float) (radius / (2.0 * depth * half)), aspect, (float) amount,
-				blocked.solid() ? BELOW_PICTURE : floor);
+				blocked.solid() || CameraConfig.current().seeThroughFullCircle ? BELOW_PICTURE : floor);
 	}
 
 	/**

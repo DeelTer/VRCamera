@@ -609,6 +609,7 @@ and by `/vrcam reload`.
 | `seeThrough` | `false` | The camera stays where the shot has it also when blocks are in the way, and shows the player through a round hole in them. Only in the camera window. The world is drawn once more while the hole is open. |
 | `seeThroughRadius` | `2.0` | Blocks across half of the hole around the player. |
 | `seeThroughSoftness`     | `0.0`           | edge of the hole you are seen through behind blocks (`seeThrough`): 0 clean, up to 1 fading out in dots |
+| `seeThroughFullCircle` | `true` | the see-through hole is a whole circle; off: it ends at your feet |
 | `menuSize`               | `1.0`           | size of the screen with an open menu that stands in front of your character for the camera                                                                                    |
 | `filmPlayer`, `filmWith` | empty           | Player to film, and a partner to include in shots                                                                                                                             |
 | `voiceFromCamera`        | `false`         | Simple Voice Chat and Plasmo Voice: voices are heard from the camera, as loud as before |

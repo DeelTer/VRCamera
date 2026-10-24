@@ -130,3 +130,7 @@ VRCamera. В OBS добавьте «Захват окна». `/vrcam screen here
 `vrcamera-paper-plugin-<версия>.jar` появляются в `build/libs/`.
 Версия Minecraft по умолчанию задаётся в [`gradle.properties`](gradle.properties), зависимости — в [
 `versions/`](versions/).
+
+## Особая благодарность
+
+Особая благодарность ютуберу [Noiraka](https://www.youtube.com/@noiraka) за активное тестирование и за то, что предложил больше всех идей по улучшению мода.

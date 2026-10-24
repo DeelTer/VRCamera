@@ -449,5 +449,7 @@
 	"vrcamera.shot.field.aimTurn": "Поворот до цілі лука",
 	"vrcamera.shot.field.aimTurn.tooltip": "Поки ви натягуєте лук, арбалет чи тризуб, на цьому плані камера повертається до того, у що ви цілитеся. Див. «Режисер: натягую лук».",
 	"vrcamera.option.mapFullScreen": "ПК: мапа Xaero на весь кадр камери",
-	"vrcamera.option.mapFullScreen.tooltip": "Поки відкрита велика мапа Xaero's World Map, камера показує її на весь кадр, як бачите ви. Вимк: камера знімає вас, а мапа висить екраном перед вами."
+	"vrcamera.option.mapFullScreen.tooltip": "Поки відкрита велика мапа Xaero's World Map, камера показує її на весь кадр, як бачите ви. Вимк: камера знімає вас, а мапа висить екраном перед вами.",
+	"vrcamera.option.seeThroughFullCircle": "Крізь блоки: повне коло",
+	"vrcamera.option.seeThroughFullCircle.tooltip": "«Вікно», крізь яке вас видно за блоками, — повне коло. Вимк: воно закінчується на рівні ніг, нижче може бути видно розріз землі перед вами."
 }
