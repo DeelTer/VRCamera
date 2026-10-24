@@ -180,3 +180,7 @@ Builds the default version, 26.3, or all supported versions. Mod and optional `v
 files go to `build/libs/`.
 The default Minecraft version is set in [`gradle.properties`](gradle.properties); dependencies are in [
 `versions/`](versions/).
+
+## Special thanks
+
+Special thanks to YouTuber [Noiraka](https://www.youtube.com/@noiraka) for extensive testing and for contributing more ideas for improving the mod than anyone else.
