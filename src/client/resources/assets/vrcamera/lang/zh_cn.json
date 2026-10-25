@@ -451,5 +451,8 @@
 	"vrcamera.option.mapFullScreen": "PC：Xaero 地图铺满摄像机画面",
 	"vrcamera.option.mapFullScreen.tooltip": "打开 Xaero's World Map 的大地图时，摄像机会像你看到的一样把它铺满整个画面。关闭：摄像机拍你，地图作为屏幕挂在你面前。",
 	"vrcamera.option.seeThroughFullCircle": "透视：完整圆形",
-	"vrcamera.option.seeThroughFullCircle.tooltip": "在方块后透视你的开口是完整的圆形。关闭：在脚下截止，下方可能露出你面前被剖开的地面。"
+	"vrcamera.option.seeThroughFullCircle.tooltip": "在方块后透视你的开口是完整的圆形。关闭：在脚下截止，下方可能露出你面前被剖开的地面。",
+	"vrcamera.option.menusFullScreen": "PC：菜单铺满摄像机画面",
+	"vrcamera.option.menusFullScreen.tooltip": "打开物品栏、暂停菜单或其他界面时，摄像机会把你的屏幕铺满整个画面。关闭：摄像机从肩后拍你，菜单作为屏幕挂在你面前。聊天除外。",
+	"key.vrcamera.shot.drone": "镜头：无人机"
 }

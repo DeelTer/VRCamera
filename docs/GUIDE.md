@@ -164,7 +164,7 @@ The director, own angles and events do not run in this mode.
 | `shoulder` | from behind, over the shoulder                         | moving, flying, tight places             |
 | `front`    | from the front, backing away; moves in while you stand | idle, walking                            |
 | `orbit`    | slowly circles the player                              | idle, combat                             |
-| `flyby`    | stands ahead on your path and pans as you pass, zoomed | running, flying, riding                  |
+| `flyby`    | stands ahead on your path and pans as you pass, zoomed | running, flying, riding; off by default |
 | `crane`    | rises high behind the player                           | open places, flying                      |
 | `low`      | from the ground, looking up                            | combat, running                          |
 | `hands`    | close-up of the hands                                  | mining, idle                             |
@@ -601,6 +601,7 @@ and by `/vrcam reload`.
 | `cameraHud`              | `true`          | hotbar, hearts, food, boss bars and titles in the camera's own window too; no crosshair, chat or menus |
 | `cameraTab` | `true` | while you hold Tab, the player list is in the camera's own window too |
 | `mapFullScreen` | `true` | while the big map of Xaero's World Map is open, the camera shows it over its whole picture |
+| `menusFullScreen` | `false` | every open menu but the chat fills the camera picture, instead of the screen filmed over your shoulder |
 | `jumpSteady` | `"series"` | If the camera goes up and down with a player who jumps. In a row: it goes along with a single jump and holds still from the second one in a row. Always: it holds still for every jump. |
 | `followTurns` | `false` | On, the camera goes around the player when they turn, to stay behind or in front of them. Off, it keeps its place in the world: looking around is no reason for it to move. |
 | `holdLag`                | `0.1`           | seconds the camera held with the right mouse button takes to follow the look; higher is smoother, 0 = at once |

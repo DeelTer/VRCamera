@@ -41,6 +41,14 @@ public class ShotConfig {
 		this.maxDuration = maxDuration;
 	}
 
+	/**
+	 * @return this shot, left out until the player turns it on
+	 */
+	public ShotConfig off() {
+		enabled = false;
+		return this;
+	}
+
 	public ShotConfig copy() {
 		final ShotConfig copy = new ShotConfig(weight, azimuth, elevation, distance, fov,
 				minDuration, maxDuration);

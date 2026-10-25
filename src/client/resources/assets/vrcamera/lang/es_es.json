@@ -451,5 +451,8 @@
 	"vrcamera.option.mapFullScreen": "PC: el mapa de Xaero llena la cámara",
 	"vrcamera.option.mapFullScreen.tooltip": "Mientras el mapa grande de Xaero's World Map está abierto, la cámara lo muestra en toda la imagen, como lo ves tú. No: la cámara te filma y el mapa queda como una pantalla delante.",
 	"vrcamera.option.seeThroughFullCircle": "Ver a través: círculo completo",
-	"vrcamera.option.seeThroughFullCircle.tooltip": "El hueco por el que se te ve tras los bloques es un círculo completo. No: termina en tus pies, debajo puede verse cortado el suelo delante de ti."
+	"vrcamera.option.seeThroughFullCircle.tooltip": "El hueco por el que se te ve tras los bloques es un círculo completo. No: termina en tus pies, debajo puede verse cortado el suelo delante de ti.",
+	"vrcamera.option.menusFullScreen": "PC: los menús llenan la cámara",
+	"vrcamera.option.menusFullScreen.tooltip": "Mientras el inventario, el menú de pausa u otro menú está abierto, la cámara muestra tu pantalla en toda la imagen. No: te filma sobre el hombro, con el menú como una pantalla delante. No el chat.",
+	"key.vrcamera.shot.drone": "Plano: dron"
 }

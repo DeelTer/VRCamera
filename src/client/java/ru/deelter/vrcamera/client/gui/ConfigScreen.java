@@ -80,6 +80,8 @@ public final class ConfigScreen {
 				value -> config.cameraTab = value));
 		desktop.addEntry(screen.toggle("mapFullScreen", config.mapFullScreen, defaults.mapFullScreen,
 				value -> config.mapFullScreen = value));
+		desktop.addEntry(screen.toggle("menusFullScreen", config.menusFullScreen, defaults.menusFullScreen,
+				value -> config.menusFullScreen = value));
 		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
 				value -> config.jumpSteady = value));
 		desktop.addEntry(screen.toggle("followTurns", config.followTurns, defaults.followTurns,

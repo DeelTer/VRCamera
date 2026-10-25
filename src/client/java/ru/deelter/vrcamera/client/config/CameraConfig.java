@@ -19,7 +19,7 @@ public class CameraConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
-	private static final int VERSION = 7;
+	private static final int VERSION = 8;
 	private static CameraConfig current;
 	public int version = VERSION;
 	/**
@@ -164,6 +164,11 @@ public class CameraConfig {
 	 * the big map of Xaero's World Map fills the picture of the camera while it is open, as the player sees it
 	 */
 	public boolean mapFullScreen = true;
+	/**
+	 * every open menu but the chat fills the picture of the camera as the player sees it, in place of the screen
+	 * in front of them filmed over their shoulder
+	 */
+	public boolean menusFullScreen = false;
 	/**
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */
@@ -573,6 +578,9 @@ public class CameraConfig {
 			longer(ShotType.DUEL, 4, 8);
 			longer(ShotType.POV, 5, 10);
 			longer(ShotType.MENU, 6, 10);
+		}
+		if (from < 8) {
+			shot(ShotType.FLYBY).enabled = false;
 		}
 		version = VERSION;
 	}
