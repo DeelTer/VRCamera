@@ -412,6 +412,10 @@ public final class Director {
 	}
 
 	private void choose(Subject subject, Rig rig, boolean cut, String reason) {
+		final boolean asked = forceType != null;
+		if (forceNext && !asked) {
+			forceType = nextTurnedOn(subject);
+		}
 		final Selection selection = new Selection(subject, rig);
 		final double distanceScale = (context == Context.FLY ? FLY_DISTANCE_SCALE : 1.0) *
 				(tight ? TIGHT_DISTANCE_SCALE : 1.0);
@@ -425,7 +429,8 @@ public final class Director {
 		} else {
 			for (final ShotType type : ShotType.values()) {
 				final ShotConfig shotConfig = config.shot(type);
-				if (type == ShotType.CUSTOM || !shotConfig.enabled || (type == ShotType.POV && isHome()) ||
+				final boolean sameAsBefore = forceNext && current != null && type == current.type;
+				if (sameAsBefore || type == ShotType.CUSTOM || !shotConfig.enabled || (type == ShotType.POV && isHome()) ||
 						(type == ShotType.DUEL && subject.targetCenter == null) ||
 						(type == ShotType.HANDS && !subject.tracksHands)) {
 					continue;
@@ -459,7 +464,7 @@ public final class Director {
 			next = fallback(subject, distanceScale);
 		}
 
-		next.forced = forceType != null;
+		next.forced = asked;
 		next.duration = CamMath.lerp(next.config.minDuration, next.config.maxDuration, random.nextDouble()) *
 				(context == Context.COMBAT ? COMBAT_DURATION_SCALE : 1.0);
 		if (next.type == ShotType.POV && selection.best == null && !next.forced) {
@@ -618,6 +623,25 @@ public final class Director {
 		shot.distanceScale = firstPerson ? 1.0 : FALLBACK_DISTANCE_SCALE;
 		shot.start(subject, config);
 		return shot;
+	}
+
+	/**
+	 * @return the next shot the player turned on after the one shown, in their order, for when they ask for another
+	 * one: what fits what they do is for the director to pick on its own. Not the shots of what happens to the
+	 * player, a fall, death or a menu. Null if there is none
+	 */
+	private ShotType nextTurnedOn(Subject subject) {
+		final ShotType[] types = ShotType.values();
+		final int afterShown = current == null ? 0 : current.type.ordinal() + 1;
+		for (int i = 0; i < types.length; i++) {
+			final ShotType type = types[(afterShown + i) % types.length];
+			if (type != ShotType.CUSTOM && type.turnsToAim() && config.shot(type).enabled &&
+					(type != ShotType.DUEL || subject.targetCenter != null) &&
+					(type != ShotType.HANDS || subject.tracksHands) && (current == null || type != current.type)) {
+				return type;
+			}
+		}
+		return null;
 	}
 
 	private int randomSide() {

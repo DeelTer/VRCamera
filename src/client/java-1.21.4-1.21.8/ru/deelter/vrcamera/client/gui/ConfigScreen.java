@@ -82,6 +82,8 @@ public final class ConfigScreen {
 				value -> config.cameraTab = value));
 		desktop.addEntry(screen.toggle("mapFullScreen", config.mapFullScreen, defaults.mapFullScreen,
 				value -> config.mapFullScreen = value));
+		desktop.addEntry(screen.toggle("menusFullScreen", config.menusFullScreen, defaults.menusFullScreen,
+				value -> config.menusFullScreen = value));
 		desktop.addEntry(screen.selector("jumpSteady", JumpSteady.values(), config.jumpSteady, defaults.jumpSteady,
 				value -> config.jumpSteady = value));
 		desktop.addEntry(screen.toggle("followTurns", config.followTurns, defaults.followTurns,
@@ -98,6 +100,8 @@ public final class ConfigScreen {
 				6, 0.25, "%.2f", value -> config.seeThroughRadius = value));
 		desktop.addEntry(screen.slider("seeThroughSoftness", config.seeThroughSoftness,
 				defaults.seeThroughSoftness, 0, 1, 0.05, "%.2f", value -> config.seeThroughSoftness = value));
+		desktop.addEntry(screen.toggle("seeThroughFullCircle", config.seeThroughFullCircle,
+				defaults.seeThroughFullCircle, value -> config.seeThroughFullCircle = value));
 		desktop.addEntry(screen.slider("menuSize", config.menuSize, defaults.menuSize, 0.5, 3, 0.25, "%.2fx",
 				value -> config.menuSize = value));
 		desktop.addEntry(screen.entries.startStrField(Component.translatable("vrcamera.option.filmPlayer"),

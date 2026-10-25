@@ -449,5 +449,10 @@
 	"vrcamera.shot.field.aimTurn": "Virar para o alvo do arco",
 	"vrcamera.shot.field.aimTurn.tooltip": "Enquanto você puxa um arco, uma besta ou um tridente, neste plano a câmera vira para onde você mira. Veja Diretor: puxar o arco.",
 	"vrcamera.option.mapFullScreen": "PC: mapa do Xaero na câmera inteira",
-	"vrcamera.option.mapFullScreen.tooltip": "Enquanto o mapa grande do Xaero's World Map está aberto, a câmera o mostra na imagem inteira, como você vê. Não: a câmera filma você, com o mapa como uma tela à sua frente."
+	"vrcamera.option.mapFullScreen.tooltip": "Enquanto o mapa grande do Xaero's World Map está aberto, a câmera o mostra na imagem inteira, como você vê. Não: a câmera filma você, com o mapa como uma tela à sua frente.",
+	"vrcamera.option.seeThroughFullCircle": "Ver através: círculo completo",
+	"vrcamera.option.seeThroughFullCircle.tooltip": "O buraco pelo qual você é visto atrás dos blocos é um círculo completo. Não: ele termina nos seus pés, abaixo o chão à sua frente pode aparecer cortado.",
+	"vrcamera.option.menusFullScreen": "PC: menus na câmera inteira",
+	"vrcamera.option.menusFullScreen.tooltip": "Enquanto o inventário, o menu de pausa ou outro menu está aberto, a câmera mostra sua tela na imagem inteira. Não: ela filma você por cima do ombro, com o menu como uma tela à frente. Não o chat.",
+	"key.vrcamera.shot.drone": "Plano: drone"
 }

@@ -164,7 +164,7 @@ The director, own angles and events do not run in this mode.
 | `shoulder` | from behind, over the shoulder                         | moving, flying, tight places             |
 | `front`    | from the front, backing away; moves in while you stand | idle, walking                            |
 | `orbit`    | slowly circles the player                              | idle, combat                             |
-| `flyby`    | stands ahead on your path and pans as you pass, zoomed | running, flying, riding                  |
+| `flyby`    | stands ahead on your path and pans as you pass, zoomed | running, flying, riding; off by default |
 | `crane`    | rises high behind the player                           | open places, flying                      |
 | `low`      | from the ground, looking up                            | combat, running                          |
 | `hands`    | close-up of the hands                                  | mining, idle                             |
@@ -602,6 +602,7 @@ and by `/vrcam reload`.
 | `cameraHud`              | `true`          | hotbar, hearts, food, boss bars and titles in the camera's own window too; no crosshair, chat or menus |
 | `cameraTab` | `true` | while you hold Tab, the player list is in the camera's own window too |
 | `mapFullScreen` | `true` | while the big map of Xaero's World Map is open, the camera shows it over its whole picture |
+| `menusFullScreen` | `false` | every open menu but the chat fills the camera picture, instead of the screen filmed over your shoulder |
 | `jumpSteady` | `"series"` | If the camera goes up and down with a player who jumps. In a row: it goes along with a single jump and holds still from the second one in a row. Always: it holds still for every jump. |
 | `followTurns` | `false` | On, the camera goes around the player when they turn, to stay behind or in front of them. Off, it keeps its place in the world: looking around is no reason for it to move. |
 | `holdLag`                | `0.1`           | seconds the camera held with the right mouse button takes to follow the look; higher is smoother, 0 = at once |
@@ -610,6 +611,7 @@ and by `/vrcam reload`.
 | `seeThrough` | `false` | The camera stays where the shot has it also when blocks are in the way, and shows the player through a round hole in them. Only in the camera window. The world is drawn once more while the hole is open. |
 | `seeThroughRadius` | `2.0` | Blocks across half of the hole around the player. |
 | `seeThroughSoftness`     | `0.0`           | edge of the hole you are seen through behind blocks (`seeThrough`): 0 clean, up to 1 fading out in dots |
+| `seeThroughFullCircle` | `true` | the see-through hole is a whole circle; off: it ends at your feet |
 | `menuSize`               | `1.0`           | size of the screen with an open menu that stands in front of your character for the camera                                                                                    |
 | `filmPlayer`, `filmWith` | empty           | Player to film, and a partner to include in shots                                                                                                                             |
 | `voiceFromCamera`        | `false`         | Simple Voice Chat and Plasmo Voice: voices are heard from the camera, as loud as before |

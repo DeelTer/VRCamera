@@ -449,5 +449,10 @@
 	"vrcamera.shot.field.aimTurn": "Turn to the bow target",
 	"vrcamera.shot.field.aimTurn.tooltip": "While you draw a bow, a crossbow or a trident, the camera turns to what you aim at on this shot. See Director: drawing a bow.",
 	"vrcamera.option.mapFullScreen": "PC: Xaero's map fills the camera",
-	"vrcamera.option.mapFullScreen.tooltip": "While the big map of Xaero's World Map is open, the camera shows it over its whole picture, the way you see it. Off: the camera films you, with the map as a screen in front of you."
+	"vrcamera.option.mapFullScreen.tooltip": "While the big map of Xaero's World Map is open, the camera shows it over its whole picture, the way you see it. Off: the camera films you, with the map as a screen in front of you.",
+	"vrcamera.option.seeThroughFullCircle": "See-through: whole circle",
+	"vrcamera.option.seeThroughFullCircle.tooltip": "The hole you are seen through behind blocks is a whole circle. Off: it ends at your feet, below them the ground in front of you can show cut open.",
+	"vrcamera.option.menusFullScreen": "PC: menus fill the camera",
+	"vrcamera.option.menusFullScreen.tooltip": "While the inventory, the pause menu or another menu is open, the camera shows your screen over its whole picture. Off: it films you over the shoulder, with the menu as a screen in front of you. Not the chat.",
+	"key.vrcamera.shot.drone": "Shot: drone"
 }

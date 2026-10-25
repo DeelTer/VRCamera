@@ -7,6 +7,7 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
@@ -83,8 +84,8 @@ public final class DesktopCamera {
 	private static final double INSIDE_IN = 0.55;
 	private static final double INSIDE_OUT = 0.8;
 	/**
-	 * Seconds the view stays at the eyes once blocks pushed the camera in there, at least and at most. Then it
-	 * goes back only when nothing is in the way of the camera any more: not back and forth every moment
+	 * Seconds the view stays at the eyes once blocks pushed the camera in there, at least and at most: not back and
+	 * forth every moment. Then it goes back once the camera is not pushed in any more
 	 */
 	private static final double OWN_VIEW_LEAST = 6.0;
 	private static final double OWN_VIEW_MOST = 15.0;
@@ -93,6 +94,11 @@ public final class DesktopCamera {
 	 * that close it shows a back and nothing else
 	 */
 	private static final double PUSHED_IN = 0.5;
+	/**
+	 * how little of its way the camera has left for blocks to count as pushing it in: not a corner of it that touches
+	 * the ground, a camera low over grass does that all the time
+	 */
+	private static final double PUSHED_ARM = 0.5;
 	private static final double MARKER_JUMP = 1.5;
 	private static final double REVEAL_SECONDS = 0.5;
 	private static final double CUT_PAST_BLOCK = 0.9;
@@ -233,13 +239,18 @@ public final class DesktopCamera {
 	}
 
 	/**
-	 * @return if the big map of Xaero's World Map is open and the player wants it in the picture of the camera as
-	 * they see it: the whole picture, for the people watching to read it
+	 * @return if a menu is open that the player wants in the picture of the camera as they see it: the whole
+	 * picture, for the people watching to read it. The big map of Xaero's World Map, or every menu but the chat,
+	 * where the player writes what is not for everyone yet
 	 */
 	private static boolean showsMap() {
 		final Screen screen = Minecraft.getInstance().screen;
-		return screen != null && CameraConfig.current().mapFullScreen &&
-				screen.getClass().getName().startsWith(XAERO_MAP);
+		if (screen == null) {
+			return false;
+		}
+		final CameraConfig config = CameraConfig.current();
+		return config.mapFullScreen && screen.getClass().getName().startsWith(XAERO_MAP) ||
+				config.menusFullScreen && !(screen instanceof ChatScreen);
 	}
 
 	public Mode mode() {
@@ -399,7 +410,7 @@ public final class DesktopCamera {
 				return;
 			}
 		}
-		ownView = false;
+		forgetOwnView();
 		if (type == null) {
 			nextShot();
 		} else if (director == null) {
@@ -419,12 +430,22 @@ public final class DesktopCamera {
 	}
 
 	public void nextShot() {
-
-		ownView = false;
+		forgetOwnView();
 		if (mode == Mode.DIRECTOR && director != null) {
 			director.next();
 			announceShot = true;
 		}
+	}
+
+	/**
+	 * a shot the player asks for is shown at once: not their own view, which blocks that pushed the camera in may
+	 * still be holding
+	 */
+	private void forgetOwnView() {
+		ownView = false;
+		inside = false;
+		pushedIn = false;
+		ownViewUntil = 0;
 	}
 
 	public void toggleHold() {
@@ -1738,11 +1759,11 @@ public final class DesktopCamera {
 			}
 		}
 		rig.update(shot, subject, dt, config);
-		final double wanted = subject.seenThrough && rig.viewBlocked() && cramped == shownCramped ? 1.0 : 0.0;
+		final double wanted = subject.seenThrough && hidesPlayer(rig.position()) && cramped == shownCramped ? 1.0 : 0.0;
 		revealAmount += Math.clamp(wanted - revealAmount, -dt / REVEAL_SECONDS, dt / REVEAL_SECONDS);
 
 		final double fromHead = rig.position().distanceTo(subject.head);
-		final double pushed = rig.arm() < 0.999 ? PUSHED_IN : 0.0;
+		final double pushed = rig.arm() < PUSHED_ARM ? PUSHED_IN : 0.0;
 		final boolean wasInside = inside;
 		pushedIn = filmsSelf && fromHead < ((pushedIn ? INSIDE_OUT : INSIDE_IN) + pushed) * subject.unit;
 		if (pushedIn && !wasInside) {
@@ -1750,9 +1771,24 @@ public final class DesktopCamera {
 					(long) (CamMath.lerp(OWN_VIEW_LEAST, OWN_VIEW_MOST, Math.random()) * 1.0E9);
 		}
 		inside = filmsSelf && (pushedIn ||
-				(wasInside && (System.nanoTime() < ownViewUntil || rig.arm() < 0.999)));
+				(wasInside && System.nanoTime() < ownViewUntil));
 		return new Pose(rig.position(), new Quaternionf(rig.rotation()),
 				(float) Math.clamp(rig.fov(), 1.0, 179.0));
+	}
+
+	/**
+	 * @return if a block is between the camera and the head, the middle or the feet of the player: the rig looks at
+	 * the middle alone, and a block in front of the head would stay in the way
+	 */
+	private boolean hidesPlayer(Vec3 camera) {
+		final Level level = subject.player.level();
+		for (final Vec3 part : List.of(subject.head, subject.center, subject.feet)) {
+			if (level.clip(new ClipContext(part, camera, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+					subject.player)).getType() != HitResult.Type.MISS) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

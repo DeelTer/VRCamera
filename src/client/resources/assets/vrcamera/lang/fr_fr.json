@@ -449,5 +449,10 @@
 	"vrcamera.shot.field.aimTurn": "Vers la cible de l'arc",
 	"vrcamera.shot.field.aimTurn.tooltip": "Pendant que vous bandez un arc, une arbalète ou un trident, la caméra se tourne vers votre cible dans ce plan. Voir Réalisateur : bander l'arc.",
 	"vrcamera.option.mapFullScreen": "PC : la carte de Xaero remplit la caméra",
-	"vrcamera.option.mapFullScreen.tooltip": "Tant que la grande carte de Xaero's World Map est ouverte, la caméra l'affiche sur toute l'image, comme vous la voyez. Non : la caméra vous filme, la carte devient un écran devant vous."
+	"vrcamera.option.mapFullScreen.tooltip": "Tant que la grande carte de Xaero's World Map est ouverte, la caméra l'affiche sur toute l'image, comme vous la voyez. Non : la caméra vous filme, la carte devient un écran devant vous.",
+	"vrcamera.option.seeThroughFullCircle": "Vue à travers : cercle complet",
+	"vrcamera.option.seeThroughFullCircle.tooltip": "Le trou par lequel on vous voit derrière les blocs est un cercle complet. Non : il s'arrête à vos pieds, en dessous le sol devant vous peut paraître coupé.",
+	"vrcamera.option.menusFullScreen": "PC : les menus remplissent la caméra",
+	"vrcamera.option.menusFullScreen.tooltip": "Tant que l'inventaire, le menu pause ou un autre menu est ouvert, la caméra montre votre écran sur toute l'image. Non : elle vous filme par-dessus l'épaule, le menu en écran devant vous. Pas le chat.",
+	"key.vrcamera.shot.drone": "Plan : drone"
 }

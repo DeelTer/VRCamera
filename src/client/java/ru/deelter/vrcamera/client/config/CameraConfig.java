@@ -19,7 +19,7 @@ public class CameraConfig {
 	private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("vrcamera.json");
 
-	private static final int VERSION = 7;
+	private static final int VERSION = 8;
 	private static CameraConfig current;
 	public int version = VERSION;
 	/**
@@ -66,6 +66,11 @@ public class CameraConfig {
 	 * 0: the hole the player is seen through has a clean edge, up to 1: it fades out in dots
 	 */
 	public double seeThroughSoftness = 0.0;
+	/**
+	 * the hole the player is seen through is a whole circle. Off it ends at their feet: below them is the ground in
+	 * front of them, cut open by the picture that begins behind what is in the way
+	 */
+	public boolean seeThroughFullCircle = true;
 	/**
 	 * if the director of a player at a screen leaves out the shots from close by and from the ground
 	 */
@@ -159,6 +164,11 @@ public class CameraConfig {
 	 * the big map of Xaero's World Map fills the picture of the camera while it is open, as the player sees it
 	 */
 	public boolean mapFullScreen = true;
+	/**
+	 * every open menu but the chat fills the picture of the camera as the player sees it, in place of the screen
+	 * in front of them filmed over their shoulder
+	 */
+	public boolean menusFullScreen = false;
 	/**
 	 * pictures per second in the window of the camera, 0 = as many as the game draws
 	 */
@@ -573,6 +583,9 @@ public class CameraConfig {
 			longer(ShotType.DUEL, 4, 8);
 			longer(ShotType.POV, 5, 10);
 			longer(ShotType.MENU, 6, 10);
+		}
+		if (from < 8) {
+			shot(ShotType.FLYBY).enabled = false;
 		}
 		version = VERSION;
 	}

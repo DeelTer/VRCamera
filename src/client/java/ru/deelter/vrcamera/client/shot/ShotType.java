@@ -20,7 +20,7 @@ public enum ShotType {
 	/**
 	 * stands ahead on the path and pans while the player passes by
 	 */
-	FLYBY(new ShotConfig(1.0, 0, 0, 7.0, 55, 5, 9), 0.3, 1.0, 0.0, 1.2, 1.6, 1.5, 1.4, 0.8, 0.0, 0.0),
+	FLYBY(new ShotConfig(1.0, 0, 0, 7.0, 55, 5, 9).off(), 0.3, 1.0, 0.0, 1.2, 1.6, 1.5, 1.4, 0.8, 0.0, 0.0),
 	/**
 	 * rises high up behind the player
 	 */

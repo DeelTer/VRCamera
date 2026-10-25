@@ -63,7 +63,7 @@ public class VrcameraClient implements ClientModInitializer {
 
 	private static final int UNBOUND = InputConstants.UNKNOWN.getValue();
 	private static final List<ShotType> DIRECT_SHOTS = List.of(
-			ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY);
+			ShotType.SHOULDER, ShotType.FRONT, ShotType.ORBIT, ShotType.FLYBY, ShotType.DRONE);
 
 	private final Map<KeyMapping, Runnable> keys = new LinkedHashMap<>();
 	private final Set<KeyMapping> heldInWindow = new HashSet<>();

@@ -449,5 +449,10 @@
 	"vrcamera.shot.field.aimTurn": "Zum Bogenziel drehen",
 	"vrcamera.shot.field.aimTurn.tooltip": "Während du Bogen, Armbrust oder Dreizack spannst, dreht sich die Kamera in dieser Einstellung zu deinem Ziel. Siehe Regisseur: Bogen spannen.",
 	"vrcamera.option.mapFullScreen": "PC: Xaeros Karte füllt die Kamera",
-	"vrcamera.option.mapFullScreen.tooltip": "Solange die große Karte von Xaero's World Map offen ist, zeigt die Kamera sie im ganzen Bild, so wie du sie siehst. Aus: die Kamera filmt dich, die Karte schwebt als Bildschirm vor dir."
+	"vrcamera.option.mapFullScreen.tooltip": "Solange die große Karte von Xaero's World Map offen ist, zeigt die Kamera sie im ganzen Bild, so wie du sie siehst. Aus: die Kamera filmt dich, die Karte schwebt als Bildschirm vor dir.",
+	"vrcamera.option.seeThroughFullCircle": "Durchblick: ganzer Kreis",
+	"vrcamera.option.seeThroughFullCircle.tooltip": "Das Loch, durch das man dich hinter Blöcken sieht, ist ein ganzer Kreis. Aus: es endet an deinen Füßen, darunter kann der Boden vor dir aufgeschnitten zu sehen sein.",
+	"vrcamera.option.menusFullScreen": "PC: Menüs füllen die Kamera",
+	"vrcamera.option.menusFullScreen.tooltip": "Solange Inventar, Pausemenü oder ein anderes Menü offen ist, zeigt die Kamera deinen Bildschirm im ganzen Bild. Aus: sie filmt dich über die Schulter, das Menü schwebt als Bildschirm vor dir. Nicht der Chat.",
+	"key.vrcamera.shot.drone": "Einstellung: Drohne"
 }
